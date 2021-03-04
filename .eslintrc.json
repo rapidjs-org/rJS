@@ -25,6 +25,18 @@
         "semi": [
             "error",
             "always"
+        ],
+        "no-irregular-whitespace": [
+            "off"
+        ],
+        "prefer-arrow-callback": [
+            "error"
+        ],
+        "no-unused-vars": [
+            "error",
+            {
+                "argsIgnorePattern": "_"
+            }
         ]
     }
 }

@@ -1,4 +1,6 @@
 {
+    "logMessages": true,
+    "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": 7373,
     "useHttps": false

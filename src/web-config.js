@@ -13,9 +13,14 @@ const config = {
  */
 function read(webPath) {
 	const defaultConfig = require(`./${config.configFileName.default}`);
-	const customConfig = require(join(webPath, config.configFileName.custom));
-    
-	return {...defaultConfig, ...customConfig};
+
+	try {
+		const customConfig = require(join(webPath, config.configFileName.custom));
+        
+		return {...defaultConfig, ...customConfig};
+	} catch(err) {
+		return defaultConfig;
+	}
 }
 
 module.exports = read;
