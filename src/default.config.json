@@ -1,4 +1,5 @@
 {
+    "maxUrlLength": 100,
     "port": 7373,
     "useHttps": false
 }
