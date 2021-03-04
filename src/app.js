@@ -40,8 +40,39 @@ function handleRequest(req, res) {
 
 		return;
 	}
-    
-	respond(res, 200, "...");
+
+	// Set basic response headers
+	webConfig.useHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
+	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
+
+	res.setHeader("X-XSS-Protection", "1");
+	res.setHeader("X-Content-Type-Options", "nosniff");
+
+	const method = req.method.toLowerCase();
+	if(method == "get") {
+		handleGET(res, req.url);
+	} else if(method == "post") {
+		let body = [];
+		req.on("data", chunk => {
+			body.push(chunk);
+		});
+		req.on("end", _ => {
+			handleOther(res, req.url, JSON.parse(body));
+		});
+		req.on("error", _ => {
+			// Error response
+		});
+	}
+}
+
+function handleGET(res, url) {
+	console.log(url);
+	respond(res, 200, "SUCCESS");
+}
+function handleOther(res, url, body) {
+	console.log(url);
+	console.log(body);
+	respond(res, 200, "SUCCESS");
 }
 
 // Create the web server instance
