@@ -2,11 +2,9 @@
   "name": "rapid-js",
   "version": "1.0.0",
   "description": "",
-  "main": "src/server.js",
-  "directories": {
-    "test": "test"
-  },
+  "main": "src/app.js",
   "scripts": {
+    "start": "node ./src/app.js",
     "test": "./node_modules/.bin/eslint --fix src/"
   },
   "repository": {
