@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/eslint --fix src/"
   },
   "repository": {
     "type": "git",
@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/t-ski/server/issues"
   },
-  "homepage": "https://github.com/t-ski/server#readme"
+  "homepage": "https://github.com/t-ski/server#readme",
+  "devDependencies": {
+    "eslint": "^7.21.0"
+  }
 }
