@@ -19,6 +19,23 @@ const config = {
 	defaultExtension: "html"
 };
 
+/**
+ * Perform a redirect to a given path.
+ * @param {Object} res - Open response object
+ * @param {String} path - Path to redirect to
+ */
+function redirect(res, path) {
+	res.setHeader("Location", path);
+	
+	respond(res, 301);
+}
+
+/**
+ * Perform a response.
+ * @param {*} res Open response object
+ * @param {*} status Status code to use
+ * @param {*} message Message to use
+ */
 function respond(res, status, message) {
 	// Retrieve default message of status code if none given
 	!message && (message = http.STATUS_CODES[status] || "");
@@ -52,14 +69,13 @@ function handleRequest(req, res) {
     // Redirect requests explicitly stating the default extension to a request with an extensionless URL
     if(extension == config.defaultExtension) {
         const newUrl = req.url.slice(0, -(urlParts.search.length + extension.length + 1)) + req.url.slice(-urlParts.search.length);
-
-        // TODO: Redirect
+        redirect(res, newUrl);
 
         return;
     }
 	// Block request if whitelist enabled and requested extension not whitelisted
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)) {
-		respond(res, 414);
+		respond(res, 403);
 
 		return;
 	}
