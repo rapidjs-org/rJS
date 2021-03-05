@@ -1,9 +1,9 @@
 const {join} = require("path");
 
 const config = {
-	"configFileName": {
-		"default": "default.config.json",
-		"custom": "custom.config.json"
+	configFileName: {
+		default: "default.config.json",
+		custom: "custom.config.json"
 	}
 };
 
