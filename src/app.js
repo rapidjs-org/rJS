@@ -5,6 +5,7 @@
 
 const WEB_PATH = require.main.path;
 
+const {existsSync, readFileSync} = require("fs");
 const {extname} = require("path");
 const {parse: parseUrl} = require("url");
 
@@ -31,6 +32,26 @@ function redirect(res, path) {
 }
 
 /**
+ * Perform a redirect to a related error page.
+ * @param {Object} res - Open response object
+ * @param {String} status - Error status code
+ * @param {String} path - Path of the requested page resulting in the error
+ */
+function redirectErrorPage(res, status, path) {
+    const errorPagePath = "";
+    // TODO: Find error page
+
+    // Simple response if no related error page found
+    if(true) {
+        respond(res, status);
+
+        return;
+    }
+
+	redirect(res, errorPagePath);
+}
+
+/**
  * Perform a response.
  * @param {*} res Open response object
  * @param {*} status Status code to use
@@ -54,13 +75,13 @@ function handleRequest(req, res) {
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
-		respond(res, 429);
+		respondProperly(429);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(req.url.length > webConfig.maxUrlLength) {
-		respond(res, 414);
+		respondProperly(414);
 
 		return;
 	}
@@ -69,13 +90,13 @@ function handleRequest(req, res) {
     // Redirect requests explicitly stating the default extension to a request with an extensionless URL
     if(extension == config.defaultExtension) {
         const newUrl = req.url.slice(0, -(urlParts.search.length + extension.length + 1)) + req.url.slice(-urlParts.search.length);
-        redirect(res, newUrl);
+        respondProperly(newUrl);
 
         return;
     }
 	// Block request if whitelist enabled and requested extension not whitelisted
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)) {
-		respond(res, 403);
+		respondProperly(403);
 
 		return;
 	}
@@ -90,26 +111,49 @@ function handleRequest(req, res) {
 	const method = req.method.toLowerCase();
 	if(method == "get") {
 		handleGET(res, req.url);
-	} else if(method == "post") {
+	} else {
 		let body = [];
 		req.on("data", chunk => {
 			body.push(chunk);
 		});
 		req.on("end", _ => {
+            console.log("Body")
 			handleOther(res, req.url, JSON.parse(body));
 		});
 		req.on("error", _ => {
 			// Error response
+            console.log("No body")
 		});
 	}
+
+    /**
+     * Respond by a simple response or redirecting to an error page depending on the request method.
+     * @helper
+     * @param {Number} status Status code
+     */
+    function respondProperly(status) {
+        if(req.method.toLowerCase() == "get") {
+            redirectErrorPage(res, status, req.url);
+
+            return;
+        }
+
+        respond(res, status);
+    }
 }
 
 function handleGET(res, url) {
-	console.log(url);
+    const localPath = join(WEB_PATH, url);
+
+    // Redirect to the related error page if requested file does not exist
+	if(!existsSync(localPath)) {
+        redirectErrorPage(res, 404, url);
+    }
+
 	respond(res, 200, "SUCCESS");
 }
+
 function handleOther(res, url, body) {
-	console.log(url);
 	console.log(body);
 	respond(res, 200, "SUCCESS");
 }
