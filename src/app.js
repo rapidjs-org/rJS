@@ -3,22 +3,24 @@
  * t-ski@GitHub
  */
 
-const WEB_PATH = require.main.path;
+// Local config
+const config = {
+	defaultExtension: "html",
+    defaultFileName: "index",
+    webDirName: "web"
+};
 
 const {existsSync, readFileSync} = require("fs");
-const {extname} = require("path");
+const {extname, join, dirname, basename} = require("path");
 const {parse: parseUrl} = require("url");
+
+const WEB_PATH = join(require.main.path, config.webDirName);
 
 const webConfig = require("./web-config")(WEB_PATH);
 const rateLimiter = require("./rate-limiter");
 const log = require("./log")(webConfig.logMessages);
 
 const http = require(webConfig.useHttps ? "https" : "http");
-
-// Local config
-const config = {
-	defaultExtension: "html"
-};
 
 /**
  * Perform a redirect to a given path.
@@ -38,17 +40,18 @@ function redirect(res, path) {
  * @param {String} path - Path of the requested page resulting in the error
  */
 function redirectErrorPage(res, status, path) {
-    const errorPagePath = "";
-    // TODO: Find error page
+    do {
+        path = dirname(path);
+        let errorPagePath = join(path, String(status));
+        if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtension}`)) {
+            redirect(res, errorPagePath);
+            
+            return;
+        }
+    } while(path != "/");
 
     // Simple response if no related error page found
-    if(true) {
-        respond(res, status);
-
-        return;
-    }
-
-	redirect(res, errorPagePath);
+    respond(res, status);
 }
 
 /**
@@ -89,8 +92,9 @@ function handleRequest(req, res) {
     const extension = extname(urlParts.pathname).slice(1);
     // Redirect requests explicitly stating the default extension to a request with an extensionless URL
     if(extension == config.defaultExtension) {
-        const newUrl = req.url.slice(0, -(urlParts.search.length + extension.length + 1)) + req.url.slice(-urlParts.search.length);
-        respondProperly(newUrl);
+        const newUrl = req.url.slice(0, -((urlParts.search || "").length + extension.length + 1)) + urlParts.search;
+
+        redirect(res, newUrl);
 
         return;
     }
@@ -143,14 +147,33 @@ function handleRequest(req, res) {
 }
 
 function handleGET(res, url) {
+    const urlParts = parseUrl(url, true);
+
+    // Strip query string from URL
+    ((urlParts.search || "").length > 0) && (url = url.slice(0, -urlParts.search.length));
+
+    // Add default file name if none explicitly stated in the request URL
+    if(url.slice(-1) == "/") {
+        url += config.defaultFileName;
+    }
+
+    // Add default extension if none explicitly stated in the request URL
+    if(extname(url).length == 0) {
+        url += `.${config.defaultExtension}`;
+    }
+    
     const localPath = join(WEB_PATH, url);
 
     // Redirect to the related error page if requested file does not exist
 	if(!existsSync(localPath)) {
         redirectErrorPage(res, 404, url);
+
+        return;
     }
 
-	respond(res, 200, "SUCCESS");
+    const data = readFileSync(localPath);
+
+	respond(res, 200, data);
 }
 
 function handleOther(res, url, body) {
