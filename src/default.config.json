@@ -1,5 +1,6 @@
 {
     "allowFramedLoading": true,
+    "cacheRefreshFrequency": 60,
     "logMessages": true,
     "maxPayloadBytes": 1000,
     "maxRequestsPerMin": 100,
