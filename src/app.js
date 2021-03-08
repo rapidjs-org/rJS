@@ -5,7 +5,7 @@
 
 // Local config
 const config = {
-	defaultExtension: "html",
+	defaultExtensionName: "html",
     defaultFileName: "index",
     webDirName: "web"
 };
@@ -19,7 +19,10 @@ const WEB_PATH = join(require.main.path, config.webDirName);
 const webConfig = require("./web-config")(WEB_PATH);
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
+const { url } = require("inspector");
 const log = require("./log")(webConfig.logMessages);
+
+const mimeTypes = require("./mime-types");
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
@@ -44,7 +47,7 @@ function redirectErrorPage(res, status, path) {
     do {
         path = dirname(path);
         let errorPagePath = join(path, String(status));
-        if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtension}`)) {
+        if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtensionName}`)) {
             redirect(res, errorPagePath);
             
             return;
@@ -96,16 +99,17 @@ function handleRequest(req, res) {
 		return;
 	}
     const urlParts = parseUrl(req.url, true);
-    const extension = extname(urlParts.pathname).slice(1);
-    // Redirect requests explicitly stating the default extension to a request with an extensionless URL
-    if(extension == config.defaultExtension) {
-        const newUrl = req.url.slice(0, -((urlParts.search || "").length + extension.length + 1)) + urlParts.search;
-
+    // Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
+    if(urlParts.pathname.match(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`))[0].length > 0) {
+        const newUrl = urlParts.pathname.replace(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`), "")
+                     + (urlParts.search || "");
+        
         redirect(res, newUrl);
 
         return;
     }
 	// Block request if whitelist enabled and requested extension not whitelisted
+    const extension = extname(urlParts.pathname).slice(1);
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)) {
 		respondProperly(403);
 
@@ -119,6 +123,9 @@ function handleRequest(req, res) {
 	res.setHeader("X-XSS-Protection", "1");
 	res.setHeader("X-Content-Type-Options", "nosniff");
 
+    const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
+    mime && res.setHeader("Content-Type", mime);
+
 	const method = req.method.toLowerCase();
 	if(method == "get") {
 		handleGET(res, req.url);
@@ -129,7 +136,7 @@ function handleRequest(req, res) {
 			body.push(chunk);
 
             const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
-            if(bodyByteSize > 1){//webConfig.maxPayloadBytes) {
+            if(bodyByteSize > webConfig.maxPayloadBytes) {
                 blockBodyProcessing = true;
 
                 respond(res, 413);
@@ -137,7 +144,7 @@ function handleRequest(req, res) {
 		});
 		req.on("end", _ => {
             if(blockBodyProcessing) {
-                // Ignore further processing due to maximum payload exceeding
+                // Ignore further processing as maximum payload has been exceeded
                 return;
             }
             
@@ -172,21 +179,18 @@ function handleRequest(req, res) {
 function handleGET(res, url) {
     const urlParts = parseUrl(url, true);
 
-    // Strip query string from URL
-    ((urlParts.search || "").length > 0) && (url = url.slice(0, -urlParts.search.length));
+    let localPath = join(WEB_PATH, urlParts.pathname);
 
     // Add default file name if none explicitly stated in the request URL
-    if(url.slice(-1) == "/") {
-        url += config.defaultFileName;
+    if(localPath.slice(-1) == "/") {
+        localPath += config.defaultFileName;
     }
     
     // Add default extension if none explicitly stated in the request URL
-    if(extname(url).length == 0) {
-        url += `.${config.defaultExtension}`;
+    if(extname(localPath).length == 0) {
+        localPath += `.${config.defaultExtensionName}`;
     }
     
-    const localPath = join(WEB_PATH, url);
-
     // Redirect to the related error page if requested file does not exist
 	if(!existsSync(localPath)) {
         redirectErrorPage(res, 404, url);
