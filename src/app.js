@@ -17,6 +17,7 @@ const {parse: parseUrl} = require("url");
 const WEB_PATH = join(require.main.path, config.webDirName);
 
 const webConfig = require("./web-config")(WEB_PATH);
+const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
 const log = require("./log")(webConfig.logMessages);
 
@@ -66,6 +67,12 @@ function respond(res, status, message) {
 
 	res.statusCode = status;
 
+    if(!utils.isString(message) && !Buffer.isBuffer(message)) {
+        message = JSON.stringify(message);
+    }
+    
+	res.setHeader("Content-Length", Buffer.byteLength(message));
+	
 	res.end(message);
 }
 
@@ -116,17 +123,33 @@ function handleRequest(req, res) {
 	if(method == "get") {
 		handleGET(res, req.url);
 	} else {
+        let blockBodyProcessing;
 		let body = [];
 		req.on("data", chunk => {
 			body.push(chunk);
+
+            const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
+            if(bodyByteSize > 1){//webConfig.maxPayloadBytes) {
+                blockBodyProcessing = true;
+
+                respond(res, 413);
+            }
 		});
 		req.on("end", _ => {
-            console.log("Body")
-			handleOther(res, req.url, JSON.parse(body));
+            if(blockBodyProcessing) {
+                // Ignore further processing due to maximum payload exceeding
+                return;
+            }
+            
+            if(body.length == 0) {
+                body = null;
+            } else {
+                body = JSON.parse(body);
+            }
+			handleOther(res, req.url, body);
 		});
 		req.on("error", _ => {
-			// Error response
-            console.log("No body")
+            respond(res, 500);
 		});
 	}
 
@@ -156,7 +179,7 @@ function handleGET(res, url) {
     if(url.slice(-1) == "/") {
         url += config.defaultFileName;
     }
-
+    
     // Add default extension if none explicitly stated in the request URL
     if(extname(url).length == 0) {
         url += `.${config.defaultExtension}`;
@@ -177,6 +200,7 @@ function handleGET(res, url) {
 }
 
 function handleOther(res, url, body) {
+	console.log("OTHER");
 	console.log(body);
 	respond(res, 200, "SUCCESS");
 }
