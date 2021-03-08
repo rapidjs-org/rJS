@@ -6,20 +6,21 @@
 // Local config
 const config = {
 	defaultExtensionName: "html",
-    defaultFileName: "index",
-    webDirName: "web"
+	defaultFileName: "index",
+	webDirName: "web"
 };
 
 const {existsSync, readFileSync} = require("fs");
-const {extname, join, dirname, basename} = require("path");
+const {extname, join, dirname} = require("path");
 const {parse: parseUrl} = require("url");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 
 const webConfig = require("./web-config")(WEB_PATH);
+
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
-const { url } = require("inspector");
+const cache = require("./cache");
 const log = require("./log")(webConfig.logMessages);
 
 const mimeTypes = require("./mime-types");
@@ -44,18 +45,18 @@ function redirect(res, path) {
  * @param {String} path - Path of the requested page resulting in the error
  */
 function redirectErrorPage(res, status, path) {
-    do {
-        path = dirname(path);
-        let errorPagePath = join(path, String(status));
-        if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtensionName}`)) {
-            redirect(res, errorPagePath);
+	do {
+		path = dirname(path);
+		let errorPagePath = join(path, String(status));
+		if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtensionName}`)) {
+			redirect(res, errorPagePath);
             
-            return;
-        }
-    } while(path != "/");
+			return;
+		}
+	} while(path != "/");
 
-    // Simple response if no related error page found
-    respond(res, status);
+	// Simple response if no related error page found
+	respond(res, status);
 }
 
 /**
@@ -70,9 +71,9 @@ function respond(res, status, message) {
 
 	res.statusCode = status;
 
-    if(!utils.isString(message) && !Buffer.isBuffer(message)) {
-        message = JSON.stringify(message);
-    }
+	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
+		message = JSON.stringify(message);
+	}
     
 	res.setHeader("Content-Length", Buffer.byteLength(message));
 	
@@ -98,18 +99,18 @@ function handleRequest(req, res) {
 
 		return;
 	}
-    const urlParts = parseUrl(req.url, true);
-    // Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
-    if(urlParts.pathname.match(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`))[0].length > 0) {
-        const newUrl = urlParts.pathname.replace(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`), "")
+	const urlParts = parseUrl(req.url, true);
+	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
+	if(urlParts.pathname.match(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`))[0].length > 0) {
+		const newUrl = urlParts.pathname.replace(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`), "")
                      + (urlParts.search || "");
         
-        redirect(res, newUrl);
+		redirect(res, newUrl);
 
-        return;
-    }
+		return;
+	}
 	// Block request if whitelist enabled and requested extension not whitelisted
-    const extension = extname(urlParts.pathname).slice(1);
+	const extension = extname(urlParts.pathname).slice(1);
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)) {
 		respondProperly(403);
 
@@ -123,82 +124,89 @@ function handleRequest(req, res) {
 	res.setHeader("X-XSS-Protection", "1");
 	res.setHeader("X-Content-Type-Options", "nosniff");
 
-    const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
-    mime && res.setHeader("Content-Type", mime);
+	const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
+	mime && res.setHeader("Content-Type", mime);
 
 	const method = req.method.toLowerCase();
 	if(method == "get") {
 		handleGET(res, req.url);
 	} else {
-        let blockBodyProcessing;
+		let blockBodyProcessing;
 		let body = [];
 		req.on("data", chunk => {
 			body.push(chunk);
 
-            const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
-            if(bodyByteSize > webConfig.maxPayloadBytes) {
-                blockBodyProcessing = true;
+			const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
+			if(bodyByteSize > webConfig.maxPayloadBytes) {
+				blockBodyProcessing = true;
 
-                respond(res, 413);
-            }
+				respond(res, 413);
+			}
 		});
 		req.on("end", _ => {
-            if(blockBodyProcessing) {
-                // Ignore further processing as maximum payload has been exceeded
-                return;
-            }
+			if(blockBodyProcessing) {
+				// Ignore further processing as maximum payload has been exceeded
+				return;
+			}
             
-            if(body.length == 0) {
-                body = null;
-            } else {
-                body = JSON.parse(body);
-            }
+			if(body.length == 0) {
+				body = null;
+			} else {
+				body = JSON.parse(body);
+			}
 			handleOther(res, req.url, body);
 		});
 		req.on("error", _ => {
-            respond(res, 500);
+			respond(res, 500);
 		});
 	}
 
-    /**
+	/**
      * Respond by a simple response or redirecting to an error page depending on the request method.
      * @helper
      * @param {Number} status Status code
      */
-    function respondProperly(status) {
-        if(req.method.toLowerCase() == "get") {
-            redirectErrorPage(res, status, req.url);
+	function respondProperly(status) {
+		if(req.method.toLowerCase() == "get") {
+			redirectErrorPage(res, status, req.url);
 
-            return;
-        }
+			return;
+		}
 
-        respond(res, status);
-    }
+		respond(res, status);
+	}
 }
 
 function handleGET(res, url) {
-    const urlParts = parseUrl(url, true);
+	const urlParts = parseUrl(url, true);
 
-    let localPath = join(WEB_PATH, urlParts.pathname);
+	if(cache.has(urlParts.pathname, webConfig.cacheRefreshFrequency)) {
+		// Read data from cache if exists (and not outdated)
+		respond(res, 200, cache.read(url));
 
-    // Add default file name if none explicitly stated in the request URL
-    if(localPath.slice(-1) == "/") {
-        localPath += config.defaultFileName;
-    }
-    
-    // Add default extension if none explicitly stated in the request URL
-    if(extname(localPath).length == 0) {
-        localPath += `.${config.defaultExtensionName}`;
-    }
-    
-    // Redirect to the related error page if requested file does not exist
+		return;
+	}
+
+	let localPath = join(WEB_PATH, urlParts.pathname);
+
+	if(localPath.slice(-1) == "/") {
+		// Add default file name if none explicitly stated in the request URL
+		localPath += config.defaultFileName;
+	}
+	if(extname(localPath).length == 0) {
+		// Add default extension if none explicitly stated in the request URL
+		localPath += `.${config.defaultExtensionName}`;
+	}
 	if(!existsSync(localPath)) {
-        redirectErrorPage(res, 404, url);
+		// Redirect to the related error page if requested file does not exist
+		redirectErrorPage(res, 404, url);
 
-        return;
-    }
+		return;
+	}
 
-    const data = readFileSync(localPath);
+	const data = readFileSync(localPath);
+
+	cache.write(url, data);
 
 	respond(res, 200, data);
 }
@@ -211,11 +219,11 @@ function handleOther(res, url, body) {
 
 // Create web server instance
 http.createServer((req, res) => {
-    try {
-        handleRequest(req, res);
-    } catch(err) {
-        console.error(err);
-    }
+	try {
+		handleRequest(req, res);
+	} catch(err) {
+		console.error(err);
+	}
 }).listen(webConfig.port, null, null, _ => {
 	log("Server started");
 });
