@@ -1,6 +1,7 @@
 {
     "allowFramedLoading": true,
     "logMessages": true,
+    "maxPayloadBytes": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": 7373,
