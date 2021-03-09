@@ -1,6 +1,6 @@
 const utils = require("./utils");
 
-let urlMap = new Map();
+const urlMap = new Map();
 
 /**
  * Check if the cache holds an entry for the requested URL (pathname as key).

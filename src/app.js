@@ -27,6 +27,9 @@ const mimeTypes = require("./mime-types");
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
+// Request finisher storage object
+let finishers = {};
+
 /**
  * Perform a redirect to a given path.
  * @param {Object} res - Open response object
@@ -61,14 +64,14 @@ function redirectErrorPage(res, status, path) {
 
 /**
  * Perform a response.
- * @param {*} res Open response object
+ * @param {Object} res Open response object
  * @param {*} status Status code to use
  * @param {*} message Message to use
  */
 function respond(res, status, message) {
 	// Retrieve default message of status code if none given
 	!message && (message = http.STATUS_CODES[status] || "");
-
+    
 	res.statusCode = status;
 
 	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
@@ -82,8 +85,8 @@ function respond(res, status, message) {
 
 /**
  * Handle a single request.
- * @param {*} req Request object
- * @param {*} res Response object
+ * @param {Object} req Request object
+ * @param {Object} res Response object
  */
 function handleRequest(req, res) {
 	// Block request if maximum 
@@ -131,34 +134,7 @@ function handleRequest(req, res) {
 	if(method == "get") {
 		handleGET(res, req.url);
 	} else {
-		let blockBodyProcessing;
-		let body = [];
-		req.on("data", chunk => {
-			body.push(chunk);
-
-			const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
-			if(bodyByteSize > webConfig.maxPayloadBytes) {
-				blockBodyProcessing = true;
-
-				respond(res, 413);
-			}
-		});
-		req.on("end", _ => {
-			if(blockBodyProcessing) {
-				// Ignore further processing as maximum payload has been exceeded
-				return;
-			}
-            
-			if(body.length == 0) {
-				body = null;
-			} else {
-				body = JSON.parse(body);
-			}
-			handleOther(res, req.url, body);
-		});
-		req.on("error", _ => {
-			respond(res, 500);
-		});
+		handleOther(res, req);
 	}
 
 	/**
@@ -177,6 +153,11 @@ function handleRequest(req, res) {
 	}
 }
 
+/**
+ * Handle a GET request accordingly.
+ * @param {Object} res Active response object
+ * @param {String} url Request URL
+ */
 function handleGET(res, url) {
 	const urlParts = parseUrl(url, true);
 
@@ -193,9 +174,12 @@ function handleGET(res, url) {
 		// Add default file name if none explicitly stated in the request URL
 		localPath += config.defaultFileName;
 	}
+    let extension = extname(localPath).slice(1);
 	if(extname(localPath).length == 0) {
 		// Add default extension if none explicitly stated in the request URL
 		localPath += `.${config.defaultExtensionName}`;
+
+        extension = config.defaultExtensionName;
 	}
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
@@ -204,17 +188,53 @@ function handleGET(res, url) {
 		return;
 	}
 
-	const data = readFileSync(localPath);
+	let data = String(readFileSync(localPath));
+
+    // Finisher calls
+    (finishers[extension] || []).forEach(finisher => {
+        data = finisher(data);
+    });
 
 	cache.write(url, data);
 
-	respond(res, 200, data);
+	respond(res, 200, Buffer.from(data, "UTF-8"));
 }
 
-function handleOther(res, url, body) {
-	console.log("OTHER");
-	console.log(body);
-	respond(res, 200, "SUCCESS");
+/**
+ * Handle any request type other than GET accordingly.
+ * @param {Object} res Active response object
+ * @param {Object} req Active request object
+ */
+function handleOther(res, req) {
+    let blockBodyProcessing;
+    let body = [];
+    req.on("data", chunk => {
+        body.push(chunk);
+
+        const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
+        if(bodyByteSize > webConfig.maxPayloadBytes) {
+            blockBodyProcessing = true;
+
+            respond(res, 413);
+        }
+    });
+    req.on("end", _ => {
+        if(blockBodyProcessing) {
+            // Ignore further processing as maximum payload has been exceeded
+            return;
+        }
+        
+        if(body.length == 0) {
+            body = null;
+        } else {
+            body = JSON.parse(body);
+        }
+
+	    respond(res, 200, "SUCCESS");
+    });
+    req.on("error", _ => {
+        respond(res, 500);
+    });
 }
 
 // Create web server instance
@@ -227,3 +247,19 @@ http.createServer((req, res) => {
 }).listen(webConfig.port, null, null, _ => {
 	log("Server started");
 });
+
+/**
+ * Finish GET request response dataof a certain file extension specificly.
+ * @param {String} extension Extension name (without a leading dot) 
+ * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data
+ */
+function finish(extension, callback) {
+    extension = extension.trim().replace(/^\./, "");
+
+    !finishers[extension] && (finishers[extension] = []);
+    finishers[extension].push(callback);
+}
+
+module.exports = {
+    finish
+};
