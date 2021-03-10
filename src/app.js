@@ -27,8 +27,9 @@ const mimeTypes = require("./mime-types");
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
-// Request finisher storage object
-let finishers = {};
+// Request finish and post handler objects
+let finishHandlers = {};
+let postHandlers = [];
 
 /**
  * Perform a redirect to a given path.
@@ -102,8 +103,15 @@ function handleRequest(req, res) {
 
 		return;
 	}
-	const urlParts = parseUrl(req.url, true);
+    // Block request if method is not handled
+	const method = req.method.toLowerCase();
+    if(!["get", "post"].includes(method)) {
+        respond(res, 405);
+
+        return;
+    }
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
+	const urlParts = parseUrl(req.url, true);
 	if(urlParts.pathname.match(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`))[0].length > 0) {
 		const newUrl = urlParts.pathname.replace(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`), "")
                      + (urlParts.search || "");
@@ -130,11 +138,16 @@ function handleRequest(req, res) {
 	const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
 	mime && res.setHeader("Content-Type", mime);
 
-	const method = req.method.toLowerCase();
+    // Apply the related handler
 	if(method == "get") {
-		handleGET(res, req.url);
-	} else {
-		handleOther(res, req);
+		handleGET(res, urlParts.pathname);
+
+        return;
+	} 
+    if(method == "post") {
+		handlePOST(req, res, urlParts.pathname);
+        
+        return;
 	}
 
 	/**
@@ -156,19 +169,17 @@ function handleRequest(req, res) {
 /**
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
- * @param {String} url Request URL
+ * @param {String} pathname URL pathname part
  */
-function handleGET(res, url) {
-	const urlParts = parseUrl(url, true);
-
-	if(cache.has(urlParts.pathname, webConfig.cacheRefreshFrequency)) {
+function handleGET(res, pathname) {
+	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
 		// Read data from cache if exists (and not outdated)
 		respond(res, 200, cache.read(url));
 
 		return;
 	}
 
-	let localPath = join(WEB_PATH, urlParts.pathname);
+	let localPath = join(WEB_PATH, pathname);
 
 	if(localPath.slice(-1) == "/") {
 		// Add default file name if none explicitly stated in the request URL
@@ -191,7 +202,7 @@ function handleGET(res, url) {
 	let data = String(readFileSync(localPath));
 
     // Finisher calls
-    (finishers[extension] || []).forEach(finisher => {
+    (finishHandlers[extension] || []).forEach(finisher => {
         data = finisher(data);
     });
 
@@ -201,11 +212,19 @@ function handleGET(res, url) {
 }
 
 /**
- * Handle any request type other than GET accordingly.
- * @param {Object} res Active response object
+ * Handle a POST request accordingly.
  * @param {Object} req Active request object
+ * @param {Object} res Active response object
+ * @param {String} pathname URL pathname part
  */
-function handleOther(res, req) {
+function handlePOST(req, res, pathname) {
+    if(!postHandlers[pathname]) {
+        // Block request if no related POST handler defined
+        respond(res, 404);
+
+        return;
+    }
+
     let blockBodyProcessing;
     let body = [];
     req.on("data", chunk => {
@@ -213,6 +232,7 @@ function handleOther(res, req) {
 
         const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
         if(bodyByteSize > webConfig.maxPayloadBytes) {
+            // Block request if request payload is exceeds maximum size as put in web config
             blockBodyProcessing = true;
 
             respond(res, 413);
@@ -230,7 +250,13 @@ function handleOther(res, req) {
             body = JSON.parse(body);
         }
 
-	    respond(res, 200, "SUCCESS");
+        try {
+            const data = postHandlers[pathname](body);
+
+            respond(res, 200, data);
+        } catch(err) {
+            respond(res, 500);
+        }
     });
     req.on("error", _ => {
         respond(res, 500);
@@ -249,15 +275,24 @@ http.createServer((req, res) => {
 });
 
 /**
- * Finish GET request response dataof a certain file extension specificly.
+ * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data
+ * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data. Throwing an error coe leads to a related response.
  */
 function finish(extension, callback) {
     extension = extension.trim().replace(/^\./, "");
 
-    !finishers[extension] && (finishers[extension] = []);
-    finishers[extension].push(callback);
+    !finishHandlers[extension] && (finishHandlers[extension] = []);
+    finishHandlers[extension].push(callback);
+}
+
+/**
+ * Set up a handler to process a POST to a specific pathname (route).
+ * @param {String} pathname Pathname to bind route to
+ * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
+ */
+function post(pathname, callback) {
+    postHandlers[pathname.trim()].push(callback);
 }
 
 module.exports = {
