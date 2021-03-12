@@ -7,11 +7,12 @@
 const config = {
 	defaultExtensionName: "html",
 	defaultFileName: "index",
+    dynamicPageDirPrefix: "=",
 	webDirName: "web"
 };
 
 const {existsSync, readFileSync} = require("fs");
-const {extname, join, dirname} = require("path");
+const {extname, join, dirname, basename} = require("path");
 const {parse: parseUrl} = require("url");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
@@ -174,7 +175,7 @@ function handleRequest(req, res) {
 function handleGET(res, pathname) {
 	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, cache.read(url));
+		respond(res, 200, cache.read(pathname));
 
 		return;
 	}
@@ -187,14 +188,21 @@ function handleGET(res, pathname) {
 	}
     let extension = extname(localPath).slice(1);
 	if(extname(localPath).length == 0) {
-		// Add default extension if none explicitly stated in the request URL
-		localPath += `.${config.defaultExtensionName}`;
+        // Check if dynamic page setup corresponding to the request URL exists in file system
+        const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
+        if(existsSync(localPathDynamic)) {
+            // Use dynamic page root file path for further processing
+            localPath = localPathDynamic;
+        } else {
+            // Add default extension if none explicitly stated in the request URL
+            localPath += `.${config.defaultExtensionName}`;
+        }
 
         extension = config.defaultExtensionName;
 	}
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
-		redirectErrorPage(res, 404, url);
+		redirectErrorPage(res, 404, pathname);
 
 		return;
 	}
@@ -206,7 +214,7 @@ function handleGET(res, pathname) {
         data = finisher(data);
     });
 
-	cache.write(url, data);
+	cache.write(pathname, data);
 
 	respond(res, 200, Buffer.from(data, "UTF-8"));
 }
@@ -296,5 +304,6 @@ function post(pathname, callback) {
 }
 
 module.exports = {
-    finish
+    finish,
+    post
 };
