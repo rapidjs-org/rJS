@@ -121,13 +121,6 @@ function handleRequest(req, res) {
 
 		return;
 	}
-	// Block request if whitelist enabled and requested extension not whitelisted
-	const extension = extname(urlParts.pathname).slice(1);
-	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)) {
-		respondProperly(403);
-
-		return;
-	}
 
 	// Set basic response headers
 	webConfig.useHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
@@ -135,9 +128,6 @@ function handleRequest(req, res) {
 
 	res.setHeader("X-XSS-Protection", "1");
 	res.setHeader("X-Content-Type-Options", "nosniff");
-
-	const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
-	mime && res.setHeader("Content-Type", mime);
 
     // Apply the related handler
 	if(method == "get") {
@@ -173,6 +163,20 @@ function handleRequest(req, res) {
  * @param {String} pathname URL pathname part
  */
 function handleGET(res, pathname) {
+	let extension = extname(pathname).slice(1);
+    
+	// Block request if whitelist enabled but requested extension not whitelisted
+    // or a dynamic page related file has been explixitly requested (restricted)
+	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
+    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)) {
+		redirectErrorPage(res, 403, pathname);
+
+		return;
+	}
+
+	const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
+	mime && res.setHeader("Content-Type", mime);
+
 	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
 		// Read data from cache if exists (and not outdated)
 		respond(res, 200, cache.read(pathname));
@@ -186,7 +190,6 @@ function handleGET(res, pathname) {
 		// Add default file name if none explicitly stated in the request URL
 		localPath += config.defaultFileName;
 	}
-    let extension = extname(localPath).slice(1);
 	if(extname(localPath).length == 0) {
         // Check if dynamic page setup corresponding to the request URL exists in file system
         const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
@@ -200,6 +203,7 @@ function handleGET(res, pathname) {
 
         extension = config.defaultExtensionName;
 	}
+
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
 		redirectErrorPage(res, 404, pathname);
