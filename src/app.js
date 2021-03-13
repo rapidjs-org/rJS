@@ -28,9 +28,12 @@ const mimeTypes = require("./mime-types");
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
-// Request finish and post handler objects
+// Request finish and custom method handler objects
 let finishHandlers = {};
-let postHandlers = [];
+let customHandlers = {
+	get: [],
+	post: []
+};
 
 /**
  * Perform a redirect to a given path.
@@ -163,6 +166,22 @@ function handleRequest(req, res) {
  * @param {String} pathname URL pathname part
  */
 function handleGET(res, pathname) {
+	let data;
+
+	if(customHandlers.get[pathname]) {
+		// Use custom GET route if defined on pathname as of higher priority
+		try {
+			data = customHandlers.get[pathname]();
+
+			respond(res, 200, data);
+		} catch(err) {
+			// Respond with status thrown (if is a number) or expose an internal error otherwise
+            respond(res, isNan(err) ? 500 : err);
+		}
+
+        return;
+    }
+
 	let extension = extname(pathname).slice(1);
 
 	// Block request if whitelist enabled but requested extension not whitelisted
@@ -214,7 +233,7 @@ function handleGET(res, pathname) {
 		return;
 	}
 
-    let data = String(readFileSync(localPath));
+    data = String(readFileSync(localPath));
 
 	// Stop processing as request has already been closed due to handler exception
     if(isDynamicPage && dynamicClose()) {
@@ -261,7 +280,7 @@ function handleGET(res, pathname) {
  * @param {String} pathname URL pathname part
  */
 function handlePOST(req, res, pathname) {
-    if(!postHandlers[pathname]) {
+    if(!customHandlers.post[pathname]) {
         // Block request if no related POST handler defined
         respond(res, 404);
 
@@ -294,11 +313,11 @@ function handlePOST(req, res, pathname) {
         }
 
         try {
-            const data = postHandlers[pathname](body);
+            const data = customHandlers.post[pathname](body);
 
             respond(res, 200, data);
         } catch(err) {
-            respond(res, 500);
+            respond(res, isNan(err) ? 500 : err);
         }
     });
     req.on("error", _ => {
@@ -330,12 +349,21 @@ function finish(extension, callback) {
 }
 
 /**
- * Set up a handler to process a POST to a specific pathname (route).
+ * Set up a custom GET route handler.
+ * @param {String} pathname Pathname to bind route to
+ * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
+ */
+function get(pathname, callback) {
+    customHandlers.get[pathname.trim()].push(callback);
+}
+
+/**
+ * Set up a custom POST route handler.
  * @param {String} pathname Pathname to bind route to
  * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
  */
 function post(pathname, callback) {
-    postHandlers[pathname.trim()].push(callback);
+    customHandlers.post[pathname.trim()].push(callback);
 }
 
 /**
@@ -348,6 +376,7 @@ function getWebPath() {
 
 module.exports = {
     finish,
+	get,
     post,
 	getWebPath
 };
