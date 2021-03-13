@@ -242,7 +242,7 @@ function handleGET(res, pathname) {
 
     // Finisher calls
     (finishHandlers[extension] || []).forEach(finisher => {
-        data = finisher(data);
+        data = finisher(data, pathname);
     });
 
 	cache.write(pathname, data);
@@ -257,13 +257,17 @@ function handleGET(res, pathname) {
 	function dynamicClose() {
 		const handlerFilePath = join(dirname(localPath), `${basename(localPath).slice(0, -config.defaultFileName.length)}.js`);
 		if(!existsSync(handlerFilePath)) {
-			return data;
+			return false;
 		}
 
 		// Load handler file as module returning the templating object
 		try {
 			require(handlerFilePath);
 		} catch(err) {
+			if(err === 200) {
+				return;
+			}
+
 			redirectErrorPage(res, isNaN(err) ? 404 : err, localPath);
 
 			return true;
@@ -339,7 +343,7 @@ http.createServer((req, res) => {
 /**
  * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data. Throwing an error coe leads to a related response.
+ * @param {Function} callback Callback getting passed a data string to finish and the requested pathname returning the eventually send response data. Throwing an error coe leads to a related response.
  */
 function finish(extension, callback) {
     extension = extension.trim().replace(/^\./, "");
@@ -349,21 +353,19 @@ function finish(extension, callback) {
 }
 
 /**
- * Set up a custom GET route handler.
+ * Set up a custom route handler for a certain method.
+ * @param {String} method Method to bind route to
  * @param {String} pathname Pathname to bind route to
  * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
  */
-function get(pathname, callback) {
-    customHandlers.get[pathname.trim()].push(callback);
-}
+function route(method, pathname, callback) {
+	method = method.trim().tolLowerCase();
 
-/**
- * Set up a custom POST route handler.
- * @param {String} pathname Pathname to bind route to
- * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
- */
-function post(pathname, callback) {
-    customHandlers.post[pathname.trim()].push(callback);
+	if(!["get", "post"].includes(method)) {
+		throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
+	}
+
+    customHandlers[method][pathname].push(callback);
 }
 
 /**
