@@ -338,7 +338,16 @@ function post(pathname, callback) {
     postHandlers[pathname.trim()].push(callback);
 }
 
+/**
+ * Get the web file path on disc.
+ * @returns {String} Web file path
+ */
+function getWebPath() {
+	return WEB_PATH;
+}
+
 module.exports = {
     finish,
-    post
+    post,
+	getWebPath
 };
