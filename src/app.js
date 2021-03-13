@@ -11,7 +11,7 @@ const config = {
 	webDirName: "web"
 };
 
-const {existsSync, readFileSync} = require("fs");
+const {existsSync, readFileSync, fstat} = require("fs");
 const {extname, join, dirname, basename} = require("path");
 const {parse: parseUrl} = require("url");
 
@@ -164,7 +164,7 @@ function handleRequest(req, res) {
  */
 function handleGET(res, pathname) {
 	let extension = extname(pathname).slice(1);
-    
+
 	// Block request if whitelist enabled but requested extension not whitelisted
     // or a dynamic page related file has been explixitly requested (restricted)
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
@@ -190,12 +190,15 @@ function handleGET(res, pathname) {
 		// Add default file name if none explicitly stated in the request URL
 		localPath += config.defaultFileName;
 	}
+    let isDynamicPage;
 	if(extname(localPath).length == 0) {
         // Check if dynamic page setup corresponding to the request URL exists in file system
         const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
         if(existsSync(localPathDynamic)) {
             // Use dynamic page root file path for further processing
             localPath = localPathDynamic;
+
+            isDynamicPage = true;
         } else {
             // Add default extension if none explicitly stated in the request URL
             localPath += `.${config.defaultExtensionName}`;
@@ -206,12 +209,17 @@ function handleGET(res, pathname) {
 
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
-		redirectErrorPage(res, 404, pathname);
+		redirectErrorPage(res, 404, localPath);
 
 		return;
 	}
 
-	let data = String(readFileSync(localPath));
+    let data = String(readFileSync(localPath));
+
+	// Stop processing as request has already been closed due to handler exception
+    if(isDynamicPage && dynamicClose()) {
+		return;
+	}
 
     // Finisher calls
     (finishHandlers[extension] || []).forEach(finisher => {
@@ -221,6 +229,29 @@ function handleGET(res, pathname) {
 	cache.write(pathname, data);
 
 	respond(res, 200, Buffer.from(data, "UTF-8"));
+
+	/**
+	 * Apply dynamic handler to check if the request is closed dynamically.
+	 * @helper
+	 * @returns {Boolean} Whether to end the processing as performing a redirect
+	 */
+	function dynamicClose() {
+		const handlerFilePath = join(dirname(localPath), `${basename(localPath).slice(0, -config.defaultFileName.length)}.js`);
+		if(!existsSync(handlerFilePath)) {
+			return data;
+		}
+
+		// Load handler file as module returning the templating object
+		try {
+			require(handlerFilePath);
+		} catch(err) {
+			redirectErrorPage(res, isNaN(err) ? 404 : err, localPath);
+
+			return true;
+		}
+		
+		return false;
+	}
 }
 
 /**

@@ -6,14 +6,14 @@ const urlMap = new Map();
  * Check if the cache holds an entry for the requested URL (pathname as key).
  * Clears outdated entries implicitly resulting in a false return value.
  * @param {String} url URL key as in request
- * @param {Number} cacheRefreshFrequency Frequency of cache refreshing in seconds
+ * @param {Number} cacheRefreshFrequency Frequency of cache refreshing in ms
  * @returns {Boolean} Whether the cache holds an entry for the requested URL
  */
 function has(url, cacheRefreshFrequency) {
 	if(!urlMap.has(url)) {
 		return false;
 	}
-	if(urlMap.get(url).time < (utils.getTimestampInSecs()  - cacheRefreshFrequency)) {
+	if((urlMap.get(url).time + cacheRefreshFrequency) < Date.now()) {
 		urlMap.delete(url);
         
 		return false;
@@ -38,7 +38,7 @@ function read(url) {
  */
 function write(url, data) {
 	urlMap.set(url, {
-		time: utils.getTimestampInSecs(),
+		time: Date.now(),
 		data: data
 	});
 }
