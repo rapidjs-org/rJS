@@ -209,21 +209,23 @@ function handleGET(res, pathname) {
 		// Add default file name if none explicitly stated in the request URL
 		localPath += config.defaultFileName;
 	}
-    let isDynamicPage;
-	if(extname(localPath).length == 0) {
+	if(extension.length == 0) {
         // Check if dynamic page setup corresponding to the request URL exists in file system
         const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
         if(existsSync(localPathDynamic)) {
             // Use dynamic page root file path for further processing
             localPath = localPathDynamic;
 
-            isDynamicPage = true;
+			// Stop processing as request has already been closed due to handler exception
+			if(dynamicClose()) {
+				return;
+			}
         } else {
             // Add default extension if none explicitly stated in the request URL
             localPath += `.${config.defaultExtensionName}`;
-        }
 
-        extension = config.defaultExtensionName;
+			extension = config.defaultExtensionName;
+        }
 	}
 
 	if(!existsSync(localPath)) {
@@ -235,14 +237,10 @@ function handleGET(res, pathname) {
 
     data = String(readFileSync(localPath));
 
-	// Stop processing as request has already been closed due to handler exception
-    if(isDynamicPage && dynamicClose()) {
-		return;
-	}
-
-    // Finisher calls
-    (finishHandlers[extension] || []).forEach(finisher => {
-        data = finisher(data, pathname);
+    // Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
+	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers[config.defaultExtensionName] && extension.length == 0) ? finishHandlers[config.defaultExtensionName] : []);
+	definedFinishHandlers.forEach(finisher => {
+        data = String(finisher(data));
     });
 
 	cache.write(pathname, data);
@@ -343,7 +341,7 @@ http.createServer((req, res) => {
 /**
  * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed a data string to finish and the requested pathname returning the eventually send response data. Throwing an error coe leads to a related response.
+ * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data. Throwing an error coe leads to a related response.
  */
 function finish(extension, callback) {
     extension = extension.trim().replace(/^\./, "");
@@ -359,13 +357,13 @@ function finish(extension, callback) {
  * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
  */
 function route(method, pathname, callback) {
-	method = method.trim().tolLowerCase();
+	method = String(method).trim().toLowerCase();
 
 	if(!["get", "post"].includes(method)) {
 		throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
 	}
 
-    customHandlers[method][pathname].push(callback);
+    customHandlers[method][pathname] = callback;
 }
 
 /**
@@ -378,7 +376,6 @@ function getWebPath() {
 
 module.exports = {
     finish,
-	get,
-    post,
+	route,
 	getWebPath
 };
