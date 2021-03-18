@@ -171,7 +171,7 @@ function handleGET(res, pathname) {
 	if(customHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			data = customHandlers.get[pathname]();
+			data = customHandlers.get[pathname](res);
 
 			respond(res, 200, data);
 		} catch(err) {
@@ -315,9 +315,9 @@ function handlePOST(req, res, pathname) {
         }
 
         try {
-            const data = customHandlers.post[pathname](body);
+            const data = customHandlers.post[pathname](body, res);
 
-            respond(res, 200, data);
+            respond(res, 200, JSON.stringify(data));
         } catch(err) {
             respond(res, isNan(err) ? 500 : err);
         }
