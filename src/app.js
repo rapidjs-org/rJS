@@ -7,7 +7,7 @@
 const config = {
 	defaultExtensionName: "html",
 	defaultFileName: "index",
-    dynamicPageDirPrefix: ":",
+	dynamicPageDirPrefix: ":",
 	webDirName: "web"
 };
 
@@ -107,17 +107,19 @@ function handleRequest(req, res) {
 
 		return;
 	}
-    // Block request if method is not handled
+	// Block request if method is not handled
 	const method = req.method.toLowerCase();
-    if(!["get", "post"].includes(method)) {
-        respond(res, 405);
+	if(!["get", "post"].includes(method)) {
+		respond(res, 405);
 
-        return;
-    }
+		return;
+	}
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
 	const urlParts = parseUrl(req.url, true);
-	if(urlParts.pathname.match(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`))[0].length > 0) {
-		const newUrl = urlParts.pathname.replace(new RegExp(`(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`), "")
+	let explicitBase;
+	if((explicitBase = urlParts.pathname.match(new RegExp(`\\/(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`)))
+		&& explicitBase[0].length > 1) {
+		const newUrl = urlParts.pathname.replace(explicitBase, "")
                      + (urlParts.search || "");
         
 		redirect(res, newUrl);
@@ -132,16 +134,16 @@ function handleRequest(req, res) {
 	res.setHeader("X-XSS-Protection", "1");
 	res.setHeader("X-Content-Type-Options", "nosniff");
 
-    // Apply the related handler
+	// Apply the related handler
 	if(method == "get") {
 		handleGET(res, urlParts.pathname);
 
-        return;
+		return;
 	} 
-    if(method == "post") {
+	if(method == "post") {
 		handlePOST(req, res, urlParts.pathname);
         
-        return;
+		return;
 	}
 
 	/**
@@ -169,7 +171,7 @@ function handleGET(res, pathname) {
 	let data;
 
 	// Stripe dynamic argument part fom pathname
-	pathname = pathname.replace(/(:[a-z0-9_-]+)+/i, "");
+	pathname = pathname.replace(new RegExp(`(\\${config.dynamicPageDirPrefix}[a-z0-9_-]+)+`, "i"), "");
 
 	if(customHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
@@ -179,16 +181,16 @@ function handleGET(res, pathname) {
 			respond(res, 200, data);
 		} catch(err) {
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
-            respond(res, isNan(err) ? 500 : err);
+			respond(res, isNaN(err) ? 500 : err);
 		}
 
-        return;
-    }
+		return;
+	}
 
 	let extension = extname(pathname).slice(1);
 
 	// Block request if whitelist enabled but requested extension not whitelisted
-    // or a dynamic page related file has been explixitly requested (restricted)
+	// or a dynamic page related file has been explixitly requested (restricted)
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)) {
 		redirectErrorPage(res, 403, pathname);
@@ -213,22 +215,22 @@ function handleGET(res, pathname) {
 		localPath += config.defaultFileName;
 	}
 	if(extension.length == 0) {
-        // Check if dynamic page setup corresponding to the request URL exists in file system
-        const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
-        if(existsSync(localPathDynamic)) {
-            // Use dynamic page root file path for further processing
-            localPath = localPathDynamic;
+		// Check if dynamic page setup corresponding to the request URL exists in file system
+		const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
+		if(existsSync(localPathDynamic)) {
+			// Use dynamic page root file path for further processing
+			localPath = localPathDynamic;
 
 			// Stop processing as request has already been closed due to handler exception
 			if(dynamicClose()) {
 				return;
 			}
-        } else {
-            // Add default extension if none explicitly stated in the request URL
-            localPath += `.${config.defaultExtensionName}`;
+		} else {
+			// Add default extension if none explicitly stated in the request URL
+			localPath += `.${config.defaultExtensionName}`;
 
 			extension = config.defaultExtensionName;
-        }
+		}
 	}
 
 	if(!existsSync(localPath)) {
@@ -238,13 +240,13 @@ function handleGET(res, pathname) {
 		return;
 	}
 
-    data = String(readFileSync(localPath));
+	data = String(readFileSync(localPath));
 
-    // Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
+	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
 	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers[config.defaultExtensionName] && extension.length == 0) ? finishHandlers[config.defaultExtensionName] : []);
 	definedFinishHandlers.forEach(finisher => {
-        data = String(finisher(data));
-    });
+		data = String(finisher(data));
+	});
 
 	cache.write(pathname, data);
 
@@ -285,49 +287,49 @@ function handleGET(res, pathname) {
  * @param {String} pathname URL pathname part
  */
 function handlePOST(req, res, pathname) {
-    if(!customHandlers.post[pathname]) {
-        // Block request if no related POST handler defined
-        respond(res, 404);
+	if(!customHandlers.post[pathname]) {
+		// Block request if no related POST handler defined
+		respond(res, 404);
 
-        return;
-    }
+		return;
+	}
 
-    let blockBodyProcessing;
-    let body = [];
-    req.on("data", chunk => {
-        body.push(chunk);
+	let blockBodyProcessing;
+	let body = [];
+	req.on("data", chunk => {
+		body.push(chunk);
 
-        const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
-        if(bodyByteSize > webConfig.maxPayloadBytes) {
-            // Block request if request payload is exceeds maximum size as put in web config
-            blockBodyProcessing = true;
+		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
+		if(bodyByteSize > webConfig.maxPayloadBytes) {
+			// Block request if request payload is exceeds maximum size as put in web config
+			blockBodyProcessing = true;
 
-            respond(res, 413);
-        }
-    });
-    req.on("end", _ => {
-        if(blockBodyProcessing) {
-            // Ignore further processing as maximum payload has been exceeded
-            return;
-        }
+			respond(res, 413);
+		}
+	});
+	req.on("end", _ => {
+		if(blockBodyProcessing) {
+			// Ignore further processing as maximum payload has been exceeded
+			return;
+		}
         
-        if(body.length == 0) {
-            body = null;
-        } else {
-            body = JSON.parse(body);
-        }
+		if(body.length == 0) {
+			body = null;
+		} else {
+			body = JSON.parse(body);
+		}
 
-        try {
-            const data = customHandlers.post[pathname](body, res);
+		try {
+			const data = customHandlers.post[pathname](body, res);
 
-            respond(res, 200, JSON.stringify(data));
-        } catch(err) {
-            respond(res, isNaN(err) ? 500 : err);
-        }
-    });
-    req.on("error", _ => {
-        respond(res, 500);
-    });
+			respond(res, 200, JSON.stringify(data));
+		} catch(err) {
+			respond(res, isNaN(err) ? 500 : err);
+		}
+	});
+	req.on("error", _ => {
+		respond(res, 500);
+	});
 }
 
 // Create web server instance
@@ -348,15 +350,15 @@ http.createServer((req, res) => {
  * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data. Throwing an error coe leads to a related response.
  */
 function finish(extension, callback) {
-    extension = extension.trim().replace(/^\./, "");
+	extension = extension.trim().replace(/^\./, "");
 
-    if(!finishHandlers[extension]) {
+	if(!finishHandlers[extension]) {
 		finishHandlers[extension] = [];
 	} else {
 		log(`Redunant finish handler set up for extension '${extension}'`);
 	}
 
-    finishHandlers[extension].push(callback);
+	finishHandlers[extension].push(callback);
 }
 
 /**
@@ -374,7 +376,7 @@ function route(method, pathname, callback) {
 
 	customHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
-    customHandlers[method][pathname] = callback;
+	customHandlers[method][pathname] = callback;
 }
 
 /**
@@ -386,7 +388,7 @@ function getWebPath() {
 }
 
 module.exports = {
-    finish,
+	finish,
 	route,
 	getWebPath
 };

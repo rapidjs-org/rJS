@@ -1,5 +1,3 @@
-const utils = require("./utils");
-
 const urlMap = new Map();
 
 /**
