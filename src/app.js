@@ -7,11 +7,11 @@
 const config = {
 	defaultExtensionName: "html",
 	defaultFileName: "index",
-    dynamicPageDirPrefix: "=",
+    dynamicPageDirPrefix: ":",
 	webDirName: "web"
 };
 
-const {existsSync, readFileSync, fstat} = require("fs");
+const {existsSync, readFileSync} = require("fs");
 const {extname, join, dirname, basename} = require("path");
 const {parse: parseUrl} = require("url");
 
@@ -168,6 +168,9 @@ function handleRequest(req, res) {
 function handleGET(res, pathname) {
 	let data;
 
+	// Stripe dynamic argument part fom pathname
+	pathname = pathname.replace(/(:[a-z0-9_-]+)+/i, "");
+
 	if(customHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
@@ -319,7 +322,7 @@ function handlePOST(req, res, pathname) {
 
             respond(res, 200, JSON.stringify(data));
         } catch(err) {
-            respond(res, isNan(err) ? 500 : err);
+            respond(res, isNaN(err) ? 500 : err);
         }
     });
     req.on("error", _ => {
@@ -332,6 +335,7 @@ http.createServer((req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
+		log("An internal server error occured:");
 		console.error(err);
 	}
 }).listen(webConfig.port, null, null, _ => {
@@ -346,7 +350,12 @@ http.createServer((req, res) => {
 function finish(extension, callback) {
     extension = extension.trim().replace(/^\./, "");
 
-    !finishHandlers[extension] && (finishHandlers[extension] = []);
+    if(!finishHandlers[extension]) {
+		finishHandlers[extension] = [];
+	} else {
+		log(`Redunant finish handler set up for extension '${extension}'`);
+	}
+
     finishHandlers[extension].push(callback);
 }
 
@@ -362,6 +371,8 @@ function route(method, pathname, callback) {
 	if(!["get", "post"].includes(method)) {
 		throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
 	}
+
+	customHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
     customHandlers[method][pathname] = callback;
 }
