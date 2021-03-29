@@ -245,10 +245,7 @@ function handleGET(res, pathname) {
 	data = String(readFileSync(localPath));
 
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
-	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers["html"] && extension.length == 0) ? finishHandlers["html"] : []);
-	definedFinishHandlers.forEach(finisher => {
-		data = String(finisher(data, localPath));
-	});
+	data = finish(extension, data);
 
 	cache.write(pathname, data);
 
@@ -352,12 +349,27 @@ http.createServer((req, res) => {
  * @param {String} extension Extension name (without a leading dot) 
  * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code leads to a related response.
  */
-function finish(extension, callback) {
+function finisher(extension, callback) {
 	extension = extension.trim().replace(/^\./, "");
 
 	!finishHandlers[extension] && (finishHandlers[extension] = []);
 	
 	finishHandlers[extension].push(callback);
+}
+
+/**
+ * Call finisher for a specific extension.
+ * @param {String} extension Extension name
+ * @param {String} data Data to finish
+ * @returns {String} Finished data
+ */
+function finish(extension, data) {
+	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers["html"] && extension.length == 0) ? finishHandlers["html"] : []);
+	definedFinishHandlers.forEach(finisher => {
+		return String(finisher(data, localPath));
+	});
+
+	return data;
 }
 
 /**
@@ -418,7 +430,7 @@ function initFeature(featureDir, frontendModuleFileName, config) {
 	}
 
 	// Add finisher
-	finish("", data => {
+	finisher("", data => {
 		if(!frontendModuleData) {
 			return;
 		}
@@ -443,6 +455,7 @@ function initFeature(featureDir, frontendModuleFileName, config) {
 
 // TODO: Expose chaching method?
 module.exports = {
+	finisher,
 	finish,
 	route,
 	webPath,
