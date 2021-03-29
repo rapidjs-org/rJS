@@ -5,7 +5,6 @@
 
 // Local config
 const config = {
-	defaultExtensionName: "html",
 	defaultFileName: "index",
 	dynamicPageDirPrefix: ":",
 	webDirName: "web"
@@ -56,7 +55,7 @@ function redirectErrorPage(res, status, path) {
 	do {
 		path = dirname(path);
 		let errorPagePath = join(path, String(status));
-		if(existsSync(`${join(WEB_PATH, errorPagePath)}.${config.defaultExtensionName}`)) {
+		if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
 			redirect(res, errorPagePath);
             
 			return;
@@ -117,7 +116,7 @@ function handleRequest(req, res) {
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
 	const urlParts = parseUrl(req.url, true);
 	let explicitBase;
-	if((explicitBase = urlParts.pathname.match(new RegExp(`\\/(${config.defaultFileName})?(\\.${config.defaultExtensionName})?$`)))
+	if((explicitBase = urlParts.pathname.match(new RegExp(`\\/(${config.defaultFileName})?(\\.html)?$`)))
 		&& explicitBase[0].length > 1) {
 		const newUrl = urlParts.pathname.replace(explicitBase, "")
                      + (urlParts.search || "");
@@ -192,13 +191,13 @@ function handleGET(res, pathname) {
 	// Block request if whitelist enabled but requested extension not whitelisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
-    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)) {
+    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)) {	// TODO: Non-standalone file prefix?
 		redirectErrorPage(res, 403, pathname);
 
 		return;
 	}
 
-	const mime = mimeTypes[(extension.length > 0) ? extension : config.defaultExtensionName];
+	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
 
 	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
@@ -216,7 +215,7 @@ function handleGET(res, pathname) {
 	}
 	if(extension.length == 0) {
 		// Check if dynamic page setup corresponding to the request URL exists in file system
-		const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.${config.defaultExtensionName}`);
+		const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.html`);
 		if(existsSync(localPathDynamic)) {
 			// Use dynamic page root file path for further processing
 			localPath = localPathDynamic;
@@ -227,9 +226,9 @@ function handleGET(res, pathname) {
 			}
 		} else {
 			// Add default extension if none explicitly stated in the request URL
-			localPath += `.${config.defaultExtensionName}`;
+			localPath += ".html";
 
-			extension = config.defaultExtensionName;
+			extension = "html";
 		}
 	}
 
@@ -243,9 +242,9 @@ function handleGET(res, pathname) {
 	data = String(readFileSync(localPath));
 
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
-	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers[config.defaultExtensionName] && extension.length == 0) ? finishHandlers[config.defaultExtensionName] : []);
+	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers["html"] && extension.length == 0) ? finishHandlers["html"] : []);
 	definedFinishHandlers.forEach(finisher => {
-		data = String(finisher(data));
+		data = String(finisher(data, localPath));
 	});
 
 	cache.write(pathname, data);
@@ -330,11 +329,12 @@ function handlePOST(req, res, pathname) {
 	req.on("error", _ => {
 		respond(res, 500);
 	});
-}
+}	// TODO: Fix 404 redirect issue
 
 // Create web server instance
 http.createServer((req, res) => {
 	try {
+		console.log(req.url)
 		handleRequest(req, res);
 	} catch(err) {
 		log("An internal server error occured:");
@@ -347,17 +347,13 @@ http.createServer((req, res) => {
 /**
  * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed a data string to finish returning the eventually send response data. Throwing an error coe leads to a related response.
+ * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code leads to a related response.
  */
 function finish(extension, callback) {
 	extension = extension.trim().replace(/^\./, "");
 
-	if(!finishHandlers[extension]) {
-		finishHandlers[extension] = [];
-	} else {
-		log(`Redunant finish handler set up for extension '${extension}'`);
-	}
-
+	!finishHandlers[extension] && (finishHandlers[extension] = []);
+	
 	finishHandlers[extension].push(callback);
 }
 
@@ -365,7 +361,7 @@ function finish(extension, callback) {
  * Set up a custom route handler for a certain method.
  * @param {String} method Method to bind route to
  * @param {String} pathname Pathname to bind route to
- * @param {Function} callback Callback getting passed the body object of the request returning the eventually send response data
+ * @param {Function} callback Callback getting passed the response object and – if applicable – the request's body object returning the eventually send response data
  */
 function route(method, pathname, callback) {
 	method = String(method).trim().toLowerCase();
@@ -383,12 +379,71 @@ function route(method, pathname, callback) {
  * Get the web file path on disc.
  * @returns {String} Web file path
  */
-function getWebPath() {
+function webPath() {
 	return WEB_PATH;
 }
 
+/**
+ * Get a value from the config object.
+ * @param {String} key Key name
+ * @returns {*} Associated value if defined
+ */
+function getFromConfig(key) {
+	return webConfig[key];
+}
+
+function initFeature(featureDir, frontendModuleFileName, config) {
+	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
+	let frontendModuleData;
+	let frontendFilePath = join(featureDir, "frontend.js");
+	if(existsSync(frontendFilePath)) {
+		frontendModuleData = String(readFileSync(frontendFilePath));
+		config && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
+			let value = config[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
+			(value !== undefined && value !== null && isNaN(value)) && (value = `"${value}"`);
+			
+			frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
+		});
+		// Wrap in module construct in roder to work extensibly in frontend and reduce script complexity
+		frontendModuleData = `
+			"use strict";
+			var RAPID = (module => {
+			${frontendModuleData}
+			return module;
+			})(RAPID || {});
+		`;
+	}
+
+	// Add finisher
+	finish("", data => {
+		if(!frontendModuleData) {
+			return;
+		}
+
+		// Insert frontend module loading script tag
+		const headInsertionIndex = data.search(/<\s*\/head\s*>/);
+		if(headInsertionIndex == -1) {
+			return data;
+		}
+		data = data.slice(0, headInsertionIndex) + `<script src="/rapid.${frontendModuleFileName}.frontend.js"></script>` + data.slice(headInsertionIndex);
+		
+		return data;
+	});
+
+	// Add GET route to retrieve frontend module script
+	route("get", `/${frontendModuleFileName}`, res => {
+		res.setHeader("Content-Type", "text/javascript");
+
+		return frontendModuleData;
+	});
+}
+
+// TODO: Expose chaching method?
 module.exports = {
 	finish,
 	route,
-	getWebPath
+	webPath,
+	config: getFromConfig,
+	initFeature,
+	log
 };
