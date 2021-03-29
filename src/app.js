@@ -7,6 +7,7 @@
 const config = {
 	defaultFileName: "index",
 	dynamicPageDirPrefix: ":",
+	nonStandaloneFilePrefix: "_",
 	webDirName: "web"
 };
 
@@ -190,8 +191,10 @@ function handleGET(res, pathname) {
 
 	// Block request if whitelist enabled but requested extension not whitelisted
 	// or a dynamic page related file has been explixitly requested (restricted)
+	// or a non-standalone file has been requested
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
-    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)) {	// TODO: Non-standalone file prefix?
+    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
+	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
 		redirectErrorPage(res, 403, pathname);
 
 		return;
