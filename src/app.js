@@ -245,7 +245,7 @@ function handleGET(res, pathname) {
 	data = String(readFileSync(localPath));
 
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
-	data = finish(extension, data);
+	data = finish(extension, data, localPath);
 
 	cache.write(pathname, data);
 
@@ -334,11 +334,10 @@ function handlePOST(req, res, pathname) {
 // Create web server instance
 http.createServer((req, res) => {
 	try {
-		console.log(req.url)
 		handleRequest(req, res);
 	} catch(err) {
 		log("An internal server error occured:");
-		console.error(err);
+		log(err);
 	}
 }).listen(webConfig.port, null, null, _ => {
 	log("Server started");
@@ -361,12 +360,13 @@ function finisher(extension, callback) {
  * Call finisher for a specific extension.
  * @param {String} extension Extension name
  * @param {String} data Data to finish
+ * @param {String} [pathname] Pathname of request
  * @returns {String} Finished data
  */
-function finish(extension, data) {
+function finish(extension, data, pathname) {
 	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers["html"] && extension.length == 0) ? finishHandlers["html"] : []);
 	definedFinishHandlers.forEach(finisher => {
-		return String(finisher(data, localPath));
+		data = String(finisher(data, pathname));
 	});
 
 	return data;
@@ -407,30 +407,34 @@ function getFromConfig(key) {
 	return webConfig[key];
 }
 
-function initFeature(featureDir, frontendModuleFileName, config) {
+function initFeatureFrontend(featureDir, frontendModuleFileName, config) {
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
 	let frontendFilePath = join(featureDir, "frontend.js");
-	if(existsSync(frontendFilePath)) {
-		frontendModuleData = String(readFileSync(frontendFilePath));
-		config && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
-			let value = config[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
-			(value !== undefined && value !== null && isNaN(value)) && (value = `"${value}"`);
-			
-			frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
-		});
-		// Wrap in module construct in roder to work extensibly in frontend and reduce script complexity
-		frontendModuleData = `
-			"use strict";
-			var RAPID = (module => {
-			${frontendModuleData}
-			return module;
-			})(RAPID || {});
-		`;
+	if(!existsSync(frontendFilePath)) {
+		return;
 	}
 
+	frontendModuleData = String(readFileSync(frontendFilePath));
+	config && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
+		let value = config[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
+		(value !== undefined && value !== null && isNaN(value)) && (value = `"${value}"`);
+		
+		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
+	});
+	// Wrap in module construct in roder to work extensibly in frontend and reduce script complexity
+	frontendModuleData = `
+		"use strict";
+		var RAPID = (module => {
+		${frontendModuleData}
+		return module;
+		})(RAPID || {});
+	`;
+
+	const frontendFileLocation = `/rapid.${frontendModuleFileName}.frontend.js`;
+
 	// Add finisher
-	finisher("", data => {
+	finisher("html", data => {	// TODO: Which extension?
 		if(!frontendModuleData) {
 			return;
 		}
@@ -440,18 +444,20 @@ function initFeature(featureDir, frontendModuleFileName, config) {
 		if(headInsertionIndex == -1) {
 			return data;
 		}
-		data = data.slice(0, headInsertionIndex) + `<script src="/rapid.${frontendModuleFileName}.frontend.js"></script>` + data.slice(headInsertionIndex);
-		
+		data = data.slice(0, headInsertionIndex) + `<script src="${frontendFileLocation}"></script>` + data.slice(headInsertionIndex);
 		return data;
 	});
 
 	// Add GET route to retrieve frontend module script
-	route("get", `/${frontendModuleFileName}`, res => {
+	route("get", `${frontendFileLocation}`, res => {
 		res.setHeader("Content-Type", "text/javascript");
 
 		return frontendModuleData;
 	});
 }
+
+// Init frontend base file to provide reusable methods among features
+initFeatureFrontend(__dirname, "base");
 
 // TODO: Expose chaching method?
 module.exports = {
@@ -460,6 +466,6 @@ module.exports = {
 	route,
 	webPath,
 	config: getFromConfig,
-	initFeature,
+	initFeatureFrontend,
 	log
 };
