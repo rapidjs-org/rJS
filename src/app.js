@@ -28,9 +28,10 @@ const mimeTypes = require("./mime-types");
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
-// Request finish and custom method handler objects
-let finishHandlers = {};
-let customHandlers = {
+// Request reader, finisher and custom method handler objects
+let readerHandlers = {};
+let finisherHandlers = {};
+let routeHandlers = {
 	get: [],
 	post: []
 };
@@ -89,6 +90,21 @@ function respond(res, status, message) {
 }
 
 /**
+ * Respond by a simple response or redirecting to an error page depending on the request method.
+ * @helper
+ * @param {Number} status Status code
+ */
+function respondProperly(res, method, pathname, status) {
+	if(method.toLowerCase() == "get") {
+		redirectErrorPage(res, status, pathname);
+
+		return;
+	}
+
+	respond(res, status);
+}
+
+/**
  * Handle a single request.
  * @param {Object} req Request object
  * @param {Object} res Response object
@@ -97,13 +113,13 @@ function handleRequest(req, res) {
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
-		respondProperly(429);
+		respondProperly(res, req.method, req.url, 429);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(req.url.length > webConfig.maxUrlLength) {
-		respondProperly(414);
+		respondProperly(res, req.method, req.url, 414);
 
 		return;
 	}
@@ -145,27 +161,12 @@ function handleRequest(req, res) {
         
 		return;
 	}
-
-	/**
-     * Respond by a simple response or redirecting to an error page depending on the request method.
-     * @helper
-     * @param {Number} status Status code
-     */
-	function respondProperly(status) {
-		if(req.method.toLowerCase() == "get") {
-			redirectErrorPage(res, status, req.url);
-
-			return;
-		}
-
-		respond(res, status);
-	}
 }
 
 /**
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
- * @param {String} pathname URL pathname part
+ * @param {String} pathname URL pathname part<<
  */
 function handleGET(res, pathname) {
 	let data;
@@ -173,15 +174,15 @@ function handleGET(res, pathname) {
 	// Stripe dynamic argument part fom pathname
 	pathname = pathname.replace(new RegExp(`(\\${config.dynamicPageDirPrefix}[a-z0-9_-]+)+`, "i"), "");
 
-	if(customHandlers.get[pathname]) {
+	if(routeHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			data = customHandlers.get[pathname](res);
+			data = routeHandlers.get[pathname](res);
 
 			respond(res, 200, data);
 		} catch(err) {
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
-			respond(res, isNaN(err) ? 500 : err);
+			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 		}
 
 		return;
@@ -195,7 +196,7 @@ function handleGET(res, pathname) {
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
-		redirectErrorPage(res, 403, pathname);
+		respondProperly(res, "get", pathname, isNaN(err) ? 403 : err);
 
 		return;
 	}
@@ -237,15 +238,32 @@ function handleGET(res, pathname) {
 
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
-		redirectErrorPage(res, 404, localPath);
+		respondProperly(res, "get", pathname, isNaN(err) ? 404 : err);
 
 		return;
 	}
 
-	data = String(readFileSync(localPath));
+	// Read file either by custom reader handler or by default reader
+	if(readerHandlers[extension]) {
+		try {
+			data = String(readerHandlers[extension](localPath));
+		} catch(err) {
+			log(err);
+			
+			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+		}
+	} else {
+		data = String(readFileSync(localPath));
+	}
 
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
-	data = finish(extension, data, localPath);
+	try {
+		data = finish(extension, data, localPath);
+	} catch(err) {
+		log(err);
+		
+		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);	// TODO: Determine type of redirect
+	}
 
 	cache.write(pathname, data);
 
@@ -270,7 +288,7 @@ function handleGET(res, pathname) {
 				return;
 			}
 
-			redirectErrorPage(res, isNaN(err) ? 404 : err, localPath);
+			respondProperly(res, "get", localPath, isNaN(err) ? 404 : err);
 
 			return true;
 		}
@@ -286,7 +304,7 @@ function handleGET(res, pathname) {
  * @param {String} pathname URL pathname part
  */
 function handlePOST(req, res, pathname) {
-	if(!customHandlers.post[pathname]) {
+	if(!routeHandlers.post[pathname]) {
 		// Block request if no related POST handler defined
 		respond(res, 404);
 
@@ -319,7 +337,7 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			const data = customHandlers.post[pathname](body, res);
+			const data = routeHandlers.post[pathname](body, res);
 
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
@@ -344,16 +362,38 @@ http.createServer((req, res) => {
 });
 
 /**
+ * Set up a handler to read each GET request response data in of a certain file extension in a specific manner (instead of using the default reader).
+ * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
+ * @param {String} extension Extension name (without a leading dot) 
+ * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code leads to a related response.
+ */
+function reader(extension, callback) {
+	extension = extension.trim().replace(/^\./, "");
+
+	if(["", "html"].includes(extension)) {
+		// Default markup file extensions may not be read custom
+		log("Default markup files may not be read custom {'', 'html'}");
+
+		return;
+	}
+
+	!readerHandlers[extension] && (readerHandlers[extension] = []);
+	
+	readerHandlers[extension] = callback;
+}
+
+/**
  * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
+ * Multiple finisher handlers may be set up per extension to be applied in order of setup.
  * @param {String} extension Extension name (without a leading dot) 
  * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code leads to a related response.
  */
 function finisher(extension, callback) {
 	extension = extension.trim().replace(/^\./, "");
 
-	!finishHandlers[extension] && (finishHandlers[extension] = []);
+	!finisherHandlers[extension] && (finisherHandlers[extension] = []);
 	
-	finishHandlers[extension].push(callback);
+	finisherHandlers[extension].push(callback);
 }
 
 /**
@@ -364,7 +404,7 @@ function finisher(extension, callback) {
  * @returns {String} Finished data
  */
 function finish(extension, data, pathname) {
-	let definedFinishHandlers = (finishHandlers[extension] || []).concat((finishHandlers["html"] && extension.length == 0) ? finishHandlers["html"] : []);
+	let definedFinishHandlers = (finisherHandlers[extension] || []).concat((finisherHandlers["html"] && extension.length == 0) ? finisherHandlers["html"] : []);
 	definedFinishHandlers.forEach(finisher => {
 		data = String(finisher(data, pathname));
 	});
@@ -385,9 +425,9 @@ function route(method, pathname, callback) {
 		throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
 	}
 
-	customHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
+	routeHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
-	customHandlers[method][pathname] = callback;
+	routeHandlers[method][pathname] = callback;
 }
 
 /**
@@ -461,6 +501,7 @@ initFeatureFrontend(__dirname, "base");
 
 // TODO: Expose chaching method?
 module.exports = {
+	reader,
 	finisher,
 	finish,
 	route,
