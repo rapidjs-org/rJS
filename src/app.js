@@ -238,7 +238,7 @@ function handleGET(res, pathname) {
 
 	if(!existsSync(localPath)) {
 		// Redirect to the related error page if requested file does not exist
-		respondProperly(res, "get", pathname, isNaN(err) ? 404 : err);
+		respondProperly(res, "get", pathname, 404);
 
 		return;
 	}
