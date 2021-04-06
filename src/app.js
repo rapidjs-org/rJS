@@ -104,6 +104,8 @@ function respondProperly(res, method, pathname, status) {
 	respond(res, status);
 }
 
+// TODO: CACHE TO PASS TO FEATURES (AND IMPLEMENTATION IN EXISTING)
+
 /**
  * Handle a single request.
  * @param {Object} req Request object
@@ -246,10 +248,10 @@ function handleGET(res, pathname) {
 	// Read file either by custom reader handler or by default reader
 	if(readerHandlers[extension]) {
 		try {
-			data = String(readerHandlers[extension](localPath));
+			data = read(extension, localPath);
 		} catch(err) {
 			log(err);
-			
+						
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 		}
 	} else {
@@ -376,10 +378,24 @@ function reader(extension, callback) {
 
 		return;
 	}
-
+	
 	!readerHandlers[extension] && (readerHandlers[extension] = []);
 	
 	readerHandlers[extension] = callback;
+}
+
+/**
+ * Call reader for a specific extension.
+ * @param {String} extension Extension name
+ * @param {String} pathname Pathname of request
+ * @returns {String} Finished data
+ */
+function read(extension, pathname) {
+	if(!utils.isFunction(readerHandlers[extension])) {
+		throw new ReferenceError(`No custom file reader defined for extension '${extension}'`);
+	}
+
+	return String(readerHandlers[extension](pathname))
 }
 
 /**
@@ -502,6 +518,7 @@ initFeatureFrontend(__dirname, "base");
 // TODO: Expose chaching method?
 module.exports = {
 	reader,
+	read,
 	finisher,
 	finish,
 	route,
