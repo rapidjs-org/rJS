@@ -36,6 +36,11 @@ let routeHandlers = {
 	post: []
 };
 
+function logError(err) {
+	log("An internal server error occured:");
+	console.error(err);
+}
+
 /**
  * Perform a redirect to a given path.
  * @param {Object} res - Open response object
@@ -246,15 +251,17 @@ function handleGET(res, pathname) {
 	}
 
 	// Read file either by custom reader handler or by default reader
-	if(readerHandlers[extension]) {
-		try {
-			data = read(extension, localPath);
-		} catch(err) {
+	try {
+		data = read(extension, localPath);
+	} catch(err) {
+		if(err !== 1) {
 			log(err);
 						
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+
+			return;
 		}
-	} else {
+
 		data = String(readFileSync(localPath));
 	}
 
@@ -344,6 +351,8 @@ function handlePOST(req, res, pathname) {
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
 			respond(res, isNaN(err) ? 500 : err);
+
+			isNaN(err) && logError(err);
 		}
 	});
 	req.on("error", _ => {
@@ -356,11 +365,14 @@ http.createServer((req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
-		log("An internal server error occured:");
-		log(err);
+		logError(err);
 	}
 }).listen(webConfig.port, null, null, _ => {
-	log("Server started");
+	log(`Server started listening on port ${webConfig.port}`);
+
+	if(webConfig.devMode) {
+		log("DEV MODE");
+	}
 });
 
 /**
@@ -378,7 +390,7 @@ function reader(extension, callback) {
 
 		return;
 	}
-	
+
 	!readerHandlers[extension] && (readerHandlers[extension] = []);
 	
 	readerHandlers[extension] = callback;
@@ -392,7 +404,7 @@ function reader(extension, callback) {
  */
 function read(extension, pathname) {
 	if(!utils.isFunction(readerHandlers[extension])) {
-		throw new ReferenceError(`No custom file reader defined for extension '${extension}'`);
+		throw 1;
 	}
 
 	return String(readerHandlers[extension](pathname))

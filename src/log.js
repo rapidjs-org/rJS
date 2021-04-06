@@ -1,9 +1,13 @@
+const config = {
+	appName: "rapid"
+};
+
 /**
  * Log a message to the console.
  * @param {String} message Message
  */
 function log(message) {
-	console.log(message);
+	console.log(`[${config.appName}] ${message}`);
 }
 
 /**
@@ -14,5 +18,6 @@ module.exports = isEnabled => {
 	if(!isEnabled) {
 		return _ => {};
 	}
+
 	return log;
 };
