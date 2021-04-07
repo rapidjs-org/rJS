@@ -1,9 +1,9 @@
 module.exports = requireNames => {
-    const server = require("./app");
+	const server = require("./app");
 
-    requireNames.forEach(name => {
-        require(name)(server);
-    });
+	requireNames.forEach(name => {
+		require(name)(server);
+	});
 
-    return server;
+	return server;
 };
