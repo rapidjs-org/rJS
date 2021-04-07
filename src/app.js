@@ -286,7 +286,7 @@ function handleGET(res, pathname) {
 			return;
 		}
 
-		data = String(readFileSync(localPath));
+		data = readFileSync(localPath);
 	}
 
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
@@ -424,14 +424,14 @@ function reader(extension, callback) {
  * Call reader for a specific extension.
  * @param {String} extension Extension name
  * @param {String} pathname Pathname of request
- * @returns {String} Finished data
+ * @returns {*} Finished data
  */
 function read(extension, pathname) {
 	if(!utils.isFunction(readerHandlers[extension])) {
 		throw 1;
 	}
 
-	return String(readerHandlers[extension](pathname));
+	return readerHandlers[extension](pathname);
 }
 
 /**
@@ -453,12 +453,12 @@ function finisher(extension, callback) {
  * @param {String} extension Extension name
  * @param {String} data Data to finish
  * @param {String} [pathname] Pathname of request
- * @returns {String} Finished data
+ * @returns {*} Finished data
  */
 function finish(extension, data, pathname) {
 	let definedFinishHandlers = (finisherHandlers[extension] || []).concat((finisherHandlers["html"] && extension.length == 0) ? finisherHandlers["html"] : []);
 	definedFinishHandlers.forEach(finisher => {
-		data = String(finisher(data, pathname));
+		data = finisher(String(data), pathname);
 	});
 
 	return data;
