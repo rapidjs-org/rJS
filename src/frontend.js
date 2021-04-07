@@ -16,4 +16,4 @@ module.post = function(url, body) {
 		referrerPolicy: "no-referrer",
 		body: JSON.stringify(body)
 	});
-}
+};

@@ -5,8 +5,16 @@
 
 // Local config
 const config = {
+	configFileName: {
+		default: "default.config.json",
+		custom: "rapid.config.json"
+	},
 	defaultFileName: "index",
 	dynamicPageDirPrefix: ":",
+	mimesFileName: {
+		default: "default.mimes.json",
+		custom: "rapid.mimes.json"
+	},
 	nonStandaloneFilePrefix: "_",
 	webDirName: "web"
 };
@@ -17,14 +25,30 @@ const {parse: parseUrl} = require("url");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 
-const webConfig = require("./web-config")(WEB_PATH);
-
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
 const cache = require("./cache");
-const log = require("./log")(webConfig.logMessages);
 
-const mimeTypes = require("./mime-types");
+// Read config files (general configuration, MIMES)
+/**
+ * Read a custom configuration file and merge it (overriding) with the default configuration file.
+ * @returns {Object} Resulting configuration object
+ */
+const readConfigFile = (webPath, defaultName, customName) => {
+	const defaultFile = require(`./${defaultName}`);
+	const customFilePath = join(dirname(webPath), customName);
+	if(!existsSync(customFilePath)) {
+		return defaultFile;
+	}
+	const customFile = require(customFilePath);
+	
+	return {...defaultFile, ...customFile};
+};
+
+const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
+const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
+
+const log = require("./log")(webConfig.logMessages);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
@@ -203,7 +227,7 @@ function handleGET(res, pathname) {
 	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
-		respondProperly(res, "get", pathname, isNaN(err) ? 403 : err);
+		respondProperly(res, "get", pathname, 403);
 
 		return;
 	}
@@ -407,7 +431,7 @@ function read(extension, pathname) {
 		throw 1;
 	}
 
-	return String(readerHandlers[extension](pathname))
+	return String(readerHandlers[extension](pathname));
 }
 
 /**
