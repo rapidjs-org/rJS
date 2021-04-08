@@ -536,19 +536,13 @@ function initFeatureFrontend(featureDir, featureName, featureConfig) {
 
 	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
-	// Add finisher
-	finisher("html", data => {	// TODO: Which extension?
+	// Add finisher for inserting the script tag into markup files
+	finisher("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
 		if(!frontendModuleData) {
 			return;
 		}
 
-		// Insert frontend module loading script tag
-		const headInsertionIndex = data.search(/<\s*\/head\s*>/);
-		if(headInsertionIndex == -1) {
-			return data;
-		}
-		data = data.slice(0, headInsertionIndex) + `<script src="${frontendFileLocation}"></script>` + data.slice(headInsertionIndex);
-		return data;
+		return appendHead(data, `<script src="${frontendFileLocation}"></script>`);
 	});
 
 	// Add GET route to retrieve frontend module script
@@ -557,6 +551,20 @@ function initFeatureFrontend(featureDir, featureName, featureConfig) {
 
 		return frontendModuleData;
 	});
+}
+
+/**
+ * Append a markup file head tag by a given string (if markup contains head tag).
+ * @param {String} markup Markup
+ * @param {String} str String to append head by
+ * @returns {String} Markup with updated head tag
+ */
+function appendHead(markup, str) {
+	const headInsertionIndex = markup.search(/<\s*\/head\s*>/);
+	if(headInsertionIndex == -1) {
+		return markup;
+	}
+	return markup.slice(0, headInsertionIndex) + str + markup.slice(headInsertionIndex);
 }
 
 // Init frontend base file to provide reusable methods among features
@@ -572,5 +580,6 @@ module.exports = {
 	webPath,
 	config: getFromConfig,
 	initFeatureFrontend,
+	appendHead,
 	log
 };
