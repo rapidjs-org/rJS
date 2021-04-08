@@ -11,6 +11,11 @@ const config = {
 	},
 	defaultFileName: "index",
 	dynamicPageDirPrefix: ":",
+	frontendModuleAppName: "RAPID",
+	frontendModuleReferenceName: {
+		external: "module",
+		internal: "_rapid"
+	},
 	mimesFileName: {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
@@ -500,7 +505,7 @@ function getFromConfig(key) {
 	return webConfig[key];
 }
 
-function initFeatureFrontend(featureDir, frontendModuleFileName, config) {
+function initFeatureFrontend(featureDir, featureName, featureConfig) {
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
 	let frontendFilePath = join(featureDir, "frontend.js");
@@ -509,22 +514,27 @@ function initFeatureFrontend(featureDir, frontendModuleFileName, config) {
 	}
 
 	frontendModuleData = String(readFileSync(frontendFilePath));
-	config && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
-		let value = config[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
+	featureConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
+		let value = featureConfig[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
 		(value !== undefined && value !== null && isNaN(value)) && (value = `"${value}"`);
 		
 		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
 	});
-	// Wrap in module construct in roder to work extensibly in frontend and reduce script complexity
+
+	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
 	frontendModuleData = `
 		"use strict";
-		var RAPID = (module => {
+		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {
+		var ${config.frontendModuleReferenceName.external} = {};
 		${frontendModuleData}
-		return module;
-		})(RAPID || {});
+		${config.frontendModuleReferenceName.internal}["${featureName}"] = ${config.frontendModuleReferenceName.external}
+		return ${config.frontendModuleReferenceName.internal};
+		})(${config.frontendModuleAppName} || {});
 	`;
 
-	const frontendFileLocation = `/rapid.${frontendModuleFileName}.frontend.js`;
+	// TODO: Check if internal name used to make unique?
+
+	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
 	// Add finisher
 	finisher("html", data => {	// TODO: Which extension?
@@ -550,7 +560,7 @@ function initFeatureFrontend(featureDir, frontendModuleFileName, config) {
 }
 
 // Init frontend base file to provide reusable methods among features
-initFeatureFrontend(__dirname, "base");
+initFeatureFrontend(__dirname, "core");
 
 // TODO: Expose chaching method?
 module.exports = {
