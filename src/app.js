@@ -124,7 +124,7 @@ function respond(res, status, message) {
  * @param {Number} status Status code
  */
 function respondProperly(res, method, pathname, status) {
-	if(method.toLowerCase() == "get") {
+	if(method.toLowerCase() == "get" && ["html", ""].includes(extname(pathname).slice(1).toLowerCase())) {
 		redirectErrorPage(res, status, pathname);
 
 		return;
@@ -221,10 +221,12 @@ function handleGET(res, pathname) {
 
 	let extension = extname(pathname).slice(1);
 
+	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
+	
 	// Block request if whitelist enabled but requested extension not whitelisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
-	if(extension.length > 0 && webConfig.extensionWhitelist && webConfig.extensionWhitelist.includes(extension)
+	if(extension.length > 0 && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
@@ -232,7 +234,6 @@ function handleGET(res, pathname) {
 		return;
 	}
 
-	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
 
 	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
@@ -288,7 +289,7 @@ function handleGET(res, pathname) {
 
 		data = readFileSync(localPath);
 	}
-
+	
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
 	try {
 		data = finish(extension, data, localPath);
