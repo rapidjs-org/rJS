@@ -1,7 +1,7 @@
-const urlMap = new Map();
+const storage = new Map();
 
 // Frequency of cache refreshing in ms (no refreshing if value is false)
-let cacheRefreshFrequency;
+let _cacheRefreshFrequency;
 
 /**
  * Check if the cache holds an entry for the requested URL (pathname as key).
@@ -9,12 +9,12 @@ let cacheRefreshFrequency;
  * @param {String} key Unique key (normalize URLs)
  * @returns {Boolean} Whether the cache holds an entry for the requested URL
  */
-function has(url) {
-	if(!urlMap.has(url)) {
+function has(key) {
+	if(!storage.has(key)) {
 		return false;
 	}
-	if(cacheRefreshFrequency && (urlMap.get(url).time + cacheRefreshFrequency) < Date.now()) {
-		urlMap.delete(url);
+	if(_cacheRefreshFrequency && (storage.get(key).time + (_cacheRefreshFrequency || Math.infiniti)) < Date.now()) {
+		storage.delete(key);
         
 		return false;
 	}
@@ -27,8 +27,8 @@ function has(url) {
  * @param {String} key Unique key (normalize URLs)
  * @returns {String|Buffer} Data
  */
-function read(url) {
-	return urlMap.get(url).data;
+function read(key) {
+	return storage.get(key).data;
 }
 
 /**
@@ -36,15 +36,19 @@ function read(url) {
  * @param {String} key Unique key (normalize URLs)
  * @param {String|Buffer} data Data to write to cache
  */
-function write(url, data) {
-	urlMap.set(url, {
+function write(key, data) {
+	if(_cacheRefreshFrequency == 0) {
+		return;
+	}
+
+	storage.set(key, {
 		time: Date.now(),
 		data: data
 	});
 }
 
-module.exports = refreshFrequency => {
-	cacheRefreshFrequency = refreshFrequency;
+module.exports = cacheRefreshFrequency => {
+	_cacheRefreshFrequency = cacheRefreshFrequency;
 
 	return {
 		has,
