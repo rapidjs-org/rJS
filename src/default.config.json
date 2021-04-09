@@ -2,10 +2,10 @@
     "allowFramedLoading": true,
     "cacheRefreshFrequency": 3000,
     "devMode": false,
-    "logMessages": true,
     "maxPayloadBytes": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": 7373,
-    "useHttps": false
+    "useHttps": false,
+    "verbouse": true
 }

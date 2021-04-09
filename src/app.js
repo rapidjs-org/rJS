@@ -32,7 +32,6 @@ const WEB_PATH = join(require.main.path, config.webDirName);
 
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
-const cache = require("./cache");
 
 // Read config files (general configuration, MIMES)
 /**
@@ -53,7 +52,8 @@ const readConfigFile = (webPath, defaultName, customName) => {
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
 
-const log = require("./log")(webConfig.logMessages);
+const cache = require("./cache")(webConfig.cacheRefreshFrequency);
+const log = require("./log")(webConfig.verbouse);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
@@ -241,7 +241,7 @@ function handleGET(res, pathname) {
 
 	mime && res.setHeader("Content-Type", mime);
 
-	if(cache.has(pathname, webConfig.cacheRefreshFrequency)) {
+	if(cache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
 		respond(res, 200, cache.read(pathname));
 
@@ -388,22 +388,7 @@ function handlePOST(req, res, pathname) {
 	req.on("error", _ => {
 		respond(res, 500);
 	});
-}	// TODO: Fix 404 redirect issue
-
-// Create web server instance
-http.createServer((req, res) => {
-	try {
-		handleRequest(req, res);
-	} catch(err) {
-		logError(err);
-	}
-}).listen(webConfig.port, null, null, _ => {
-	log(`Server started listening on port ${webConfig.port}`);
-
-	if(webConfig.devMode) {
-		log("DEV MODE");
-	}
-});
+}
 
 /**
  * Set up a handler to read each GET request response data in of a certain file extension in a specific manner (instead of using the default reader).
@@ -567,8 +552,34 @@ function appendHead(markup, str) {
 	return markup.slice(0, headInsertionIndex) + str + markup.slice(headInsertionIndex);
 }
 
+/**
+ * Create a custom cache object.
+ * @param {Number} cacheRefreshFrequency 
+ * @returns {Object} Cache object
+ */
+function createCache(cacheRefreshFrequency) {
+	return require("./cache")(cacheRefreshFrequency);
+}
+
+// Initial actions
+
 // Init frontend base file to provide reusable methods among features
 initFeatureFrontend(__dirname, "core");
+
+// Create web server instance
+http.createServer((req, res) => {
+	try {
+		handleRequest(req, res);
+	} catch(err) {
+		logError(err);
+	}
+}).listen(webConfig.port, null, null, _ => {
+	log(`Server started listening on port ${webConfig.port}`);
+
+	if(webConfig.devMode) {
+		log("DEV MODE");
+	}
+});
 
 // TODO: Expose chaching method?
 module.exports = {
@@ -581,5 +592,6 @@ module.exports = {
 	config: getFromConfig,
 	initFeatureFrontend,
 	appendHead,
+	createCache,
 	log
 };

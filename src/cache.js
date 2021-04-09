@@ -1,17 +1,19 @@
 const urlMap = new Map();
 
+// Frequency of cache refreshing in ms (no refreshing if value is false)
+let cacheRefreshFrequency;
+
 /**
  * Check if the cache holds an entry for the requested URL (pathname as key).
  * Clears outdated entries implicitly resulting in a false return value.
- * @param {String} url URL key as in request
- * @param {Number} cacheRefreshFrequency Frequency of cache refreshing in ms
+ * @param {String} key Unique key (normalize URLs)
  * @returns {Boolean} Whether the cache holds an entry for the requested URL
  */
-function has(url, cacheRefreshFrequency) {
+function has(url) {
 	if(!urlMap.has(url)) {
 		return false;
 	}
-	if((urlMap.get(url).time + cacheRefreshFrequency) < Date.now()) {
+	if(cacheRefreshFrequency && (urlMap.get(url).time + cacheRefreshFrequency) < Date.now()) {
 		urlMap.delete(url);
         
 		return false;
@@ -22,7 +24,7 @@ function has(url, cacheRefreshFrequency) {
 
 /**
  * Read data associated with the given URL key from cache.
- * @param {String} url URL to get cached data value for
+ * @param {String} key Unique key (normalize URLs)
  * @returns {String|Buffer} Data
  */
 function read(url) {
@@ -31,7 +33,7 @@ function read(url) {
 
 /**
  * Write given data to the cache associated with the provided URL key.
- * @param {String} url URL (pathname) key
+ * @param {String} key Unique key (normalize URLs)
  * @param {String|Buffer} data Data to write to cache
  */
 function write(url, data) {
@@ -41,8 +43,12 @@ function write(url, data) {
 	});
 }
 
-module.exports = {
-	has,
-	read,
-	write
+module.exports = refreshFrequency => {
+	cacheRefreshFrequency = refreshFrequency;
+
+	return {
+		has,
+		read,
+		write
+	};
 };
