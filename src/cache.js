@@ -28,6 +28,10 @@ function has(key) {
  * @returns {String|Buffer} Data
  */
 function read(key) {
+	if(!storage.has(key)) {
+		return undefined;
+	}
+
 	return storage.get(key).data;
 }
 

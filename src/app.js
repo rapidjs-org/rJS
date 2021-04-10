@@ -52,7 +52,10 @@ const readConfigFile = (webPath, defaultName, customName) => {
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
 
-const cache = require("./cache")(webConfig.cacheRefreshFrequency);
+const cache = {
+	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
+	static: require("./cache")(),	// Never read static files again as they wont change
+};
 const log = require("./log")(webConfig.verbouse);
 
 const http = require(webConfig.useHttps ? "https" : "http");
@@ -241,9 +244,17 @@ function handleGET(res, pathname) {
 
 	mime && res.setHeader("Content-Type", mime);
 
-	if(cache.has(pathname)) {
+	// Retrieve correct cache
+	let relatedCache;
+	if(["", "html"].includes(extension)) {
+		relatedCache = cache.dynamic;
+	} else {
+		relatedCache = cache.static;
+	}
+
+	if(relatedCache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, cache.read(pathname));
+		respond(res, 200, relatedCache.read(pathname));
 
 		return;
 	}
@@ -301,10 +312,14 @@ function handleGET(res, pathname) {
 	} catch(err) {
 		log(err);
 		
-		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);	// TODO: Determine type of redirect
+		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 	}
 
-	cache.write(pathname, data);
+	// Set client-side cache control for static files too
+	(extension != "html") && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequenc / 1000))}`));
+	
+	// Set server-side cache
+	relatedCache.write(pathname, data);
 
 	respond(res, 200, Buffer.from(data, "UTF-8"));
 
