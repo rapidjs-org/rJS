@@ -11,6 +11,7 @@ const config = {
 	},
 	defaultFileName: "index",
 	dynamicPageDirPrefix: ":",
+	featureNamingPrefix: "rapid-",
 	frontendModuleAppName: "RAPID",
 	frontendModuleReferenceName: {
 		external: "module",
@@ -140,8 +141,6 @@ function respondProperly(res, method, pathname, status) {
 
 	respond(res, status);
 }
-
-// TODO: CACHE TO PASS TO FEATURES (AND IMPLEMENTATION IN EXISTING)
 
 /**
  * Handle a single request.
@@ -523,10 +522,17 @@ function getFromConfig(key) {
 	return webConfig[key];
 }
 
-function initFeatureFrontend(featureDir, featureName, featureConfig) {
+/**
+ * Initialize frontend for a feature.
+ * @param {String} featureDirPath Path to feature directory
+ * @param {Object} featureConfig Config object of feature
+ */
+function initFeatureFrontend(featureDirPath, featureConfig) {
+	const featureName = basename(dirname(featureDirPath)).toLowerCase().replace(`^${config.featureNamingPrefix}`, "");
+	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
-	let frontendFilePath = join(featureDir, "frontend.js");
+	let frontendFilePath = join(featureDirPath, "frontend.js");
 	if(!existsSync(frontendFilePath)) {
 		return;
 	}
@@ -549,8 +555,6 @@ function initFeatureFrontend(featureDir, featureName, featureConfig) {
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
 	`;
-
-	// TODO: Check if internal name used to make unique?
 
 	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
@@ -597,7 +601,7 @@ function createCache(cacheRefreshFrequency) {
 // Initial actions
 
 // Init frontend base file to provide reusable methods among features
-initFeatureFrontend(__dirname, "core");
+initFeatureFrontend(__dirname);
 
 // Create web server instance
 http.createServer((req, res) => {
@@ -614,7 +618,6 @@ http.createServer((req, res) => {
 	}
 });
 
-// TODO: Expose chaching method?
 module.exports = {
 	reader,
 	read,
