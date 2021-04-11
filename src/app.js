@@ -216,8 +216,14 @@ function handleGET(res, pathname) {
 	if(routeHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			data = routeHandlers.get[pathname](res);
+			if(routeHandlers.get[pathname].cached) {
+				data = routeHandlers.get[pathname].cached;
+			} else {
+				data = routeHandlers.get[pathname].callback(res);
 
+				routeHandlers.get[pathname].cachePermanently && (routeHandlers.get[pathname].cached = data);
+			}
+			
 			respond(res, 200, data);
 		} catch(err) {
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
@@ -391,7 +397,14 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			const data = routeHandlers.post[pathname](body, res);
+			let data;
+			if(routeHandlers.post[pathname].cached) {
+				data = routeHandlers.post[pathname].cached;
+			} else {
+				data = routeHandlers.post[pathname].callback(body, res);
+
+				routeHandlers.post[pathname].cachePermanently && (routeHandlers.post[pathname].cached = data);
+			}
 
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
@@ -475,8 +488,9 @@ function finish(extension, data, pathname) {
  * @param {String} method Method to bind route to
  * @param {String} pathname Pathname to bind route to
  * @param {Function} callback Callback getting passed the response object and – if applicable – the request's body object returning the eventually send response data
+ * @param {Boolean} [cachePermanently=false] Whether to cache the processed response permanently 
  */
-function route(method, pathname, callback) {
+function route(method, pathname, callback, cachePermanently = false) {
 	method = String(method).trim().toLowerCase();
 
 	if(!["get", "post"].includes(method)) {
@@ -485,7 +499,11 @@ function route(method, pathname, callback) {
 
 	routeHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
-	routeHandlers[method][pathname] = callback;
+	routeHandlers[method][pathname] = {
+		callback: callback,
+		cachePermanently: cachePermanently,
+		cached: null
+	};
 }
 
 /**
