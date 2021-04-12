@@ -10,6 +10,7 @@ const config = {
 		custom: "rapid.config.json"
 	},
 	defaultFileName: "index",
+	devModeArgument: "dev",
 	dynamicPageDirPrefix: ":",
 	featureNamingPrefix: "rapid-",
 	frontendModuleAppName: "RAPID",
@@ -52,6 +53,10 @@ const readConfigFile = (webPath, defaultName, customName) => {
 
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
+if(process.argv[2] && process.argv[2] == config.devModeArgument) {
+	// Enable DEV-mode when related argument passed on application start
+	webConfig.devMode = true;
+}
 
 const cache = {
 	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
@@ -236,10 +241,10 @@ function handleGET(res, pathname) {
 
 	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	
-	// Block request if whitelist enabled but requested extension not whitelisted
+	// Block request if blacklist enabled but requested extension blacklisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
-	if(extension.length > 0 && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
+	if(extension.length > 0 && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
@@ -423,6 +428,7 @@ function handlePOST(req, res, pathname) {
  * @param {String} extension Extension name (without a leading dot) 
  * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code leads to a related response.
  */
+// TODO: Permanent cache option?
 function reader(extension, callback) {
 	extension = extension.trim().replace(/^\./, "");
 
@@ -484,7 +490,7 @@ function finish(extension, data, pathname) {
 
 /**
  * Set up a custom route handler for a certain method.
- * @param {String} method Method to bind route to
+ * @param {String} method Name of method to bind route to
  * @param {String} pathname Pathname to bind route to
  * @param {Function} callback Callback getting passed the response object and – if applicable – the request's body object returning the eventually send response data
  * @param {Boolean} [cachePermanently=false] Whether to cache the processed response permanently 
@@ -528,7 +534,7 @@ function getFromConfig(key) {
  * @param {Object} featureConfig Config object of feature
  */
 function initFeatureFrontend(featureDirPath, featureConfig) {
-	const featureName = basename(dirname(featureDirPath)).toLowerCase().replace(`^${config.featureNamingPrefix}`, "");
+	const featureName = basename(dirname(featureDirPath)).toLowerCase().replace(new RegExp(`^${config.featureNamingPrefix}`), "");
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
