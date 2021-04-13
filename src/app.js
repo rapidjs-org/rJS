@@ -1,17 +1,17 @@
 /**
- * Copyright (c) Thassilo Martin Schiepanski
+ * @copyright (c) Thassilo Martin Schiepanski
+ * @author Thassilo Martin Schiepanski
  * t-ski@GitHub
  */
 
-// Local config
+// Syntax literals config object
 const config = {
 	configFileName: {
 		default: "default.config.json",
 		custom: "rapid.config.json"
 	},
 	defaultFileName: "index",
-	devModeArgument: "dev",
-	dynamicPageDirPrefix: ":",
+	devModeArgument: "-dev",
 	featureNamingPrefix: "rapid-",
 	frontendModuleAppName: "RAPID",
 	frontendModuleReferenceName: {
@@ -22,7 +22,7 @@ const config = {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
 	},
-	nonStandaloneFilePrefix: "_",
+	supportFilePrefix: "_",
 	webDirName: "web"
 };
 
@@ -67,6 +67,7 @@ const log = require("./log")(webConfig.verbouse);
 const http = require(webConfig.useHttps ? "https" : "http");
 
 // Request reader, finisher and custom method handler objects
+let pathModifierHandlers = {};
 let readerHandlers = {};
 let finisherHandlers = {};
 let routeHandlers = {
@@ -75,6 +76,11 @@ let routeHandlers = {
 };
 
 function logError(err) {
+	if(!isNaN(err)) {
+		// Do not log thrown status error used for internal redirect
+		return;
+	}
+
 	log("An internal server error occured:");
 	console.error(err);
 }
@@ -195,7 +201,7 @@ function handleRequest(req, res) {
 
 	// Apply the related handler
 	if(method == "get") {
-		handleGET(res, urlParts.pathname);
+		handleGET(res, urlParts.pathname, urlParts.search);
 
 		return;
 	} 
@@ -206,30 +212,31 @@ function handleRequest(req, res) {
 	}
 }
 
+// TODO: Soft code default extension again?
+
 /**
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
- * @param {String} pathname URL pathname part<<
+ * @param {String} pathname URL pathname part
+ * @param {String} [queryString] Query string
  */
-function handleGET(res, pathname) {
+function handleGET(res, pathname, queryString) {
 	let data;
 
-	// Stripe dynamic argument part fom pathname
-	pathname = pathname.replace(new RegExp(`(\\${config.dynamicPageDirPrefix}[a-z0-9_-]+)+`, "i"), "");
+	let extension = extname(pathname).slice(1);
+
+	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
+	mime && res.setHeader("Content-Type", mime);
 
 	if(routeHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			if(routeHandlers.get[pathname].cached) {
-				data = routeHandlers.get[pathname].cached;
-			} else {
-				data = routeHandlers.get[pathname].callback(res);
-
-				routeHandlers.get[pathname].cachePermanently && (routeHandlers.get[pathname].cached = data);
-			}
+			data = useRoute("get", pathname);
 			
 			respond(res, 200, data);
 		} catch(err) {
+			logError(err);
+
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 		}
@@ -237,26 +244,20 @@ function handleGET(res, pathname) {
 		return;
 	}
 
-	let extension = extname(pathname).slice(1);
-
-	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
-	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
 	if(extension.length > 0 && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
-	|| (new RegExp(`^${config.nonStandaloneFilePrefix}.+$`)).test(basename(pathname))) {
+	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
 
 		return;
 	}
 
-	mime && res.setHeader("Content-Type", mime);
-
 	// Retrieve correct cache
 	let relatedCache;
-	if(["", "html"].includes(extension)) {
+	if(extension.length == 0) {
 		relatedCache = cache.dynamic;
 	} else {
 		relatedCache = cache.static;
@@ -265,7 +266,7 @@ function handleGET(res, pathname) {
 	if(relatedCache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
 		respond(res, 200, relatedCache.read(pathname));
-
+		
 		return;
 	}
 
@@ -275,44 +276,37 @@ function handleGET(res, pathname) {
 		// Add default file name if none explicitly stated in the request URL
 		localPath += config.defaultFileName;
 	}
-	if(extension.length == 0) {
-		// Check if dynamic page setup corresponding to the request URL exists in file system
-		const localPathDynamic = join(dirname(localPath), config.dynamicPageDirPrefix + basename(localPath), `${basename(localPath)}.html`);
-		if(existsSync(localPathDynamic)) {
-			// Use dynamic page root file path for further processing
-			localPath = localPathDynamic;
 
-			// Stop processing as request has already been closed due to handler exception
-			if(dynamicClose()) {
-				return;
-			}
-		} else {
-			// Add default extension if none explicitly stated in the request URL
-			localPath += ".html";
-
-			extension = "html";
-		}
-	}
-
-	if(!existsSync(localPath)) {
-		// Redirect to the related error page if requested file does not exist
-		respondProperly(res, "get", pathname, 404);
-
-		return;
+	(extension.length == 0) && (extension = "html");
+	
+	// Apply local pathname modifier if set up
+	let modifiedPath;
+	if(modifiedPath = modifyPath(extension, localPath)) {
+		localPath = modifiedPath;
+	} else if(extname(localPath).length == 0){
+		// Use explicit extension internally if is default
+		localPath += `.${extension}`;
 	}
 
 	// Read file either by custom reader handler or by default reader
 	try {
 		data = read(extension, localPath);
 	} catch(err) {
-		if(err !== 1) {
-			log(err);
-						
+		logError(err);
+
+		if(err !== 404) {
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 
 			return;
 		}
 
+		if(!existsSync(localPath)) {
+			// Redirect to the related error page if requested file does not exist
+			respondProperly(res, "get", pathname, 404);
+	
+			return;
+		}
+		
 		data = readFileSync(localPath);
 	}
 	
@@ -326,39 +320,12 @@ function handleGET(res, pathname) {
 	}
 
 	// Set client-side cache control for static files too
-	(extension != "html") && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequenc / 1000))}`));
+	(extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequenc / 1000))}`));
 	
 	// Set server-side cache
 	relatedCache.write(pathname, data);
 
 	respond(res, 200, Buffer.from(data, "UTF-8"));
-
-	/**
-	 * Apply dynamic handler to check if the request is closed dynamically.
-	 * @helper
-	 * @returns {Boolean} Whether to end the processing as performing a redirect
-	 */
-	function dynamicClose() {
-		const handlerFilePath = join(dirname(localPath), `${basename(localPath).slice(0, -config.defaultFileName.length)}.js`);
-		if(!existsSync(handlerFilePath)) {
-			return false;
-		}
-
-		// Load handler file as module returning the templating object
-		try {
-			require(handlerFilePath);
-		} catch(err) {
-			if(err === 200) {
-				return;
-			}
-
-			respondProperly(res, "get", localPath, isNaN(err) ? 404 : err);
-
-			return true;
-		}
-		
-		return false;
-	}
 }
 
 /**
@@ -401,20 +368,13 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			let data;
-			if(routeHandlers.post[pathname].cached) {
-				data = routeHandlers.post[pathname].cached;
-			} else {
-				data = routeHandlers.post[pathname].callback(body, res);
-
-				routeHandlers.post[pathname].cachePermanently && (routeHandlers.post[pathname].cached = data);
-			}
-
+			const data = useRoute("post", pathname, body);
+			
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
-			respond(res, isNaN(err) ? 500 : err);
+			logError(err);
 
-			isNaN(err) && logError(err);
+			respond(res, isNaN(err) ? 500 : err);
 		}
 	});
 	req.on("error", _ => {
@@ -423,36 +383,76 @@ function handlePOST(req, res, pathname) {
 }
 
 /**
- * Set up a handler to read each GET request response data in of a certain file extension in a specific manner (instead of using the default reader).
- * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
- * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code leads to a related response.
+ * Append a markup file head tag by a given string (if markup contains head tag).
+ * @param {String} markup Markup
+ * @param {String} str String to append head by
+ * @returns {String} Markup with updated head tag
  */
-// TODO: Permanent cache option?
-function reader(extension, callback) {
-	extension = extension.trim().replace(/^\./, "");
+ function appendHead(markup, str) {
+	const headInsertionIndex = markup.search(/<\s*\/head\s*>/);
+	if(headInsertionIndex == -1) {
+		return markup;
+	}
+	return markup.slice(0, headInsertionIndex) + str + markup.slice(headInsertionIndex);
+}
 
-	if(["", "html"].includes(extension)) {
-		// Default markup file extensions may not be read custom
-		log("Default markup files may not be read custom {'', 'html'}");
+/**
+ * Set up a handler to modifiy the local request URL for certain file type requests.
+ * Multiple pathname modifier handlers may be set up per extension to be applied in order of setup.
+ * @param {String} extension Extension name (without a leading dot)
+ * @param {Function} callback Callback getting passed the the request URL in local pathname representation to return the modified path (or null if to use default local path)
+ */
+function pathModifier(extension, callback) {
+	extension = utils.normalizeExtension(extension);
 
-		return;
+	!pathModifierHandlers[extension] && (pathModifierHandlers[extension] = []);
+	
+	pathModifierHandlers[extension].push(callback);
+}
+
+ function modifyPath(extension, pathname) {
+	if(!pathModifierHandlers[extension]) {
+		return null;
 	}
 
-	!readerHandlers[extension] && (readerHandlers[extension] = []);
+	let curPathname;
+	try {
+		pathModifierHandlers[extension].forEach(pathModifier => {
+			curPathname = pathModifier(pathname);
+			curPathname && (pathname = curPathname);
+		});
+	} catch(err) {
+		logError(err);
+	}
+
+	return (curPathname === null) ? null : pathname;
+}
+
+/**
+ * Set up a handler to read each GET request response data in of a certain file extension in a specific manner (instead of using the default reader).
+ * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
+ * @param {String} extension Extension name (without a leading dot)
+ * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code will lead to a related response.
+ */
+function reader(extension, callback) {
+	extension = utils.normalizeExtension(extension);
+
+	(extension.length == 0) && (extension = "html");
+
+	(readerHandlers[extension]) && (log(`Overriding reader for '${extension}' extension`));
 	
 	readerHandlers[extension] = callback;
 }
 
 /**
  * Call reader for a specific extension.
- * @param {String} extension Extension name
+ * @param {String} extension Extension name (without a leading dot)
  * @param {String} pathname Pathname of request
- * @returns {*} Finished data
+ * @returns {*} Serializable read data
  */
 function read(extension, pathname) {
 	if(!utils.isFunction(readerHandlers[extension])) {
-		throw 1;
+		throw 404;
 	}
 
 	return readerHandlers[extension](pathname);
@@ -462,10 +462,10 @@ function read(extension, pathname) {
  * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
  * Multiple finisher handlers may be set up per extension to be applied in order of setup.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code leads to a related response.
+ * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
  */
 function finisher(extension, callback) {
-	extension = extension.trim().replace(/^\./, "");
+	extension = utils.normalizeExtension(extension);
 
 	!finisherHandlers[extension] && (finisherHandlers[extension] = []);
 	
@@ -477,11 +477,10 @@ function finisher(extension, callback) {
  * @param {String} extension Extension name
  * @param {String} data Data to finish
  * @param {String} [pathname] Pathname of request
- * @returns {*} Finished data
+ * @returns {*} Serializable finished data
  */
 function finish(extension, data, pathname) {
-	let definedFinishHandlers = (finisherHandlers[extension] || []).concat((finisherHandlers["html"] && extension.length == 0) ? finisherHandlers["html"] : []);
-	definedFinishHandlers.forEach(finisher => {
+	(finisherHandlers[extension] || []).forEach(finisher => {
 		data = finisher(String(data), pathname);
 	});
 
@@ -511,8 +510,22 @@ function route(method, pathname, callback, cachePermanently = false) {
 	};
 }
 
+function useRoute(method, pathname, args) {
+	// TODO: Make response object accessible to allow modification?
+	if(routeHandlers[method][pathname].cached) {
+		data = routeHandlers[method][pathname].cached;
+	} else {
+		(args && !Array.isArray(args)) && (args = [args]);
+		data = routeHandlers[method][pathname].callback.apply(null, args);
+
+		routeHandlers[method][pathname].cachePermanently && (routeHandlers[method][pathname].cached = data);
+	}
+
+	return data;
+}
+
 /**
- * Get the web file path on disc.
+ * Get the fully qualified web root directory path.
  * @returns {String} Web file path
  */
 function webPath() {
@@ -529,7 +542,7 @@ function getFromConfig(key) {
 }
 
 /**
- * Initialize frontend for a feature.
+ * Initialize the frontend module of a feature.
  * @param {String} featureDirPath Path to feature directory
  * @param {Object} featureConfig Config object of feature
  */
@@ -574,25 +587,9 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 	});
 
 	// Add GET route to retrieve frontend module script
-	route("get", `${frontendFileLocation}`, res => {
-		res.setHeader("Content-Type", "text/javascript");
-
+	route("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
 	});
-}
-
-/**
- * Append a markup file head tag by a given string (if markup contains head tag).
- * @param {String} markup Markup
- * @param {String} str String to append head by
- * @returns {String} Markup with updated head tag
- */
-function appendHead(markup, str) {
-	const headInsertionIndex = markup.search(/<\s*\/head\s*>/);
-	if(headInsertionIndex == -1) {
-		return markup;
-	}
-	return markup.slice(0, headInsertionIndex) + str + markup.slice(headInsertionIndex);
 }
 
 /**
@@ -624,7 +621,8 @@ http.createServer((req, res) => {
 	}
 });
 
-module.exports = {
+module.exports = {	// TODO: Update names?
+	pathModifier,
 	reader,
 	read,
 	finisher,
@@ -633,7 +631,6 @@ module.exports = {
 	webPath,
 	config: getFromConfig,
 	initFeatureFrontend,
-	appendHead,
 	createCache,
 	log
 };
