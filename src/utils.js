@@ -8,4 +8,8 @@ module.exports = {
 		return value && {}.toString.call(value) === "[object Function]";
 	},
 
+	normalizeExtension: extension => {
+		return extension.trim().replace(/^\./, "");
+	}
+
 };

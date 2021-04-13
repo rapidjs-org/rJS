@@ -1,5 +1,5 @@
 {
-    "allowFramedLoading": true,
+    "allowFramedLoading": false,
     "cacheRefreshFrequency": 3000,
     "maxPayloadBytes": 1000,
     "maxRequestsPerMin": 100,
