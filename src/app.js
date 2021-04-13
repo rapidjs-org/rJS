@@ -280,8 +280,8 @@ function handleGET(res, pathname, queryString) {
 	(extension.length == 0) && (extension = "html");
 	
 	// Apply local pathname modifier if set up
-	let modifiedPath;
-	if(modifiedPath = modifyPath(extension, localPath)) {
+	let modifiedPath = modifyPath(extension, localPath);
+	if(modifiedPath) {
 		localPath = modifiedPath;
 	} else if(extname(localPath).length == 0){
 		// Use explicit extension internally if is default
@@ -388,7 +388,7 @@ function handlePOST(req, res, pathname) {
  * @param {String} str String to append head by
  * @returns {String} Markup with updated head tag
  */
- function appendHead(markup, str) {
+function appendHead(markup, str) {
 	const headInsertionIndex = markup.search(/<\s*\/head\s*>/);
 	if(headInsertionIndex == -1) {
 		return markup;
@@ -410,7 +410,7 @@ function pathModifier(extension, callback) {
 	pathModifierHandlers[extension].push(callback);
 }
 
- function modifyPath(extension, pathname) {
+function modifyPath(extension, pathname) {
 	if(!pathModifierHandlers[extension]) {
 		return null;
 	}
@@ -512,6 +512,8 @@ function route(method, pathname, callback, cachePermanently = false) {
 
 function useRoute(method, pathname, args) {
 	// TODO: Make response object accessible to allow modification?
+	let data;
+
 	if(routeHandlers[method][pathname].cached) {
 		data = routeHandlers[method][pathname].cached;
 	} else {
@@ -558,8 +560,12 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 
 	frontendModuleData = String(readFileSync(frontendFilePath));
 	featureConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
-		let value = featureConfig[configAttr.match(/[a-zA-Z0-9_]+$/)[0]];
-		(value !== undefined && value !== null && isNaN(value)) && (value = `"${value}"`);
+		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
+		let value = featureConfig[attr];
+
+		(value === undefined) && (log(`config.${attr} undefined at '${join(__dirname, "frontend.js")}'`));
+
+		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
 		
 		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
 	});
