@@ -318,9 +318,11 @@ function handleGET(res, pathname, queryString) {
 	try {
 		data = finish(extension, data, localPath);
 	} catch(err) {
-		log(err);
+		logError(err);
 		
 		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+
+		return;
 	}
 
 	// Set client-side cache control for static files too
@@ -638,14 +640,14 @@ http.createServer((req, res) => {
  * @param {String} module Module identifier
  */
 function requireFeatureModule(featureModule) {
-	const identifier = featureModule.match(/[a-z0-9@\/._-]+$/i);
-	if(requiredModules.has(featureModule)) {
+	const identifier = featureModule.match(/[a-z0-9@/._-]+$/i);
+	if(requiredModules.has(identifier)) {
 		return;
 	}
 
 	require(featureModule)(module.exports);
 
-	requiredModules.add(featureModule);
+	requiredModules.add(identifier);
 }
 
 module.exports = {	// TODO: Update names?
