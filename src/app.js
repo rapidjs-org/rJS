@@ -35,6 +35,10 @@ const WEB_PATH = join(require.main.path, config.webDirName);
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
 
+// Store identifiers of required modules from within features in order to prevent redundant loading
+// processes (and overriding or adding functionality interference).
+let requiredModules = new Set();
+
 // Read config files (general configuration, MIMES)
 /**
  * Read a custom configuration file and merge it (overriding) with the default configuration file.
@@ -481,7 +485,8 @@ function finisher(extension, callback) {
  */
 function finish(extension, data, pathname) {
 	(finisherHandlers[extension] || []).forEach(finisher => {
-		data = finisher(String(data), pathname);
+		const curData = finisher(String(data), pathname);
+		curData && (data = curData);
 	});
 
 	return data;
@@ -627,6 +632,22 @@ http.createServer((req, res) => {
 	}
 });
 
+/**
+ * Require a feature module on core level.
+ * Redundant require calls of a specific feature module will be ignored.
+ * @param {String} module Module identifier
+ */
+function requireFeatureModule(featureModule) {
+	const identifier = featureModule.match(/[a-z0-9@\/._-]+$/i);
+	if(requiredModules.has(featureModule)) {
+		return;
+	}
+
+	require(featureModule)(module.exports);
+
+	requiredModules.add(featureModule);
+}
+
 module.exports = {	// TODO: Update names?
 	pathModifier,
 	reader,
@@ -638,5 +659,6 @@ module.exports = {	// TODO: Update names?
 	config: getFromConfig,
 	initFeatureFrontend,
 	createCache,
+	require: requireFeatureModule,
 	log
 };
