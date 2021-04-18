@@ -205,7 +205,7 @@ function handleRequest(req, res) {
 
 	// Apply the related handler
 	if(method == "get") {
-		handleGET(res, urlParts.pathname, urlParts.search);
+		handleGET(res, urlParts.pathname, urlParts.query);
 
 		return;
 	} 
@@ -222,9 +222,9 @@ function handleRequest(req, res) {
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
  * @param {String} pathname URL pathname part
- * @param {String} [queryString] Query string
+ * @param {String} [queryParametersObj] Query string parameters in object representation
  */
-function handleGET(res, pathname, queryString) {
+function handleGET(res, pathname, queryParametersObj) {
 	let data;
 
 	let extension = extname(pathname).slice(1);
@@ -291,19 +291,18 @@ function handleGET(res, pathname, queryString) {
 		// Use explicit extension internally if is default
 		localPath += `.${extension}`;
 	}
-
+	
 	// Read file either by custom reader handler or by default reader
 	try {
 		data = read(extension, localPath);
 	} catch(err) {
 		logError(err);
-
+		
 		if(err !== 404) {
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 
 			return;
 		}
-
 		if(!existsSync(localPath)) {
 			// Redirect to the related error page if requested file does not exist
 			respondProperly(res, "get", pathname, 404);
@@ -316,7 +315,7 @@ function handleGET(res, pathname, queryString) {
 	
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
 	try {
-		data = finish(extension, data, localPath);
+		data = finish(extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		logError(err);
 		
@@ -482,12 +481,13 @@ function finisher(extension, callback) {
  * Call finisher for a specific extension.
  * @param {String} extension Extension name
  * @param {String} data Data to finish
- * @param {String} [pathname] Pathname of request
+ * @param {String} [pathname] Pathname of associated request to pass
+ * @param {Object} [queryParametersObj] Query parameters object to pass
  * @returns {*} Serializable finished data
  */
-function finish(extension, data, pathname) {
+function finish(extension, data, pathname, queryParametersObj) {
 	(finisherHandlers[extension] || []).forEach(finisher => {
-		const curData = finisher(String(data), pathname);
+		const curData = finisher(String(data), pathname, queryParametersObj);
 		curData && (data = curData);
 	});
 
@@ -630,7 +630,7 @@ http.createServer((req, res) => {
 	log(`Server started listening on port ${webConfig.port}`);
 
 	if(webConfig.devMode) {
-		log("DEV MODE");
+		log("Running DEV MODE");
 	}
 });
 
@@ -640,7 +640,8 @@ http.createServer((req, res) => {
  * @param {String} module Module identifier
  */
 function requireFeatureModule(featureModule) {
-	const identifier = featureModule.match(/[a-z0-9@/._-]+$/i);
+	const identifier = featureModule.match(/[a-z0-9@/._-]+$/i)[0];
+
 	if(requiredModules.has(identifier)) {
 		return;
 	}
@@ -649,6 +650,9 @@ function requireFeatureModule(featureModule) {
 
 	requiredModules.add(identifier);
 }
+
+// TODO: Restricted URL interface?
+// TODO: Provide support modules (e.g. block parser?)
 
 module.exports = {	// TODO: Update names?
 	pathModifier,
