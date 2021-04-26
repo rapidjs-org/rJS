@@ -388,17 +388,19 @@ function handlePOST(req, res, pathname) {
 }
 
 /**
- * Append a markup file head tag by a given string (if markup contains head tag).
+ * Append a markup file head tag by a given string inserting it as first child (if markup contains head tag).
  * @param {String} markup Markup
  * @param {String} str String to append head by
  * @returns {String} Markup with updated head tag
  */
 function appendHead(markup, str) {
-	const headInsertionIndex = markup.search(/<\s*\/head\s*>/);
-	if(headInsertionIndex == -1) {
+	const openingHeadTag = markup.match(/<\s*head((?!>)(\s|.))*>/);
+
+	if(!openingHeadTag) {
 		return markup;
 	}
-	return markup.slice(0, headInsertionIndex) + str + markup.slice(headInsertionIndex);
+
+	return markup.replace(openingHeadTag[0], `${openingHeadTag[0]}${str}`);
 }
 
 /**
@@ -636,7 +638,7 @@ http.createServer((req, res) => {
 
 /**
  * Require a feature module on core level.
- * Redundant require calls of a specific feature module will be ignored.
+ * Redundant requifre calls of a specific feature module will be ignored.
  * @param {String} module Module identifier
  */
 function requireFeatureModule(featureModule) {
@@ -650,6 +652,8 @@ function requireFeatureModule(featureModule) {
 
 	requiredModules.add(identifier);
 }
+
+// TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
 
 // TODO: Restricted URL interface?
 // TODO: Provide support modules (e.g. block parser?)
