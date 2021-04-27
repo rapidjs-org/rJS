@@ -6,5 +6,5 @@
     "maxUrlLength": 100,
     "port": 80,
     "useHttps": false,
-    "verbouse": true
+    "muted": false
 }
