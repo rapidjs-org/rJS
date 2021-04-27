@@ -66,7 +66,7 @@ const cache = {
 	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
 	static: require("./cache")(),	// Never read static files again as they wont change
 };
-const log = require("./log")(webConfig.verbouse);
+const log = require("./log")(!webConfig.muted);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
@@ -388,12 +388,12 @@ function handlePOST(req, res, pathname) {
 }
 
 /**
- * Append a markup file head tag by a given string inserting it as first child (if markup contains head tag).
+ * Inflate a markup file's head tag by a given string inserting it as first child (if markup contains head tag).
  * @param {String} markup Markup
  * @param {String} str String to append head by
  * @returns {String} Markup with updated head tag
  */
-function appendHead(markup, str) {
+function inflateHeadTag(markup, str) {
 	const openingHeadTag = markup.match(/<\s*head((?!>)(\s|.))*>/);
 
 	if(!openingHeadTag) {
@@ -598,7 +598,7 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 			return;
 		}
 
-		return appendHead(data, `<script src="${frontendFileLocation}"></script>`);
+		return inflateHeadTag(data, `<script src="${frontendFileLocation}"></script>`);
 	});
 
 	// Add GET route to retrieve frontend module script
