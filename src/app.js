@@ -66,7 +66,7 @@ const cache = {
 	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
 	static: require("./cache")(),	// Never read static files again as they wont change
 };
-const log = require("./log")(!webConfig.muted);
+const log = require("./log")(!webConfig.muteConsoleOutput);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
@@ -229,6 +229,17 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	let extension = extname(pathname).slice(1);
 
+	// Block request if blacklist enabled but requested extension blacklisted
+	// or a dynamic page related file has been explixitly requested (restricted)
+	// or a non-standalone file has been requested
+	if(extension.length > 0 && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
+    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
+	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
+		respondProperly(res, "get", pathname, 403);
+
+		return;
+	}
+
 	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
 
@@ -244,17 +255,6 @@ function handleGET(res, pathname, queryParametersObj) {
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 		}
-
-		return;
-	}
-
-	// Block request if blacklist enabled but requested extension blacklisted
-	// or a dynamic page related file has been explixitly requested (restricted)
-	// or a non-standalone file has been requested
-	if(extension.length > 0 && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
-    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
-	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
-		respondProperly(res, "get", pathname, 403);
 
 		return;
 	}
@@ -353,7 +353,7 @@ function handlePOST(req, res, pathname) {
 		body.push(chunk);
 
 		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
-		if(bodyByteSize > webConfig.maxPayloadBytes) {
+		if(bodyByteSize > webConfig.maxPayloadSize) {
 			// Block request if request payload is exceeds maximum size as put in web config
 			blockBodyProcessing = true;
 
@@ -550,7 +550,7 @@ function webPath() {
  */
 function getFromConfig(key) {
 	return webConfig[key];
-}
+}	// TODO: Only feature specifc values (e.g. via prefix?)
 
 /**
  * Initialize the frontend module of a feature.
@@ -572,7 +572,7 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
 		let value = featureConfig[attr];
 
-		(value === undefined) && (log(`config.${attr} undefined at '${join(__dirname, "frontend.js")}'`));
+		(value === undefined) && (log(`${attr} not defined in related config object at '${join(featureDirPath, "frontend.js")}'`));
 
 		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
 		

@@ -1,10 +1,10 @@
 {
     "allowFramedLoading": false,
     "cacheRefreshFrequency": 30000,
-    "maxPayloadBytes": 1000,
+    "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": 80,
     "useHttps": false,
-    "muted": false
+    "muteConsoleOutput": false
 }
