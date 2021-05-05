@@ -4,7 +4,7 @@
  * @param {Object} body Body object to send along
  * @returns {Promise} Request promise eventualy resolving to response on success
  */
-module.post = function(url, body) {
+plugin.post = function(url, body) {
 	return fetch(url, {
 		method: "POST",
 		mode: "same-origin",

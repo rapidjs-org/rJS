@@ -15,7 +15,7 @@ const config = {
 	featureNamingPrefix: "rapid-",
 	frontendModuleAppName: "RAPID",
 	frontendModuleReferenceName: {
-		external: "module",
+		external: "plugin",
 		internal: "_rapid"
 	},
 	mimesFileName: {
