@@ -71,7 +71,7 @@ const log = require("./log")(!webConfig.muteConsoleOutput);
 const http = require(webConfig.useHttps ? "https" : "http");
 
 // Request reader, finisher and custom method handler objects
-let pathModifierHandlers = {};
+let addPathModifierHandlers = {};
 let readerHandlers = {};
 let finisherHandlers = {};
 let routeHandlers = {
@@ -269,7 +269,7 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	if(relatedCache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, relatedCache.read(pathname));
+		respond(res, 200, relatedCache.applyReader(pathname));
 		
 		return;
 	}
@@ -294,7 +294,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = read(extension, localPath);
+		data = applyReader(extension, localPath);
 	} catch(err) {
 		logError(err);
 		
@@ -315,7 +315,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
 	try {
-		data = finish(extension, data, localPath, queryParametersObj);
+		data = applyFinalizer(extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		logError(err);
 		
@@ -409,23 +409,23 @@ function inflateHeadTag(markup, str) {
  * @param {String} extension Extension name (without a leading dot)
  * @param {Function} callback Callback getting passed the the request URL in local pathname representation to return the modified path (or null if to use default local path)
  */
-function pathModifier(extension, callback) {
+function addPathModifier(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
-	!pathModifierHandlers[extension] && (pathModifierHandlers[extension] = []);
+	!addPathModifierHandlers[extension] && (addPathModifierHandlers[extension] = []);
 	
-	pathModifierHandlers[extension].push(callback);
+	addPathModifierHandlers[extension].push(callback);
 }
 
 function modifyPath(extension, pathname) {
-	if(!pathModifierHandlers[extension]) {
+	if(!addPathModifierHandlers[extension]) {
 		return null;
 	}
 
 	let curPathname;
 	try {
-		pathModifierHandlers[extension].forEach(pathModifier => {
-			curPathname = pathModifier(pathname);
+		addPathModifierHandlers[extension].forEach(addPathModifier => {
+			curPathname = addPathModifier(pathname);
 			curPathname && (pathname = curPathname);
 		});
 	} catch(err) {
@@ -436,12 +436,12 @@ function modifyPath(extension, pathname) {
 }
 
 /**
- * Set up a handler to read each GET request response data in of a certain file extension in a specific manner (instead of using the default reader).
+ * Set up a handler to read each GET request response data of a certain file extension in a specific manner (instead of using the default reader).
  * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
  * @param {String} extension Extension name (without a leading dot)
  * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code will lead to a related response.
  */
-function reader(extension, callback) {
+function setReader(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
 	(extension.length == 0) && (extension = "html");
@@ -457,7 +457,7 @@ function reader(extension, callback) {
  * @param {String} pathname Pathname of request
  * @returns {*} Serializable read data
  */
-function read(extension, pathname) {
+function applyReader(extension, pathname) {
 	if(!utils.isFunction(readerHandlers[extension])) {
 		throw 404;
 	}
@@ -471,7 +471,7 @@ function read(extension, pathname) {
  * @param {String} extension Extension name (without a leading dot) 
  * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
  */
-function finisher(extension, callback) {
+function addFinalizer(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
 	!finisherHandlers[extension] && (finisherHandlers[extension] = []);
@@ -487,9 +487,9 @@ function finisher(extension, callback) {
  * @param {Object} [queryParametersObj] Query parameters object to pass
  * @returns {*} Serializable finished data
  */
-function finish(extension, data, pathname, queryParametersObj) {
+function applyFinalizer(extension, data, pathname, queryParametersObj) {
 	(finisherHandlers[extension] || []).forEach(finisher => {
-		const curData = finisher(String(data), pathname, queryParametersObj);
+		const curData = addFinalizer(String(data), pathname, queryParametersObj);
 		curData && (data = curData);
 	});
 
@@ -503,7 +503,7 @@ function finish(extension, data, pathname, queryParametersObj) {
  * @param {Function} callback Callback getting passed the response object and – if applicable – the request's body object returning the eventually send response data
  * @param {Boolean} [cachePermanently=false] Whether to cache the processed response permanently 
  */
-function route(method, pathname, callback, cachePermanently = false) {
+function setRoute(method, pathname, callback, cachePermanently = false) {
 	method = String(method).trim().toLowerCase();
 
 	if(!["get", "post"].includes(method)) {
@@ -533,14 +533,6 @@ function useRoute(method, pathname, args) {
 	}
 
 	return data;
-}
-
-/**
- * Get the fully qualified web root directory path.
- * @returns {String} Web file path
- */
-function webPath() {
-	return WEB_PATH;
 }
 
 /**
@@ -593,7 +585,7 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
 	// Add finisher for inserting the script tag into markup files
-	finisher("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
+	addFinalizer("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
 		if(!frontendModuleData) {
 			return;
 		}
@@ -602,7 +594,7 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 	});
 
 	// Add GET route to retrieve frontend module script
-	route("get", `${frontendFileLocation}`, _ => {
+	setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
 	});
 }
@@ -659,14 +651,14 @@ function requireFeatureModule(featureModule) {
 // TODO: Provide support modules (e.g. block parser?)
 
 module.exports = {	// TODO: Update names?
-	pathModifier,
-	reader,
-	read,
-	finisher,
-	finish,
-	route,
-	webPath,
-	config: getFromConfig,
+	webPath: WEB_PATH,
+	addPathModifier,
+	setReader,
+	applyReader,
+	addFinalizer,
+	applyFinalizer,
+	setRoute,
+	getFromConfig,
 	initFeatureFrontend,
 	createCache,
 	require: requireFeatureModule,
