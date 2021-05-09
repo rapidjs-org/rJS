@@ -70,10 +70,10 @@ const log = require("./log")(!webConfig.muteConsoleOutput);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
-// Request reader, finisher and custom method handler objects
-let addPathModifierHandlers = {};
+// Request reader, finalizer and custom method handler objects
+let pathModifierHandlers = {};
 let readerHandlers = {};
-let finisherHandlers = {};
+let finalizerHandlers = {};
 let routeHandlers = {
 	get: [],
 	post: []
@@ -246,7 +246,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	if(routeHandlers.get[pathname]) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			data = useRoute("get", pathname);
+			data = applyRoute("get", pathname);
 			
 			respond(res, 200, data);
 		} catch(err) {
@@ -269,7 +269,7 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	if(relatedCache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, relatedCache.applyReader(pathname));
+		respond(res, 200, relatedCache.read(pathname));
 		
 		return;
 	}
@@ -313,7 +313,7 @@ function handleGET(res, pathname, queryParametersObj) {
 		data = readFileSync(localPath);
 	}
 	
-	// Sequentially apply defined finishers (dynamic pages without extension use both empty and default extension handlers)
+	// Sequentially apply defined finalizers (dynamic pages without extension use both empty and default extension handlers)
 	try {
 		data = applyFinalizer(extension, data, localPath, queryParametersObj);
 	} catch(err) {
@@ -373,7 +373,7 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			const data = useRoute("post", pathname, body);
+			const data = applyRoute("post", pathname, body);
 			
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
@@ -412,20 +412,20 @@ function inflateHeadTag(markup, str) {
 function addPathModifier(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
-	!addPathModifierHandlers[extension] && (addPathModifierHandlers[extension] = []);
+	!pathModifierHandlers[extension] && (pathModifierHandlers[extension] = []);
 	
-	addPathModifierHandlers[extension].push(callback);
+	pathModifierHandlers[extension].push(callback);
 }
 
 function modifyPath(extension, pathname) {
-	if(!addPathModifierHandlers[extension]) {
+	if(!pathModifierHandlers[extension]) {
 		return null;
 	}
 
 	let curPathname;
 	try {
-		addPathModifierHandlers[extension].forEach(addPathModifier => {
-			curPathname = addPathModifier(pathname);
+		pathModifierHandlers[extension].forEach(pathModifier => {
+			curPathname = pathModifier(pathname);
 			curPathname && (pathname = curPathname);
 		});
 	} catch(err) {
@@ -465,31 +465,33 @@ function applyReader(extension, pathname) {
 	return readerHandlers[extension](pathname);
 }
 
+// TODO: Remove log interface
+
 /**
- * Set up a handler to finish each GET request response data of a certain file extension in a specific manner.
- * Multiple finisher handlers may be set up per extension to be applied in order of setup.
+ * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
+ * Multiple finalizer handlers may be set up per extension to be applied in order of setup.
  * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed the data string to finish and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
+ * @param {Function} callback Callback getting passed the data string to finalize and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
  */
 function addFinalizer(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
-	!finisherHandlers[extension] && (finisherHandlers[extension] = []);
+	!finalizerHandlers[extension] && (finalizerHandlers[extension] = []);
 	
-	finisherHandlers[extension].push(callback);
+	finalizerHandlers[extension].push(callback);
 }
 
 /**
- * Call finisher for a specific extension.
+ * Call finalizer for a specific extension.
  * @param {String} extension Extension name
- * @param {String} data Data to finish
+ * @param {String} data Data to finalize
  * @param {String} [pathname] Pathname of associated request to pass
  * @param {Object} [queryParametersObj] Query parameters object to pass
- * @returns {*} Serializable finished data
+ * @returns {*} Serializable finalizeed data
  */
 function applyFinalizer(extension, data, pathname, queryParametersObj) {
-	(finisherHandlers[extension] || []).forEach(finisher => {
-		const curData = addFinalizer(String(data), pathname, queryParametersObj);
+	(finalizerHandlers[extension] || []).forEach(finalizer => {
+		const curData = finalizer(String(data), pathname, queryParametersObj);
 		curData && (data = curData);
 	});
 
@@ -519,7 +521,7 @@ function setRoute(method, pathname, callback, cachePermanently = false) {
 	};
 }
 
-function useRoute(method, pathname, args) {
+function applyRoute(method, pathname, args) {
 	// TODO: Make response object accessible to allow modification?
 	let data;
 
@@ -549,7 +551,7 @@ function getFromConfig(key) {
  * @param {String} featureDirPath Path to feature directory
  * @param {Object} featureConfig Config object of feature
  */
-function initFeatureFrontend(featureDirPath, featureConfig) {
+function initFrontendModule(featureDirPath, featureConfig) {
 	const featureName = basename(dirname(featureDirPath)).toLowerCase().replace(new RegExp(`^${config.featureNamingPrefix}`), "");
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
@@ -584,7 +586,7 @@ function initFeatureFrontend(featureDirPath, featureConfig) {
 
 	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
-	// Add finisher for inserting the script tag into markup files
+	// Add finalizer for inserting the script tag into markup files
 	addFinalizer("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
 		if(!frontendModuleData) {
 			return;
@@ -611,7 +613,7 @@ function createCache(cacheRefreshFrequency) {
 // Initial actions
 
 // Init frontend base file to provide reusable methods among features
-initFeatureFrontend(__dirname);
+initFrontendModule(__dirname);
 
 // Create web server instance
 http.createServer((req, res) => {
@@ -633,7 +635,7 @@ http.createServer((req, res) => {
  * Redundant requifre calls of a specific feature module will be ignored.
  * @param {String} module Module identifier
  */
-function requireFeatureModule(featureModule) {
+function requirePluginModule(featureModule) {
 	const identifier = featureModule.match(/[a-z0-9@/._-]+$/i)[0];
 
 	if(requiredModules.has(identifier)) {
@@ -659,8 +661,8 @@ module.exports = {	// TODO: Update names?
 	applyFinalizer,
 	setRoute,
 	getFromConfig,
-	initFeatureFrontend,
+	initFrontendModule,
 	createCache,
-	require: requireFeatureModule,
+	require: requirePluginModule,
 	log
 };
