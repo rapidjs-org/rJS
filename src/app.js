@@ -70,10 +70,10 @@ const log = require("./log")(!webConfig.muteConsoleOutput);
 
 const http = require(webConfig.useHttps ? "https" : "http");
 
-// Request reader, finalizer and custom method handler objects
+// Request reader, response modifier and custom method handler objects
 let pathModifierHandlers = {};
 let readerHandlers = {};
-let finalizerHandlers = {};
+let responseModifierHandlers = {};
 let routeHandlers = {
 	get: [],
 	post: []
@@ -313,9 +313,9 @@ function handleGET(res, pathname, queryParametersObj) {
 		data = readFileSync(localPath);
 	}
 	
-	// Sequentially apply defined finalizers (dynamic pages without extension use both empty and default extension handlers)
+	// Sequentially apply defined response modifiers (dynamic pages without extension use both empty and default extension handlers)
 	try {
-		data = applyFinalizer(extension, data, localPath, queryParametersObj);
+		data = applyResponseModifier(extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		logError(err);
 		
@@ -469,29 +469,29 @@ function applyReader(extension, pathname) {
 
 /**
  * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
- * Multiple finalizer handlers may be set up per extension to be applied in order of setup.
+ * Multiple response modifier handlers may be set up per extension to be applied in order of setup.
  * @param {String} extension Extension name (without a leading dot) 
  * @param {Function} callback Callback getting passed the data string to finalize and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
  */
-function addFinalizer(extension, callback) {
+function addResponseModifier(extension, callback) {
 	extension = utils.normalizeExtension(extension);
 
-	!finalizerHandlers[extension] && (finalizerHandlers[extension] = []);
+	!responseModifierHandlers[extension] && (responseModifierHandlers[extension] = []);
 	
-	finalizerHandlers[extension].push(callback);
+	responseModifierHandlers[extension].push(callback);
 }
 
 /**
- * Call finalizer for a specific extension.
+ * Call response modifier for a specific extension.
  * @param {String} extension Extension name
  * @param {String} data Data to finalize
  * @param {String} [pathname] Pathname of associated request to pass
  * @param {Object} [queryParametersObj] Query parameters object to pass
  * @returns {*} Serializable finalizeed data
  */
-function applyFinalizer(extension, data, pathname, queryParametersObj) {
-	(finalizerHandlers[extension] || []).forEach(finalizer => {
-		const curData = finalizer(String(data), pathname, queryParametersObj);
+function applyResponseModifier(extension, data, pathname, queryParametersObj) {
+	(responseModifierHandlers[extension] || []).forEach(responseModifier => {
+		const curData = responseModifier(String(data), pathname, queryParametersObj);
 		curData && (data = curData);
 	});
 
@@ -586,8 +586,8 @@ function initFrontendModule(featureDirPath, featureConfig) {
 
 	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
 
-	// Add finalizer for inserting the script tag into markup files
-	addFinalizer("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
+	// Add response modifier for inserting the script tag into markup files
+	addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
 		if(!frontendModuleData) {
 			return;
 		}
@@ -657,8 +657,8 @@ module.exports = {	// TODO: Update names?
 	addPathModifier,
 	setReader,
 	applyReader,
-	addFinalizer,
-	applyFinalizer,
+	addResponseModifier,
+	applyResponseModifier,
 	setRoute,
 	getFromConfig,
 	initFrontendModule,
