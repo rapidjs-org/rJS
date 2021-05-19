@@ -6,8 +6,22 @@ const config = {
  * Log a message to the console.
  * @param {String} message Message
  */
-function log(message) {
+ function log(message) {
 	console.log(`[${config.appName}] ${message}`);
+}
+
+/**
+ * Log a message to the console.
+ * @param {String} message Message
+ */
+function error(err) {
+	if(!isNaN(err)) {
+		// Do not log thrown status error used for internal redirect
+		return;
+	}
+
+	log("An internal server error occured:");
+	console.error(err);
 }
 
 // TODO: Process error implicitly
@@ -21,5 +35,8 @@ module.exports = isEnabled => {
 		return _ => {};
 	}
 
-	return log;
+	return {
+		log,
+		error
+	};
 };

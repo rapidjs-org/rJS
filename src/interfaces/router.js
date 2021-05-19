@@ -3,7 +3,7 @@ let routeHandlers = {
 	post: []
 };
 
-module.exports = log => {
+module.exports = output => {
     return {
         /**
          * Set up a custom route handler for a certain method.
@@ -19,7 +19,7 @@ module.exports = log => {
                 throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
             }
 
-            routeHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
+            routeHandlers[method][pathname] && (output.log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
             routeHandlers[method][pathname] = {
                 callback: callback,
