@@ -34,6 +34,7 @@ const {parse: parseUrl} = require("url");
 const WEB_PATH = join(require.main.path, config.webDirName);
 
 const utils = require("./utils");
+
 const rateLimiter = require("./rate-limiter");
 
 // Store identifiers of required modules from within plug-ins in order to prevent redundant loading
@@ -69,16 +70,12 @@ const cache = {
 };
 const log = require("./log")(!webConfig.muteConsoleOutput);
 
-const http = require(webConfig.useHttps ? "https" : "http");
+const router = require("./router")(log);
 
 // Request reader, response modifier and custom method handler objects
 let pathModifierHandlers = {};
 let readerHandlers = {};
 let responseModifierHandlers = {};
-let routeHandlers = {
-	get: [],
-	post: []
-};
 
 function logError(err) {
 	if(!isNaN(err)) {
@@ -249,10 +246,10 @@ function handleGET(res, pathname, queryParametersObj) {
 	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
 
-	if(routeHandlers.get[pathname]) {
+	if(router.hasRoute("get", pathname)) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
-			data = applyRoute("get", pathname);
+			data = router.applyRoute("get", pathname);
 			
 			respond(res, 200, data);
 		} catch(err) {
@@ -343,7 +340,7 @@ function handleGET(res, pathname, queryParametersObj) {
  * @param {String} pathname URL pathname part
  */
 function handlePOST(req, res, pathname) {
-	if(!routeHandlers.post[pathname]) {
+	if(!router.hasRoute("post", pathname)) {
 		// Block request if no related POST handler defined
 		respond(res, 404);
 
@@ -378,7 +375,7 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			const data = applyRoute("post", pathname, body);
+			const data = router.applyRoute("post", pathname, body);
 			
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
@@ -504,45 +501,6 @@ function applyResponseModifier(extension, data, pathname, queryParametersObj) {
 }
 
 /**
- * Set up a custom route handler for a certain method.
- * @param {String} method Name of method to bind route to
- * @param {String} pathname Pathname to bind route to
- * @param {Function} callback Callback getting passed – if applicable – the request body object eventually returning the response data to be sent
- * @param {Boolean} [cachePermanently=false] Whether to cache the processed response permanently 
- */
-function setRoute(method, pathname, callback, cachePermanently = false) {
-	method = String(method).trim().toLowerCase();
-
-	if(!["get", "post"].includes(method)) {
-		throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
-	}
-
-	routeHandlers[method][pathname] && (log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
-
-	routeHandlers[method][pathname] = {
-		callback: callback,
-		cachePermanently: cachePermanently,
-		cached: null
-	};
-}
-
-function applyRoute(method, pathname, args) {
-	// TODO: Make response object accessible to allow modification?
-	let data;
-
-	if(routeHandlers[method][pathname].cached) {
-		data = routeHandlers[method][pathname].cached;
-	} else {
-		(args && !Array.isArray(args)) && (args = [args]);
-		data = routeHandlers[method][pathname].callback.apply(null, args);
-
-		routeHandlers[method][pathname].cachePermanently && (routeHandlers[method][pathname].cached = data);
-	}
-
-	return data;
-}
-
-/**
  * Get a value from the config object.
  * @param {String} key Key name
  * @returns {*} Respective value if defined
@@ -601,7 +559,7 @@ function initFrontendModule(plugInDirPath, plugInConfig) {
 	});
 
 	// Add GET route to retrieve frontend module script
-	setRoute("get", `${frontendFileLocation}`, _ => {
+	router.setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
 	});
 }
@@ -621,6 +579,8 @@ function createCache(cacheRefreshFrequency) {
 initFrontendModule(__dirname);
 
 // Create web server instance
+const http = require(webConfig.useHttps ? "https" : "http");
+
 http.createServer((req, res) => {
 	try {
 		handleRequest(req, res);
@@ -662,7 +622,6 @@ function requirePluginModule(plugInName) {
 
 // TODO: Restricted URL interface?
 // TODO: Provide support modules (e.g. block parser?)
-
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
 	addPathModifier,
@@ -670,10 +629,16 @@ module.exports = {	// TODO: Update names?
 	applyReader,
 	addResponseModifier,
 	applyResponseModifier,
-	setRoute,
+	setRoute: router.setRoute,
 	getFromConfig,
 	initFrontendModule,
 	require: requirePluginModule,
 	createCache,
 	log
-};
+};	/* {
+			... {
+				webPath: WEB_PATH,
+			},
+			... interface
+		}
+	*/
