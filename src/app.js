@@ -72,8 +72,8 @@ const output = require("./output")(!webConfig.muteConsoleOutput);
 
 const router = require("./interfaces/router")(output);
 const pathModifier = require("./interfaces/path-modifier")(output);
+const reader = require("./interfaces/reader")(output);
 
-let readerHandlers = {};
 let responseModifierHandlers = {};
 
 // TODO: Fix displayed .html extension in redirects
@@ -286,7 +286,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = applyReader(extension, localPath);
+		data = reader.applyReader(extension, localPath);
 	} catch(err) {
 		output.error(err);
 		
@@ -392,36 +392,6 @@ function inflateHeadTag(markup, str) {
 	}
 
 	return markup.replace(openingHeadTag[0], `${openingHeadTag[0]}${str}`);
-}
-
-/**
- * Set up a handler to read each GET request response data of a certain file extension in a specific manner (instead of using the default reader).
- * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
- * @param {String} extension Extension name (without a leading dot)
- * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code will lead to a related response.
- */
-function setReader(extension, callback) {
-	extension = utils.normalizeExtension(extension);
-
-	(extension.length == 0) && (extension = "html");
-
-	(readerHandlers[extension]) && (output.log(`Overriding reader for '${extension}' extension`));
-	
-	readerHandlers[extension] = callback;
-}
-
-/**
- * Call reader for a specific extension.
- * @param {String} extension Extension name (without a leading dot)
- * @param {String} pathname Pathname of request
- * @returns {*} Serializable read data
- */
-function applyReader(extension, pathname) {
-	if(!utils.isFunction(readerHandlers[extension])) {
-		throw 404;
-	}
-
-	return readerHandlers[extension](pathname);
 }
 
 // TODO: Remove log interface
@@ -581,17 +551,17 @@ function requirePluginModule(plugInName) {
 // TODO: Provide support modules (e.g. block parser?)
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
+	output,
 	addPathModifier: pathModifier.addPathModifier,
-	setReader,
-	applyReader,
+	setReader: reader.setReader,
+	applyReader: reader.applyReader,
 	addResponseModifier,
 	applyResponseModifier,
 	setRoute: router.setRoute,
 	getFromConfig,
 	initFrontendModule,
 	require: requirePluginModule,
-	createCache,
-	output
+	createCache
 };	/* {
 			... {
 				webPath: WEB_PATH,
