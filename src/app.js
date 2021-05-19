@@ -1,5 +1,5 @@
 const server = require("./server");
-const interface = {
+const coreInterface = {
 	...server,
 	... {
 		createCache,
@@ -19,7 +19,7 @@ let requiredModules = new Set();
  * @param {Number} cacheRefreshFrequency 
  * @returns {Object} Cache object
  */
- function createCache(cacheRefreshFrequency) {
+function createCache(cacheRefreshFrequency) {
 	return require("./support/cache")(cacheRefreshFrequency);
 }
 
@@ -49,12 +49,12 @@ function requirePluginModule(plugInName) {
 /**
  * Create rapid core instance.
  * @param {String[]} plugIns Array of plug-in names to use
- * @returns Core interface object
+ * @returns Core coreInterface object
  */
 module.exports = plugIns => {
 	(plugIns || []).forEach(name => {
-		require(name)(interface);
+		require(name)(coreInterface);
 	});
 	
-	return interface;
+	return coreInterface;
 };

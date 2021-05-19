@@ -13,6 +13,10 @@ const config = {
 	defaultFileName: "index",
 	devModeArgument: "-dev",
 	frontendModuleAppName: "RAPID",
+	frontendModuleFileName: {
+		prefix: "rapid.",
+		suffix: ".frontend"
+	},
 	frontendModuleReferenceName: {
 		external: "plugin",
 		internal: "_rapid"
@@ -85,7 +89,6 @@ const responseModifier = require("./interfaces/response-modifier")(output);
 // Create web server instance
 
 const http = require(webConfig.useHttps ? "https" : "http");
-
 http.createServer((req, res) => {
 	try {
 		handleRequest(req, res);
@@ -455,7 +458,7 @@ function initFrontendModule(plugInDirPath, plugInConfig) {
 		})(${config.frontendModuleAppName} || {});
 	`;
 
-	const frontendFileLocation = `/rapid.${plugInName}.frontend.js`;
+	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
 
 	// Add response modifier for inserting the script tag into markup files
 	responseModifier.addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
