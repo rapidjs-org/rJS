@@ -10,6 +10,8 @@ function log(message) {
 	console.log(`[${config.appName}] ${message}`);
 }
 
+// TODO: Process error implicitly
+
 /**
  * Return log message or an empty function if logging disabled.
  * @param {Boolean} isEnabled Whether console output is enabled

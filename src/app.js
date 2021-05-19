@@ -12,7 +12,6 @@ const config = {
 	},
 	defaultFileName: "index",
 	devModeArgument: "-dev",
-	featureNamingPrefix: "rapid-",
 	frontendModuleAppName: "RAPID",
 	frontendModuleReferenceName: {
 		external: "plugin",
@@ -22,6 +21,8 @@ const config = {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
 	},
+	plugInFrontendModuleName: "frontend",
+	plugInNamingPrefix: "rapid-",
 	supportFilePrefix: "_",
 	webDirName: "web"
 };
@@ -35,7 +36,7 @@ const WEB_PATH = join(require.main.path, config.webDirName);
 const utils = require("./utils");
 const rateLimiter = require("./rate-limiter");
 
-// Store identifiers of required modules from within features in order to prevent redundant loading
+// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
 // processes (and overriding or adding functionality interference).
 let requiredModules = new Set();
 
@@ -88,6 +89,8 @@ function logError(err) {
 	log("An internal server error occured:");
 	console.error(err);
 }
+
+// TODO: Fix displayed .html extension in redirects
 
 /**
  * Perform a redirect to a given path.
@@ -229,6 +232,9 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	let extension = extname(pathname).slice(1);
 
+	// Set client-side cache control for static files too
+	(extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequency / 1000))}`));
+	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
@@ -324,9 +330,6 @@ function handleGET(res, pathname, queryParametersObj) {
 		return;
 	}
 
-	// Set client-side cache control for static files too
-	(extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequenc / 1000))}`));
-	
 	// Set server-side cache
 	relatedCache.write(pathname, data);
 
@@ -351,6 +354,8 @@ function handlePOST(req, res, pathname) {
 	let body = [];
 	req.on("data", chunk => {
 		body.push(chunk);
+
+		// TODO: What if not in valid JSON format?
 
 		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
 		if(bodyByteSize > webConfig.maxPayloadSize) {
@@ -502,7 +507,7 @@ function applyResponseModifier(extension, data, pathname, queryParametersObj) {
  * Set up a custom route handler for a certain method.
  * @param {String} method Name of method to bind route to
  * @param {String} pathname Pathname to bind route to
- * @param {Function} callback Callback getting passed the response object and – if applicable – the request's body object returning the eventually send response data
+ * @param {Function} callback Callback getting passed – if applicable – the request body object eventually returning the response data to be sent
  * @param {Boolean} [cachePermanently=false] Whether to cache the processed response permanently 
  */
 function setRoute(method, pathname, callback, cachePermanently = false) {
@@ -540,33 +545,33 @@ function applyRoute(method, pathname, args) {
 /**
  * Get a value from the config object.
  * @param {String} key Key name
- * @returns {*} Associated value if defined
+ * @returns {*} Respective value if defined
  */
 function getFromConfig(key) {
 	return webConfig[key];
-}	// TODO: Only feature specifc values (e.g. via prefix?)
+}
 
 /**
- * Initialize the frontend module of a feature.
- * @param {String} featureDirPath Path to feature directory
- * @param {Object} featureConfig Config object of feature
+ * Initialize the frontend module of a plug-in.
+ * @param {String} plugInDirPath Path to plug-in directory
+ * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
-function initFrontendModule(featureDirPath, featureConfig) {
-	const featureName = basename(dirname(featureDirPath)).toLowerCase().replace(new RegExp(`^${config.featureNamingPrefix}`), "");
+function initFrontendModule(plugInDirPath, plugInConfig) {
+	const plugInName = basename(dirname(plugInDirPath)).toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
-	let frontendFilePath = join(featureDirPath, "frontend.js");
+	let frontendFilePath = join(plugInDirPath, `${config.plugInFrontendModuleName}.js`);
 	if(!existsSync(frontendFilePath)) {
 		return;
 	}
 
 	frontendModuleData = String(readFileSync(frontendFilePath));
-	featureConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
+	plugInConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
 		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
-		let value = featureConfig[attr];
+		let value = plugInConfig[attr];
 
-		(value === undefined) && (log(`${attr} not defined in related config object at '${join(featureDirPath, "frontend.js")}'`));
+		(value === undefined) && (log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
 
 		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
 		
@@ -579,12 +584,12 @@ function initFrontendModule(featureDirPath, featureConfig) {
 		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {
 		var ${config.frontendModuleReferenceName.external} = {};
 		${frontendModuleData}
-		${config.frontendModuleReferenceName.internal}["${featureName}"] = ${config.frontendModuleReferenceName.external}
+		${config.frontendModuleReferenceName.internal}["${plugInName}"] = ${config.frontendModuleReferenceName.external}
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
 	`;
 
-	const frontendFileLocation = `/rapid.${featureName}.frontend.js`;
+	const frontendFileLocation = `/rapid.${plugInName}.frontend.js`;
 
 	// Add response modifier for inserting the script tag into markup files
 	addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
@@ -612,7 +617,7 @@ function createCache(cacheRefreshFrequency) {
 
 // Initial actions
 
-// Init frontend base file to provide reusable methods among features
+// Init frontend base file to provide reusable methods among plug-ins
 initFrontendModule(__dirname);
 
 // Create web server instance
@@ -631,18 +636,24 @@ http.createServer((req, res) => {
 });
 
 /**
- * Require a feature module on core level.
- * Redundant requifre calls of a specific feature module will be ignored.
- * @param {String} module Module identifier
+ * Require a plug-in module on core level.
+ * Redundant requifre calls of a specific plug-in module will be ignored.
+ * @param {String} plugInName Plug-in module name
  */
-function requirePluginModule(featureModule) {
-	const identifier = featureModule.match(/[a-z0-9@/._-]+$/i)[0];
+function requirePluginModule(plugInName) {
+	const identifier = plugInName.match(/[a-z0-9@/._-]+$/i)[0];
 
 	if(requiredModules.has(identifier)) {
 		return;
 	}
 
-	require(featureModule)(module.exports);
+	try {
+		require(plugInName)(module.exports);
+	} catch(err) {
+		console.error(err);
+
+		// TODO: Auto-install plug-in dependecies if enabled in config (ask otherwise)
+	}
 
 	requiredModules.add(identifier);
 }
@@ -662,7 +673,7 @@ module.exports = {	// TODO: Update names?
 	setRoute,
 	getFromConfig,
 	initFrontendModule,
-	createCache,
 	require: requirePluginModule,
+	createCache,
 	log
 };
