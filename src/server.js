@@ -27,15 +27,16 @@ const config = {
 	webDirName: "web"
 };
 
+
 const {existsSync, readFileSync} = require("fs");
 const {extname, join, dirname, basename} = require("path");
 const {parse: parseUrl} = require("url");
 
-const WEB_PATH = join(require.main.path, config.webDirName);
-
 const utils = require("./utils");
 
-const rateLimiter = require("./rate-limiter");
+
+const WEB_PATH = join(require.main.path, config.webDirName);
+
 
 // Read config files (general configuration, MIMES)
 
@@ -61,6 +62,16 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	webConfig.devMode = true;
 }
 
+
+// Supports
+
+const rateLimiter = require("./support/rate-limiter");
+
+const cache = {
+	dynamic: require("./support/cache")(webConfig.cacheRefreshFrequency),
+	static: require("./support/cache")(),	// Never read static files again as they wont change
+};
+
 // Interfaces
 
 const output = require("./interfaces/output")(!webConfig.muteConsoleOutput);
@@ -70,12 +81,6 @@ const pathModifier = require("./interfaces/path-modifier")(output);
 const reader = require("./interfaces/reader")(output);
 const responseModifier = require("./interfaces/response-modifier")(output);
 
-// Cache
-
-const cache = {
-	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
-	static: require("./cache")(),	// Never read static files again as they wont change
-};
 
 // Create web server instance
 
@@ -95,7 +100,8 @@ http.createServer((req, res) => {
 	}
 });
 
-// Methods
+
+// Server functionality
 
 /**
  * Perform a redirect to a given path.
@@ -399,6 +405,9 @@ function handlePOST(req, res, pathname) {
 	});
 }
 
+
+// Implicit interfaces
+
 /**
  * Get a value from the config object.
  * @param {String} key Key name
@@ -468,42 +477,6 @@ function initFrontendModule(plugInDirPath, plugInConfig) {
 	});
 }
 
-/**
- * Create a custom cache object.
- * @param {Number} cacheRefreshFrequency 
- * @returns {Object} Cache object
- */
-function createCache(cacheRefreshFrequency) {
-	return require("./cache")(cacheRefreshFrequency);
-}
-
-// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
-// processes (and overriding or adding functionality interference).
-let requiredModules = new Set();
-
-/**
- * Require a plug-in module on core level.
- * Redundant requifre calls of a specific plug-in module will be ignored.
- * @param {String} plugInName Plug-in module name
- */
-function requirePluginModule(plugInName) {
-	const identifier = plugInName.match(/[a-z0-9@/._-]+$/i)[0];
-
-	if(requiredModules.has(identifier)) {
-		return;
-	}
-
-	try {
-		require(plugInName)(module.exports);
-	} catch(err) {
-		console.error(err);
-
-		// TODO: Auto-install plug-in dependecies if enabled in config (ask otherwise)
-	}
-
-	requiredModules.add(identifier);
-}
-
 // TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
 
 // TODO: Restricted URL interface?
@@ -520,7 +493,5 @@ module.exports = {	// TODO: Update names?
 	setRoute: router.setRoute,
 
 	getFromConfig,
-	initFrontendModule,
-	createCache,
-	require: requirePluginModule
+	initFrontendModule
 };
