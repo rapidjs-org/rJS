@@ -11,27 +11,30 @@ module.exports = isEnabled => {
 		return _ => {};
 	}
 
-	return {
-		/**
-		 * Log a message to the console.
-		 * @param {String} message Message
-		 */
-		log: message => {
-			console.log(`[${config.appName}] ${message}`);
-		},
-		
-		/**
-		 * Log a message to the console.
-		 * @param {String} message Message
-		 */
-		error: err => {
-			if(!isNaN(err)) {
-				// Do not log thrown status error used for internal redirect
-				return;
-			}
-		
-			log("An internal server error occured:");
-			console.error(err);
+	/**
+	 * Log a message to the console.
+	 * @param {String} message Message
+	 */
+	const log = message => {
+		console.log(`[${config.appName}] ${message}`);
+	};
+	
+	/**
+	 * Log a message to the console.
+	 * @param {String} message Message
+	 */
+	const error = err => {
+		if(!isNaN(err)) {
+			// Do not log thrown status error used for internal redirect
+			return;
 		}
+	
+		log("An internal server error occured:");
+		console.error(err);
+	};
+
+	return {
+		log,
+		error
 	};
 };
