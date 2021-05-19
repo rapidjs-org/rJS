@@ -37,11 +37,8 @@ const utils = require("./utils");
 
 const rateLimiter = require("./rate-limiter");
 
-// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
-// processes (and overriding or adding functionality interference).
-let requiredModules = new Set();
-
 // Read config files (general configuration, MIMES)
+
 /**
  * Read a custom configuration file and merge it (overriding) with the default configuration file.
  * @returns {Object} Resulting configuration object
@@ -64,17 +61,21 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	webConfig.devMode = true;
 }
 
-const cache = {
-	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
-	static: require("./cache")(),	// Never read static files again as they wont change
-};
+// Interfaces
+
 const output = require("./output")(!webConfig.muteConsoleOutput);
 
 const router = require("./interfaces/router")(output);
 const pathModifier = require("./interfaces/path-modifier")(output);
 const reader = require("./interfaces/reader")(output);
+const responseModifier = require("./interfaces/response-modifier")(output);
 
-let responseModifierHandlers = {};
+// Cache
+
+const cache = {
+	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
+	static: require("./cache")(),	// Never read static files again as they wont change
+};
 
 // TODO: Fix displayed .html extension in redirects
 
@@ -307,7 +308,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 	// Sequentially apply defined response modifiers (dynamic pages without extension use both empty and default extension handlers)
 	try {
-		data = applyResponseModifier(extension, data, localPath, queryParametersObj);
+		data = responseModifier.applyResponseModifier(extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		output.error(err);
 		
@@ -394,39 +395,6 @@ function inflateHeadTag(markup, str) {
 	return markup.replace(openingHeadTag[0], `${openingHeadTag[0]}${str}`);
 }
 
-// TODO: Remove log interface
-
-/**
- * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
- * Multiple response modifier handlers may be set up per extension to be applied in order of setup.
- * @param {String} extension Extension name (without a leading dot) 
- * @param {Function} callback Callback getting passed the data string to finalize and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
- */
-function addResponseModifier(extension, callback) {
-	extension = utils.normalizeExtension(extension);
-
-	!responseModifierHandlers[extension] && (responseModifierHandlers[extension] = []);
-	
-	responseModifierHandlers[extension].push(callback);
-}
-
-/**
- * Call response modifier for a specific extension.
- * @param {String} extension Extension name
- * @param {String} data Data to finalize
- * @param {String} [pathname] Pathname of associated request to pass
- * @param {Object} [queryParametersObj] Query parameters object to pass
- * @returns {*} Serializable finalizeed data
- */
-function applyResponseModifier(extension, data, pathname, queryParametersObj) {
-	(responseModifierHandlers[extension] || []).forEach(responseModifier => {
-		const curData = responseModifier(String(data), pathname, queryParametersObj);
-		curData && (data = curData);
-	});
-
-	return data;
-}
-
 /**
  * Get a value from the config object.
  * @param {String} key Key name
@@ -477,7 +445,7 @@ function initFrontendModule(plugInDirPath, plugInConfig) {
 	const frontendFileLocation = `/rapid.${plugInName}.frontend.js`;
 
 	// Add response modifier for inserting the script tag into markup files
-	addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
+	responseModifier.addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
 		if(!frontendModuleData) {
 			return;
 		}
@@ -522,6 +490,10 @@ http.createServer((req, res) => {
 	}
 });
 
+// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
+// processes (and overriding or adding functionality interference).
+let requiredModules = new Set();
+
 /**
  * Require a plug-in module on core level.
  * Redundant requifre calls of a specific plug-in module will be ignored.
@@ -552,16 +524,18 @@ function requirePluginModule(plugInName) {
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
 	output,
+
 	addPathModifier: pathModifier.addPathModifier,
 	setReader: reader.setReader,
 	applyReader: reader.applyReader,
-	addResponseModifier,
-	applyResponseModifier,
+	addResponseModifier: responseModifier.addResponseModifier,
+	applyResponseModifier: responseModifier.applyResponseModifier,
 	setRoute: router.setRoute,
+
 	getFromConfig,
 	initFrontendModule,
-	require: requirePluginModule,
-	createCache
+	createCache,
+	require: requirePluginModule
 };	/* {
 			... {
 				webPath: WEB_PATH,
