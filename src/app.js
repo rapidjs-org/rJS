@@ -47,7 +47,7 @@ let requiredModules = new Set();
  * @returns {Object} Resulting configuration object
  */
 const readConfigFile = (webPath, defaultName, customName) => {
-	const defaultFile = require(`./${defaultName}`);
+	const defaultFile = require(`./static/${defaultName}`);
 	const customFilePath = join(dirname(webPath), customName);
 	if(!existsSync(customFilePath)) {
 		return defaultFile;
@@ -68,24 +68,13 @@ const cache = {
 	dynamic: require("./cache")(webConfig.cacheRefreshFrequency),
 	static: require("./cache")(),	// Never read static files again as they wont change
 };
-const log = require("./log")(!webConfig.muteConsoleOutput);
+const output = require("./output")(!webConfig.muteConsoleOutput);
 
-const router = require("./router")(log);
+const router = require("./interfaces/router")(output);
+const pathModifier = require("./interfaces/path-modifier")(output);
 
-// Request reader, response modifier and custom method handler objects
-let pathModifierHandlers = {};
 let readerHandlers = {};
 let responseModifierHandlers = {};
-
-function logError(err) {
-	if(!isNaN(err)) {
-		// Do not log thrown status error used for internal redirect
-		return;
-	}
-
-	log("An internal server error occured:");
-	console.error(err);
-}
 
 // TODO: Fix displayed .html extension in redirects
 
@@ -253,7 +242,7 @@ function handleGET(res, pathname, queryParametersObj) {
 			
 			respond(res, 200, data);
 		} catch(err) {
-			logError(err);
+			output.error(err);
 
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
@@ -287,7 +276,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	(extension.length == 0) && (extension = "html");
 	
 	// Apply local pathname modifier if set up
-	let modifiedPath = modifyPath(extension, localPath);
+	let modifiedPath = pathModifier.applyPathModifier(extension, localPath);
 	if(modifiedPath) {
 		localPath = modifiedPath;
 	} else if(extname(localPath).length == 0){
@@ -299,7 +288,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	try {
 		data = applyReader(extension, localPath);
 	} catch(err) {
-		logError(err);
+		output.error(err);
 		
 		if(err !== 404) {
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
@@ -320,7 +309,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	try {
 		data = applyResponseModifier(extension, data, localPath, queryParametersObj);
 	} catch(err) {
-		logError(err);
+		output.error(err);
 		
 		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 
@@ -379,7 +368,7 @@ function handlePOST(req, res, pathname) {
 			
 			respond(res, 200, JSON.stringify(data));
 		} catch(err) {
-			logError(err);
+			output.error(err);
 
 			respond(res, isNaN(err) ? 500 : err);
 		}
@@ -406,38 +395,6 @@ function inflateHeadTag(markup, str) {
 }
 
 /**
- * Set up a handler to modifiy the local request URL for certain file type requests.
- * Multiple pathname modifier handlers may be set up per extension to be applied in order of setup.
- * @param {String} extension Extension name (without a leading dot)
- * @param {Function} callback Callback getting passed the the request URL in local pathname representation to return the modified path (or null if to use default local path)
- */
-function addPathModifier(extension, callback) {
-	extension = utils.normalizeExtension(extension);
-
-	!pathModifierHandlers[extension] && (pathModifierHandlers[extension] = []);
-	
-	pathModifierHandlers[extension].push(callback);
-}
-
-function modifyPath(extension, pathname) {
-	if(!pathModifierHandlers[extension]) {
-		return null;
-	}
-
-	let curPathname;
-	try {
-		pathModifierHandlers[extension].forEach(pathModifier => {
-			curPathname = pathModifier(pathname);
-			curPathname && (pathname = curPathname);
-		});
-	} catch(err) {
-		logError(err);
-	}
-
-	return (curPathname === null) ? null : pathname;
-}
-
-/**
  * Set up a handler to read each GET request response data of a certain file extension in a specific manner (instead of using the default reader).
  * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
  * @param {String} extension Extension name (without a leading dot)
@@ -448,7 +405,7 @@ function setReader(extension, callback) {
 
 	(extension.length == 0) && (extension = "html");
 
-	(readerHandlers[extension]) && (log(`Overriding reader for '${extension}' extension`));
+	(readerHandlers[extension]) && (output.log(`Overriding reader for '${extension}' extension`));
 	
 	readerHandlers[extension] = callback;
 }
@@ -529,7 +486,7 @@ function initFrontendModule(plugInDirPath, plugInConfig) {
 		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
 		let value = plugInConfig[attr];
 
-		(value === undefined) && (log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
+		(value === undefined) && (output.log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
 
 		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
 		
@@ -585,13 +542,13 @@ http.createServer((req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
-		logError(err);
+		output.error(err);
 	}
 }).listen(webConfig.port, null, null, _ => {
-	log(`Server started listening on port ${webConfig.port}`);
+	output.log(`Server started listening on port ${webConfig.port}`);
 
 	if(webConfig.devMode) {
-		log("Running DEV MODE");
+		output.log("Running DEV MODE");
 	}
 });
 
@@ -624,7 +581,7 @@ function requirePluginModule(plugInName) {
 // TODO: Provide support modules (e.g. block parser?)
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
-	addPathModifier,
+	addPathModifier: pathModifier.addPathModifier,
 	setReader,
 	applyReader,
 	addResponseModifier,
@@ -634,7 +591,7 @@ module.exports = {	// TODO: Update names?
 	initFrontendModule,
 	require: requirePluginModule,
 	createCache,
-	log
+	output
 };	/* {
 			... {
 				webPath: WEB_PATH,
