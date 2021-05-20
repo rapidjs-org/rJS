@@ -1,5 +1,6 @@
 .DS_Store
-build.js
-node_modules/
+
 package-lock.json
-test/
+
+node_modules/
+out/
