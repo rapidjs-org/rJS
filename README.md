@@ -9,4 +9,4 @@ rapidJS is a web application development framework providing a simplified and ac
 [Browse project templates](https://rapidjs.org/templates)\
 \
 \
-(c) Thassilo Martin Schiepanski
+*© Thassilo Martin Schiepanski*
