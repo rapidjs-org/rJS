@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "start": "node ./src/app.js",
+    "build": "node ./build.js",
+    "start": "node ./out/app.js",
     "test": "./node_modules/.bin/eslint --fix src/"
   },
   "repository": {
@@ -18,6 +19,6 @@
   },
   "homepage": "https://github.com/t-ski/server#readme",
   "devDependencies": {
-    "eslint": "^7.21.0"
+    "eslint": "^7.26.0"
   }
 }

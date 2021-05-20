@@ -8,9 +8,6 @@
     "globals": {
         "plugin": true
     },
-    "globals": {
-        "plugin": true
-    },
     "parserOptions": {
         "ecmaVersion": 12,
         "sourceType": "module"
