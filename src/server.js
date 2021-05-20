@@ -422,10 +422,34 @@ function getFromConfig(key) {
 
 /**
  * Initialize the frontend module of a plug-in.
- * @param {String} plugInDirPath Path to plug-in directory
  * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
-function initFrontendModule(plugInDirPath, plugInConfig) {
+function initFrontendModule(plugInConfig) {
+	const getCallerPath = _ => {
+		try {
+			const err = new Error();
+			let callerFile,  curFile;
+	
+			Error.prepareStackTrace = (err, stack) => {
+				return stack;
+			};
+	
+			curFile = err.stack.shift().getFileName();
+	
+			while(err.stack.length) {
+				callerFile = err.stack.shift().getFileName();
+				
+				if(curFile !== callerFile) {
+					return callerFile;
+				}
+			}
+		} catch(err) {
+			// ...
+		}
+		return undefined;
+	};
+	
+	const plugInDirPath = getCallerPath();
 	const plugInName = basename(dirname(plugInDirPath)).toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
