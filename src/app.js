@@ -54,7 +54,7 @@ function requirePluginModule(plugInName) {
 module.exports = plugIns => {
 	(plugIns || []).forEach(name => {
 		require(name)(coreInterface);
-	});
+	});	// TODO: Handle/translate cryptic require errors
 	
 	return coreInterface;
 };

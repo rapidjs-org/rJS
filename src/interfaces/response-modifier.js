@@ -1,8 +1,8 @@
-const {normalizeExtension} = require("../utils");
+const {normalizeExtension, isString} = require("../utils");
 
 let responseModifierHandlers = {};
 
-module.exports = _ => {
+module.exports = output => {
 	return {
 		/**
          * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
@@ -28,8 +28,13 @@ module.exports = _ => {
          */
 		applyResponseModifier: (extension, data, pathname, queryParametersObj) => {
 			(responseModifierHandlers[extension] || []).forEach(responseModifier => {
-				const curData = responseModifier(String(data), pathname, queryParametersObj);
-				curData && (data = curData);
+				if(!isString(data) && !Buffer.isBuffer(data)) {
+					output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
+
+					// TODO: Precise error info/output
+				} else {
+					data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, pathname, queryParametersObj);
+				}
 			});
 
 			return data;
