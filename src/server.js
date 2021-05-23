@@ -84,6 +84,7 @@ const router = require("./interfaces/router")(output);
 const pathModifier = require("./interfaces/path-modifier")(output);
 const reader = require("./interfaces/reader")(output);
 const responseModifier = require("./interfaces/response-modifier")(output);
+const requestInterceptor = require("./interfaces/request-interceptor");
 
 
 // Create web server instance
@@ -182,7 +183,8 @@ function respondProperly(res, method, pathname, status) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
-	w
+	requestInterceptor.applyRequestInterceptor(req);
+
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
@@ -518,6 +520,7 @@ module.exports = {	// TODO: Update names?
 	addResponseModifier: responseModifier.addResponseModifier,
 	applyResponseModifier: responseModifier.applyResponseModifier,
 	setRoute: router.setRoute,
+	setRequestInterceptor: requestInterceptor.setRequestInterceptor,
 
 	getFromConfig,
 	initFrontendModule
