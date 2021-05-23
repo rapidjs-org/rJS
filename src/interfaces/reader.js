@@ -1,4 +1,4 @@
-const {normalizeExtension, isFunction} = require("../utils");
+const {normalizeExtension, isFunction, isString} = require("../utils");
 
 let readerHandlers = {};
 
@@ -29,6 +29,13 @@ module.exports = output => {
 		applyReader: (extension, pathname) => {
 			if(!isFunction(readerHandlers[extension])) {
 				throw 404;
+			}
+
+			const data = readerHandlers[extension](pathname);
+			if(!isString(data) && !Buffer.isBuffer(data)) {
+				output.error(new TypeError(`Reader ('${extension}') must return value of type string or buffer, given ${typeof(data)}.`));
+				
+				return "";
 			}
 
 			return readerHandlers[extension](pathname);

@@ -30,6 +30,7 @@ module.exports = isEnabled => {
 		}
 	
 		log("An internal server error occured:");
+		console.error(err.message);
 		console.error(err);
 	};
 
