@@ -414,11 +414,12 @@ function handlePOST(req, res, pathname) {
 /**
  * Get a value from the config object.
  * @param {String} key Key name
+ * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for plug-in specific configuration)
  * @returns {*} Respective value if defined
  */
-function getFromConfig(key) {
-	return webConfig[key];
-	// TODO: Plug-in sub level request
+function getFromConfig(key, pluginSubObject) {
+	const obj = pluginSubObject ? webConfig[pluginSubObject] : webConfig;
+	return obj ? obj[key] : undefined;
 }
 
 /**
