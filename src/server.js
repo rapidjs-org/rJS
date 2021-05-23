@@ -348,8 +348,8 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	// Set server-side cache
 	relatedCache.write(pathname, data);
-
-	respond(res, 200, Buffer.from(data, "UTF-8"));
+	
+	respond(res, 200, Buffer.isBuffer(data) ? data : Buffer.from(data, "UTF-8"));
 }
 
 /**
@@ -418,6 +418,7 @@ function handlePOST(req, res, pathname) {
  */
 function getFromConfig(key) {
 	return webConfig[key];
+	// TODO: Plug-in sub level request
 }
 
 /**
@@ -426,27 +427,24 @@ function getFromConfig(key) {
  */
 function initFrontendModule(plugInConfig) {
 	const getCallerPath = _ => {
-		try {
-			const err = new Error();
-			let callerFile,  curFile;
-	
-			Error.prepareStackTrace = (err, stack) => {
-				return stack;
-			};
-	
-			curFile = err.stack.shift().getFileName();
-	
-			while(err.stack.length) {
-				callerFile = err.stack.shift().getFileName();
-				
-				if(curFile !== callerFile) {
-					return callerFile;
-				}
+		const err = new Error();
+		let callerFile,  curFile;
+		
+		Error.prepareStackTrace = (err, stack) => {
+			return stack;
+		};
+
+		curFile = err.stack.shift().getFileName();
+
+		while(err.stack.length) {
+			callerFile = err.stack.shift().getFileName();
+			
+			if(curFile !== callerFile) {
+				return dirname(callerFile);
 			}
-		} catch(err) {
-			// ...
 		}
-		return undefined;
+		
+		throw new SyntaxError("nnn");
 	};
 	
 	const plugInDirPath = getCallerPath();
@@ -484,8 +482,8 @@ function initFrontendModule(plugInConfig) {
 
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
 
-	// Add response modifier for inserting the script tag into markup files
-	responseModifier.addResponseModifier("html", data => {	// TODO: Which extension if sometimes only for dynamic pages?
+	// Add response modifier for inserting the script tag into document markup files
+	responseModifier.addResponseModifier("html", data => {
 		if(!frontendModuleData) {
 			return;
 		}
