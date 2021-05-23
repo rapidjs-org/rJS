@@ -27,15 +27,16 @@ module.exports = output => {
          * @returns {*} Serializable finalizeed data
          */
 		applyResponseModifier: (extension, data, pathname, queryParametersObj) => {
-			(responseModifierHandlers[extension] || []).forEach(responseModifier => {
+			for(let responseModifier of (responseModifierHandlers[extension] || [])) {
 				if(!isString(data) && !Buffer.isBuffer(data)) {
 					output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
-
 					// TODO: Precise error info/output
+					
+					return data;
 				} else {
 					data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, pathname, queryParametersObj);
 				}
-			});
+			}
 
 			return data;
 		}
