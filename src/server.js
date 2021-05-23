@@ -182,6 +182,7 @@ function respondProperly(res, method, pathname, status) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
+	w
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);

@@ -1,6 +1,10 @@
 const config = {
-	appName: "rapid"
+	appName: "rJS"
 };
+
+function out(message, style) {
+	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
+}
 
 /**
  * Return log message or an empty function if logging disabled.
@@ -16,7 +20,7 @@ module.exports = isEnabled => {
 	 * @param {String} message Message
 	 */
 	const log = message => {
-		console.log(`[${config.appName}] ${message}`);
+		out(message);
 	};
 	
 	/**
@@ -28,10 +32,9 @@ module.exports = isEnabled => {
 			// Do not log thrown status error used for internal redirect
 			return;
 		}
-	
-		log("An internal server error occured:");
-		console.error(err.message);
-		console.error(err);
+		
+		out(` ${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""} `, "\x1b[41m\x1b[37m");
+		console.log(err);
 	};
 
 	return {
