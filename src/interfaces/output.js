@@ -32,7 +32,7 @@ module.exports = isEnabled => {
 			// Do not log thrown status error used for internal redirect
 			return;
 		}
-		
+
 		out(` ${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""} `, "\x1b[41m\x1b[37m");
 		console.log(err);
 	};

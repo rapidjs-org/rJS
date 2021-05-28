@@ -40,7 +40,9 @@ const utils = require("./utils");
 
 
 const WEB_PATH = join(require.main.path, config.webDirName);
+// TODO: Differ static cache (>1y) and dynamic cache (<30s)
 
+// TODO: Implement interface mthod dev mode only flag?
 
 // Read config files (general configuration, MIMES)
 
@@ -184,7 +186,7 @@ function respondProperly(res, method, pathname, status) {
  */
 function handleRequest(req, res) {
 	requestInterceptor.applyRequestInterceptor(req);
-
+	
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
@@ -252,8 +254,8 @@ function handleGET(res, pathname, queryParametersObj) {
 	let extension = extname(pathname).slice(1);
 
 	// Set client-side cache control for static files too
-	(extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${(webConfig.devMode ? null : (webConfig.cacheRefreshFrequency / 1000))}`));
-	
+	(!webConfig.devMode && extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency}`));
+
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
@@ -267,7 +269,7 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
-
+	
 	if(router.hasRoute("get", pathname)) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
@@ -321,9 +323,9 @@ function handleGET(res, pathname, queryParametersObj) {
 	try {
 		data = reader.applyReader(extension, localPath);
 	} catch(err) {
-		output.error(err);
-		
 		if(err !== 404) {
+			output.error(err);
+
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 
 			return;
@@ -334,7 +336,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 			return;
 		}
-		
+
 		data = readFileSync(localPath);
 	}
 	

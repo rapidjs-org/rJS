@@ -24,7 +24,7 @@ module.exports = output => {
          * @param {String} data Data to finalize
          * @param {String} [pathname] Pathname of associated request to pass
          * @param {Object} [queryParametersObj] Query parameters object to pass
-         * @returns {*} Serializable finalizeed data
+         * @returns {*} Serializable modified data
          */
 		applyResponseModifier: (extension, data, pathname, queryParametersObj) => {
 			for(let responseModifier of (responseModifierHandlers[extension] || [])) {
