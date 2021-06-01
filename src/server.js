@@ -419,7 +419,7 @@ function handlePOST(req, res, pathname) {
 /**
  * Get a value from the config object.
  * @param {String} key Key name
- * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for plug-in specific configuration)
+ * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for <nobr>plug-in</nobr> specific configuration)
  * @returns {*} Respective value if defined
  */
 function getFromConfig(key, pluginSubObject) {
@@ -428,8 +428,8 @@ function getFromConfig(key, pluginSubObject) {
 }
 
 /**
- * Initialize the frontend module of a plug-in.
- * @param {Object} plugInConfig Plug-in local config object providing static naming information
+ * Initialize the frontend module of a <nobr>plug-in</nobr>.
+ * @param {Object} plugInConfig <nobr>Plug-in</nobr> local config object providing static naming information
  */
 function initFrontendModule(plugInConfig) {
 	const getCallerPath = _ => {
