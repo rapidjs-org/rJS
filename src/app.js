@@ -7,10 +7,10 @@ const coreInterface = {
 	}
 };
 
-// Init frontend base file to provide reusable methods among plug-ins
+// Init frontend base file to provide reusable methods among <nobr>plug-ins</nobr>
 server.initFrontendModule(__dirname);
 
-// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
+// Store identifiers of required modules from within <nobr>plug-ins</nobr> in order to prevent redundant loading
 // processes (and overriding or adding functionality interference).
 let requiredModules = new Set();
 
@@ -24,9 +24,9 @@ function createCache(cacheRefreshFrequency) {
 }
 
 /**
- * Require a plug-in module on core level.
- * Redundant requifre calls of a specific plug-in module will be ignored.
- * @param {String} plugInName Plug-in module name
+ * Require a <nobr>plug-in</nobr> module on core level.
+ * Redundant requifre calls of a specific <nobr>plug-in</nobr> module will be ignored.
+ * @param {String} plugInName <nobr>Plug-in</nobr> module name
  */
 function requirePluginModule(plugInName) {
 	const identifier = plugInName.match(/[a-z0-9@/._-]+$/i)[0];
@@ -40,7 +40,7 @@ function requirePluginModule(plugInName) {
 	} catch(err) {
 		console.error(err);
 
-		// TODO: Auto-install plug-in dependecies if enabled in config (ask otherwise)
+		// TODO: Auto-install <nobr>plug-in</nobr> dependecies if enabled in config (ask otherwise)
 	}
 
 	requiredModules.add(identifier);
@@ -48,7 +48,7 @@ function requirePluginModule(plugInName) {
 
 /**
  * Create rapid core instance.
- * @param {String[]} plugIns Array of plug-in names to use
+ * @param {String[]} plugIns Array of <nobr>plug-in</nobr> names to use
  * @returns Core coreInterface object
  */
 module.exports = plugIns => {

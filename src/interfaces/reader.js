@@ -37,6 +37,7 @@ module.exports = output => {
 				
 				return "";
 			}
+			// TODO: What about errors?
 
 			return readerHandlers[extension](pathname);
 		}
