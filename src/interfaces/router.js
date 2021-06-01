@@ -1,7 +1,13 @@
+const {normalize} = require("path");
+
 let routeHandlers = {
 	get: [],
 	post: []
 };
+
+function normalizePath(pathname) {
+	return normalize(pathname);
+}
 
 module.exports = output => {
 	return {
@@ -19,24 +25,35 @@ module.exports = output => {
 				throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
 			}
 
+			pathname = normalizePath(pathname);
+
 			routeHandlers[method][pathname] && (output.log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
 			routeHandlers[method][pathname] = {
 				callback: callback,
-				cachePermanently: cachePermanently,
+				cachePermanently: cachePermanently,	// TODO: Only in prod mode
 				cached: null
 			};
+
+			// TODO: Argument whether to apply related response modifiers to route handler response (false by default)
 		},
 
 		hasRoute: (method, pathname) => {
+			pathname = normalizePath(pathname);
+
 			return routeHandlers[method.toLowerCase()][pathname] ? true : false;
 		},
 
 		applyRoute: (method, pathname, args) => {
-			// TODO: Make response object accessible to allow modification?
+			if(!routeHandlers[method] || !routeHandlers[method][pathname]) {
+				throw new ReferenceError(`Route to be applied does not exist '${method}': '${pathname}'`)
+			}
+
+			pathname = normalizePath(pathname);
+
 			let data;
 
-			if (routeHandlers[method][pathname].cached) {
+			if(routeHandlers[method][pathname].cached) {
 				data = routeHandlers[method][pathname].cached;
 			} else {
 				(args && !Array.isArray(args)) && (args = [args]);
@@ -45,7 +62,7 @@ module.exports = output => {
 				routeHandlers[method][pathname].cachePermanently && (routeHandlers[method][pathname].cached = data);
 			}
 
-			return data;
+			return data || null;
 		}
 	};
 };
