@@ -80,14 +80,13 @@ const cache = {
 
 // Interfaces
 
-const output = require("./interfaces/output")(!webConfig.muteConsoleOutput);
+const output = require("./interfaces/output");
 
-const router = require("./interfaces/router")(output);
-const pathModifier = require("./interfaces/path-modifier")(output);
-const reader = require("./interfaces/reader")(output);
-const responseModifier = require("./interfaces/response-modifier")(output);
+const router = require("./interfaces/router");
+const pathModifier = require("./interfaces/path-modifier");
+const reader = require("./interfaces/reader");
+const responseModifier = require("./interfaces/response-modifier");
 const requestInterceptor = require("./interfaces/request-interceptor");
-
 
 // Create web server instance
 
@@ -419,7 +418,7 @@ function handlePOST(req, res, pathname) {
 /**
  * Get a value from the config object.
  * @param {String} key Key name
- * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for <nobr>plug-in</nobr> specific configuration)
+ * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for plug-in specific configuration)
  * @returns {*} Respective value if defined
  */
 function getFromConfig(key, pluginSubObject) {
@@ -428,8 +427,8 @@ function getFromConfig(key, pluginSubObject) {
 }
 
 /**
- * Initialize the frontend module of a <nobr>plug-in</nobr>.
- * @param {Object} plugInConfig <nobr>Plug-in</nobr> local config object providing static naming information
+ * Initialize the frontend module of a plug-in.
+ * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
 function initFrontendModule(plugInConfig) {
 	const getCallerPath = _ => {
@@ -508,22 +507,15 @@ function initFrontendModule(plugInConfig) {
 	});
 }
 
+// TODO: Provide option to set/change response headers
+
 // TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
 
 // TODO: Restricted URL interface?
 // TODO: Provide support modules (e.g. block parser?)
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
-	output,
-
-	addPathModifier: pathModifier.addPathModifier,
-	setReader: reader.setReader,
-	applyReader: reader.applyReader,
-	addResponseModifier: responseModifier.addResponseModifier,
-	applyResponseModifier: responseModifier.applyResponseModifier,
-	setRoute: router.setRoute,
-	setRequestInterceptor: requestInterceptor.setRequestInterceptor,
-
+	
 	getFromConfig,
 	initFrontendModule
 };

@@ -10,24 +10,20 @@ function out(message, style) {
  * Return log message or an empty function if logging disabled.
  * @param {Boolean} isEnabled Whether console output is enabled
  */
-module.exports = isEnabled => {
-	if(!isEnabled) {
-		return _ => {};
-	}
-
+module.exports = {
 	/**
 	 * Log a message to the console.
 	 * @param {String} message Message
 	 */
-	const log = message => {
+	log: message => {
 		out(message);
-	};
+	},
 	
 	/**
 	 * Log a message to the console.
 	 * @param {String} message Message
 	 */
-	const error = err => {
+	error: err => {
 		if(!isNaN(err)) {
 			// Do not log thrown status error used for internal redirect
 			return;
@@ -35,10 +31,5 @@ module.exports = isEnabled => {
 
 		out(` ${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""} `, "\x1b[41m\x1b[37m");
 		console.log(err);
-	};
-
-	return {
-		log,
-		error
-	};
+	}
 };
