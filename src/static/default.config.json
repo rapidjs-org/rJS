@@ -5,6 +5,5 @@
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": 80,
-    "useHttps": false,
-    "muteConsoleOutput": false
+    "useHttps": false
 }
