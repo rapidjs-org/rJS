@@ -1,7 +1,5 @@
 const {isFunction} = require("../utils");
 
-const output = require("./output");
-
 let requestInterceptorHandlers = [];
 
 module.exports = {
