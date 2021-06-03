@@ -6,10 +6,6 @@ function out(message, style) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
 }
 
-/**
- * Return log message or an empty function if logging disabled.
- * @param {Boolean} isEnabled Whether console output is enabled
- */
 module.exports = {
 	/**
 	 * Log a message to the console.
@@ -20,16 +16,23 @@ module.exports = {
 	},
 	
 	/**
-	 * Log a message to the console.
+	 * Log an error to the console.
 	 * @param {String} message Message
+	 * @param {Boolean} [terminate=false] Whether to terminate application execution after error logging
 	 */
-	error: err => {
+	error: (err, terminate = false) => {
 		if(!isNaN(err)) {
 			// Do not log thrown status error used for internal redirect
 			return;
 		}
 
-		out(` ${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""} `, "\x1b[41m\x1b[37m");
-		console.log(err);
+		let message = (err instanceof Error) ? `${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""}` : err;
+		out(`${message}\n`, "\x1b[41m\x1b[37m");
+
+		console.error(err);
+		
+		if(terminate) {
+			process.exit();
+		}
 	}
 };
