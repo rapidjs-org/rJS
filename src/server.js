@@ -4,7 +4,6 @@
  * t-ski@GitHub
  */
 
-// Syntax literals config object
 const config = {
 	configFileName: {
 		default: "default.config.json",
@@ -13,14 +12,6 @@ const config = {
 	defaultFileName: "index",
 	devModeArgument: "-dev",
 	frontendModuleAppName: "RAPID",
-	frontendModuleFileName: {
-		prefix: "rapid.",
-		suffix: ".frontend"
-	},
-	frontendModuleReferenceName: {
-		external: "plugin",
-		internal: "_rapid"
-	},
 	mimesFileName: {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
@@ -38,6 +29,15 @@ const {parse: parseUrl} = require("url");
 
 const utils = require("./utils");
 
+// Interfaces
+
+const output = require("./interfaces/output");
+
+const router = require("./interfaces/router");
+const pathModifier = require("./interfaces/path-modifier");
+const reader = require("./interfaces/reader");
+const responseModifier = require("./interfaces/response-modifier");
+const requestInterceptor = require("./interfaces/request-interceptor");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 // TODO: Differ static cache (>1y) and dynamic cache (<30s)
@@ -77,16 +77,6 @@ const cache = {
 	dynamic: require("./support/cache")(webConfig.cacheRefreshFrequency),
 	static: require("./support/cache")(),	// Never read static files again as they wont change
 };
-
-// Interfaces
-
-const output = require("./interfaces/output");
-
-const router = require("./interfaces/router");
-const pathModifier = require("./interfaces/path-modifier");
-const reader = require("./interfaces/reader");
-const responseModifier = require("./interfaces/response-modifier");
-const requestInterceptor = require("./interfaces/request-interceptor");
 
 // Create web server instance
 
@@ -426,87 +416,6 @@ function getFromConfig(key, pluginSubObject) {
 	return obj ? obj[key] : undefined;
 }
 
-/**
- * Initialize the frontend module of a plug-in.
- * @param {Object} plugInConfig Plug-in local config object providing static naming information
- */
-function initFrontendModule(plugInConfig) {
-	const getCallerPath = _ => {
-		const err = new Error();
-		let callerFile,  curFile;
-		
-		Error.prepareStackTrace = (err, stack) => {
-			return stack;
-		};
-
-		curFile = err.stack.shift().getFileName();
-
-		while(err.stack.length) {
-			callerFile = err.stack.shift().getFileName();
-			
-			if(curFile !== callerFile) {
-				return dirname(callerFile);
-			}
-		}
-		
-		throw new SyntaxError("nnn");
-	};
-	
-	const plugInDirPath = getCallerPath();
-	const plugInName = basename(dirname(plugInDirPath)).toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
-	
-	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
-	let frontendModuleData;
-	let frontendFilePath = join(plugInDirPath, `${config.plugInFrontendModuleName}.js`);
-	if(!existsSync(frontendFilePath)) {
-		return;
-	}
-
-	frontendModuleData = String(readFileSync(frontendFilePath));
-	plugInConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
-		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
-		let value = plugInConfig[attr];
-
-		(value === undefined) && (output.log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
-
-		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
-		
-		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
-	});
-
-	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
-	frontendModuleData = `
-		"use strict";
-		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {
-		var ${config.frontendModuleReferenceName.external} = {};
-		${frontendModuleData}
-		${config.frontendModuleReferenceName.internal}["${plugInName}"] = ${config.frontendModuleReferenceName.external}
-		return ${config.frontendModuleReferenceName.internal};
-		})(${config.frontendModuleAppName} || {});
-	`;
-
-	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
-
-	// Add response modifier for inserting the script tag into document markup files
-	responseModifier.addResponseModifier("html", data => {
-		if(!frontendModuleData) {
-			return;
-		}
-		
-		// Insert referencing script tag intto page head (if exists)
-		const openingHeadTag = data.match(/<\s*head((?!>)(\s|.))*>/);
-		if(!openingHeadTag) {
-			return data;
-		}
-		return data.replace(openingHeadTag[0], `${openingHeadTag[0]}${`<script src="${frontendFileLocation}"></script>`}`);
-	});
-
-	// Add GET route to retrieve frontend module script
-	router.setRoute("get", `${frontendFileLocation}`, _ => {
-		return frontendModuleData;
-	});
-}
-
 // TODO: Provide option to set/change response headers
 
 // TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
@@ -515,7 +424,6 @@ function initFrontendModule(plugInConfig) {
 // TODO: Provide support modules (e.g. block parser?)
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
-	
-	getFromConfig,
-	initFrontendModule
+
+	getFromConfig
 };
