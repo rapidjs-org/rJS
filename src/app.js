@@ -8,7 +8,9 @@ const config = {
 	frontendModuleReferenceName: {
 		external: "plugin",
 		internal: "_rapid"
-	}
+	},
+	plugInFrontendModuleName: "frontend",
+	plugInNamingPrefix: "rapid-"
 };
 
 const {normalize, dirname, basename, join} = require("path");
@@ -45,6 +47,7 @@ function requirePlugin(reference) {
 	// Private (local) package
 	if(!packageNameRegex.test(reference)) {
 		try {
+			// TODO: join path to file requiring
 			require(reference)(module.exports());
 		} catch(err) {
 			output.error(new ReferenceError(`Could not find private plug-in package main file at '${reference}'`), true);
@@ -92,12 +95,15 @@ function initFrontendModule(plugInConfig) {
 		throw new SyntaxError("Failed to retrieve path to plug-in package");
 	};
 	
-	const plugInDirPath = getCallerPath();
+	initFrontendModuleHelper(getCallerPath(), plugInConfig);
+}
+function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	const plugInName = basename(dirname(plugInDirPath)).toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
 	let frontendFilePath = join(plugInDirPath, `${config.plugInFrontendModuleName}.js`);
+
 	if(!existsSync(frontendFilePath)) {
 		return;
 	}
@@ -109,7 +115,7 @@ function initFrontendModule(plugInConfig) {
 
 		(value === undefined) && (output.log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
 
-		(value !== null && isNaN(value)) && (value = `"${value}"`);	// Wrap strings in doublequotes
+		(value !== null && isNaN(value)) && (value = `"${value}"`);		// Wrap strings in doublequotes
 		
 		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
 	});
@@ -158,7 +164,7 @@ function createCache(cacheRefreshFrequency) {
 
 
 // Init frontend base file to provide reusable methods among plug-ins
-initFrontendModule(__dirname);
+initFrontendModuleHelper(__dirname);
 
 
 /**

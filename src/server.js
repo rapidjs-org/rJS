@@ -11,13 +11,10 @@ const config = {
 	},
 	defaultFileName: "index",
 	devModeArgument: "-dev",
-	frontendModuleAppName: "RAPID",
 	mimesFileName: {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
 	},
-	plugInFrontendModuleName: "frontend",
-	plugInNamingPrefix: "rapid-",
 	supportFilePrefix: "_",
 	webDirName: "web"
 };
