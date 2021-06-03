@@ -7,10 +7,6 @@ let routeHandlers = {
 	post: []
 };
 
-function normalizePath(pathname) {
-	return normalize(pathname);
-}
-
 module.exports = {
 	/**
 	 * Set up a custom route handler for a certain method.
@@ -26,7 +22,7 @@ module.exports = {
 			throw new SyntaxError(`${method.toUpperCase()} is not a supported HTTP method`);
 		}
 
-		pathname = normalizePath(pathname);
+		pathname = normalize(pathname);
 
 		routeHandlers[method][pathname] && (output.log(`Redunant ${method.toUpperCase()} route handler set up for '${pathname}'`));
 
@@ -40,17 +36,17 @@ module.exports = {
 	},
 
 	hasRoute: (method, pathname) => {
-		pathname = normalizePath(pathname);
+		pathname = normalize(pathname);
 
 		return routeHandlers[method.toLowerCase()][pathname] ? true : false;
 	},
 
 	applyRoute: (method, pathname, args) => {
 		if(!routeHandlers[method] || !routeHandlers[method][pathname]) {
-			throw new ReferenceError(`Route to be applied does not exist '${method}': '${pathname}'`)
+			throw new ReferenceError(`Route to be applied does not exist '${method}': '${pathname}'`);
 		}
 
-		pathname = normalizePath(pathname);
+		pathname = normalize(pathname);
 
 		let data;
 
