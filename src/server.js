@@ -9,8 +9,10 @@ const config = {
 		default: "default.config.json",
 		custom: "rapid.config.json"
 	},
+	defaultFileExtension: "html",
 	defaultFileName: "index",
 	devModeArgument: "-dev",
+	dynamicPageDirPrefix: ":",
 	mimesFileName: {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
@@ -30,14 +32,11 @@ const utils = require("./utils");
 
 const output = require("./interfaces/output");
 
-const router = require("./interfaces/router");
-const pathModifier = require("./interfaces/path-modifier");
 const reader = require("./interfaces/reader");
 const responseModifier = require("./interfaces/response-modifier");
 const requestInterceptor = require("./interfaces/request-interceptor");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
-// TODO: Differ static cache (>1y) and dynamic cache (<30s)
 
 // TODO: Implement interface mthod dev mode only flag?
 
@@ -54,26 +53,37 @@ const readConfigFile = (webPath, defaultName, customName) => {
 		return defaultFile;
 	}
 	const customFile = require(customFilePath);
-	
+
+	for(let subKey in defaultFile) {
+		if((defaultFile[subKey] || "").constructor.name !== "Object" || (customFile[subKey] || "").constructor.name !== "Object") {
+			continue;
+		}
+		
+		customFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
+	}
+
 	return {...defaultFile, ...customFile};
 };
 
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
+
 if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	// Enable DEV-mode when related argument passed on application start
 	webConfig.devMode = true;
 }
 
-
-// Supports
+// Support
 
 const rateLimiter = require("./support/rate-limiter");
 
-const cache = {
-	dynamic: require("./support/cache")(webConfig.cacheRefreshFrequency),
-	static: require("./support/cache")(),	// Never read static files again as they wont change
-};
+const cache = createCache();
+
+// Config depending interfaces
+
+const router = require("./interfaces/router")(cache);
+
+// Server functionality
 
 // Create web server instance
 
@@ -92,8 +102,6 @@ http.createServer((req, res) => {
 	}
 });
 
-
-// Server functionality
 
 /**
  * Perform a redirect to a given path.
@@ -171,8 +179,6 @@ function respondProperly(res, method, pathname, status) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
-	requestInterceptor.applyRequestInterceptor(req);
-	
 	// Block request if maximum 
 	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
@@ -186,13 +192,14 @@ function handleRequest(req, res) {
 
 		return;
 	}
-	// Block request if method is not handled
+	// Block request if method not allowed
 	const method = req.method.toLowerCase();
 	if(!["get", "post"].includes(method)) {
 		respond(res, 405);
 
 		return;
 	}
+	
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
 	const urlParts = parseUrl(req.url, true);
 	let explicitBase;
@@ -206,6 +213,8 @@ function handleRequest(req, res) {
 		return;
 	}
 
+	requestInterceptor.applyRequestInterceptor(req);
+	
 	// Set basic response headers
 	webConfig.useHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
 	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
@@ -238,14 +247,14 @@ function handleGET(res, pathname, queryParametersObj) {
 	let data;
 
 	let extension = extname(pathname).slice(1);
+	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
 	// Set client-side cache control for static files too
-	(!webConfig.devMode && extension.length > 0) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency}`));
-
+	(!webConfig.devMode && isStaticRequest && webConfig.cacheRefreshFrequency.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency.client}`));
+	
 	// Block request if blacklist enabled but requested extension blacklisted
-	// or a dynamic page related file has been explixitly requested (restricted)
 	// or a non-standalone file has been requested
-	if(extension.length > 0 && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
+	if(isStaticRequest && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
     || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
@@ -253,7 +262,7 @@ function handleGET(res, pathname, queryParametersObj) {
 		return;
 	}
 
-	const mime = mimeTypes[(extension.length > 0) ? extension : "html"];
+	const mime = mimeTypes[isStaticRequest ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
 	
 	if(router.hasRoute("get", pathname)) {
@@ -272,17 +281,10 @@ function handleGET(res, pathname, queryParametersObj) {
 		return;
 	}
 
-	// Retrieve correct cache
-	let relatedCache;
-	if(extension.length == 0) {
-		relatedCache = cache.dynamic;
-	} else {
-		relatedCache = cache.static;
-	}
-
-	if(relatedCache.has(pathname)) {
+	// Use cached data if is static file request
+	if(isStaticRequest && cache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, relatedCache.read(pathname));
+		respond(res, 200, cache.read(pathname));
 		
 		return;
 	}
@@ -290,21 +292,28 @@ function handleGET(res, pathname, queryParametersObj) {
 	let localPath = join(WEB_PATH, pathname);
 
 	if(localPath.slice(-1) == "/") {
-		// Add default file name if none explicitly stated in the request URL
+		// Add default file nameif none explicitly stated in request URL
 		localPath += config.defaultFileName;
 	}
+	!isStaticRequest && (extension = config.defaultFileExtension);
 
-	(extension.length == 0) && (extension = "html");
-	
-	// Apply local pathname modifier if set up
-	let modifiedPath = pathModifier.applyPathModifier(extension, localPath);
-	if(modifiedPath) {
-		localPath = modifiedPath;
-	} else if(extname(localPath).length == 0){
-		// Use explicit extension internally if is default
-		localPath += `.${extension}`;
+	// Use compound page path if respective directory exists
+	if(!isStaticRequest) {
+		extension = config.defaultFileExtension;
+
+		// Construct internal dynamic path representation
+		let dynamicPath = localPath.replace(new RegExp(`(\\${config.dynamicPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe dynamic argument part fom pathname
+		dynamicPath = join(dirname(dynamicPath), config.dynamicPageDirPrefix + basename(dynamicPath), `${basename(dynamicPath)}.${config.defaultFileExtension}`);
+
+		// Return dynamic path if related file exists in file system
+		if(existsSync(dynamicPath)) {
+			localPath = dynamicPath;
+		} else {
+		// Add default file extension if none explicitly stated in request URL
+			localPath += `.${config.defaultFileExtension}`;
+		}
 	}
-	
+
 	// Read file either by custom reader handler or by default reader
 	try {
 		data = reader.applyReader(extension, localPath);
@@ -338,7 +347,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	}
 
 	// Set server-side cache
-	relatedCache.write(pathname, data);
+	isStaticRequest && cache.write(pathname, data);
 	
 	respond(res, 200, Buffer.isBuffer(data) ? data : Buffer.from(data, "UTF-8"));
 }
@@ -403,6 +412,16 @@ function handlePOST(req, res, pathname) {
 // Implicit interfaces
 
 /**
+ * Create a custom cache object.
+ * @param {Number} [cacheRefreshFrequency] Cache refresh frequency in seconds (server cache frequency as set in config file by default) 
+ * @returns {Object} Cache object providing a manipulation interface
+ */
+function createCache() {
+	return require("./support/cache")(webConfig.devMode ? null : webConfig.cacheRefreshFrequency.server);
+}
+
+
+/**
  * Get a value from the config object.
  * @param {String} key Key name
  * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for plug-in specific configuration)
@@ -412,7 +431,6 @@ function getFromConfig(key, pluginSubObject) {
 	const obj = pluginSubObject ? webConfig[pluginSubObject] : webConfig;
 	return obj ? obj[key] : undefined;
 }
-
 // TODO: Provide option to set/change response headers
 
 // TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
@@ -422,5 +440,8 @@ function getFromConfig(key, pluginSubObject) {
 module.exports = {	// TODO: Update names?
 	webPath: WEB_PATH,
 
-	getFromConfig
+	createCache,
+	getFromConfig,
+
+	setRoute: router.setRoute
 };

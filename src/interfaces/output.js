@@ -17,7 +17,7 @@ module.exports = {
 	
 	/**
 	 * Log an error to the console.
-	 * @param {String} message Message
+	 * @param {Error} err Error object
 	 * @param {Boolean} [terminate=false] Whether to terminate application execution after error logging
 	 */
 	error: (err, terminate = false) => {
