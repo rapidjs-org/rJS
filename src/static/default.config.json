@@ -1,6 +1,9 @@
 {
     "allowFramedLoading": false,
-    "cacheRefreshFrequency": 30000,
+    "cacheRefreshFrequency": {
+        "server": 86400,
+        "client": 31536000
+    },
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
