@@ -17,11 +17,23 @@ const {normalize, dirname, basename, join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const server = require("./server");
-
 const output = require("./interfaces/output");
 
-const {addResponseModifier} = require("./interfaces/response-modifier");
-const {setRoute} = require("./interfaces/router");
+const coreInterface = {
+	...server,
+	... {
+		output,
+
+		initFrontendModule,
+		require: requirePlugin,
+		
+		setReader: require("./interfaces/reader").setReader,
+		applyReader: require("./interfaces/reader").applyReader,
+		addResponseModifier: require("./interfaces/response-modifier").addResponseModifier,
+		applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
+		setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
+	}
+};
 
 
 // Store identifiers of required modules from within plug-ins in order to prevent redundant loading
@@ -134,7 +146,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
 
 	// Add response modifier for inserting the script tag into document markup files
-	addResponseModifier("html", data => {
+	coreInterface.addResponseModifier("html", data => {
 		if(!frontendModuleData) {
 			return;
 		}
@@ -148,18 +160,9 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	});
 
 	// Add GET route to retrieve frontend module script
-	setRoute("get", `${frontendFileLocation}`, _ => {
+	coreInterface.setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
 	});
-}
-
-/**
- * Create a custom cache object.
- * @param {Number} cacheRefreshFrequency 
- * @returns {Object} Cache object
- */
-function createCache(cacheRefreshFrequency) {
-	return require("./support/cache")(cacheRefreshFrequency);
 }
 
 
@@ -173,25 +176,6 @@ initFrontendModuleHelper(__dirname);
  * @returns Core coreInterface object
  */
 module.exports = plugIns => {
-	const coreInterface = {
-		...server,
-		... {
-			output,
-
-			createCache,
-			initFrontendModule,
-			require: requirePlugin,
-			
-			setRoute: setRoute,
-			addResponseModifier: addResponseModifier,
-			addPathModifier: require("./interfaces/path-modifier").addPathModifier,
-			setReader: require("./interfaces/reader").setReader,
-			applyReader: require("./interfaces/reader").applyReader,
-			applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
-			setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
-		}
-	};
-
 	(plugIns || []).forEach(name => {
 		requirePlugin(name);
 	});	// TODO: Handle/translate cryptic require errors
