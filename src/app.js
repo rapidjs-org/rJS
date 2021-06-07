@@ -25,7 +25,6 @@ const coreInterface = {
 		output,
 
 		initFrontendModule,
-		require: requirePlugin,
 		
 		setReader: require("./interfaces/reader").setReader,
 		applyReader: require("./interfaces/reader").applyReader,
