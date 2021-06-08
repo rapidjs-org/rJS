@@ -216,7 +216,7 @@ function handleRequest(req, res) {
 	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
 
 	res.setHeader("X-XSS-Protection", "1");
-	res.setHeader("X-Content-Type-Options", "nosniff");
+	res.setHeader("X-Content-Type-Options", "nosniff");	// TODO: Fix MIME
 
 	// Apply the related handler
 	if(method == "get") {
