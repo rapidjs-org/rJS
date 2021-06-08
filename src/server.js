@@ -12,7 +12,7 @@ const config = {
 	defaultFileExtension: "html",
 	defaultFileName: "index",
 	devModeArgument: "-dev",
-	dynamicPageDirPrefix: ":",
+	compoundPageDirPrefix: ":",
 	mimesFileName: {
 		default: "default.mimes.json",
 		custom: "rapid.mimes.json"
@@ -249,7 +249,6 @@ function handleGET(res, pathname, queryParametersObj) {
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a non-standalone file has been requested
 	if(isStaticRequest && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
-    || (new RegExp(`.*\\/${config.dynamicPageDirPrefix}.+`)).test(pathname)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
 
@@ -285,23 +284,20 @@ function handleGET(res, pathname, queryParametersObj) {
 
 	let localPath = join(WEB_PATH, pathname);
 
-	if(localPath.slice(-1) == "/") {
-		// Add default file nameif none explicitly stated in request URL
-		localPath += config.defaultFileName;
-	}
-	!isStaticRequest && (extension = config.defaultFileExtension);
+	// Add default file name if none explicitly stated in request URL
+	localPath = localPath.replace(new RegExp(`((\\/)|((${config.compoundPageDirPrefix}[a-zA-Z0-9_][a-zA-Z0-9_-]*)+(\\?)?))$`), `$2${config.defaultFileName}$3`);
 
 	// Use compound page path if respective directory exists
 	if(!isStaticRequest) {
 		extension = config.defaultFileExtension;
 
-		// Construct internal dynamic path representation
-		let dynamicPath = localPath.replace(new RegExp(`(\\${config.dynamicPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe dynamic argument part fom pathname
-		dynamicPath = join(dirname(dynamicPath), config.dynamicPageDirPrefix + basename(dynamicPath), `${basename(dynamicPath)}.${config.defaultFileExtension}`);
+		// Construct internal compound path representation
+		let compoundPath = localPath.replace(new RegExp(`(\\${config.compoundPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe compound argument part fom pathname
+		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${config.defaultFileExtension}`);
 
-		// Return dynamic path if related file exists in file system
-		if(existsSync(dynamicPath)) {
-			localPath = dynamicPath;
+		// Return compound path if related file exists in file system
+		if(existsSync(compoundPath)) {
+			localPath = compoundPath;
 		} else {
 		// Add default file extension if none explicitly stated in request URL
 			localPath += `.${config.defaultFileExtension}`;
@@ -329,7 +325,7 @@ function handleGET(res, pathname, queryParametersObj) {
 		data = readFileSync(localPath);
 	}
 	
-	// Sequentially apply defined response modifiers (dynamic pages without extension use both empty and default extension handlers)
+	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
 	try {
 		data = responseModifier.applyResponseModifier(extension, data, localPath, queryParametersObj);
 	} catch(err) {
@@ -390,14 +386,10 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			const data = router.applyRoute("post", pathname, body);
-
-			try {
-				data = !utils.isString(data) ? String(data) : JSON.stringify(data);
-			} catch(_) {
-				// ...
-			}
+			let data = router.applyRoute("post", pathname, body);
 			
+			data = JSON.stringify(data);
+
 			respond(res, 200, data);
 		} catch(err) {
 			output.error(err);
