@@ -38,8 +38,6 @@ const requestInterceptor = require("./interfaces/request-interceptor");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 
-// TODO: Implement interface mthod dev mode only flag?
-
 // Read config files (general configuration, MIMES)
 
 /**
@@ -109,8 +107,6 @@ http.createServer((req, res) => {
  * @param {String} path - Path to redirect to
  */
 function redirect(res, path) {
-	// TODO: Fix displayed .html extension in redirects
-		
 	res.setHeader("Location", path);
 	
 	respond(res, 301);
@@ -234,8 +230,6 @@ function handleRequest(req, res) {
 		return;
 	}
 }
-
-// TODO: Soft code default extension again?
 
 /**
  * Handle a GET request accordingly.
@@ -371,8 +365,6 @@ function handlePOST(req, res, pathname) {
 	req.on("data", chunk => {
 		body.push(chunk);
 
-		// TODO: What if not in valid JSON format?
-
 		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
 		if(bodyByteSize > webConfig.maxPayloadSize) {
 			// Block request if request payload is exceeds maximum size as put in web config
@@ -390,13 +382,23 @@ function handlePOST(req, res, pathname) {
 		if(body.length == 0) {
 			body = null;
 		} else {
-			body = JSON.parse(body);
+			try {
+				body = JSON.parse(body);
+			} catch(err) {
+				throw new SyntaxError(`POST request does not provide a valid JSON body object '${pathname}'`);
+			}
 		}
 
 		try {
 			const data = router.applyRoute("post", pathname, body);
+
+			try {
+				data = !utils.isString(data) ? String(data) : JSON.stringify(data);
+			} catch(_) {
+				// ...
+			}
 			
-			respond(res, 200, JSON.stringify(data));
+			respond(res, 200, data);
 		} catch(err) {
 			output.error(err);
 
@@ -431,13 +433,9 @@ function getFromConfig(key, pluginSubObject) {
 	const obj = pluginSubObject ? webConfig[pluginSubObject] : webConfig;
 	return obj ? obj[key] : undefined;
 }
-// TODO: Provide option to set/change response headers
+// TODO: Provide option to set/change response headers?
 
-// TODO: CLI interface (clear caches, see routes, ...) OR utility methods printing info?
-
-// TODO: Restricted URL interface?
-// TODO: Provide support modules (e.g. block parser?)
-module.exports = {	// TODO: Update names?
+module.exports = {
 	webPath: WEB_PATH,
 
 	createCache,
