@@ -19,20 +19,23 @@ const {existsSync, readFileSync} = require("fs");
 const server = require("./server");
 const output = require("./interfaces/output");
 
+const core = {
+	setRoute: server.setRoute,
+
+	setReader: require("./interfaces/reader").setReader,
+	applyReader: require("./interfaces/reader").applyReader,
+	addResponseModifier: require("./interfaces/response-modifier").addResponseModifier,
+	applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
+	setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
+};
 const coreInterface = {
 	...server,
+	...core,
 	... {
 		output,
-
 		initFrontendModule,
-		
-		setReader: require("./interfaces/reader").setReader,
-		applyReader: require("./interfaces/reader").applyReader,
-		addResponseModifier: require("./interfaces/response-modifier").addResponseModifier,
-		applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
-		setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
 	}
-};
+}
 
 
 // Store identifiers of required modules from within plug-ins in order to prevent redundant loading
@@ -59,7 +62,7 @@ function requirePlugin(reference) {
 	if(!packageNameRegex.test(reference)) {
 		try {
 			// TODO: Join path to file for correct require
-			require(reference)(module.exports());
+			require(reference)(coreInterface);
 		} catch(err) {
 			output.error(new ReferenceError(`Could not find private plug-in package main file at '${reference}'`), true);
 		}
@@ -75,7 +78,7 @@ function requirePlugin(reference) {
 		return;
 	}
 
-	require(reference)(module.exports());
+	require(reference)(coreInterface);
 }
 
 /**
@@ -177,5 +180,5 @@ module.exports = plugIns => {
 		requirePlugin(name);
 	});	// TODO: Handle/translate cryptic require errors
 	
-	return coreInterface;
+	return core;
 };
