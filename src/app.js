@@ -58,7 +58,7 @@ function requirePlugin(reference) {
 	// Private (local) package
 	if(!packageNameRegex.test(reference)) {
 		try {
-			// TODO: join path to file requiring
+			// TODO: Join path to file for correct require
 			require(reference)(module.exports());
 		} catch(err) {
 			output.error(new ReferenceError(`Could not find private plug-in package main file at '${reference}'`), true);
@@ -70,8 +70,6 @@ function requirePlugin(reference) {
 	try {
 		require(reference).resolve();
 	} catch(err) {
-		// TODO: Ask for automatic installation of missing plug-in?
-
 		output.error(new ReferenceError(`Could not find public plug-in package '${reference}'.`), true);
 
 		return;
