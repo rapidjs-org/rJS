@@ -285,7 +285,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	let localPath = join(WEB_PATH, pathname);
 
 	// Add default file name if none explicitly stated in request URL
-	localPath = localPath.replace(new RegExp(`((\\/)|((${config.compoundPageDirPrefix}[a-zA-Z0-9_][a-zA-Z0-9_-]*)+(\\?)?))$`), `$2${config.defaultFileName}$3`);
+	localPath = localPath.replace(new RegExp(`(\\/)((${config.compoundPageDirPrefix}[a-zA-Z0-9_][a-zA-Z0-9_-]*)+)?$`), `$1${config.defaultFileName}$2`);
 
 	// Use compound page path if respective directory exists
 	if(!isStaticRequest) {
@@ -293,8 +293,8 @@ function handleGET(res, pathname, queryParametersObj) {
 
 		// Construct internal compound path representation
 		let compoundPath = localPath.replace(new RegExp(`(\\${config.compoundPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe compound argument part fom pathname
-		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${config.defaultFileExtension}`);
-
+		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${extension}`);
+				
 		// Return compound path if related file exists in file system
 		if(existsSync(compoundPath)) {
 			localPath = compoundPath;
