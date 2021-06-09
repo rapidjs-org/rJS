@@ -5,6 +5,7 @@ const output = require("./output");
 let responseModifierHandlers = {};
 
 // TODO: Add * extension wildcard to affect any file type?
+// When to apply wildcarded?
 
 module.exports = {
 	/**
