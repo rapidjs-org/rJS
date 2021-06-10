@@ -9,16 +9,16 @@ const config = {
 		external: "plugin",
 		internal: "_rapid"
 	},
-	plugInFrontendModuleName: "frontend",
-	plugInNamingPrefix: "rapid-"
+	plugInFrontendModuleName: "frontend"
 };
 
 const {normalize, dirname, basename, join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
-const server = require("./server");
+const utils = require("./utils");
 const output = require("./interfaces/output");
 
+const server = require("./server");
 const core = {
 	setRoute: server.setRoute,
 
@@ -27,25 +27,18 @@ const core = {
 	addResponseModifier: require("./interfaces/response-modifier").addResponseModifier,
 	applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
 	setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
-};
+};	// Minimum core interface
 const coreInterface = {
 	...server,
 	...core,
 	... {
 		output,
-		initFrontendModule,
+		initFrontendModule
 	}
-}
-
-
-// Store identifiers of required modules from within plug-ins in order to prevent redundant loading
-// processes (and overriding or adding functionality interference).
-let requiredModules = new Set();
-
+}	// Maximum core interface
 
 /**
- * Require a plug-in module on core level.
- * Redundant requifre calls of a specific plug-in module will be ignored.
+ * Require a plug-in module on core level passing the maximum core interface object.
  * @param {String} reference Plug-in reference value (public package name or local path to package main file)
  */
 function requirePlugin(reference) {
@@ -53,29 +46,18 @@ function requirePlugin(reference) {
 
 	reference = packageNameRegex.test(reference) ? reference : normalize(reference);
 
-	if(requiredModules.has(reference)) {
-		return;
-	}
-	requiredModules.add(reference);
-	
-	// Private (local) package
 	if(!packageNameRegex.test(reference)) {
-		try {
-			// TODO: Join path to file for correct require
-			require(reference)(coreInterface);
-		} catch(err) {
-			output.error(new ReferenceError(`Could not find private plug-in package main file at '${reference}'`), true);
+		// Private (local) package
+		if(!existsSync(join(__dirname, reference.replace(/(\.js)?$/i, ".js")))) {
+			throw new ReferenceError(`Could not find private plug-in at '${reference}'`);
 		}
-
-		return;
-	}
-	// Public (npm registry) package
-	try {
-		require(reference).resolve();
-	} catch(err) {
-		output.error(new ReferenceError(`Could not find public plug-in package '${reference}'.`), true);
-
-		return;
+	} else {
+		// Public (npm registry) package
+		try {
+			require(reference).resolve();
+		} catch(err) {
+			throw new ReferenceError(`Could not find public plug-in package '${reference}'.`);
+		}
 	}
 
 	require(reference)(coreInterface);
@@ -86,31 +68,10 @@ function requirePlugin(reference) {
  * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
 function initFrontendModule(plugInConfig) {
-	const getCallerPath = _ => {
-		const err = new Error();
-		let callerFile,  curFile;
-		
-		Error.prepareStackTrace = (_, stack) => {
-			return stack;
-		};
-
-		curFile = err.stack.shift().getFileName();
-
-		while(err.stack.length) {
-			callerFile = err.stack.shift().getFileName();
-			
-			if(curFile !== callerFile) {
-				return dirname(callerFile);
-			}
-		}
-		
-		throw new SyntaxError("Failed to retrieve path to plug-in package");
-	};
-	
-	initFrontendModuleHelper(getCallerPath(), plugInConfig);
+	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig);
 }
 function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
-	const plugInName = basename(dirname(plugInDirPath)).toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
+	const plugInName = utils.getPluginName(basename(dirname(plugInDirPath)));
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
@@ -146,7 +107,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
 
 	// Add response modifier for inserting the script tag into document markup files
-	coreInterface.addResponseModifier("html", data => {
+	core.addResponseModifier("html", data => {
 		if(!frontendModuleData) {
 			return;
 		}
@@ -160,7 +121,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	});
 
 	// Add GET route to retrieve frontend module script
-	coreInterface.setRoute("get", `${frontendFileLocation}`, _ => {
+	core.setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
 	});
 }
@@ -173,11 +134,15 @@ initFrontendModuleHelper(__dirname);
 /**
  * Create rapid core instance.
  * @param {String[]} plugIns Array of plug-in names to use
- * @returns Core coreInterface object
+ * @returns Minimum core interface object
  */
 module.exports = plugIns => {
 	(plugIns || []).forEach(name => {
-		requirePlugin(name);
+		try {
+			requirePlugin(name);
+		} catch(err) {
+			output.error(err, true);
+		}
 	});	// TODO: Handle/translate cryptic require errors
 	
 	return core;

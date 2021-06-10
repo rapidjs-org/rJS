@@ -131,6 +131,8 @@ function redirectErrorPage(res, status, path) {
 
 	// Simple response if no related error page found
 	respond(res, status);
+
+	// TODO: Fallback page?
 }
 
 /**
@@ -294,7 +296,7 @@ function handleGET(res, pathname, queryParametersObj) {
 		// Construct internal compound path representation
 		let compoundPath = localPath.replace(new RegExp(`(\\${config.compoundPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe compound argument part fom pathname
 		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${extension}`);
-				
+
 		// Return compound path if related file exists in file system
 		if(existsSync(compoundPath)) {
 			localPath = compoundPath;
@@ -308,7 +310,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	try {
 		data = reader.applyReader(extension, localPath);
 	} catch(err) {
-		if(err !== 404) {
+		if(err !== 404) {	// TODO: Also expose 404
 			output.error(err);
 
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
@@ -414,18 +416,22 @@ function createCache() {
 	return require("./support/cache")(webConfig.devMode ? null : webConfig.cacheRefreshFrequency.server);
 }
 
-
 /**
- * Get a value from the config object.
+ * Get a value from the config object stored in the plug-in related sib object.
  * @param {String} key Key name
- * @param {String} [pluginSubObject=null] Optional sub object name to look up key value from (use for plug-in specific configuration)
  * @returns {*} Respective value if defined
  */
-function getFromConfig(key, pluginSubObject) {
-	const obj = pluginSubObject ? webConfig[pluginSubObject] : webConfig;
-	return obj ? obj[key] : undefined;
+function getFromConfig(key) {
+	pluginSubKey = utils.getCallerPath(__filename);
+	pluginSubKey = utils.getPluginName(basename(dirname(pluginSubKey)));
+
+	const subObj = webConfig[pluginSubKey];
+	
+	return subObj ? subObj[key] : undefined;
 }
+
 // TODO: Provide option to set/change response headers?
+
 
 module.exports = {
 	webPath: WEB_PATH,
