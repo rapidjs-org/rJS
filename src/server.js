@@ -66,9 +66,10 @@ const readConfigFile = (webPath, defaultName, customName) => {
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
 
+let isDevMode;
 if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	// Enable DEV-mode when related argument passed on application start
-	webConfig.devMode = true;
+	isDevMode = true;
 }
 
 // Support
@@ -95,7 +96,7 @@ http.createServer((req, res) => {
 }).listen(webConfig.port, null, null, _ => {
 	output.log(`Server started listening on port ${webConfig.port}`);
 
-	if(webConfig.devMode) {
+	if(isDevMode) {
 		output.log("Running DEV MODE");
 	}
 });
@@ -246,7 +247,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
 	// Set client-side cache control for static files too
-	(!webConfig.devMode && isStaticRequest && webConfig.cacheRefreshFrequency.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency.client}`));
+	(!isDevMode && isStaticRequest && webConfig.cacheRefreshFrequency.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency.client}`));
 	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a non-standalone file has been requested
@@ -413,7 +414,7 @@ function handlePOST(req, res, pathname) {
  * @returns {Object} Cache object providing a manipulation interface
  */
 function createCache() {
-	return require("./support/cache")(webConfig.devMode ? null : webConfig.cacheRefreshFrequency.server);
+	return require("./support/cache")(isDevMode ? null : webConfig.cacheRefreshFrequency.server);
 }
 
 /**
@@ -435,6 +436,7 @@ function getFromConfig(key) {
 
 module.exports = {
 	webPath: WEB_PATH,
+	isDevMode: isDevMode,
 
 	createCache,
 	getFromConfig,
