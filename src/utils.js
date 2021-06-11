@@ -32,7 +32,7 @@ module.exports = {
 	},
 	
 	getPluginName: sequence => {
-		return sequence.toLowerCase().replace(new RegExp(`^${config.plugInNamingPrefix}`), "");
+		return sequence.toLowerCase().replace(new RegExp(`(^|\\/)${config.plugInNamingPrefix}`), "$1");
 	},
 	
 	isString: value => {
