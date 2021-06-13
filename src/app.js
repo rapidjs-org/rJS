@@ -16,17 +16,17 @@ const {normalize, dirname, basename, join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
-const output = require("./interfaces/output");
+const output = require("./interface/output");
 
 const server = require("./server");
 const core = {
 	setRoute: server.setRoute,
 
-	setReader: require("./interfaces/reader").setReader,
-	applyReader: require("./interfaces/reader").applyReader,
-	addResponseModifier: require("./interfaces/response-modifier").addResponseModifier,
-	applyResponseModifier: require("./interfaces/response-modifier").applyResponseModifier,
-	setRequestInterceptor: require("./interfaces/request-interceptor").setRequestInterceptor
+	setReader: require("./interface/reader").setReader,
+	applyReader: require("./interface/reader").applyReader,
+	addResponseModifier: require("./interface/response-modifier").addResponseModifier,
+	applyResponseModifier: require("./interface/response-modifier").applyResponseModifier,
+	setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
 };	// Minimum core interface
 const coreInterface = {
 	...server,
