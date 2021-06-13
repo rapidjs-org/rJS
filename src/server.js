@@ -30,11 +30,11 @@ const utils = require("./utils");
 
 // Interfaces
 
-const output = require("./interfaces/output");
+const output = require("./interface/output");
 
-const reader = require("./interfaces/reader");
-const responseModifier = require("./interfaces/response-modifier");
-const requestInterceptor = require("./interfaces/request-interceptor");
+const reader = require("./interface/reader");
+const responseModifier = require("./interface/response-modifier");
+const requestInterceptor = require("./interface/request-interceptor");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 
@@ -60,7 +60,16 @@ const readConfigFile = (webPath, defaultName, customName) => {
 		customFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
 	}
 
-	return {...defaultFile, ...customFile};
+	const result = {...defaultFile, ...customFile};
+
+	result.extensionWhitelist = normalizeExtensionArray(result.extensionWhitelist);
+	result.gzipCompressList = normalizeExtensionArray(result.gzipCompressList);
+
+	return result;
+
+	function normalizeExtensionArray(array) {
+		return (Array.isArray(array) && array.length > 0) ? array.map(extension => extension.replace(/^\./, "").toLowerCase()) : undefined;
+	}
 };
 
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
@@ -74,13 +83,14 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 
 // Support
 
-const rateLimiter = require("./support/rate-limiter");
+const rateLimiter = !isDevMode ? require("./support/rate-limiter") : null;
+const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
 
 const cache = createCache();
 
 // Config depending interfaces
 
-const router = require("./interfaces/router")(cache);
+const router = require("./interface/router")(cache);
 
 // Server functionality
 
@@ -147,7 +157,7 @@ function respond(res, status, message) {
 	!message && (message = http.STATUS_CODES[status] || "");
     
 	res.statusCode = status;
-
+	
 	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
 		message = JSON.stringify(message);
 	}
@@ -179,7 +189,7 @@ function respondProperly(res, method, pathname, status) {
  */
 function handleRequest(req, res) {
 	// Block request if maximum 
-	if(rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
+	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
 		respondProperly(res, req.method, req.url, 429);
 
@@ -223,7 +233,9 @@ function handleRequest(req, res) {
 
 	// Apply the related handler
 	if(method == "get") {
-		handleGET(res, urlParts.pathname, urlParts.query);
+		const useGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
+
+		handleGET(res, urlParts.pathname, urlParts.query, useGzip);
 
 		return;
 	} 
@@ -238,9 +250,10 @@ function handleRequest(req, res) {
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
  * @param {String} pathname URL pathname part
- * @param {String} [queryParametersObj] Query string parameters in object representation
+ * @param {String} queryParametersObj Query string parameters in object representation
+ * @param {Boolean} useGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
-function handleGET(res, pathname, queryParametersObj) {
+function handleGET(res, pathname, queryParametersObj, useGzip) {
 	let data;
 
 	let extension = extname(pathname).slice(1);
@@ -251,7 +264,7 @@ function handleGET(res, pathname, queryParametersObj) {
 	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a non-standalone file has been requested
-	if(isStaticRequest && webConfig.extensionBlacklist && webConfig.extensionBlacklist.includes(extension)
+	if(isStaticRequest && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
 		respondProperly(res, "get", pathname, 403);
 
@@ -337,6 +350,12 @@ function handleGET(res, pathname, queryParametersObj) {
 		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
 
 		return;
+	}
+
+	// Compress with GZIP if enabled
+	if(useGzip && webConfig.gzipCompressList.includes(extension)) {
+		data = gzip(data);
+		res.setHeader("Content-Encoding", "gzip");
 	}
 
 	// Set server-side cache

@@ -1,3 +1,5 @@
+// TODO: Enhance by using less trivial approach
+
 var limiter = {};
 
 // Limiter interval
