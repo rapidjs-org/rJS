@@ -96,8 +96,12 @@ const router = require("./interface/router")(cache);
 
 // Create web server instance
 
+const options = {};
+webConfig.sslCertFile && (options.cert = readFileSync(join(WEB_PATH, webConfig.sslCertFile)));
+webConfig.sslKeyFile && (options.key = readFileSync(join(WEB_PATH, webConfig.sslKeyFile)));
+
 const http = require(webConfig.useHttps ? "https" : "http");
-http.createServer((req, res) => {
+http.createServer(options, (req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
