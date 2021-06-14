@@ -61,5 +61,5 @@ module.exports = cache => {
 
 			return data || null;
 		}
-};
+	};
 };

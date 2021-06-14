@@ -448,7 +448,7 @@ function createCache() {
  * @returns {*} Respective value if defined
  */
 function getFromConfig(key) {
-	pluginSubKey = utils.getCallerPath(__filename);
+	let pluginSubKey = utils.getCallerPath(__filename);
 	pluginSubKey = utils.getPluginName(basename(dirname(pluginSubKey)));
 
 	const subObj = webConfig[pluginSubKey];
