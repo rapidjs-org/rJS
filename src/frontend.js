@@ -17,7 +17,7 @@ function makeRequest(method, url, body = undefined) {
  * @param {String} url Endpoint URL
  * @returns {Promise} Request promise eventualy resolving to response on success
  */
- plugin.post = function(url) {
+plugin.post = function(url) {
 	return makeRequest("GET", url);
 };
 
