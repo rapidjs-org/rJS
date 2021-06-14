@@ -271,9 +271,10 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 		return;
 	}
 
+	// Set MIME type header accordingly
 	const mime = mimeTypes[isStaticRequest ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
-	
+
 	if(router.hasRoute("get", pathname)) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
@@ -290,6 +291,10 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 		return;
 	}
 
+	// Set GZIP compression header if about to compress response data
+	useGzip = useGzip && webConfig.gzipCompressList.includes(extension);
+	useGzip && (res.setHeader("Content-Encoding", "gzip"));
+	
 	// Use cached data if is static file request
 	if(isStaticRequest && cache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
@@ -351,13 +356,10 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 
 		return;
 	}
-
+	
 	// Compress with GZIP if enabled
-	if(useGzip && webConfig.gzipCompressList.includes(extension)) {
-		data = gzip(data);
-		res.setHeader("Content-Encoding", "gzip");
-	}
-
+	useGzip && (data = gzip(data));
+	
 	// Set server-side cache
 	isStaticRequest && cache.write(pathname, data);
 	
