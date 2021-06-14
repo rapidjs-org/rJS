@@ -12,8 +12,8 @@ module.exports = {
 		Error.prepareStackTrace = (_, stack) => {
 			return stack;
 		};
-		
-		while(err.stack.length) {
+
+		while(fileName && err.stack.length) {
 			const callerFile = err.stack.shift().getFileName();
 			
 			if(callerFile === fileName) {

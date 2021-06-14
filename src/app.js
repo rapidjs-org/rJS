@@ -45,12 +45,14 @@ function requirePlugin(reference) {
 	const packageNameRegex = /^(@[a-z0-9][a-z0-9.~_-]*\/)?[a-z0-9][a-z0-9.~_-]*$/;
 
 	reference = packageNameRegex.test(reference) ? reference : normalize(reference);
-
+	
 	if(!packageNameRegex.test(reference)) {
 		// Private (local) package
-		if(!existsSync(join(__dirname, reference.replace(/(\.js)?$/i, ".js")))) {
+		if(!existsSync(join(require.main.path, reference.replace(/(\.js)?$/i, ".js")))) {
 			throw new ReferenceError(`Could not find private plug-in at '${reference}'`);
 		}
+
+		reference = join(require.main.path, reference);
 	} else {
 		// Public (npm registry) package
 		try {
