@@ -35,7 +35,7 @@ const coreInterface = {
 		output,
 		initFrontendModule
 	}
-}	// Maximum core interface
+};	// Maximum core interface
 
 /**
  * Require a plug-in module on core level passing the maximum core interface object.
