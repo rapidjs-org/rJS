@@ -1,5 +1,5 @@
 const config = {
-	plugInNamingPrefix: "rapid-"
+	plugInNamingPrefix: "rapid--"
 };
 
 const {dirname} = require("path");
