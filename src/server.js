@@ -21,6 +21,7 @@ const config = {
 	webDirName: "web"
 };
 
+// TODO: DEV config for overrides?
 
 const {existsSync, readFileSync} = require("fs");
 const {extname, join, dirname, basename} = require("path");
@@ -38,6 +39,12 @@ const requestInterceptor = require("./interface/request-interceptor");
 
 const WEB_PATH = join(require.main.path, config.webDirName);
 
+let isDevMode;
+if(process.argv[2] && process.argv[2] == config.devModeArgument) {
+	// Enable DEV-mode when related argument passed on application start
+	isDevMode = true;
+}
+
 // Read config files (general configuration, MIMES)
 
 /**
@@ -48,7 +55,7 @@ const readConfigFile = (webPath, defaultName, customName) => {
 	const defaultFile = require(`./static/${defaultName}`);
 	const customFilePath = join(dirname(webPath), customName);
 	if(!existsSync(customFilePath)) {
-		return defaultFile;
+		return;
 	}
 	const customFile = require(customFilePath);
 
@@ -62,23 +69,17 @@ const readConfigFile = (webPath, defaultName, customName) => {
 
 	const result = {...defaultFile, ...customFile};
 
-	result.extensionWhitelist = normalizeExtensionArray(result.extensionWhitelist);
-	result.gzipCompressList = normalizeExtensionArray(result.gzipCompressList);
-
 	return result;
-
-	function normalizeExtensionArray(array) {
-		return (Array.isArray(array) && array.length > 0) ? array.map(extension => extension.replace(/^\./, "").toLowerCase()) : undefined;
-	}
 };
 
 const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
+// TODO: Dev mode override config
+webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitelist);
+webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList);
 
-let isDevMode;
-if(process.argv[2] && process.argv[2] == config.devModeArgument) {
-	// Enable DEV-mode when related argument passed on application start
-	isDevMode = true;
+function normalizeExtensionArray(array) {
+	return (Array.isArray(array) && array.length > 0) ? array.map(extension => extension.replace(/^\./, "").toLowerCase()) : undefined;
 }
 
 // Support
