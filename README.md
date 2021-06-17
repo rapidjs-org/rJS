@@ -1,12 +1,14 @@
 # [rapidJS](https://rapidjs.org)
 
-rapidJS is a web application development framework providing a simplified and accelerated behaviour of asset related component development.
+rapidJS is an open-source framework for developing lightweight asset server environments for scalable web applications.
+Furthermore it provides a simple, yet powerful interface for individualization of any level of complexity.
 
 ## Get started
 
-[Learn rapidJS](https://rapidjs.org/docs)\
-[Browse existing plug-ins](https://rapidjs.org/plug-ins)\
-[Browse project templates](https://rapidjs.org/templates)\
-\
-\
-*© Thassilo Martin Schiepanski*
+[Get started](https://rapidjs.org/docs)\
+[Tutorial](https://rapidjs.org/tutorial/)\
+[FAQ](https://rapidjs.org/faq)
+
+---
+
+<sub>© Thassilo Martin Schiepanski</sub>
