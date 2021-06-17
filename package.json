@@ -13,7 +13,7 @@
     "url": "git+https://github.com/t-ski/server.git"
   },
   "author": "Thassilo Martin Schiepanski",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/t-ski/server/issues"
   },
