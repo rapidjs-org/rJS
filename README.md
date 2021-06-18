@@ -1,6 +1,6 @@
 # [rapidJS](https://rapidjs.org)
 
-rapidJS is an open-source framework for developing lightweight asset server environments for scalable web applications.
+rapidJS is an open-source framework for developing lightweight asset focused server environments for scalable web applications.
 Furthermore it provides a simple, yet powerful interface for individualization of any level of complexity.
 
 ## Get started

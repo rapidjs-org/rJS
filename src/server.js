@@ -7,6 +7,7 @@
 const config = {
 	configFileName: {
 		default: "default.config.json",
+		dev: "rapid.config:dev.json",
 		custom: "rapid.config.json"
 	},
 	defaultFileExtension: "html",
@@ -51,28 +52,51 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
  * Read a custom configuration file and merge it (overriding) with the default configuration file.
  * @returns {Object} Resulting configuration object
  */
-const readConfigFile = (webPath, defaultName, customName) => {
-	const defaultFile = require(`./static/${defaultName}`);
-	const customFilePath = join(dirname(webPath), customName);
-	if(!existsSync(customFilePath)) {
-		return;
-	}
-	const customFile = require(customFilePath);
+const readConfigFile = (webPath, defaultName, customNames) => {
+	let defaultFile = require(`./static/${defaultName}`);
+
+	customNames = Array.isArray(customNames) ? customNames : [customNames];
+	const customFiles = customNames
+	.filter(customName => {
+		if(!customName) {
+			return false;
+		}
+
+		const customFilePath = join(dirname(webPath), customName);
+		if(existsSync(customFilePath)) {
+			return true;
+		}
+		return false;
+	}).map(customName => {
+		return require(join(dirname(webPath), customName));
+	});
 
 	for(let subKey in defaultFile) {
-		if((defaultFile[subKey] || "").constructor.name !== "Object" || (customFile[subKey] || "").constructor.name !== "Object") {
+		if((defaultFile[subKey] || "").constructor.name !== "Object") {
 			continue;
 		}
-		
-		customFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
+
+		customFiles.forEach(customFile => {
+			if((customFile[subKey] || "").constructor.name !== "Object") {
+				return;
+			}
+
+			defaultFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
+		});
 	}
 
-	const result = {...defaultFile, ...customFile};
+	customFiles.forEach(customFile => {
+		defaultFile = {...defaultFile, ...customFile};
+	});
 
-	return result;
+	return defaultFile;
 };
 
-const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, config.configFileName.custom);
+const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, [
+	config.configFileName.custom,
+	isDevMode ? config.configFileName.dev : null
+]);
+
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
 // TODO: Dev mode override config
 webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitelist);
