@@ -4,8 +4,8 @@ const output = require("./output");
 
 let responseModifierHandlers = {};
 
-// TODO: Add * extension wildcard to affect any file type?
-// When to apply wildcarded?
+// TODO: Add * extension wildcard to affect any file type? When to apply wildcarded?
+// TODO: Pass page information object (reqPathname, internalPathname, isCompoundPage) instead of pathname only?
 
 module.exports = {
 	/**
