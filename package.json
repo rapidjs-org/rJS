@@ -1,23 +1,22 @@
 {
-  "name": "rapid-js",
+  "name": "rapidjs",
   "version": "1.0.0",
-  "description": "",
+  "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "src/app.js",
   "scripts": {
-    "build": "node ./build.js",
-    "start": "node ./out/app.js",
-    "test": "./node_modules/.bin/eslint --fix src/"
+    "start": "node ./src/app.js",
+    "test": "./node_modules/.bin/eslint --fix src/ && node ../_build/app"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/t-ski/server.git"
+    "url": "git+https://github.com/t-ski/rapidjs.git"
   },
   "author": "Thassilo Martin Schiepanski",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/t-ski/server/issues"
+    "url": "https://github.com/t-ski/rapidjs/issues"
   },
-  "homepage": "https://github.com/t-ski/server#readme",
+  "homepage": "https://github.com/t-ski/rapidjs#readme",
   "devDependencies": {
     "eslint": "^7.26.0"
   }
