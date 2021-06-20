@@ -1,5 +1,5 @@
 {
-  "name": "rapidjs",
+  "name": "@rapidjs.org/core",
   "version": "1.0.0",
   "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "src/app.js",
@@ -7,8 +7,11 @@
     "start": "node ./dist/app.js",
     "start:dev": "node ./src/app.js",
     "test": "./node_modules/.bin/eslint --fix src/",
-    "release": "npm run test && node ../_build/app && np"
+    "release": "npm run test && node ../_build/build"
   },
+  "files": [
+    "./dist/"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/t-ski/rapidjs.git"
@@ -21,8 +24,5 @@
   "homepage": "https://github.com/t-ski/rapidjs#readme",
   "devDependencies": {
     "eslint": "^7.26.0"
-  },
-  "files": [
-    "./dist/*"
-  ]
+  }
 }
