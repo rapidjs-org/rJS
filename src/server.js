@@ -57,19 +57,19 @@ const readConfigFile = (webPath, defaultName, customNames) => {
 
 	customNames = Array.isArray(customNames) ? customNames : [customNames];
 	const customFiles = customNames
-	.filter(customName => {
-		if(!customName) {
-			return false;
-		}
+		.filter(customName => {
+			if(!customName) {
+				return false;
+			}
 
-		const customFilePath = join(dirname(webPath), customName);
-		if(existsSync(customFilePath)) {
-			return true;
-		}
-		return false;
-	}).map(customName => {
-		return require(join(dirname(webPath), customName));
-	});
+			const customFilePath = join(dirname(webPath), customName);
+			if(existsSync(customFilePath)) {
+				return true;
+			}
+			return false;
+		}).map(customName => {
+			return require(join(dirname(webPath), customName));
+		});
 
 	for(let subKey in defaultFile) {
 		if((defaultFile[subKey] || "").constructor.name !== "Object") {
@@ -333,7 +333,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	}
 
 	let localPath = join(WEB_PATH, pathname);
-
+	
 	// Add default file name if none explicitly stated in request URL
 	localPath = localPath.replace(new RegExp(`(\\/)((${config.compoundPageDirPrefix}[a-zA-Z0-9_][a-zA-Z0-9_-]*)+)?$`), `$1${config.defaultFileName}$2`);
 
