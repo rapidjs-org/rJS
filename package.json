@@ -9,6 +9,9 @@
     "test": "./node_modules/.bin/eslint --fix src/",
     "release": "npm run test && node ../_build/build && np"
   },
+  "keywords": [
+    "rapidjs", "core", "rapidjs.org"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/t-ski/rapidjs.git"
