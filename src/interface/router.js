@@ -1,5 +1,3 @@
-const {isAsyncFunction} = require("../utils");
-
 const {normalize} = require("path");
 
 const output = require("./output");
