@@ -38,7 +38,7 @@ const reader = require("./interface/reader");
 const responseModifier = require("./interface/response-modifier");
 const requestInterceptor = require("./interface/request-interceptor");
 
-const WEB_PATH = join(require.main.path, config.webDirName);
+const WEB_PATH = join(dirname(require.main.filename), config.webDirName);
 
 let isDevMode;
 if(process.argv[2] && process.argv[2] == config.devModeArgument) {
