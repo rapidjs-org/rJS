@@ -1,6 +1,6 @@
 {
   "name": "@rapidjs.org/core",
-  "version": "1.0.1-1",
+  "version": "1.0.1-2",
   "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "src/app.js",
   "scripts": {
@@ -10,7 +10,9 @@
     "release": "npm run test && node ../_build/build && np"
   },
   "keywords": [
-    "rapidjs", "core", "rapidjs.org"
+    "rapidjs",
+    "core",
+    "rapidjs.org"
   ],
   "repository": {
     "type": "git",
