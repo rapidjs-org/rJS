@@ -48,11 +48,11 @@ function requirePlugin(reference) {
 	
 	if(!packageNameRegex.test(reference)) {
 		// Private (local) package
-		if(!existsSync(join(require.main.path, reference.replace(/(\.js)?$/i, ".js")))) {
+		if(!existsSync(join(dirname(require.main.filename), reference.replace(/(\.js)?$/i, ".js")))) {
 			throw new ReferenceError(`Could not find private plug-in at '${reference}'`);
 		}
 
-		reference = join(require.main.path, reference);
+		reference = join(dirname(require.main.filename), reference);
 	} else {
 		// Public (npm registry) package
 		try {
