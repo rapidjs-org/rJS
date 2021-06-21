@@ -126,6 +126,7 @@ const router = require("./interface/router")(cache);
 const options = {};
 webConfig.sslCertFile && (options.cert = readCertFile(webConfig.sslCertFile));
 webConfig.sslKeyFile && (options.key = readCertFile(webConfig.sslKeyFile));
+webConfig.dhParam && (options.dhparam = readCertFile(webConfig.dhParam));
 
 function readCertFile(pathname) {
 	pathname = (pathname.charAt(0) == "/") ? pathname : join(WEB_PATH, pathname);

@@ -42,6 +42,11 @@ module.exports = {
 	isFunction: value => {
 		return value && {}.toString.call(value) === "[object Function]";
 	},
+     
+	isAsyncFunction: value => {
+		return value.constructor.name === "AsyncFunction";
+	},
+
 
 	normalizeExtension: extension => {
 		return extension.trim().replace(/^\./, "");
