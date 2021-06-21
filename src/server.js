@@ -46,6 +46,8 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	isDevMode = true;
 }
 
+// TODO: Multi port (parallel http AND https server(s))
+
 // Read config files (general configuration, MIMES)
 
 /**
@@ -122,8 +124,13 @@ const router = require("./interface/router")(cache);
 // Create web server instance
 
 const options = {};
-webConfig.sslCertFile && (options.cert = readFileSync(join(WEB_PATH, webConfig.sslCertFile)));
-webConfig.sslKeyFile && (options.key = readFileSync(join(WEB_PATH, webConfig.sslKeyFile)));
+webConfig.sslCertFile && (options.cert = readCertFile(webConfig.sslCertFile));
+webConfig.sslKeyFile && (options.key = readCertFile(webConfig.sslKeyFile));
+
+function readCertFile(pathname) {
+	pathname = (pathname.charAt(0) == "/") ? pathname : join(WEB_PATH, pathname);
+	return readFileSync(pathname);
+}
 
 const http = require(webConfig.useHttps ? "https" : "http");
 http.createServer(options, (req, res) => {
