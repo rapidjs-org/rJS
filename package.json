@@ -7,7 +7,7 @@
     "start": "node ./dist/app.js",
     "start:dev": "node ./src/app.js",
     "test": "./node_modules/.bin/eslint --fix src/",
-    "release": "npm run test && node ../_build/build"
+    "release": "npm run test && node ../_build/build && np"
   },
   "repository": {
     "type": "git",
