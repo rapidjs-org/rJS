@@ -101,7 +101,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {
 		var ${config.frontendModuleReferenceName.external} = {};
 		${frontendModuleData}
-		${config.frontendModuleReferenceName.internal}["${plugInName}"] = ${config.frontendModuleReferenceName.external}
+		${config.frontendModuleReferenceName.internal}["${plugInName}"] = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
 	`;
