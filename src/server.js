@@ -166,7 +166,7 @@ function redirect(res, path) {
  * @param {String} status - Error status code
  * @param {String} path - Path of the requested page resulting in the error
  */
-function redirectErrorPage(res, status, path) {
+function redirectErrorPage(res, status, path) {	// TODO: No redirect, but status exposed along error file contents (if exists)
 	do {
 		path = dirname(path);
 		let errorPagePath = join(path, String(status));
@@ -191,7 +191,7 @@ function redirectErrorPage(res, status, path) {
  */
 function respond(res, status, message) {
 	// Retrieve default message of status code if none given
-	!message && (message = http.STATUS_CODES[status] || "");
+	!message && (message = require("http").STATUS_CODES[status] || "");
     
 	res.statusCode = status;
 	
