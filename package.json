@@ -8,7 +8,7 @@
     "start:dev": "node ./src/app.js",
     "test": "./node_modules/.bin/eslint --fix src/",
     "build": "npm run test && node ../_build/build",
-    "release": "npm run build && npm publish"
+    "release": "npm run build && np"
   },
   "files": [
     "dist"
@@ -27,7 +27,7 @@
   "bugs": {
     "url": "https://github.com/t-ski/rapidjs/issues"
   },
-  "homepage": "https://github.com/t-ski/rapidjs#readme",
+  "homepage": "https://rapidjs.org",
   "devDependencies": {
     "eslint": "^7.26.0"
   },
