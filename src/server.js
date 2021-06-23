@@ -123,29 +123,39 @@ const router = require("./interface/router")(cache);
 // Create web server instance
 
 const options = {};
-webConfig.ssl.certFile && (options.cert = readCertFile(webConfig.ssl.certFile));
-webConfig.ssl.keyFile && (options.key = readCertFile(webConfig.ssl.keyFile));
-webConfig.ssl.dhParam && (options.dhparam = readCertFile(webConfig.ssl.dhParam));
+if(webConfig.ssl) {
+	options.cert = webConfig.ssl.certFile ? readCertFile(webConfig.ssl.certFile) : null;
+	options.key = webConfig.ssl.keyFile ? readCertFile(webConfig.ssl.keyFile) : null;
+	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
+}
 
 function readCertFile(pathname) {
 	pathname = (pathname.charAt(0) == "/") ? pathname : join(WEB_PATH, pathname);
 	return readFileSync(pathname);
 }
 
-const http = require(webConfig.useHttps ? "https" : "http");
-http.createServer(options, (req, res) => {
+// Create main server depending on set ports
+require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
 		output.error(err);
 	}
-}).listen(webConfig.port, null, null, _ => {
+}).listen(webConfig.portHttps || webConfig.portHttp, null, null, _ => {
 	output.log(`Server started listening on port ${webConfig.port}`);
 
 	if(isDevMode) {
 		output.log("Running DEV MODE");
 	}
 });
+// Create HTTP to HTTPS redirect server if both ports set up
+if(webConfig.portHttps && webConfig.portHttp) {
+	require("http").createServer((req, res) => {
+		redirect(res, `https://${req.headers.host}${req.url}`);
+	}).listen(webConfig.portHttp, null, null, _ => {
+		output.log(`HTTP (:${webConfig.portHttp}) to HTTPS (:${webConfig.portHttps}) redirection enabled`);
+	});
+}
 
 
 /**
