@@ -19,7 +19,7 @@ const utils = require("./utils");
 const output = require("./interface/output");
 
 const server = require("./server");
-const core = {
+let core = {
 	setRoute: server.setRoute,
 
 	setReader: require("./interface/reader").setReader,
