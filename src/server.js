@@ -10,6 +10,7 @@ const config = {
 		dev: "rapid.config:dev.json",
 		custom: "rapid.config.json"
 	},
+	configFilePluginScopeName: "plug-ins",
 	defaultFileExtension: "html",
 	defaultFileName: "index",
 	devModeArgument: "-dev",
@@ -21,8 +22,6 @@ const config = {
 	supportFilePrefix: "_",
 	webDirName: "web"
 };
-
-// TODO: DEV config for overrides?
 
 const {existsSync, readFileSync} = require("fs");
 const {extname, join, dirname, basename} = require("path");
@@ -46,7 +45,7 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	isDevMode = true;
 }
 
-// TODO: Multi port (parallel http AND https server(s))
+// TODO: Add HTTP to HTTPS redirection (server) feature?
 
 // Read config files (general configuration, MIMES)
 
@@ -100,7 +99,7 @@ const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, [
 ]);
 
 const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
-// TODO: Dev mode override config
+
 webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitelist);
 webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList);
 
@@ -166,7 +165,7 @@ function redirect(res, path) {
  * @param {String} status - Error status code
  * @param {String} path - Path of the requested page resulting in the error
  */
-function redirectErrorPage(res, status, path) {	// TODO: No redirect, but status exposed along error file contents (if exists)
+function redirectErrorPage(res, status, path) {	// TODO: No redirect, but status exposed along error file contents (if exists)?
 	do {
 		path = dirname(path);
 		let errorPagePath = join(path, String(status));
@@ -266,7 +265,7 @@ function handleRequest(req, res) {
 	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
 
 	res.setHeader("X-XSS-Protection", "1");
-	res.setHeader("X-Content-Type-Options", "nosniff");	// TODO: Fix MIME
+	res.setHeader("X-Content-Type-Options", "nosniff");
 
 	// Apply the related handler
 	if(method == "get") {
@@ -484,7 +483,7 @@ function getFromConfig(key) {
 	let pluginSubKey = utils.getCallerPath(__filename);
 	pluginSubKey = utils.getPluginName(basename(dirname(pluginSubKey)));
 
-	const subObj = webConfig[pluginSubKey];
+	const subObj = (webConfig[config.configFilePluginScopeName] || {})[pluginSubKey];
 	
 	return subObj ? subObj[key] : undefined;
 }
