@@ -133,14 +133,15 @@ function readCertFile(pathname) {
 }
 
 // Create main server depending on set ports
+const port = webConfig.portHttps || webConfig.portHttp;
 require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res) => {
 	try {
 		handleRequest(req, res);
 	} catch(err) {
 		output.error(err);
 	}
-}).listen(webConfig.portHttps || webConfig.portHttp, null, null, _ => {
-	output.log(`Server started listening on port ${webConfig.port}`);
+}).listen(port, null, null, _ => {
+	output.log(`Server started listening on port ${port}`);
 
 	if(isDevMode) {
 		output.log("Running DEV MODE");
@@ -269,7 +270,7 @@ function handleRequest(req, res) {
 	requestInterceptor.applyRequestInterceptors(req);
 	
 	// Set basic response headers
-	webConfig.useHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
+	webConfig.portHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
 	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
 
 	res.setHeader("X-XSS-Protection", "1");
