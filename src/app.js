@@ -131,7 +131,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 	// Add GET route to retrieve frontend module script
 	core.setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
-	});
+	}, true);
 }
 
 
