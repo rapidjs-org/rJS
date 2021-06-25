@@ -490,7 +490,7 @@ function createCache() {
  */
 function getFromConfig(key) {
 	let pluginSubKey = utils.getCallerPath(__filename);
-	pluginSubKey = utils.getPluginName(basename(dirname(pluginSubKey)));
+	pluginSubKey = utils.getPluginName(pluginSubKey);
 
 	const subObj = (webConfig[config.configFilePluginScopeName] || {})[pluginSubKey];
 	
