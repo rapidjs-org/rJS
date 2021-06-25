@@ -20,22 +20,28 @@ const output = require("./interface/output");
 
 const server = require("./server");
 let core = {
+	// General core interface; accessible from the instanciating application's scope
 	setRoute: server.setRoute,
 
 	setReader: require("./interface/reader").setReader,
-	applyReader: require("./interface/reader").applyReader,
-	addResponseModifier: require("./interface/response-modifier").addResponseModifier,
-	applyResponseModifier: require("./interface/response-modifier").applyResponseModifier,
-	setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
-};	// Minimum core interface
+	addRequestInterceptor: require("./interface/request-interceptor").addRequestInterceptor,
+	addResponseModifier: require("./interface/response-modifier").addResponseModifier
+};
 const coreInterface = {
+	// Plug-in core interface; accessible from referenced plug-ins' scopes (extending the general core interface)
 	...server,
 	...core,
 	... {
 		output,
-		initFrontendModule
+		initFrontendModule,
+
+		applyReader: require("./interface/reader").applyReader,
+		applyResponseModifiers: require("./interface/response-modifier").applyResponseModifiers,
+
+		// Properties not to keep on the plug-in core interface (but only for the respective application)
+		setReader: undefined
 	}
-};	// Maximum core interface
+};
 
 /**
  * Require a plug-in module on core level passing the maximum core interface object.

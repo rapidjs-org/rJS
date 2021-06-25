@@ -23,16 +23,15 @@ module.exports = {
 	},
 
 	// TODO: Introduce order flags for telling rapidJS to always apply first or last specifically when needed?
-	// TODO: Use '*' wildcard for application on any file type?
 	/**
-	 * Call response modifier for a specific extension.
+	 * Apply response modifiers for a specific extension.
 	 * @param {String} extension Extension name
-	 * @param {String} data Data to finalize
+	 * @param {String} data Data to modifiy
 	 * @param {String} [pathname] Pathname of associated request to pass
 	 * @param {Object} [queryParametersObj] Query parameters object to pass
 	 * @returns {*} Serializable modified data
 	 */
-	applyResponseModifier: (extension, data, pathname, queryParametersObj) => {
+	applyResponseModifiers: (extension, data, pathname, queryParametersObj) => {
 		for(let responseModifier of (responseModifierHandlers[extension] || [])) {
 			if(!isString(data) && !Buffer.isBuffer(data)) {
 				output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
