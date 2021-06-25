@@ -44,34 +44,6 @@ const coreInterface = {
 };
 
 /**
- * Require a plug-in module on core level passing the maximum core interface object.
- * @param {String} reference Plug-in reference value (public package name or local path to package main file)
- */
-function requirePlugin(reference) {
-	const packageNameRegex = /^(@[a-z0-9][a-z0-9.~_-]*\/)?[a-z0-9][a-z0-9.~_-]*$/;
-
-	reference = packageNameRegex.test(reference) ? reference : normalize(reference);
-	
-	if(!packageNameRegex.test(reference)) {
-		// Private (local) package
-		if(!existsSync(join(dirname(require.main.filename), reference.replace(/(\.js)?$/i, ".js")))) {
-			throw new ReferenceError(`Could not find private plug-in at '${reference}'`);
-		}
-
-		reference = join(dirname(require.main.filename), reference);
-	} else {
-		// Public (npm registry) package
-		try {
-			require(reference).resolve();
-		} catch(err) {
-			throw new ReferenceError(`Could not find public plug-in package '${reference}'.`);
-		}
-	}
-
-	require(reference)(coreInterface);
-}
-
-/**
  * Initialize the frontend module of a plug-in.
  * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
@@ -145,9 +117,9 @@ initFrontendModuleHelper(__dirname);
  * @returns Minimum core interface object
  */
 module.exports = plugIns => {
-	(plugIns || []).forEach(name => {
+	(plugIns || []).forEach(reference => {
 		try {
-			requirePlugin(name);
+			module.parent.require(reference)(coreInterface);;
 		} catch(err) {
 			output.error(err, true);
 		}
