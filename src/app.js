@@ -12,7 +12,7 @@ const config = {
 	plugInFrontendModuleName: "frontend"
 };
 
-const {dirname, basename, join} = require("path");
+const {join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
@@ -37,12 +37,10 @@ const coreInterface = {
 
 		applyReader: require("./interface/reader").applyReader,
 		applyResponseModifiers: require("./interface/response-modifier").applyResponseModifiers,
-
-		// Properties not to keep on the plug-in core interface (but only for the respective application)
-		setReader: undefined
 	}
 };
-
+// Properties not to keep on the plug-in core interface (but only for the respective application)
+delete coreInterface.setReader;
 
 /**
  * Initialize the frontend module of a plug-in.
@@ -51,13 +49,12 @@ const coreInterface = {
 function initFrontendModule(plugInConfig) {
 	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig);
 }
-function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
-	const plugInName = utils.getPluginName(basename(dirname(plugInDirPath)));
-	
+function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
+	pluginName = pluginName ? pluginName : utils.getPluginName(plugInDirPath);
+
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
 	let frontendFilePath = join(plugInDirPath, `${config.plugInFrontendModuleName}.js`);
-
 	if(!existsSync(frontendFilePath)) {
 		return;
 	}
@@ -80,13 +77,13 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {
 		var ${config.frontendModuleReferenceName.external} = {};
 		${frontendModuleData}
-		${config.frontendModuleReferenceName.internal}["${plugInName}"] = ${config.frontendModuleReferenceName.external};
+		${config.frontendModuleReferenceName.internal}["${pluginName }"] = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
 	`;
-
-	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${plugInName}${config.frontendModuleFileName.suffix}.js`;
-
+	
+	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName }${config.frontendModuleFileName.suffix}.js`;
+	
 	// Add response modifier for inserting the script tag into document markup files
 	core.addResponseModifier("html", data => {
 		if(!frontendModuleData) {
@@ -100,7 +97,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 		}
 		return data.replace(openingHeadTag[0], `${openingHeadTag[0]}${`<script src="${frontendFileLocation}"></script>`}`);
 	});
-
+	
 	// Add GET route to retrieve frontend module script
 	core.setRoute("get", `${frontendFileLocation}`, _ => {
 		return frontendModuleData;
@@ -109,7 +106,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig) {
 
 
 // Init frontend base file to provide reusable methods among plug-ins
-initFrontendModuleHelper(__dirname);
+initFrontendModuleHelper(__dirname, null, "core");
 
 
 /**
