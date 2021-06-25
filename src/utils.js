@@ -2,7 +2,7 @@ const config = {
 	plugInNamingPrefix: "rapidjs--"
 };
 
-const {dirname} = require("path");
+const {dirname, basename} = require("path");
 
 module.exports = {
 
@@ -32,7 +32,14 @@ module.exports = {
 	},
 	
 	getPluginName: sequence => {
-		return sequence.toLowerCase().replace(new RegExp(`(^|\\/)${config.plugInNamingPrefix}`), "$1");
+		let name = sequence.toLowerCase().match(new RegExp(`(@[a-z0-9_-]+\\/)?${config.plugInNamingPrefix}([a-z0-9_-]+)`));
+		if(name) {
+			name = name[0].replace(new RegExp(`(^|\\/)${config.plugInNamingPrefix}`), "$1");
+		} else {
+			name = basename(dirname(sequence));
+		}
+		
+		return name;
 	},
 	
 	isString: value => {
