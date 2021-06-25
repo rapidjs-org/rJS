@@ -12,7 +12,7 @@ const config = {
 	plugInFrontendModuleName: "frontend"
 };
 
-const {normalize, dirname, basename, join} = require("path");
+const {dirname, basename, join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
@@ -42,6 +42,7 @@ const coreInterface = {
 		setReader: undefined
 	}
 };
+
 
 /**
  * Initialize the frontend module of a plug-in.
@@ -119,7 +120,7 @@ initFrontendModuleHelper(__dirname);
 module.exports = plugIns => {
 	(plugIns || []).forEach(reference => {
 		try {
-			module.parent.require(reference)(coreInterface);;
+			module.parent.require(reference)(coreInterface);
 		} catch(err) {
 			output.error(err, true);
 		}
