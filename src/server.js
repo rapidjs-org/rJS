@@ -45,8 +45,6 @@ if(process.argv[2] && process.argv[2] == config.devModeArgument) {
 	isDevMode = true;
 }
 
-// TODO: Add HTTP to HTTPS redirection (server) feature?
-
 // Read config files (general configuration, MIMES)
 
 /**
@@ -268,7 +266,7 @@ function handleRequest(req, res) {
 		return;
 	}
 
-	requestInterceptor.applyRequestInterceptor(req);
+	requestInterceptor.applyRequestInterceptors(req);
 	
 	// Set basic response headers
 	webConfig.useHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
@@ -375,7 +373,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	try {
 		data = reader.applyReader(extension, localPath);
 	} catch(err) {
-		if(err !== 404) {	// TODO: Also expose 404
+		if(err !== 404) {
 			output.error(err);
 
 			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
@@ -394,7 +392,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	
 	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
 	try {
-		data = responseModifier.applyResponseModifier(extension, data, localPath, queryParametersObj);
+		data = responseModifier.applyResponseModifiers(extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		output.error(err);
 		

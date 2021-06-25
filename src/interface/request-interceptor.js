@@ -3,11 +3,11 @@ const {isFunction} = require("../utils");
 let requestInterceptorHandlers = [];
 
 module.exports = {
-	setRequestInterceptor: callback => {
+	addRequestInterceptor: callback => {
 		requestInterceptorHandlers.push(callback);
 	},
 
-	applyRequestInterceptor: req => {
+	applyRequestInterceptors: req => {
 		requestInterceptorHandlers.forEach(requestInterceptor => {
 			isFunction(requestInterceptor) && requestInterceptor(req);
 		});

@@ -7,7 +7,7 @@
     "start": "node ./dist/app.js",
     "start:dev": "node ./src/app.js",
     "test": "./node_modules/.bin/eslint --fix src/",
-    "build": "npm run test && node ../_build/build",
+    "build": "npm run test && node ../../finalize-js/build.js",
     "release": "npm run build && np"
   },
   "files": [
