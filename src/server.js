@@ -169,29 +169,6 @@ function redirect(res, path) {
 }
 
 /**
- * Perform a redirect to a related error page.
- * @param {Object} res - Open response object
- * @param {String} status - Error status code
- * @param {String} path - Path of the requested page resulting in the error
- */
-function redirectErrorPage(res, status, path) {	// TODO: No redirect, but status exposed along error file contents (if exists)?
-	do {
-		path = dirname(path);
-		let errorPagePath = join(path, String(status));
-		if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
-			redirect(res, errorPagePath);
-            
-			return;
-		}
-	} while(path != "/");
-
-	// Simple response if no related error page found
-	respond(res, status);
-
-	// TODO: Fallback page?
-}
-
-/**
  * Perform a response.
  * @param {Object} res Open response object
  * @param {*} status Status code to use
@@ -217,13 +194,22 @@ function respond(res, status, message) {
  * @helper
  * @param {Number} status Status code
  */
-function respondProperly(res, method, pathname, status) {
+function respondWithError(res, method, pathname, status) {
+	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
 	if(method.toLowerCase() == "get" && ["html", ""].includes(extname(pathname).slice(1).toLowerCase())) {
-		redirectErrorPage(res, status, pathname);
-
-		return;
+		do {
+			pathname = dirname(pathname);
+			let errorPagePath = join(pathname, String(status));
+			const errorFilePath = `${join(WEB_PATH, errorPagePath)}.html`;
+			if(existsSync(errorFilePath)) {
+				respond(res, status, readFileSync(errorFilePath));
+				
+				return;
+			}
+		} while(pathname != "/");
 	}
 
+	// Simple response
 	respond(res, status);
 }
 
@@ -236,13 +222,13 @@ function handleRequest(req, res) {
 	// Block request if maximum 
 	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
-		respondProperly(res, req.method, req.url, 429);
+		respondWithError(res, req.method, req.url, 429);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(req.url.length > webConfig.maxUrlLength) {
-		respondProperly(res, req.method, req.url, 414);
+		respondWithError(res, req.method, req.url, 414);
 
 		return;
 	}
@@ -311,8 +297,8 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	// or a non-standalone file has been requested
 	if(isStaticRequest && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
-		respondProperly(res, "get", pathname, 403);
-
+		respondWithError(res, "get", pathname, 403);
+		
 		return;
 	}
 
@@ -330,7 +316,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 			output.error(err);
 
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
-			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
 		}
 
 		return;
@@ -356,7 +342,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	// Use compound page path if respective directory exists
 	if(!isStaticRequest) {
 		extension = config.defaultFileExtension;
-
+		
 		// Construct internal compound path representation
 		let compoundPath = localPath.replace(new RegExp(`(\\${config.compoundPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe compound argument part fom pathname
 		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${extension}`);
@@ -377,13 +363,13 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 		if(err !== 404) {
 			output.error(err);
 
-			respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
 
 			return;
 		}
 		if(!existsSync(localPath)) {
 			// Redirect to the related error page if requested file does not exist
-			respondProperly(res, "get", pathname, 404);
+			respondWithError(res, "get", pathname, 404);
 	
 			return;
 		}
@@ -397,7 +383,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	} catch(err) {
 		output.error(err);
 		
-		respondProperly(res, "get", pathname, isNaN(err) ? 500 : err);
+		respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
 
 		return;
 	}
