@@ -156,7 +156,6 @@ if(webConfig.portHttps && webConfig.portHttp) {
 	});
 }
 
-
 /**
  * Perform a redirect to a given path.
  * @param {Object} res - Open response object
@@ -186,27 +185,38 @@ function respond(res, status, message) {
     
 	res.setHeader("Content-Length", Buffer.byteLength(message));
 	
-	res.end(message);
+	res.end(Buffer.isBuffer(message) ? message : Buffer.from(message, "UTF-8"));
 }
 
 /**
  * Respond by a simple response or redirecting to an error page depending on the request method.
  * @helper
- * @param {Number} status Status code
  */
-function respondWithError(res, method, pathname, status) {
+function respondWithError(res, method, pathname, status, supportsGzip) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
 	if(method.toLowerCase() == "get" && ["html", ""].includes(extname(pathname).slice(1).toLowerCase())) {
+		let errorPageDir = pathname;
 		do {
-			pathname = dirname(pathname);
-			let errorPagePath = join(pathname, String(status));
-			const errorFilePath = `${join(WEB_PATH, errorPagePath)}.html`;
-			if(existsSync(errorFilePath)) {
-				respond(res, status, readFileSync(errorFilePath));
+			errorPageDir = dirname(errorPageDir);
+
+			let errorPagePath = join(errorPageDir, String(status));
+			if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
+				let errorPageData = handleFile(res, false, errorPagePath, "html", null, supportsGzip);
 				
+				// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
+				errorPageData = utils.injectIntoHead(errorPageData, `
+				<script>
+					const base = document.createElement("base");
+					base.setAttribute("href", document.location.protocol + "//" + document.location.host + "${errorPageDir}");
+					document.querySelector("head").appendChild(base);
+					document.currentScript.parentNode.removeChild(document.currentScript);
+				</script>`);	// TODO: Efficitenly retrieve hostname to insert base tag already
+
+				respond(res, 200, errorPageData);
+
 				return;
 			}
-		} while(pathname != "/");
+		} while(errorPageDir != "/");
 	}
 
 	// Simple response
@@ -219,16 +229,18 @@ function respondWithError(res, method, pathname, status) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
+	const supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
+
 	// Block request if maximum 
 	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
 		res.setHeader("Retry-After", 30000);
-		respondWithError(res, req.method, req.url, 429);
+		respondWithError(res, req.method, req.url, 429, supportsGzip);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(req.url.length > webConfig.maxUrlLength) {
-		respondWithError(res, req.method, req.url, 414);
+		respondWithError(res, req.method, req.url, 414, supportsGzip);
 
 		return;
 	}
@@ -243,9 +255,9 @@ function handleRequest(req, res) {
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
 	const urlParts = parseUrl(req.url, true);
 	let explicitBase;
-	if((explicitBase = urlParts.pathname.match(new RegExp(`\\/(${config.defaultFileName})?(\\.html)?$`)))
+	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
 		&& explicitBase[0].length > 1) {
-		const newUrl = urlParts.pathname.replace(explicitBase, "")
+		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
                      + (urlParts.search || "");
         
 		redirect(res, newUrl);
@@ -264,9 +276,7 @@ function handleRequest(req, res) {
 
 	// Apply the related handler
 	if(method == "get") {
-		const useGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
-
-		handleGET(res, urlParts.pathname, urlParts.query, useGzip);
+		handleGET(res, urlParts.pathname, urlParts.query, supportsGzip);
 
 		return;
 	} 
@@ -282,11 +292,9 @@ function handleRequest(req, res) {
  * @param {Object} res Active response object
  * @param {String} pathname URL pathname part
  * @param {String} queryParametersObj Query string parameters in object representation
- * @param {Boolean} useGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
+ * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
-function handleGET(res, pathname, queryParametersObj, useGzip) {
-	let data;
-
+function handleGET(res, pathname, queryParametersObj, supportsGzip) {
 	let extension = extname(pathname).slice(1);
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
@@ -297,7 +305,7 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	// or a non-standalone file has been requested
 	if(isStaticRequest && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
-		respondWithError(res, "get", pathname, 403);
+		respondWithError(res, "get", pathname, 403, supportsGzip);
 		
 		return;
 	}
@@ -305,6 +313,8 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	// Set MIME type header accordingly
 	const mime = mimeTypes[isStaticRequest ? extension : "html"];
 	mime && res.setHeader("Content-Type", mime);
+
+	let data;
 
 	if(router.hasRoute("get", pathname)) {
 		// Use custom GET route if defined on pathname as of higher priority
@@ -316,22 +326,30 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 			output.error(err);
 
 			// Respond with status thrown (if is a number) or expose an internal error otherwise
-			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
+			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
 		}
 
 		return;
 	}
 
+	try {
+		data = handleFile(res, isStaticRequest, pathname, extension, queryParametersObj, supportsGzip);
+
+		respond(res, 200, data);
+	} catch(err) {
+		respondWithError(res, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
+	}
+}
+
+function handleFile(res, isStaticRequest, pathname, extension, queryParametersObj, supportsGzip) {
 	// Set GZIP compression header if about to compress response data
-	useGzip = useGzip && webConfig.gzipCompressList.includes(extension);
-	useGzip && (res.setHeader("Content-Encoding", "gzip"));
+	supportsGzip = supportsGzip && webConfig.gzipCompressList.includes(extension);
+	supportsGzip && (res.setHeader("Content-Encoding", "gzip"));
 	
 	// Use cached data if is static file request
 	if(isStaticRequest && cache.has(pathname)) {
 		// Read data from cache if exists (and not outdated)
-		respond(res, 200, cache.read(pathname));
-		
-		return;
+		throw cache.read(pathname);
 	}
 
 	let localPath = join(WEB_PATH, pathname);
@@ -363,15 +381,12 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 		if(err !== 404) {
 			output.error(err);
 
-			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
-
-			return;
+			throw err;
 		}
+
 		if(!existsSync(localPath)) {
 			// Redirect to the related error page if requested file does not exist
-			respondWithError(res, "get", pathname, 404);
-	
-			return;
+			throw 404;
 		}
 
 		data = readFileSync(localPath);
@@ -383,18 +398,16 @@ function handleGET(res, pathname, queryParametersObj, useGzip) {
 	} catch(err) {
 		output.error(err);
 		
-		respondWithError(res, "get", pathname, isNaN(err) ? 500 : err);
-
-		return;
+		throw err;
 	}
 	
 	// Compress with GZIP if enabled
-	useGzip && (data = gzip(data));
+	supportsGzip && (data = gzip(data));
 	
 	// Set server-side cache
 	isStaticRequest && cache.write(pathname, data);
-	
-	respond(res, 200, Buffer.isBuffer(data) ? data : Buffer.from(data, "UTF-8"));
+
+	return data;
 }
 
 /**
