@@ -413,7 +413,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 	
 	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
 	try {
-		data = responseModifier.applyResponseModifiers(extension, data, localPath, queryParametersObj);
+		data = responseModifier.applyResponseModifiers(isCompoundPage ? ":" : extension, data, localPath, queryParametersObj);
 	} catch(err) {
 		output.error(err);
 		
