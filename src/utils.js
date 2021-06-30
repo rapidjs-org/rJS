@@ -57,6 +57,21 @@ module.exports = {
 
 	normalizeExtension: extension => {
 		return extension.trim().replace(/^\./, "");
+	},
+
+	/**
+	 * Inject a given sequence into a given hosting markup's head tag (top; only if head tag exists).
+	 * @param {String} hostData Markup to inject a given sequence into
+	 * @param {String} insertData Injection sequence
+	 * @returns {String} Injected host data
+	 */
+	injectIntoHead: (hostData, insertData) => {
+		const openingHeadTag = hostData.match(/<\s*head((?!>)(\s|.))*>/);
+		if(!openingHeadTag) {
+			return hostData;
+		}
+
+		return hostData.replace(openingHeadTag[0], `${openingHeadTag[0]}${insertData}`);
 	}
 
 };
