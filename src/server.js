@@ -406,18 +406,9 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 	try {
 		data = reader.applyReader(extension, localPath);
 	} catch(err) {
-		if(err !== 404) {
-			output.error(err);
-
-			throw err;
-		}
-
-		if(!existsSync(localPath)) {
-			// Redirect to the related error page if requested file does not exist
-			throw 404;
-		}
-
-		data = readFileSync(localPath);
+		output.error(err);
+		
+		throw err;
 	}
 	
 	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
