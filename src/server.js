@@ -5,10 +5,15 @@
  */
 
 const config = {
+	compoundObject: {
+		name: "compoundPage",
+		basePathProperty: "base",
+		argumentsProperty: "args",
+	},
 	configFileName: {
+		custom: "rapid.config.json",
 		default: "default.config.json",
-		dev: "rapid.config:dev.json",
-		custom: "rapid.config.json"
+		dev: "rapid.config:dev.json"
 	},
 	configFilePluginScopeName: "plug-ins",
 	defaultFileExtension: "html",
@@ -16,8 +21,8 @@ const config = {
 	devModeArgument: "-dev",
 	compoundPageDirPrefix: ":",
 	mimesFileName: {
-		default: "default.mimes.json",
-		custom: "rapid.mimes.json"
+		custom: "rapid.mimes.json",
+		default: "default.mimes.json"
 	},
 	supportFilePrefix: "_",
 	webDirName: "web"
@@ -353,30 +358,45 @@ function handleGET(res, pathname, queryParametersObj, supportsGzip) {
 
 		respond(res, 200, data);
 	} catch(err) {
+		output.error(err);
+
 		respondWithError(res, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
 	}
 }
 
 function handleFile(isStaticRequest, pathname, extension, queryParametersObj, supportsGzip) {
+	// Add default file name if none explicitly stated in request URL
+	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
+
 	let localPath = join(WEB_PATH, pathname);
 	
-	// Add default file name if none explicitly stated in request URL
-	localPath = localPath.replace(new RegExp(`(\\/)((${config.compoundPageDirPrefix}[a-zA-Z0-9_][a-zA-Z0-9_-]*)+)?$`), `$1${config.defaultFileName}$2`);
-
 	// Use compound page path if respective directory exists
+	let isCompoundPage = false;
+	let compoundPath;
 	if(!isStaticRequest) {
 		extension = config.defaultFileExtension;
-		
-		// Construct internal compound path representation
-		let compoundPath = localPath.replace(new RegExp(`(\\${config.compoundPageDirPrefix}[a-z0-9_-]+)+$`, "i"), "");	// Stripe compound argument part fom pathname
-		compoundPath = join(dirname(compoundPath), config.compoundPageDirPrefix + basename(compoundPath), `${basename(compoundPath)}.${extension}`);
 
-		// Return compound path if related file exists in file system
-		if(existsSync(compoundPath)) {
-			localPath = compoundPath;
-		} else {
-		// Add default file extension if none explicitly stated in request URL
-			localPath += `.${config.defaultFileExtension}`;
+		compoundPath = "";
+		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
+		for(let part of pathParts) {
+			// Construct possible internal compound path
+			const localCompoundPath = join(WEB_PATH, compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
+			
+			compoundPath = join(compoundPath, part);
+
+			// Return compound path if related file exists in file system
+			if(existsSync(localCompoundPath)) {
+				isCompoundPage = true;
+				localPath = localCompoundPath;
+
+				break;
+			}
+		}
+		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
+		
+		if(!isCompoundPage) {
+			// Add default file extension if is not a compound page and none explicitly stated in request URL
+			localPath += `.${extension}`;
 		}
 	}
 
@@ -405,6 +425,18 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 		output.error(err);
 		
 		throw err;
+	}
+
+	// Implement compound page information into compound pages
+	if(isCompoundPage) {
+		data = utils.injectIntoHead(data, `
+		<script>
+			RAPID.core.${config.compoundObject.name} = {
+				${config.compoundObject.basePathProperty}: "/${compoundPath}",
+				${config.compoundObject.argumentsProperty}: "${pathname.slice(compoundPath.length + 1)}"
+			};
+			document.currentScript.parentNode.removeChild(document.currentScript);
+		</script>`, true);
 	}
 	
 	// Compress with GZIP if enabled

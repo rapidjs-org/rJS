@@ -63,15 +63,22 @@ module.exports = {
 	 * Inject a given sequence into a given hosting markup's head tag (top; only if head tag exists).
 	 * @param {String} hostData Markup to inject a given sequence into
 	 * @param {String} insertData Injection sequence
+	 * @param {Boolean} [atBottom=false] Whether to insert sequence at bottom of head (at top otherwise)
 	 * @returns {String} Injected host data
 	 */
-	injectIntoHead: (hostData, insertData) => {
-		const openingHeadTag = hostData.match(/<\s*head((?!>)(\s|.))*>/);
-		if(!openingHeadTag) {
+	injectIntoHead: (hostData, insertData, atBottom = false) => {
+		const headTag = {
+			open: hostData.match(/<\s*head((?!>)(\s|.))*>/),
+			close: hostData.match(/<\s*\/head((?!>)(\s|.))*>/)
+		};
+
+		if(!headTag.open || !headTag.close) {
 			return hostData;
 		}
-
-		return hostData.replace(openingHeadTag[0], `${openingHeadTag[0]}${insertData}`);
+		
+		return atBottom
+			? hostData.replace(headTag.close[0], `${insertData}${headTag.close[0]}`)
+			: hostData.replace(headTag.open[0], `${headTag.open[0]}${insertData}`);
 	}
 
 };
