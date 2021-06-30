@@ -46,7 +46,7 @@ delete coreInterface.setReader;
  * Initialize the frontend module of a plug-in.
  * @param {Object} plugInConfig Plug-in local config object providing static naming information
  */
-function initFrontendModule(plugInConfig) {
+function initFrontendModule(plugInConfig) {	// TODO: Compound page only option
 	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig);
 }
 function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
