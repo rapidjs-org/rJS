@@ -163,7 +163,7 @@ if(webConfig.portHttps && webConfig.portHttp) {
  */
 function redirect(res, path) {
 	res.setHeader("Location", path);
-	
+
 	respond(res, 301);
 }
 
@@ -201,7 +201,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 
 			let errorPagePath = join(errorPageDir, String(status));
 			if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
-				let errorPageData = handleFile(res, false, errorPagePath, "html", null, supportsGzip);
+				let errorPageData = handleFile(false, errorPagePath, "html", null, supportsGzip);
 				
 				// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
 				errorPageData = utils.injectIntoHead(errorPageData, `
@@ -229,7 +229,14 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
-	const supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
+	// Check GZIP compression header if to to compress response data
+	let supportsGzip;
+	if(req.method.toLowerCase() == "get") {
+		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
+
+		supportsGzip = supportsGzip && webConfig.gzipCompressList.includes(extension);
+		supportsGzip && (res.setHeader("Content-Encoding", "gzip"));
+	}
 
 	// Block request if maximum 
 	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
@@ -333,7 +340,16 @@ function handleGET(res, pathname, queryParametersObj, supportsGzip) {
 	}
 
 	try {
-		data = handleFile(res, isStaticRequest, pathname, extension, queryParametersObj, supportsGzip);
+		// Use cached data if is static file request
+		if(isStaticRequest && cache.has(pathname)) {
+			// Read data from cache if exists (and not outdated)
+			throw cache.read(pathname);
+		}
+
+		data = handleFile(isStaticRequest, pathname, extension, queryParametersObj, supportsGzip);
+
+		// Set server-side cache
+		isStaticRequest && cache.write(pathname, data);
 
 		respond(res, 200, data);
 	} catch(err) {
@@ -341,17 +357,7 @@ function handleGET(res, pathname, queryParametersObj, supportsGzip) {
 	}
 }
 
-function handleFile(res, isStaticRequest, pathname, extension, queryParametersObj, supportsGzip) {
-	// Set GZIP compression header if about to compress response data
-	supportsGzip = supportsGzip && webConfig.gzipCompressList.includes(extension);
-	supportsGzip && (res.setHeader("Content-Encoding", "gzip"));
-	
-	// Use cached data if is static file request
-	if(isStaticRequest && cache.has(pathname)) {
-		// Read data from cache if exists (and not outdated)
-		throw cache.read(pathname);
-	}
-
+function handleFile(isStaticRequest, pathname, extension, queryParametersObj, supportsGzip) {
 	let localPath = join(WEB_PATH, pathname);
 	
 	// Add default file name if none explicitly stated in request URL
@@ -404,9 +410,6 @@ function handleFile(res, isStaticRequest, pathname, extension, queryParametersOb
 	// Compress with GZIP if enabled
 	supportsGzip && (data = gzip(data));
 	
-	// Set server-side cache
-	isStaticRequest && cache.write(pathname, data);
-
 	return data;
 }
 
