@@ -1,3 +1,5 @@
+const {existsSync, readFileSync} = require("fs");
+
 const {normalizeExtension, isFunction, isString} = require("../utils");
 
 const output = require("./output");
@@ -9,7 +11,7 @@ module.exports = {
 	 * Set up a handler to read each GET request response data of a certain file extension in a specific manner (instead of using the default reader).
 	 * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
 	 * @param {String} extension Extension name (without a leading dot)
-	 * @param {Function} callback Callback getting passed the the associated pathname. Throwing an error code will lead to a related response.
+	 * @param {Function} callback Callback getting passed the the associated pathname. The callback has to return serialized data (Buffer or String). Throwing an error code will lead to a related response.
 	 */
 	setReader: (extension, callback) => {
 		extension = normalizeExtension(extension);
@@ -24,21 +26,22 @@ module.exports = {
 	/**
 	 * Call reader for a specific extension.
 	 * @param {String} extension Extension name (without a leading dot)
-	 * @param {String} pathname Pathname of request
-	 * @returns {*} Serializable read data
+	 * @param {String} pathname Path to file to be read
+	 * @returns {String|Buffer} Serialized read data (plain contents string if no according reader defined)
 	 */
 	applyReader: (extension, pathname) => {
 		if(!isFunction(readerHandlers[extension])) {
-			throw 404;
+			if(!existsSync(pathname)) {
+				throw new TypeError(`No explicit reader defined for extension "${extension}". No file found at "${pathname}" for plain contents retrieval.`);
+			}
+
+			return readFileSync(pathname);
 		}
 
 		const data = readerHandlers[extension](pathname);
 		if(!isString(data) && !Buffer.isBuffer(data)) {
-			output.error(new TypeError(`Reader ('${extension}') must return value of type string or buffer, given ${typeof(data)}.`));
-			
-			return "";
+			throw new TypeError(`Explicit reader for extension "${extension}" does not return serialized data of type String or Buffer, given ${typeof(data)} instead.`);
 		}
-		// TODO: What about errors?
 
 		return readerHandlers[extension](pathname);
 	}
