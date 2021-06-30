@@ -90,12 +90,8 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
 			return;
 		}
 		
-		// Insert referencing script tag intto page head (if exists)
-		const openingHeadTag = data.match(/<\s*head((?!>)(\s|.))*>/);
-		if(!openingHeadTag) {
-			return data;
-		}
-		return data.replace(openingHeadTag[0], `${openingHeadTag[0]}${`<script src="${frontendFileLocation}"></script>`}`);
+		// Insert referencing script tag into page head (if exists)
+		return utils.injectIntoHead(data, `<script src="${frontendFileLocation}"></script>`);
 	});
 	
 	// Add GET route to retrieve frontend module script
