@@ -234,6 +234,8 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
+	// TODO: Implement URL escaping
+
 	// Check GZIP compression header if to to compress response data
 	let supportsGzip;
 	if(req.method.toLowerCase() == "get") {
@@ -429,11 +431,20 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 
 	// Implement compound page information into compound pages
 	if(isCompoundPage) {
+		let serializedArgsArray = pathname.slice(compoundPath.length + 2)
+		.split(/\//g)
+		.filter(arg => arg.length > 0);
+		serializedArgsArray = (serializedArgsArray.length > 0)
+			? serializedArgsArray
+			.map(arg => `"${arg}"`)
+			.join(",")
+			: null;
+
 		data = utils.injectIntoHead(data, `
 		<script>
 			RAPID.core.${config.compoundObject.name} = {
 				${config.compoundObject.basePathProperty}: "/${compoundPath}",
-				${config.compoundObject.argumentsProperty}: "${pathname.slice(compoundPath.length + 1)}"
+				${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
 			};
 			document.currentScript.parentNode.removeChild(document.currentScript);
 		</script>`, true);

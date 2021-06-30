@@ -31,7 +31,7 @@ module.exports = {
 	 * @param {Object} [queryParametersObj] Query parameters object to pass
 	 * @returns {*} Serializable modified data
 	 */
-	applyResponseModifiers: (extension, data, pathname, queryParametersObj) => {	// TODO: Compound page only flag
+	applyResponseModifiers: (extension, data, pathname, queryParametersObj) => {	// TODO: Compound page only flag (":" extension?)
 		for(let responseModifier of (responseModifierHandlers[extension] || [])) {
 			if(!isString(data) && !Buffer.isBuffer(data)) {
 				output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
