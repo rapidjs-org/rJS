@@ -22,7 +22,7 @@ module.exports = {
 		responseModifierHandlers[extension].push(callback);
 	},
 
-	// TODO: Introduce order flags for telling rapidJS to always apply first or last specifically when needed?
+	// TODO: Introduce order flags for telling rapidJS to always apply first or last if specifically when needed?
 	/**
 	 * Apply response modifiers for a specific extension.
 	 * @param {String} extension Extension name (without a leading dot) (Use ":" if to apply compound base page associated modifiers)
@@ -34,7 +34,7 @@ module.exports = {
 	applyResponseModifiers: (extension, data, pathname, queryParametersObj) => {
 		for(let responseModifier of (responseModifierHandlers[extension] || [])) {
 			if(!isString(data) && !Buffer.isBuffer(data)) {
-				throw new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`);
+				output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
 			} else {
 				data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, pathname, queryParametersObj);
 			}
