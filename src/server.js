@@ -236,6 +236,9 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 function handleRequest(req, res) {
 	// TODO: Implement URL escaping
 
+	const urlParts = parseUrl(req.url, true);
+	let extension = utils.normalizeExtension(extname(urlParts.pathname));
+
 	// Check GZIP compression header if to to compress response data
 	let supportsGzip;
 	if(req.method.toLowerCase() == "get") {
@@ -267,9 +270,8 @@ function handleRequest(req, res) {
 	}
 	
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
-	const urlParts = parseUrl(req.url, true);
 	let explicitBase;
-	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
+	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.${config.defaultFileExtension})?$`)))
 		&& explicitBase[0].length > 1) {
 		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
                      + (urlParts.search || "");
@@ -290,7 +292,7 @@ function handleRequest(req, res) {
 
 	// Apply the related handler
 	if(method == "get") {
-		handleGET(res, urlParts.pathname, urlParts.query, supportsGzip);
+		handleGET(res, urlParts.pathname, extension, urlParts.query, supportsGzip);
 
 		return;
 	} 
@@ -305,11 +307,11 @@ function handleRequest(req, res) {
  * Handle a GET request accordingly.
  * @param {Object} res Active response object
  * @param {String} pathname URL pathname part
+ * @param {String} extension Pathname stated file extension
  * @param {String} queryParametersObj Query string parameters in object representation
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
-function handleGET(res, pathname, queryParametersObj, supportsGzip) {
-	let extension = extname(pathname).slice(1);
+function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
 	// Set client-side cache control for static files too
@@ -402,6 +404,8 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 		}
 	}
 
+	let data;
+
 	// Read file either by custom reader handler or by default reader
 	try {
 		data = reader.applyReader(extension, localPath);
@@ -425,12 +429,12 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 	// Implement compound page information into compound pages
 	if(isCompoundPage) {
 		let serializedArgsArray = pathname.slice(compoundPath.length + 2)
-		.split(/\//g)
-		.filter(arg => arg.length > 0);
+			.split(/\//g)
+			.filter(arg => arg.length > 0);
 		serializedArgsArray = (serializedArgsArray.length > 0)
 			? serializedArgsArray
-			.map(arg => `"${arg}"`)
-			.join(",")
+				.map(arg => `"${arg}"`)
+				.join(",")
 			: null;
 
 		data = utils.injectIntoHead(String(data), `
