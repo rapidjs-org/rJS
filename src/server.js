@@ -10,6 +10,7 @@ const config = {
 		basePathProperty: "base",
 		argumentsProperty: "args",
 	},
+	compoundPageDirPrefix: ":",
 	configFileName: {
 		custom: "rapid.config.json",
 		default: "default.config.json",
@@ -19,7 +20,6 @@ const config = {
 	defaultFileExtension: "html",
 	defaultFileName: "index",
 	devModeArgument: "-dev",
-	compoundPageDirPrefix: ":",
 	mimesFileName: {
 		custom: "rapid.mimes.json",
 		default: "default.mimes.json"
@@ -190,7 +190,7 @@ function respond(res, status, message) {
     
 	res.setHeader("Content-Length", Buffer.byteLength(message));
 	
-	res.end(Buffer.isBuffer(message) ? message : Buffer.from(message, "UTF-8"));
+	res.end(message);
 }
 
 /**
@@ -205,11 +205,12 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 			errorPageDir = dirname(errorPageDir);
 
 			let errorPagePath = join(errorPageDir, String(status));
+			
 			if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
-				let errorPageData = handleFile(false, errorPagePath, "html", null, supportsGzip);
+				let data = handleFile(false, errorPagePath, "html", null);
 				
 				// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
-				errorPageData = utils.injectIntoHead(errorPageData, `
+				data = utils.injectIntoHead(data, `
 				<script>
 					const base = document.createElement("base");
 					base.setAttribute("href", document.location.protocol + "//" + document.location.host + "${errorPageDir}");
@@ -217,7 +218,10 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 					document.currentScript.parentNode.removeChild(document.currentScript);
 				</script>`);	// TODO: Efficitenly retrieve hostname to insert base tag already
 
-				respond(res, 200, errorPageData);
+				// Compress with GZIP if enabled
+				supportsGzip && (data = gzip(data));
+
+				respond(res, 200, data);
 
 				return;
 			}
@@ -236,15 +240,18 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 function handleRequest(req, res) {
 	// TODO: Implement URL escaping
 
+	const method = req.method.toLowerCase();
 	const urlParts = parseUrl(req.url, true);
-	let extension = utils.normalizeExtension(extname(urlParts.pathname));
+	const extension = utils.normalizeExtension(extname(urlParts.pathname));
 
 	// Check GZIP compression header if to to compress response data
-	let supportsGzip;
-	if(req.method.toLowerCase() == "get") {
-		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "");
+	let supportsGzip = false;
+	if(method == "get") {
+		// Set MIME type header accordingly
+		const mime = mimeTypes[(extension.length == 0) ? config.defaultFileExtension : extension];
+		mime && res.setHeader("Content-Type", mime);
 
-		supportsGzip = supportsGzip && webConfig.gzipCompressList.includes(extension);
+		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(extension);
 		supportsGzip && (res.setHeader("Content-Encoding", "gzip"));
 	}
 
@@ -262,7 +269,6 @@ function handleRequest(req, res) {
 		return;
 	}
 	// Block request if method not allowed
-	const method = req.method.toLowerCase();
 	if(!["get", "post"].includes(method)) {
 		respond(res, 405);
 
@@ -326,17 +332,16 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		return;
 	}
 
-	// Set MIME type header accordingly
-	const mime = mimeTypes[isStaticRequest ? extension : "html"];
-	mime && res.setHeader("Content-Type", mime);
-
 	let data;
 
 	if(router.hasRoute("get", pathname)) {
 		// Use custom GET route if defined on pathname as of higher priority
 		try {
 			data = router.applyRoute("get", pathname);
-			
+
+			// Compress with GZIP if enabled
+			supportsGzip && (data = gzip(data));
+
 			respond(res, 200, data);
 		} catch(err) {
 			output.error(err);
@@ -348,17 +353,26 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		return;
 	}
 
-	try {
-		// Use cached data if is static file request
-		if(isStaticRequest && cache.has(pathname)) {
-			// Read data from cache if exists (and not outdated)
-			throw cache.read(pathname);
-		}
+	// Use cached data if is static file request (and not outdated)
+	if(isStaticRequest && cache.has(pathname)) {
+		data = cache.read(pathname);
 
-		data = handleFile(isStaticRequest, pathname, extension, queryParametersObj, supportsGzip);
+		// Compress with GZIP if enabled
+		supportsGzip && (data = gzip(data));
+
+		respond(res, 200, data);
+
+		return;
+	}
+
+	try {
+		data = handleFile(isStaticRequest, pathname, extension, queryParametersObj);
 
 		// Set server-side cache
 		isStaticRequest && cache.write(pathname, data);
+		
+		// Compress with GZIP if enabled
+		supportsGzip && (data = gzip(data));
 
 		respond(res, 200, data);
 	} catch(err) {
@@ -368,7 +382,7 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 	}
 }
 
-function handleFile(isStaticRequest, pathname, extension, queryParametersObj, supportsGzip) {
+function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
@@ -446,9 +460,6 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 			document.currentScript.parentNode.removeChild(document.currentScript);
 		</script>`, true);
 	}
-	
-	// Compress with GZIP if enabled
-	supportsGzip && (data = gzip(data));
 	
 	return data;
 }
