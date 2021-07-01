@@ -45,11 +45,12 @@ delete coreInterface.setReader;
 /**
  * Initialize the frontend module of a plug-in.
  * @param {Object} plugInConfig Plug-in local config object providing static naming information
+ * @param {Boolean} [compoundPagesOnly=false] Whether to init frontend module only in compound page environments
  */
-function initFrontendModule(plugInConfig) {	// TODO: Compound page only option
-	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig);
+function initFrontendModule(plugInConfig, compoundPagesOnly = false) {	// TODO: Compound page only option
+	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig, compoundPagesOnly);
 }
-function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
+function initFrontendModuleHelper(plugInDirPath, plugInConfig, compoundPagesOnly, pluginName) {
 	pluginName = pluginName ? pluginName : utils.getPluginName(plugInDirPath);
 
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
@@ -85,7 +86,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName }${config.frontendModuleFileName.suffix}.js`;
 	
 	// Add response modifier for inserting the script tag into document markup files
-	core.addResponseModifier("html", data => {
+	core.addResponseModifier(compoundPagesOnly ? ":" : "html", data => {
 		if(!frontendModuleData) {
 			return;
 		}
@@ -102,7 +103,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig, pluginName) {
 
 
 // Init frontend base file to provide reusable methods among plug-ins
-initFrontendModuleHelper(__dirname, null, "core");
+initFrontendModuleHelper(__dirname, null, null, "core");
 
 
 /**

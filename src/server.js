@@ -413,7 +413,9 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 	
 	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
 	try {
-		data = responseModifier.applyResponseModifiers(isCompoundPage ? ":" : extension, data, localPath, queryParametersObj);
+		data = responseModifier.applyResponseModifiers(extension, data, localPath, queryParametersObj);
+		
+		isCompoundPage && (data = responseModifier.applyResponseModifiers(":", data, localPath, queryParametersObj));	// Compound page specific modifiers
 	} catch(err) {
 		output.error(err);
 		
@@ -431,7 +433,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj, su
 			.join(",")
 			: null;
 
-		data = utils.injectIntoHead(data, `
+		data = utils.injectIntoHead(String(data), `
 		<script>
 			RAPID.core.${config.compoundObject.name} = {
 				${config.compoundObject.basePathProperty}: "/${compoundPath}",

@@ -56,7 +56,7 @@ module.exports = {
 
 
 	normalizeExtension: extension => {
-		return extension.trim().replace(/^\./, "");
+		return extension.trim().replace(/^\./, "").toLowerCase();
 	},
 
 	/**
