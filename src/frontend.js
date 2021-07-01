@@ -30,3 +30,5 @@ plugin.post = function(url) {
 plugin.post = function(url, body) {
 	return makeRequest("POST", url, body);
 };
+
+// TODO: Method to load closest error?
