@@ -32,7 +32,7 @@ module.exports = {
 	applyReader: (extension, pathname) => {
 		if(!isFunction(readerHandlers[extension])) {
 			if(!existsSync(pathname)) {
-				throw new TypeError(`No explicit reader defined for extension "${extension}". No file found at "${pathname}" for plain contents retrieval.`);
+				throw 404;
 			}
 
 			return readFileSync(pathname);

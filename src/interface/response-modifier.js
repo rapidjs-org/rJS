@@ -4,9 +4,6 @@ const output = require("./output");
 
 let responseModifierHandlers = {};
 
-// TODO: Add * extension wildcard to affect any file type? When to apply wildcarded?
-// TODO: Pass page information object (reqPathname, internalPathname, isCompoundPage) instead of pathname only?
-
 module.exports = {
 	/**
 	 * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
@@ -22,7 +19,6 @@ module.exports = {
 		responseModifierHandlers[extension].push(callback);
 	},
 
-	// TODO: Introduce order flags for telling rapidJS to always apply first or last if specifically when needed?
 	/**
 	 * Apply response modifiers for a specific extension.
 	 * @param {String} extension Extension name (without a leading dot) (Use ":" if to apply compound base page associated modifiers)
