@@ -11,22 +11,11 @@ const config = {
 		argumentsProperty: "args",
 	},
 	compoundPageDirPrefix: ":",
-	configFileName: {
-		custom: "rapid.config.json",
-		default: "default.config.json",
-		dev: "rapid.config:dev.json"
-	},
-	configFilePluginScopeName: "plug-ins",
 	defaultFileExtension: "html",
 	defaultFileName: "index",
-	devModeArgument: "-dev",
-	mimesFileName: {
-		custom: "rapid.mimes.json",
-		default: "default.mimes.json"
-	},
 	supportFilePrefix: "_",
-	webDirName: "web"
 };
+
 
 const {existsSync, readFileSync} = require("fs");
 const {extname, join, dirname, basename} = require("path");
@@ -34,94 +23,24 @@ const {parse: parseUrl} = require("url");
 
 const utils = require("./utils");
 
-// Interfaces
+const webConfig = require("./support/config").webConfig;
+const mimesConfig = require("./support/config").mimesConfig;
+
+const webPath = require("./support/web-path");
+
+const isDevMode = require("./support/is-dev-mode");
+
+const staticCache = require("./support/cache")
+const router = require("./interface/router");
+const rateLimiter = (isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("./support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
+const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
+
 
 const output = require("./interface/output");
-
 const reader = require("./interface/reader");
 const responseModifier = require("./interface/response-modifier");
 const requestInterceptor = require("./interface/request-interceptor");
 
-const WEB_PATH = join(dirname(require.main.filename), config.webDirName);
-
-let isDevMode;
-if(process.argv[2] && process.argv[2] == config.devModeArgument) {
-	// Enable DEV-mode when related argument passed on application start
-	isDevMode = true;
-}
-
-// Read config files (general configuration, MIMES)
-
-/**
- * Read a custom configuration file and merge it (overriding) with the default configuration file.
- * @returns {Object} Resulting configuration object
- */
-const readConfigFile = (webPath, defaultName, customNames) => {
-	let defaultFile = require(`./static/${defaultName}`);
-
-	customNames = Array.isArray(customNames) ? customNames : [customNames];
-	const customFiles = customNames
-		.filter(customName => {
-			if(!customName) {
-				return false;
-			}
-
-			const customFilePath = join(dirname(webPath), customName);
-			if(existsSync(customFilePath)) {
-				return true;
-			}
-			return false;
-		}).map(customName => {
-			return require(join(dirname(webPath), customName));
-		});
-
-	for(let subKey in defaultFile) {
-		if((defaultFile[subKey] || "").constructor.name !== "Object") {
-			continue;
-		}
-
-		customFiles.forEach(customFile => {
-			if((customFile[subKey] || "").constructor.name !== "Object") {
-				return;
-			}
-
-			defaultFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
-		});
-	}
-
-	customFiles.forEach(customFile => {
-		defaultFile = {...defaultFile, ...customFile};
-	});
-
-	return defaultFile;
-};
-
-const webConfig = readConfigFile(WEB_PATH, config.configFileName.default, [
-	config.configFileName.custom,
-	isDevMode ? config.configFileName.dev : null
-]);
-
-const mimeTypes = readConfigFile(WEB_PATH, config.mimesFileName.default, config.mimesFileName.custom);
-
-webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitelist);
-webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList);
-
-function normalizeExtensionArray(array) {
-	return (Array.isArray(array) && array.length > 0) ? array.map(extension => extension.replace(/^\./, "").toLowerCase()) : undefined;
-}
-
-// Support
-
-const rateLimiter = !isDevMode ? require("./support/rate-limiter") : null;
-const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
-
-const cache = createCache();
-
-// Config depending interfaces
-
-const router = require("./interface/router")(cache);
-
-// Server functionality
 
 // Create web server instance
 
@@ -133,7 +52,7 @@ if(webConfig.ssl) {
 }
 
 function readCertFile(pathname) {
-	pathname = (pathname.charAt(0) == "/") ? pathname : join(WEB_PATH, pathname);
+	pathname = (pathname.charAt(0) == "/") ? pathname : join(webPath, pathname);
 	return readFileSync(pathname);
 }
 
@@ -159,17 +78,6 @@ if(webConfig.portHttps && webConfig.portHttp) {
 	}).listen(webConfig.portHttp, null, null, _ => {
 		output.log(`HTTP (:${webConfig.portHttp}) to HTTPS (:${webConfig.portHttps}) redirection enabled`);
 	});
-}
-
-/**
- * Perform a redirect to a given path.
- * @param {Object} res - Open response object
- * @param {String} path - Path to redirect to
- */
-function redirect(res, path) {
-	res.setHeader("Location", path);
-
-	respond(res, 301);
 }
 
 /**
@@ -206,7 +114,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 
 			let errorPagePath = join(errorPageDir, String(status));
 			
-			if(existsSync(`${join(WEB_PATH, errorPagePath)}.html`)) {
+			if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
 				let data = handleFile(false, errorPagePath, "html", null);
 				
 				// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
@@ -233,13 +141,22 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 }
 
 /**
+ * Perform a redirect to a given path.
+ * @param {Object} res - Open response object
+ * @param {String} path - Path to redirect to
+ */
+ function redirect(res, path) {
+	res.setHeader("Location", path);
+
+	respond(res, 301);
+}
+
+/**
  * Handle a single request.
  * @param {Object} req Request object
  * @param {Object} res Response object
  */
 function handleRequest(req, res) {
-	// TODO: Implement URL escaping
-
 	const method = req.method.toLowerCase();
 	const urlParts = parseUrl(req.url, true);
 	const extension = utils.normalizeExtension(extname(urlParts.pathname));
@@ -248,7 +165,7 @@ function handleRequest(req, res) {
 	let supportsGzip = false;
 	if(method == "get") {
 		// Set MIME type header accordingly
-		const mime = mimeTypes[(extension.length == 0) ? config.defaultFileExtension : extension];
+		const mime = mimesConfig[(extension.length == 0) ? config.defaultFileExtension : extension];
 		mime && res.setHeader("Content-Type", mime);
 
 		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(extension);
@@ -256,7 +173,7 @@ function handleRequest(req, res) {
 	}
 
 	// Block request if maximum 
-	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress, webConfig.maxRequestsPerMin)) {
+	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress)) {
 		res.setHeader("Retry-After", 30000);
 		respondWithError(res, req.method, req.url, 429, supportsGzip);
 
@@ -354,8 +271,8 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 	}
 
 	// Use cached data if is static file request (and not outdated)
-	if(isStaticRequest && cache.has(pathname)) {
-		data = cache.read(pathname);
+	if(isStaticRequest && staticCache.has(pathname)) {
+		data = staticCache.read(pathname);
 
 		// Compress with GZIP if enabled
 		supportsGzip && (data = gzip(data));
@@ -369,7 +286,7 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		data = handleFile(isStaticRequest, pathname, extension, queryParametersObj);
 
 		// Set server-side cache
-		isStaticRequest && cache.write(pathname, data);
+		isStaticRequest && staticCache.write(pathname, data);
 		
 		// Compress with GZIP if enabled
 		supportsGzip && (data = gzip(data));
@@ -386,7 +303,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
-	let localPath = join(WEB_PATH, pathname);
+	let localPath = join(webPath, pathname);
 	
 	// Use compound page path if respective directory exists
 	let isCompoundPage = false;
@@ -398,7 +315,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
 		for(let part of pathParts) {
 			// Construct possible internal compound path
-			const localCompoundPath = join(WEB_PATH, compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
+			const localCompoundPath = join(webPath, compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
 			
 			compoundPath = join(compoundPath, part);
 
@@ -525,40 +442,6 @@ function handlePOST(req, res, pathname) {
 }
 
 
-// Implicit interfaces
-
-/**
- * Create a custom cache object.
- * @param {Number} [cacheRefreshFrequency] Cache refresh frequency in seconds (server cache frequency as set in config file by default) 
- * @returns {Object} Cache object providing a manipulation interface
- */
-function createCache() {
-	return require("./support/cache")(isDevMode ? null : webConfig.cacheRefreshFrequency.server);
-}
-
-/**
- * Get a value from the config object stored in the plug-in related sib object.
- * @param {String} key Key name
- * @returns {*} Respective value if defined
- */
-function getFromConfig(key) {
-	let pluginSubKey = utils.getCallerPath(__filename);
-	pluginSubKey = utils.getPluginName(pluginSubKey);
-
-	const subObj = (webConfig[config.configFilePluginScopeName] || {})[pluginSubKey];
-	
-	return subObj ? subObj[key] : undefined;
-}
-
-// TODO: Provide option to set/change response headers?
-
-
 module.exports = {
-	webPath: WEB_PATH,
-	isDevMode: isDevMode,
-
-	createCache,
-	getFromConfig,
-
 	setRoute: router.setRoute
 };
