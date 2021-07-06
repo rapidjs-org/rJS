@@ -5,7 +5,7 @@ const config = {
 const {dirname, basename} = require("path");
 
 module.exports = {
-
+	
 	getCallerPath: fileName => {
 		const err = new Error();
 		
