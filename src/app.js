@@ -1,3 +1,8 @@
+/**
+ * @copyright Thassilo Martin Schiepanski
+ * @author Thassilo Martin Schiepanski
+ */
+
 // Syntax literals config object
 const config = {
 	configFilePluginScopeName: "plug-ins",
@@ -26,41 +31,43 @@ const webConfig = require("./support/config").webConfig;
 
 const server = require("./server");
 
+
+// Core interface
+
 const generalInterface = {
 	// General core interface; accessible from both the instanciating application's as well as from referenced plug-in scopes
-	...server,
-	... {
-		addRequestInterceptor: require("./interface/request-interceptor").addRequestInterceptor,
-		addResponseModifier: require("./interface/response-modifier").addResponseModifier
-	}
+	isDevMode,
+
+	addUrlModifier: require("./interface/url-modifier").addUrlModifier,
+	addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 };
 const appInterface = {
 	// Application specific core interface; accessible from the instanciating application's scope
 	...generalInterface,
 	... {
-		setReader: require("./interface/reader").setReader
+		setReader: require("./interface/reader").setReader,
+		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
 	}
 };
 const pluginInterface = {
 	// Plug-in specific core interface; accessible from referenced plug-in scopes
 	...generalInterface,
 	... {
-		isDevMode,
 		output,
-
 		webPath: require("./support/web-path"),
 
-		initFrontendModule,
-		getFromConfig,
-
+		setRoute: require("./interface/router").setRoute,
 		applyReader: require("./interface/reader").applyReader,
 		applyResponseModifiers: require("./interface/response-modifier").applyResponseModifiers,
-
+		
+		initFrontendModule,
+		getFromConfig,
 		createCache: _ => {
 			return require("./support/cache");
 		}
 	}
 };
+
 
 /**
  * Initialize the frontend module of a plug-in.
@@ -71,7 +78,7 @@ function initFrontendModule(plugInConfig, compoundPagesOnly = false) {
 	initFrontendModuleHelper(utils.getCallerPath(__filename), plugInConfig, compoundPagesOnly);
 }
 function initFrontendModuleHelper(plugInDirPath, plugInConfig, compoundPagesOnly, pluginName) {
-	pluginName = pluginName ? pluginName : utils.getPluginName(plugInDirPath);
+	pluginName = pluginName ? pluginName : utils.getPluginName(plugInDirPath);	// TODO: Prevent core override
 
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
@@ -81,14 +88,24 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig, compoundPagesOnly
 	}
 
 	frontendModuleData = String(readFileSync(frontendFilePath));
-	plugInConfig && (frontendModuleData.match(/[^a-zA-Z0-9_]config\s*\.\s*[a-zA-Z0-9_]+/g) || []).forEach(configAttr => {
-		const attr = configAttr.match(/[a-zA-Z0-9_]+$/)[0];
-		let value = plugInConfig[attr];
+	plugInConfig && (frontendModuleData.match(/[^a-zA-Z0-9_.]config\s*(\.\s*[a-zA-Z0-9_]+)+/g) || []).forEach(configAttr => {
+		const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
+		.map(attr => {
+			return attr.slice(1).trim();
+		});
 
-		(value === undefined) && (output.log(`${attr} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`));
+		let value = plugInConfig;
+		attrs.forEach(attr => {
+			value = value[attr];
+			
+			if(value === undefined) {
+				output.log(`${attrs} not defined in related config object at '${join(plugInDirPath, "frontend.js")}'`);
 
-		(value !== null && isNaN(value)) && (value = `"${value}"`);		// Wrap strings in doublequotes
+				return;
+			}
+		});
 		
+		(value && isNaN(value)) && (value = `"${value}"`);		// Wrap strings in doublequotes
 		frontendModuleData = frontendModuleData.replace(configAttr, `${configAttr.slice(0, 1)}${value}`);
 	});
 
@@ -116,9 +133,7 @@ function initFrontendModuleHelper(plugInDirPath, plugInConfig, compoundPagesOnly
 	});
 	
 	// Add GET route to retrieve frontend module script
-	appInterface.setRoute("get", `${frontendFileLocation}`, _ => {
-		return frontendModuleData;
-	}, true);
+	server.registerFrontendModule(frontendFileLocation, frontendModuleData);
 }
 
 /**
@@ -144,7 +159,9 @@ function getFromConfig(key) {
  */
 module.exports = plugIns => {
 	// Init frontend base file to provide reusable methods among plug-ins
-	initFrontendModuleHelper(__dirname, null, null, "core");
+	initFrontendModuleHelper(__dirname, {
+		frontendModuleFileName: config.frontendModuleFileName
+	}, null, "core");
 	
 	(plugIns || []).forEach(reference => {
 		try {
