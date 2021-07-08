@@ -53,7 +53,7 @@ module.exports = {
 			sequence = basename(sequence);
 
 			const extensionLength = extname(sequence).length;
-			return removeNamingPrefix(sequence.slice(0, (extensionLength > 0) ? extensionLength : Math.infinite));
+			return removeNamingPrefix((extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence);
 		}
 
 		// Local plug-in by package (retrieve package name)
