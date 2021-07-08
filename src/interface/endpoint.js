@@ -11,7 +11,7 @@ module.exports =  {
 	 * @param {Function} callback Callback getting passed – if applicable – the request body object eventually returning the response data to be sent
 	 * @param {Boolean} [useCache=false] Whether to cache the processed response using a server-side cache
 	 */
-	setRoute: (callback, useCache = false) => {
+	setEndpoint: (callback, useCache = false) => {
 		const pathname = getPluginName(getCallerPath(__filename));
 
 		routeHandlers.set(`/${pathname}`, {
@@ -25,7 +25,7 @@ module.exports =  {
 		return routeHandlers.has(pathname) ? true : false;
 	},
 
-	applyRoute: (pathname, args) => {
+	applyEndpoint: (pathname, args) => {
 		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}

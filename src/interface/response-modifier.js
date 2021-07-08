@@ -6,10 +6,10 @@ let responseModifierHandlers = {};
 
 module.exports = {
 	/**
-	 * Set up a handler to finalize each GET request response data of a certain file extension in a specific manner.
+	 * Set up a handler to modify each GET request response data of a certain file extension in a specific manner.
 	 * Multiple response modifier handlers may be set up per extension to be applied in order of setup.
 	 * @param {String} extension Extension name (without a leading dot) (Use ":" if only apply to compound base pages)
-	 * @param {Function} callback Callback getting passed the data string to finalize and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
+	 * @param {Function} callback Callback getting passed the data string to modify and the associated pathname returning the eventually send response data. Throwing an error code will lead to a related response.
 	 */
 	addResponseModifier: (extension, callback) => {
 		extension = normalizeExtension(extension);
@@ -30,7 +30,7 @@ module.exports = {
 	applyResponseModifiers: (extension, data, pathname, queryParametersObj) => {
 		for(let responseModifier of (responseModifierHandlers[extension] || [])) {
 			if(!isString(data) && !Buffer.isBuffer(data)) {
-				output.error(new TypeError(`Response modifier ('${extension}') must return value of type string or buffer, given ${typeof(curData)}.`));
+				output.error(new TypeError(`Response modifier ('${extension}') must return value of type String or Buffer, given ${typeof(curData)}.`));
 			} else {
 				data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, pathname, queryParametersObj);
 			}

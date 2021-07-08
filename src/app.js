@@ -38,8 +38,6 @@ const server = require("./server");
 const generalInterface = {
 	// General core interface; accessible from both the instanciating application's as well as from referenced plug-in scopes
 	isDevMode,
-
-	addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 };
 const appInterface = {
 	// Application specific core interface; accessible from the instanciating application's scope
@@ -56,7 +54,9 @@ const pluginInterface = {
 		output,
 		webPath: require("./support/web-path"),
 
-		setRoute: require("./interface/router").setRoute,
+		setEndpoint: require("./interface/endpoint").setEndpoint,
+		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
+
 		applyReader: require("./interface/reader").applyReader,
 		applyResponseModifiers: require("./interface/response-modifier").applyResponseModifiers,
 		
@@ -123,7 +123,7 @@ function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginDirPath
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName }${config.frontendModuleFileName.suffix}.js`;
 	
 	// Add response modifier for inserting the script tag into document markup files
-	appInterface.addResponseModifier(compoundPagesOnly ? ":" : "html", data => {
+	pluginInterface.addResponseModifier(compoundPagesOnly ? ":" : "html", data => {
 		if(!frontendModuleData) {
 			return;
 		}
