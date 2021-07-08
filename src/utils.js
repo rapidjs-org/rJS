@@ -1,10 +1,14 @@
 const config = {
+	pluginFrontendModuleName: "frontend",
 	pluginNamingPrefix: "rapidjs--"
 };
 
-const {dirname, basename} = require("path");
+const {dirname, basename, extname, join} = require("path");
+const {existsSync} = require("fs");
 
 module.exports = {
+
+	pluginFrontendModuleName: config.pluginFrontendModuleName,
 	
 	getCallerPath: fileName => {
 		const err = new Error();
@@ -24,7 +28,7 @@ module.exports = {
 			const callerFile = err.stack.shift().getFileName();
 			
 			if(callerFile !== fileName) {
-				return dirname(callerFile);
+				return callerFile;
 			}
 		}
 
@@ -32,14 +36,32 @@ module.exports = {
 	},
 	
 	getPluginName: sequence => {
-		let name = sequence.toLowerCase().match(new RegExp(`(@[a-z0-9_-]+\\/)?${config.pluginNamingPrefix}([a-z0-9_-]+)`));
-		if(name) {
-			name = name[0].replace(new RegExp(`(^|\\/)${config.pluginNamingPrefix}`), "$1");
-		} else {
-			name = basename(dirname(sequence));
+		// Installed plug-in by package (package name / name as given)
+		if(!/^((\.)?\.)?\//.test(sequence)) {
+			return removeNamingPrefix(sequence);
+		}
+		if(/^(\.)?\.\//.test(sequence)) {
+			sequence = join(dirname(require.main.filename), sequence);
 		}
 		
-		return name;
+		// Local plug-in without (named) package (file name (without extension) / name as given)
+		const packagePath = join(sequence, "package.json");
+
+		const name = existsSync(packagePath) ? require(packagePath).name : null;
+		if(!name) {
+			(existsSync(join(dirname(sequence), `${config.pluginFrontendModuleName}.js`))) && (sequence = dirname(dirname(sequence)));
+			sequence = basename(sequence);
+
+			const extensionLength = extname(sequence).length;
+			return removeNamingPrefix(sequence.slice(0, (extensionLength > 0) ? extensionLength : Math.infinite));
+		}
+
+		// Local plug-in by package (retrieve package name)
+		return removeNamingPrefix(name);
+
+		function removeNamingPrefix(name) {
+			return name.replace(config.pluginNamingPrefix, "");
+		}
 	},
 	
 	isString: value => {
@@ -49,11 +71,6 @@ module.exports = {
 	isFunction: value => {
 		return value && {}.toString.call(value) === "[object Function]";
 	},
-     
-	isAsyncFunction: value => {
-		return value.constructor.name === "AsyncFunction";
-	},
-
 
 	normalizeExtension: extension => {
 		return extension.trim().replace(/^\./, "").toLowerCase();
