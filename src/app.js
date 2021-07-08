@@ -15,11 +15,10 @@ const config = {
 	frontendModuleReferenceName: {
 		external: "plugin",
 		internal: "_rapid"
-	},
-	pluginFrontendModuleName: "frontend"
+	}
 };
 
-const {join} = require("path");
+const {join, dirname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
@@ -77,12 +76,15 @@ const pluginInterface = {
 function initFrontendModule(pluginConfig, compoundPagesOnly = false) {	
 	initFrontendModuleHelper(pluginConfig, compoundPagesOnly, utils.getCallerPath(__filename));
 }
-function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginDirPath, pluginName) {
-	pluginName = pluginName ? pluginName : utils.getPluginName(pluginDirPath);
+function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginPath, pluginName) {
+	if(!pluginName) {
+		pluginName = utils.getPluginName(pluginPath);
+		pluginPath = dirname(pluginPath);
+	}
 
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
-	let frontendFilePath = join(pluginDirPath, `${config.pluginFrontendModuleName}.js`);
+	let frontendFilePath = join(pluginPath, `${utils.pluginFrontendModuleName}.js`);
 	if(!existsSync(frontendFilePath)) {
 		return;
 	}
@@ -120,7 +122,7 @@ function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginDirPath
 		})(${config.frontendModuleAppName} || {});
 	`;
 	
-	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName }${config.frontendModuleFileName.suffix}.js`;
+	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName}${config.frontendModuleFileName.suffix}.js`;
 	
 	// Add response modifier for inserting the script tag into document markup files
 	pluginInterface.addResponseModifier(compoundPagesOnly ? ":" : "html", data => {
@@ -166,7 +168,7 @@ module.exports = plugins => {
 	(plugins || []).forEach(reference => {
 		try {
 			if(utils.getPluginName(reference) == config.coreModuleIdentifier) {
-				throw new SyntaxError(`Plug-in name must not equal "${config.coreModuleIdentifier}"`);
+				throw new SyntaxError(`Plug-in must not use reserved name "${config.coreModuleIdentifier}"`);
 			}
 			
 			module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
