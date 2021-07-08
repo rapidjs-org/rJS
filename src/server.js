@@ -25,7 +25,7 @@ const webPath = require("./support/web-path");
 const isDevMode = require("./support/is-dev-mode");
 
 const staticCache = require("./support/cache");
-const router = require("./interface/router");
+const endpoint = require("./interface/endpoint");
 const rateLimiter = (isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("./support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
 const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
 
@@ -370,7 +370,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
  * @param {String} pathname URL pathname part (resembling plug-in name as of dedicated endpoints paradigm)
  */
 function handlePOST(req, res, pathname) {
-	if(!router.hasRoute(pathname)) {
+	if(!endpoint.hasRoute(pathname)) {
 		// Block request if no related POST handler defined
 		respond(res, 404);
 
@@ -407,7 +407,7 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			let data = router.applyRoute(pathname, body);
+			let data = endpoint.applyEndpoint(pathname, body);
 			
 			data = JSON.stringify(data);
 

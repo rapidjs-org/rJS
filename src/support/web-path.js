@@ -1,6 +1,6 @@
 const config = {
 	webDirName: "web"
-}
+};
 
 const {join, dirname} = require("path");
 
