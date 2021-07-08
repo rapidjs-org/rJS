@@ -1,9 +1,3 @@
-/**
- * @copyright (c) Thassilo Martin Schiepanski
- * @author Thassilo Martin Schiepanski
- * t-ski@GitHub
- */
-
 const config = {
 	compoundObject: {
 		name: "compoundPage",
@@ -30,7 +24,7 @@ const webPath = require("./support/web-path");
 
 const isDevMode = require("./support/is-dev-mode");
 
-const staticCache = require("./support/cache")
+const staticCache = require("./support/cache");
 const router = require("./interface/router");
 const rateLimiter = (isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("./support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
 const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
@@ -107,7 +101,7 @@ function respond(res, status, message) {
  */
 function respondWithError(res, method, pathname, status, supportsGzip) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
-	if(method.toLowerCase() == "get" && ["html", ""].includes(extname(pathname).slice(1).toLowerCase())) {
+	if(method.toLowerCase() == "get" && ["html", ""].includes(utils.normalizeExtension(extname(pathname)))) {
 		let errorPageDir = pathname;
 		do {
 			errorPageDir = dirname(errorPageDir);
@@ -145,7 +139,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
  * @param {Object} res - Open response object
  * @param {String} path - Path to redirect to
  */
- function redirect(res, path) {
+function redirect(res, path) {
 	res.setHeader("Location", path);
 
 	respond(res, 301);
@@ -158,12 +152,15 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
  */
 function handleRequest(req, res) {
 	const method = req.method.toLowerCase();
-	const urlParts = parseUrl(req.url, true);
-	const extension = utils.normalizeExtension(extname(urlParts.pathname));
+
+	let urlParts = parseUrl(req.url, true);
+	let extension = utils.normalizeExtension(extname(urlParts.pathname));
 
 	// Check GZIP compression header if to to compress response data
 	let supportsGzip = false;
 	if(method == "get") {
+		const urlParts = parseUrl(req.url, true);
+		const extension = utils.normalizeExtension(extname(urlParts.pathname));
 		// Set MIME type header accordingly
 		const mime = mimesConfig[(extension.length == 0) ? config.defaultFileExtension : extension];
 		mime && res.setHeader("Content-Type", mime);
@@ -203,9 +200,7 @@ function handleRequest(req, res) {
 
 		return;
 	}
-
-	requestInterceptor.applyRequestInterceptors(req);
-	
+		
 	// Set basic response headers
 	webConfig.portHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
 	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
@@ -214,16 +209,16 @@ function handleRequest(req, res) {
 	res.setHeader("X-Content-Type-Options", "nosniff");
 
 	// Apply the related handler
-	if(method == "get") {
+	switch(method) {
+	case "get":
 		handleGET(res, urlParts.pathname, extension, urlParts.query, supportsGzip);
-
-		return;
-	} 
-	if(method == "post") {
+		break;
+	case "post":
 		handlePOST(req, res, urlParts.pathname);
-        
-		return;
+		break;
 	}
+
+	requestInterceptor.applyRequestInterceptors(req);	// Apply request interceptors once response has been completed so manipulation will have no influence on state
 }
 
 /**
@@ -235,6 +230,12 @@ function handleRequest(req, res) {
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
 function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
+	if(frontendModules.has(pathname)) {
+		respond(res, 200, frontendModules.get(pathname));
+
+		return;
+	}
+
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
 	// Set client-side cache control for static files too
@@ -250,25 +251,6 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 	}
 
 	let data;
-
-	if(router.hasRoute("get", pathname)) {
-		// Use custom GET route if defined on pathname as of higher priority
-		try {
-			data = router.applyRoute("get", pathname);
-
-			// Compress with GZIP if enabled
-			supportsGzip && (data = gzip(data));
-
-			respond(res, 200, data);
-		} catch(err) {
-			output.error(err);
-
-			// Respond with status thrown (if is a number) or expose an internal error otherwise
-			respondWithError(res, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
-		}
-
-		return;
-	}
 
 	// Use cached data if is static file request (and not outdated)
 	if(isStaticRequest && staticCache.has(pathname)) {
@@ -385,10 +367,10 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
  * Handle a POST request accordingly.
  * @param {Object} req Active request object
  * @param {Object} res Active response object
- * @param {String} pathname URL pathname part
+ * @param {String} pathname URL pathname part (resembling plug-in name as of dedicated endpoints paradigm)
  */
 function handlePOST(req, res, pathname) {
-	if(!router.hasRoute("post", pathname)) {
+	if(!router.hasRoute(pathname)) {
 		// Block request if no related POST handler defined
 		respond(res, 404);
 
@@ -425,7 +407,7 @@ function handlePOST(req, res, pathname) {
 		}
 
 		try {
-			let data = router.applyRoute("post", pathname, body);
+			let data = router.applyRoute(pathname, body);
 			
 			data = JSON.stringify(data);
 
@@ -441,7 +423,10 @@ function handlePOST(req, res, pathname) {
 	});
 }
 
+const frontendModules = new Map();
 
 module.exports = {
-	setRoute: router.setRoute
+	registerFrontendModule: (pathname, data) => {
+		frontendModules.set(pathname, data);
+	}
 };
