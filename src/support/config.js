@@ -8,7 +8,7 @@ const config = {
 		custom: "rapid.mimes.json",
 		default: "default.mimes.json"
 	}
-}
+};
 
 
 const {join, dirname} = require("path");
@@ -78,6 +78,6 @@ webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList)
 const mimesConfig = readConfigFile(webPath, config.mimesFileName.default, config.mimesFileName.custom);
 
 module.exports = {
-    webConfig,
-    mimesConfig
-}
+	webConfig,
+	mimesConfig
+};
