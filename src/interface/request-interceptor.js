@@ -1,15 +1,13 @@
 const {isFunction} = require("../utils");
 
-let requestInterceptorHandlers = [];
+let requestInterceptorHandler;
 
 module.exports = {
-	addRequestInterceptor: callback => {
-		requestInterceptorHandlers.push(callback);
+	setRequestInterceptor: callback => {
+		requestInterceptorHandler = callback;
 	},
-
+	
 	applyRequestInterceptors: req => {
-		requestInterceptorHandlers.forEach(requestInterceptor => {
-			isFunction(requestInterceptor) && requestInterceptor(req);
-		});
+		isFunction(requestInterceptorHandler) && requestInterceptorHandler(req);
 	}
 };
