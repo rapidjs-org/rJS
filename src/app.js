@@ -81,7 +81,7 @@ function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginPath, p
 		pluginName = utils.getPluginName(pluginPath);
 		pluginPath = dirname(pluginPath);
 	}
-
+	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	let frontendModuleData;
 	let frontendFilePath = join(pluginPath, `${utils.pluginFrontendModuleName}.js`);
@@ -165,14 +165,23 @@ module.exports = plugins => {
 		frontendModuleFileName: config.frontendModuleFileName
 	}, false, __dirname, config.coreModuleIdentifier);
 	
+	const registeredPlugins = new Map();
 	(plugins || []).forEach(reference => {
 		try {
-			if(utils.getPluginName(reference) == config.coreModuleIdentifier) {
-				throw new SyntaxError(`Plug-in must not use reserved name "${config.coreModuleIdentifier}"`);
+			const name = utils.getPluginName(reference);
+
+			if(name == config.coreModuleIdentifier) {
+				throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
 			}
+			if(registeredPlugins.has(name)) {
+				throw new ReferenceError(`Plug-in references '${registeredPlugins.get(name)}' and '${reference}' illegally resolve to the same internal name '${name}'`);
+			}
+			
+			registeredPlugins.set(name, reference);
 			
 			module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
 		} catch(err) {
+			output.log(`An error occurred connecting the plug-in from  '${reference}':`);
 			output.error(err, true);
 		}
 	});	// TODO: Handle/translate cryptic require errors
