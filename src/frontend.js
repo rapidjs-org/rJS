@@ -20,11 +20,11 @@ function getPluginName() {
 }
 
 /**
- * Perform backend request.
+ * Perform request ro plug-in related endpoint (id set up).
  * @param {Object} body Body object to send along
  * @returns {Promise} Request promise eventualy resolving to response on success
  */
-plugin.request = function(body) {
+plugin.useEndpoint = function(body) {
 	const pathname = `/${getPluginName()}`;
 
 	return fetch(pathname, {

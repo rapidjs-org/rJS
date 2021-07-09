@@ -29,7 +29,7 @@ module.exports = {
 	 * @param {String} pathname Path to file to be read
 	 * @returns {String|Buffer} Serialized read data (plain contents string if no according reader defined)
 	 */
-	applyReader: (extension, pathname) => {
+	useReader: (extension, pathname) => {
 		if(!isFunction(readerHandlers[extension])) {
 			if(!existsSync(pathname)) {
 				throw 404;

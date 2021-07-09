@@ -56,9 +56,8 @@ const pluginInterface = {
 		setEndpoint: require("./interface/endpoint").setEndpoint,
 		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 
-		applyReader: require("./interface/reader").applyReader,
-		applyResponseModifiers: require("./interface/response-modifier").applyResponseModifiers,
-		
+		useReader: require("./interface/reader").useReader,
+
 		initFrontendModule,
 		getFromConfig,
 		createCache: _ => {
