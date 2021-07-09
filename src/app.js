@@ -18,7 +18,7 @@ const config = {
 	}
 };
 
-const {join, dirname} = require("path");
+const {join, dirname, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
@@ -59,7 +59,7 @@ const pluginInterface = {
 		useReader: require("./interface/reader").useReader,
 
 		initFrontendModule,
-		getFromConfig,
+		readConfig,
 		createCache: _ => {
 			return require("./support/cache");
 		}
@@ -69,26 +69,29 @@ const pluginInterface = {
 
 /**
  * Initialize the frontend module of a plug-in.
+ * @param {String} path Path to frontend module script file
  * @param {Object} pluginConfig Plug-in local config object providing static naming information
  * @param {Boolean} [compoundPagesOnly=false] Whether to init frontend module only in compound page environments
  */
-function initFrontendModule(pluginConfig, compoundPagesOnly = false) {	
-	initFrontendModuleHelper(pluginConfig, compoundPagesOnly, utils.getCallerPath(__filename));
+function initFrontendModule(path, pluginConfig, compoundPagesOnly = false) {	
+	initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, utils.getCallerPath(__filename));
 }
-function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginPath, pluginName) {
+function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginPath, pluginName) {
 	if(!pluginName) {
 		pluginName = utils.getPluginName(pluginPath);
 		pluginPath = dirname(pluginPath);
 	}
 	
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
-	let frontendModuleData;
-	let frontendFilePath = join(pluginPath, `${utils.pluginFrontendModuleName}.js`);
+	let frontendFilePath = join(pluginPath, path);
+	(extname(frontendFilePath).length == 0) && (frontendFilePath = `${frontendFilePath}.js`);
 	if(!existsSync(frontendFilePath)) {
+		output.error(new ReferenceError(`Frontend file for plug-in '${pluginName}' could not be located at '${frontendFilePath}'`));
+
 		return;
 	}
 
-	frontendModuleData = String(readFileSync(frontendFilePath));
+	let frontendModuleData = String(readFileSync(frontendFilePath));
 	pluginConfig && (frontendModuleData.match(/[^a-zA-Z0-9_.]config\s*(\.\s*[a-zA-Z0-9_]+)+/g) || []).forEach(configAttr => {
 		const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
 			.map(attr => {
@@ -142,7 +145,7 @@ function initFrontendModuleHelper(pluginConfig, compoundPagesOnly, pluginPath, p
  * @param {String} key Key name
  * @returns {*} Respective value if defined
  */
-function getFromConfig(key) {
+function readConfig(key) {
 	let pluginSubKey = utils.getCallerPath(__filename);
 	
 	pluginSubKey = utils.getPluginName(pluginSubKey);
@@ -160,7 +163,7 @@ function getFromConfig(key) {
  */
 module.exports = plugins => {
 	// Init frontend base file to provide reusable methods among plug-ins
-	initFrontendModuleHelper({
+	initFrontendModuleHelper("./frontend.js", {
 		frontendModuleFileName: config.frontendModuleFileName
 	}, false, __dirname, config.coreModuleIdentifier);
 	
