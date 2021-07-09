@@ -321,7 +321,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = reader.applyReader(extension, localPath);
+		data = reader.useReader(extension, localPath);
 	} catch(err) {
 		output.error(err);
 		
@@ -370,7 +370,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
  * @param {String} pathname URL pathname part (resembling plug-in name as of dedicated endpoints paradigm)
  */
 function handlePOST(req, res, pathname) {
-	if(!endpoint.hasRoute(pathname)) {
+	if(!endpoint.hasEndpoint(pathname)) {
 		// Block request if no related POST handler defined
 		respond(res, 404);
 
