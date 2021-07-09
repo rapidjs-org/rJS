@@ -43,15 +43,19 @@ module.exports = {
 		if(/^(\.)?\.\//.test(sequence)) {
 			sequence = join(dirname(require.main.filename), sequence);
 		}
+
+		sequence = sequence.replace(/(\/src)?\/app(\.js)?$/, "");
 		
 		// Local plug-in without (named) package (file name (without extension) / name as given)
 		const packagePath = join(sequence, "package.json");
+
+		// TODO: Package up until found (check for entry point equality)
 
 		const name = existsSync(packagePath) ? require(packagePath).name : null;
 		if(!name) {
 			(existsSync(join(dirname(sequence), `${config.pluginFrontendModuleName}.js`))) && (sequence = dirname(dirname(sequence)));
 			sequence = basename(sequence);
-
+			
 			const extensionLength = extname(sequence).length;
 			return removeNamingPrefix((extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence);
 		}

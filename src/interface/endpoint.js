@@ -21,7 +21,7 @@ module.exports =  {
 		// TODO: Argument whether to apply related response modifiers to route handler response (false by default)
 	},
 
-	hasRoute: (pathname) => {
+	hasEndpoint: (pathname) => {
 		return routeHandlers.has(pathname) ? true : false;
 	},
 
