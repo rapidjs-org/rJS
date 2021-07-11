@@ -8,7 +8,7 @@ const config = {
 	defaultFileExtension: "html",
 	defaultFileName: "index",
 	supportFilePrefix: "_",
-};
+};	// TODO: Allow for default file name and extension / type to be changed via configuration file?
 
 
 const {existsSync, readFileSync} = require("fs");
