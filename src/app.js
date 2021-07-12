@@ -67,7 +67,7 @@ const pluginInterface = {
 	}
 };
 
-
+// TODO: Implement custom name argument (for using a set up name instead of deriving it automatically)
 /**
  * Initialize the frontend module of a plug-in.
  * @param {String} path Path to frontend module script file
@@ -138,7 +138,10 @@ function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginP
 	});
 	
 	// Add GET route to retrieve frontend module script
-	server.registerFrontendModule(frontendFileLocation, frontendModuleData);
+	server.registerFrontendModule(pluginName, {
+		pathname: frontendFileLocation,
+		data: frontendModuleData
+	});
 }
 
 /**
