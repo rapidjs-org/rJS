@@ -36,6 +36,12 @@ const responseModifier = require("./interface/response-modifier");
 const requestInterceptor = require("./interface/request-interceptor");
 
 
+const frontendModules = {
+	registered: new Set(),
+	data: new Map()
+};
+
+
 // Create web server instance
 
 const options = {};
@@ -231,8 +237,8 @@ function handleRequest(req, res) {
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
 function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
-	if(frontendModules.has(pathname)) {
-		respond(res, 200, frontendModules.get(pathname));
+	if(frontendModules.registered.has(pathname)) {
+		respond(res, 200, frontendModules.data.get(pathname));
 
 		return;
 	}
@@ -424,10 +430,13 @@ function handlePOST(req, res, pathname) {
 	});
 }
 
-const frontendModules = new Map();
-
 module.exports = {
-	registerFrontendModule: (pathname, data) => {
-		frontendModules.set(pathname, data);
+	registerFrontendModule: (pluginName, pathname, data) => {
+		if(frontendModules.registered.has(pluginName)) {
+			output.log(`Redundant initialization of frontend module for plug-in '${pluginName}'`);
+		}
+		
+		frontendModules.registered.add(pluginName);
+		frontendModules.data.set(pathname, data);
 	}
 };
