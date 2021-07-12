@@ -1,14 +1,7 @@
-const config = {
-	pluginFrontendModuleName: "frontend",
-	pluginNamingPrefix: "rapidjs--"
-};
-
-const {dirname, basename, extname, join} = require("path");
+const {dirname, extname, join} = require("path");
 const {existsSync} = require("fs");
 
 module.exports = {
-
-	pluginFrontendModuleName: config.pluginFrontendModuleName,
 	
 	getCallerPath: fileName => {
 		const err = new Error();
@@ -38,7 +31,7 @@ module.exports = {
 	getPluginName: sequence => {
 		// Installed plug-in by package (package name / name as given)
 		if(!/^((\.)?\.)?\//.test(sequence)) {
-			return removeNamingPrefix(sequence);
+			return sequence;
 		}
 		if(/^(\.)?\.\//.test(sequence)) {
 			sequence = join(dirname(require.main.filename), sequence);
@@ -46,26 +39,21 @@ module.exports = {
 
 		sequence = sequence.replace(/(\/src)?\/app(\.js)?$/, "");
 		
-		// Local plug-in without (named) package (file name (without extension) / name as given)
 		const packagePath = join(sequence, "package.json");
 
-		// TODO: Package up until found (check for entry point equality)
+		// TODO: Package up until found (check for entry point equality)?
+		
+		// TODO: App name directive file (if un-packaged)
 
 		const name = existsSync(packagePath) ? require(packagePath).name : null;
 		if(!name) {
-			(existsSync(join(dirname(sequence), `${config.pluginFrontendModuleName}.js`))) && (sequence = dirname(dirname(sequence)));
-			sequence = basename(sequence);
-			
+			// Local plug-in without (or without named) package (file name (without extension) / name as given)
 			const extensionLength = extname(sequence).length;
-			return removeNamingPrefix((extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence);
+			return (extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence;
 		}
 
-		// Local plug-in by package (retrieve package name)
-		return removeNamingPrefix(name);
-
-		function removeNamingPrefix(name) {
-			return name.replace(config.pluginNamingPrefix, "");
-		}
+		// Local plug-in with named package (retrieve package name)
+		return name;
 	},
 	
 	isString: value => {
