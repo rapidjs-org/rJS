@@ -60,7 +60,7 @@ require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res)
 	}
 }).listen(port, null, null, _ => {
 	output.log(`Server started listening on port ${port}`);
-
+	
 	if(isDevMode) {
 		output.log("Running DEV MODE");
 	}
@@ -218,7 +218,8 @@ function handleRequest(req, res) {
 		break;
 	}
 
-	requestInterceptor.applyRequestInterceptors(req);	// Apply request interceptors once response has been completed so manipulation will have no influence on state
+	// Apply request interceptors once response has been completed so manipulation will have no influence
+	requestInterceptor.applyRequestInterceptors(req);	// TODO: Add final status code to request object
 }
 
 /**

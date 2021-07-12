@@ -24,7 +24,7 @@ function getPluginName() {
  * @param {Object} body Body object to send along
  * @returns {Promise} Request promise eventualy resolving to response on success
  */
-plugin.useEndpoint = function(body) {
+PUBLIC.useEndpoint = function(body) {
 	const pathname = `/${getPluginName()}`;
 
 	return fetch(pathname, {
