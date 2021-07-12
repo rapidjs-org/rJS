@@ -20,12 +20,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/t-ski/rapidjs.git"
+    "url": "git+https://github.com/rapidjs-org/core.git"
   },
   "author": "Thassilo Martin Schiepanski",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/t-ski/rapidjs/issues"
+    "url": "https://github.com/rapidjs-org/core/issues"
   },
   "homepage": "https://rapidjs.org",
   "devDependencies": {
