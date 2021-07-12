@@ -13,7 +13,7 @@ const config = {
 		suffix: ".frontend"
 	},
 	frontendModuleReferenceName: {
-		external: "plugin",
+		external: "PUBLIC",
 		internal: "_rapid"
 	}
 };
@@ -54,6 +54,7 @@ const pluginInterface = {
 		webPath: require("./support/web-path"),
 
 		setEndpoint: require("./interface/endpoint").setEndpoint,
+		
 		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 
 		useReader: require("./interface/reader").useReader,
@@ -122,7 +123,7 @@ function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginP
 		${config.frontendModuleReferenceName.internal}["${pluginName }"] = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
-	`;
+	`;	// TODO: RAPID.scope = ...(no access to entirescope from within)
 	
 	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName}${config.frontendModuleFileName.suffix}.js`;
 	
