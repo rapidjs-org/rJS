@@ -1,10 +1,13 @@
 /* global config */
 
-function getPluginUrl() {
+function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATION!
 	const pluginName = (new Error).stack
-		.split(/\n+/g)[2]
+		.split(/\n+/g)
+		.filter(call => {
+			return call.includes("http");
+		})[2]
 		.match(new RegExp(`${config.pluginRequestPrefix}((@[a-z0-9_-]+\\/)?[a-z0-9_-]+)`, "i"));
-
+	
 	if(!pluginName) {
 		throw new ReferenceError("Could not retrieve name of active plug-in. Revise naming rules.");
 	}
