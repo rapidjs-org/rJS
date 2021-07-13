@@ -1,11 +1,12 @@
 /* global config */
 
-function getPluginName() {
+function getPluginUrl() {
 	const pluginName = (new Error).stack
 		.split(/\n+/g)[2]
 		.match(new RegExp(`${config.pluginRequestPrefix}((@[a-z0-9_-]+\\/)?[a-z0-9_-]+)`, "i"));
+
 	if(!pluginName) {
-		throw new ReferenceError("Could not retrieve plug-in name. Check naming correctness.");
+		throw new ReferenceError("Could not retrieve name of active plug-in. Revise naming rules.");
 	}
 
 	return pluginName[1];
@@ -17,8 +18,8 @@ function getPluginName() {
  * @returns {Promise} Request promise eventualy resolving to response on success
  */
 PUBLIC.useEndpoint = function(body) {
-	const pathname = `/${getPluginName()}`;
-
+	const pathname = `/${getPluginUrl()}`;
+	
 	return fetch(pathname, {
 		method: "POST",
 		mode: "same-origin",
