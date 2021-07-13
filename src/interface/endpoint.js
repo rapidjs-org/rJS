@@ -6,10 +6,9 @@ const routeHandlers = new Map();
 
 module.exports =  {
 	/**
-	 * Set up a custom route handler for a certain method.
-	 * @param {String} method Name of method to bind route to
-	 * @param {Function} callback Callback getting passed – if applicable – the request body object eventually returning the response data to be sent
-	 * @param {Boolean} [useCache=false] Whether to cache the processed response using a server-side cache
+	 * Set up the endpoint for the respective plug-in in order to enable client-server-communication functionality.
+	 * @param {Function} callback Callback getting passed the request body object to be handled for creating and returning the response data
+	 * @param {Boolean} [useCache=false] Whether to cache the processed response using the server-side cache
 	 */
 	setEndpoint: (callback, useCache = false) => {
 		const pathname = getPluginName(getCallerPath(__filename));
@@ -34,7 +33,7 @@ module.exports =  {
 
 		const data = routeHandlers.get(pathname).callback.apply(null, args);
 		routeHandlers.get(pathname).useCache && (cache.write(pathname, data));
-
+		
 		return data;
 	}
 };

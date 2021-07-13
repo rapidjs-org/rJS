@@ -1,6 +1,6 @@
 {
     "allowFramedLoading": false,
-    "cacheRefreshFrequency": {
+    "cachingDuration": {
         "server": 86400,
         "client": 31536000
     },

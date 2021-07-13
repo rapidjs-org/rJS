@@ -6,7 +6,7 @@
     },
     "extends": "eslint:recommended",
     "globals": {
-        "plugin": true
+        "PUBLIC": true
     },
     "parserOptions": {
         "ecmaVersion": 12,

@@ -7,11 +7,7 @@
 const config = {
 	configFilePluginScopeName: "plug-ins",
 	coreModuleIdentifier: "core",
-	frontendModuleAppName: "RAPID",
-	frontendModuleFileName: {
-		prefix: "rapid.",
-		suffix: ".frontend"
-	},
+	frontendModuleAppName: "rapidJS",
 	frontendModuleReferenceName: {
 		external: "PUBLIC",
 		internal: "_rapid"
@@ -30,6 +26,15 @@ const webConfig = require("./support/config").webConfig;
 
 
 const server = require("./server");
+
+/**
+ * Page environment enumeration
+ */
+const page = {
+	ANY: 0,
+	COMPOUND: 1,
+	SPECIFIC: 2
+};
 
 
 // Core interface
@@ -59,6 +64,8 @@ const pluginInterface = {
 
 		useReader: require("./interface/reader").useReader,
 
+		page,
+
 		initFrontendModule,
 		readConfig,
 		createCache: _ => {
@@ -72,12 +79,12 @@ const pluginInterface = {
  * Initialize the frontend module of a plug-in.
  * @param {String} path Path to frontend module script file
  * @param {Object} pluginConfig Plug-in local config object providing static naming information
- * @param {Boolean} [compoundPagesOnly=false] Whether to init frontend module only in compound page environments
+ * @param {page} [pageEnvironment=page.ANY] In which type of page environment to integrate the frontend module (see page nevironment enumeration)
  */
-function initFrontendModule(path, pluginConfig, compoundPagesOnly = false) {	
-	initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, utils.getCallerPath(__filename));
+function initFrontendModule(path, pluginConfig, pageEnvironment = page.ANY) {
+	initFrontendModuleHelper(path, pluginConfig, pageEnvironment, utils.getCallerPath(__filename));
 }
-function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginPath, pluginName) {
+function initFrontendModuleHelper(path, pluginConfig, pageEnvironment, pluginPath, pluginName) {
 	if(!pluginName) {
 		pluginName = utils.getPluginName(pluginPath);
 		pluginPath = dirname(pluginPath);
@@ -104,7 +111,7 @@ function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginP
 			value = value[attr];
 			
 			if(value === undefined) {
-				output.log(`${attrs} not defined in related config object at '${join(pluginDirPath, "frontend.js")}'`);
+				output.error(new ReferenceError(`${attrs} not defined in given config object at '${frontendFilePath}'`), true);
 
 				return;
 			}
@@ -123,25 +130,28 @@ function initFrontendModuleHelper(path, pluginConfig, compoundPagesOnly, pluginP
 		${config.frontendModuleReferenceName.internal}["${pluginName }"] = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
-	`;	// TODO: RAPID.scope = ...(no access to entirescope from within)
+	`;	// TODO: rapidJS.scope = ...(no access to entire scope from within)
 	
-	const frontendFileLocation = `/${config.frontendModuleFileName.prefix}${pluginName}${config.frontendModuleFileName.suffix}.js`;
+	const frontendFileLocation = `/${utils.pluginRequestPrefix}${pluginName}`;
 	
 	// Add response modifier for inserting the script tag into document markup files
-	pluginInterface.addResponseModifier(compoundPagesOnly ? ":" : "html", data => {
-		if(!frontendModuleData) {
-			return;
-		}
-		
+	let modExtension;
+	switch(pageEnvironment) {
+	case page.ANY:
+		modExtension = "html";
+		break;
+	case page.COMPOUND:
+		modExtension = ":html";
+		break;
+	}
+	
+	modExtension && pluginInterface.addResponseModifier(modExtension, data => {
 		// Insert referencing script tag into page head (if exists)
 		return utils.injectIntoHead(data, `<script src="${frontendFileLocation}"></script>`);
 	});
 	
 	// Add GET route to retrieve frontend module script
-	server.registerFrontendModule(pluginName, {
-		pathname: frontendFileLocation,
-		data: frontendModuleData
-	});
+	server.registerFrontendModule(pluginName, frontendFileLocation, frontendModuleData);
 }
 
 /**
@@ -168,8 +178,8 @@ function readConfig(key) {
 module.exports = plugins => {
 	// Init frontend base file to provide reusable methods among plug-ins
 	initFrontendModuleHelper("./frontend.js", {
-		frontendModuleFileName: config.frontendModuleFileName
-	}, false, __dirname, config.coreModuleIdentifier);
+		pluginRequestPrefix: utils.pluginRequestPrefix
+	}, page.ANY, __dirname, config.coreModuleIdentifier);
 	
 	const registeredPlugins = new Map();
 	(plugins || []).forEach(reference => {
