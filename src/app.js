@@ -14,7 +14,7 @@ const config = {
 	}
 };
 
-const {join, dirname, extname, basename} = require("path");
+const {join, dirname, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
@@ -171,33 +171,10 @@ function readConfig(key) {
 }
 
 
-function retrievePluginName(reference) {
-	// Installed plug-in by package (package name / name as given)
-	if(!/^((\.)?\.)?\//.test(reference)) {
-		return reference;
-	}
-	if(/^(\.)?\.\//.test(reference)) {
-		reference = join(dirname(require.main.filename), reference);
-	}
-
-	reference = reference.replace(/(\/src)?\/app(\.js)?$/, "");
-	
-	const packagePath = join(reference, "package.json");
-
-	// TODO: Package up until found (check for entry point equality)?
-	
-	// TODO: App name directive file (if un-packaged)
-
-	const name = existsSync(packagePath) ? require(packagePath).name : null;
-	if(!name) {
-		// Local plug-in without (or without named) package (file name (without extension) / name as given)
-		const extensionLength = extname(reference).length;
-		return basename((extensionLength > 0) ? reference.slice(0, -extensionLength) : reference);
-	}
-
-	// Local plug-in with named package (retrieve package name)
-	return name;
-}
+// Init frontend base file to provide reusable methods among plug-ins
+initFrontendModuleHelper("./frontend.js", {
+	pluginRequestPrefix: utils.pluginRequestPrefix
+}, page.ANY, __dirname, config.coreModuleIdentifier);
 
 
 /**
@@ -206,14 +183,9 @@ function retrievePluginName(reference) {
  * @returns Application specific core interface object
  */
 module.exports = plugins => {
-	// Init frontend base file to provide reusable methods among plug-ins
-	initFrontendModuleHelper("./frontend.js", {
-		pluginRequestPrefix: utils.pluginRequestPrefix
-	}, page.ANY, __dirname, config.coreModuleIdentifier);
-	
 	(plugins || []).forEach(reference => {
 		try {
-			const name = retrievePluginName(reference);
+			const name = pluginManagement.retrievePluginName(reference);
 
 			if(name == config.coreModuleIdentifier) {
 				throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
