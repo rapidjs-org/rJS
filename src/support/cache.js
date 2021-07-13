@@ -1,13 +1,13 @@
-const cacheRefreshFrequency = require("./is-dev-mode") ? null : require("./config").webConfig.cacheRefreshFrequency.server;
+const cachingDuration = require("./is-dev-mode") ? null : require("./config").webConfig.cachingDuration.server;
 
 const storage = new Map();
 
-function checkEmpty(key, cacheRefreshFrequency) {
-	if(!cacheRefreshFrequency) {
+function checkEmpty(key, cachingDuration) {
+	if(!cachingDuration) {
 		return true;
 	}
 
-	if((storage.get(key).time + (cacheRefreshFrequency || Math.infiniti)) < Date.now()) {
+	if((storage.get(key).time + (cachingDuration || Math.infiniti)) < Date.now()) {
 		storage.delete(key);
 		
 		return true;
@@ -21,7 +21,7 @@ function createCache() {
 		/**
 		 * Check if the cache holds an entry for the requested URL (pathname as key).
 		 * Clears outdated entries implicitly resulting in a false return value.
-		 * @param {String} key Unique key (normalize URLs)
+		 * @param {String} key Unique key
 		 * @returns {Boolean} Whether the cache holds an entry for the requested URL
 		 */
 		has: key => {
@@ -29,16 +29,16 @@ function createCache() {
 				return false;
 			}
 			
-			return !checkEmpty(key, cacheRefreshFrequency);
+			return !checkEmpty(key, cachingDuration);
 		},
 
 		/**
 		 * Read data associated with the given URL key from cache.
-		 * @param {String} key Unique key (normalize URLs)
+		 * @param {String} key Unique key
 		 * @returns {String|Buffer} Cached data associated with the given key (undefined if not in cache)
 		 */
 		read: key => {
-			checkEmpty(key, cacheRefreshFrequency);
+			checkEmpty(key, cachingDuration);
 			
 			if(!storage.has(key)) {
 				return undefined;
@@ -49,11 +49,11 @@ function createCache() {
 
 		/**
 		 * Write given data to the cache associated with the provided URL key.
-		 * @param {String} key Unique key (normalize URLs)
+		 * @param {String} key Unique key
 		 * @param {String|Buffer} data Data to write to cache
 		 */
 		write: (key, data) => {
-			if(!cacheRefreshFrequency) {
+			if(!cachingDuration) {
 				return;
 			}
 

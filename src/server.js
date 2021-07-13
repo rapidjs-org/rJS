@@ -161,12 +161,16 @@ function handleRequest(req, res) {
 
 	let urlParts = parseUrl(req.url, true);
 	let extension = utils.normalizeExtension(extname(urlParts.pathname));
-
+	
 	// Check GZIP compression header if to to compress response data
 	let supportsGzip = false;
 	if(method == "get") {
 		const urlParts = parseUrl(req.url, true);
-		const extension = utils.normalizeExtension(extname(urlParts.pathname));
+		let extension = 
+		(new RegExp(`^\\/${utils.pluginRequestPrefix}(@[a-z0-9_-]+\\/)?[a-z0-9_-]+$`, "i")).test(urlParts.pathname)
+			? "js"
+			: utils.normalizeExtension(extname(urlParts.pathname));
+		
 		// Set MIME type header accordingly
 		const mime = mimesConfig[(extension.length == 0) ? config.defaultFileExtension : extension];
 		mime && res.setHeader("Content-Type", mime);
@@ -237,16 +241,16 @@ function handleRequest(req, res) {
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
 function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
-	if(frontendModules.registered.has(pathname)) {
+	if(frontendModules.data.has(pathname)) {
 		respond(res, 200, frontendModules.data.get(pathname));
-
+		
 		return;
 	}
 
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
 
 	// Set client-side cache control for static files too
-	(!isDevMode && isStaticRequest && webConfig.cacheRefreshFrequency.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cacheRefreshFrequency.client}`));
+	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a non-standalone file has been requested
@@ -339,7 +343,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 	try {
 		data = responseModifier.applyResponseModifiers(extension, data, localPath, queryParametersObj);
 		
-		isCompoundPage && (data = responseModifier.applyResponseModifiers(":", data, localPath, queryParametersObj));	// Compound page specific modifiers
+		isCompoundPage && (data = responseModifier.applyResponseModifiers(":html", data, localPath, queryParametersObj));	// Compound page specific modifiers
 	} catch(err) {
 		output.error(err);
 		
@@ -359,7 +363,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 
 		data = utils.injectIntoHead(String(data), `
 		<script>
-			RAPID.core.${config.compoundObject.name} = {
+			rapidJS.core.${config.compoundObject.name} = {
 				${config.compoundObject.basePathProperty}: "/${compoundPath}",
 				${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
 			};

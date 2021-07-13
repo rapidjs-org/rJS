@@ -1,8 +1,10 @@
-const {dirname, extname, join} = require("path");
+const {dirname, extname, join, basename} = require("path");
 const {existsSync} = require("fs");
 
 module.exports = {
-	
+
+	pluginRequestPrefix: "plug-in:",
+
 	getCallerPath: fileName => {
 		const err = new Error();
 		
@@ -49,7 +51,7 @@ module.exports = {
 		if(!name) {
 			// Local plug-in without (or without named) package (file name (without extension) / name as given)
 			const extensionLength = extname(sequence).length;
-			return (extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence;
+			return basename((extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence);
 		}
 
 		// Local plug-in with named package (retrieve package name)
