@@ -1,6 +1,6 @@
 {
   "name": "@rapidjs.org/core",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "dist/app.js",
   "scripts": {
