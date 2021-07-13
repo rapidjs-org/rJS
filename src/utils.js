@@ -1,6 +1,3 @@
-const {dirname, extname, join, basename} = require("path");
-const {existsSync} = require("fs");
-
 module.exports = {
 
 	pluginRequestPrefix: "plug-in:",
@@ -26,38 +23,10 @@ module.exports = {
 				return callerFile;
 			}
 		}
-
+		
 		throw new SyntaxError("Failed to retrieve path to caller module");
 	},
-	
-	getPluginName: sequence => {
-		// Installed plug-in by package (package name / name as given)
-		if(!/^((\.)?\.)?\//.test(sequence)) {
-			return sequence;
-		}
-		if(/^(\.)?\.\//.test(sequence)) {
-			sequence = join(dirname(require.main.filename), sequence);
-		}
-
-		sequence = sequence.replace(/(\/src)?\/app(\.js)?$/, "");
 		
-		const packagePath = join(sequence, "package.json");
-
-		// TODO: Package up until found (check for entry point equality)?
-		
-		// TODO: App name directive file (if un-packaged)
-
-		const name = existsSync(packagePath) ? require(packagePath).name : null;
-		if(!name) {
-			// Local plug-in without (or without named) package (file name (without extension) / name as given)
-			const extensionLength = extname(sequence).length;
-			return basename((extensionLength > 0) ? sequence.slice(0, -extensionLength) : sequence);
-		}
-
-		// Local plug-in with named package (retrieve package name)
-		return name;
-	},
-	
 	isString: value => {
 		return typeof value === "string" || value instanceof String;
 	},

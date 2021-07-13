@@ -241,8 +241,15 @@ function handleRequest(req, res) {
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
 function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
+	let data;
+	
 	if(frontendModules.data.has(pathname)) {
-		respond(res, 200, frontendModules.data.get(pathname));
+		data = frontendModules.data.get(pathname);
+
+		// Compress with GZIP if enabled
+		supportsGzip && (data = gzip(data));
+
+		respond(res, 200, data);
 		
 		return;
 	}
@@ -260,8 +267,6 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		
 		return;
 	}
-
-	let data;
 
 	// Use cached data if is static file request (and not outdated)
 	if(isStaticRequest && staticCache.has(pathname)) {
@@ -360,7 +365,7 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 				.map(arg => `"${arg}"`)
 				.join(",")
 			: null;
-
+		
 		data = utils.injectIntoHead(String(data), `
 		<script>
 			rapidJS.core.${config.compoundObject.name} = {

@@ -1,6 +1,7 @@
 const cache = require("../support/cache");
+const pluginManagement = require("../support/plugin-management");
 
-const {getPluginName, getCallerPath} = require("../utils");
+const {getCallerPath} = require("../utils");
 
 const routeHandlers = new Map();
 
@@ -11,7 +12,7 @@ module.exports =  {
 	 * @param {Boolean} [useCache=false] Whether to cache the processed response using the server-side cache
 	 */
 	setEndpoint: (callback, useCache = false) => {
-		const pathname = getPluginName(getCallerPath(__filename));
+		const pathname = pluginManagement.getName(getCallerPath(__filename));
 
 		routeHandlers.set(`/${pathname}`, {
 			callback: callback,
