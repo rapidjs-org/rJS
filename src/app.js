@@ -5,7 +5,7 @@
 
 // Syntax literals config object
 const config = {
-	configFilePluginScopeName: "plug-ins",
+	configFilePluginScopeName: "plug-in",
 	coreModuleIdentifier: "core",
 	frontendModuleAppName: "rapidJS",
 	frontendModuleReferenceName: {
@@ -14,11 +14,12 @@ const config = {
 	}
 };
 
-const {join, dirname, extname} = require("path");
+const {join, dirname, extname, basename} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
 const output = require("./interface/output");
+const pluginManagement = require("./support/plugin-management");
 
 const isDevMode = require("./support/is-dev-mode");
 
@@ -26,6 +27,7 @@ const webConfig = require("./support/config").webConfig;
 
 
 const server = require("./server");
+
 
 /**
  * Page environment enumeration
@@ -86,7 +88,8 @@ function initFrontendModule(path, pluginConfig, pageEnvironment = page.ANY) {
 }
 function initFrontendModuleHelper(path, pluginConfig, pageEnvironment, pluginPath, pluginName) {
 	if(!pluginName) {
-		pluginName = utils.getPluginName(pluginPath);
+		pluginName = pluginManagement.getName(pluginPath);
+
 		pluginPath = dirname(pluginPath);
 	}
 	
@@ -160,13 +163,40 @@ function initFrontendModuleHelper(path, pluginConfig, pageEnvironment, pluginPat
  * @returns {*} Respective value if defined
  */
 function readConfig(key) {
-	let pluginSubKey = utils.getCallerPath(__filename);
-	
-	pluginSubKey = utils.getPluginName(pluginSubKey);
+	const pluginSubKey = pluginManagement.getName(utils.getCallerPath(__filename));
 
 	const subObj = (webConfig[config.configFilePluginScopeName] || {})[pluginSubKey];
 	
 	return subObj ? subObj[key] : undefined;
+}
+
+
+function retrievePluginName(reference) {
+	// Installed plug-in by package (package name / name as given)
+	if(!/^((\.)?\.)?\//.test(reference)) {
+		return reference;
+	}
+	if(/^(\.)?\.\//.test(reference)) {
+		reference = join(dirname(require.main.filename), reference);
+	}
+
+	reference = reference.replace(/(\/src)?\/app(\.js)?$/, "");
+	
+	const packagePath = join(reference, "package.json");
+
+	// TODO: Package up until found (check for entry point equality)?
+	
+	// TODO: App name directive file (if un-packaged)
+
+	const name = existsSync(packagePath) ? require(packagePath).name : null;
+	if(!name) {
+		// Local plug-in without (or without named) package (file name (without extension) / name as given)
+		const extensionLength = extname(reference).length;
+		return basename((extensionLength > 0) ? reference.slice(0, -extensionLength) : reference);
+	}
+
+	// Local plug-in with named package (retrieve package name)
+	return name;
 }
 
 
@@ -181,19 +211,25 @@ module.exports = plugins => {
 		pluginRequestPrefix: utils.pluginRequestPrefix
 	}, page.ANY, __dirname, config.coreModuleIdentifier);
 	
-	const registeredPlugins = new Map();
 	(plugins || []).forEach(reference => {
 		try {
-			const name = utils.getPluginName(reference);
+			const name = retrievePluginName(reference);
 
 			if(name == config.coreModuleIdentifier) {
 				throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
 			}
-			if(registeredPlugins.has(name)) {
-				throw new ReferenceError(`Plug-in references '${registeredPlugins.get(name)}' and '${reference}' illegally resolve to the same internal name '${name}'`);
+			if(pluginManagement.has(name)) {
+				throw new ReferenceError(`Plug-in references '${pluginManagement.getReference(name)}' and '${reference}' illegally resolve to the same internal name '${name}'`);
+			}
+
+			let managementReference;
+			if(/^(@[a-z0-9_-]+\/)?[a-z0-9_-]+$/i.test(reference)) {
+				managementReference = module.constructor._resolveFilename(reference, module.parent);
+			} else {
+				managementReference = join(dirname(require.main.filename), reference);
 			}
 			
-			registeredPlugins.set(name, reference);
+			pluginManagement.set(name, managementReference);
 			
 			module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
 		} catch(err) {
