@@ -18,7 +18,7 @@ module.exports =  {
 			callback: callback,
 			useCache: useCache
 		});
-		// TODO: Argument whether to apply related response modifiers to route handler response (false by default)
+		// TODO: Argument whether to apply related response modifiers to route handler response (false by default)?
 	},
 
 	hasEndpoint: (pathname) => {
