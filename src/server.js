@@ -187,7 +187,7 @@ function handleRequest(entity) {
 	// Block request if maximum 
 	if(rateLimiter && rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
 		entity.res.setHeader("Retry-After", 30000);
-		respondWithError(entity, req.method, entity.req.url, 429, supportsGzip);
+		respondWithError(entity, entity.req.method, entity.req.url, 429, supportsGzip);
 
 		return;
 	}
