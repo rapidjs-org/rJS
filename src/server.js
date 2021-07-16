@@ -26,7 +26,7 @@ const isDevMode = require("./support/is-dev-mode");
 
 const staticCache = require("./support/cache");
 const endpoint = require("./interface/endpoint");
-const rateLimiter = (isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("./support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
+const rateLimiter = (!isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("./support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
 const gzip = (!isDevMode && webConfig.gzipCompressList) ? require("./support/gzip") : null;
 
 
