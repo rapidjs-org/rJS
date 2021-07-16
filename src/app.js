@@ -43,41 +43,46 @@ const page = {
 
 const generalInterface = {
 	// General core interface; accessible from both the instanciating application's as well as from referenced plug-in scopes
-	isDevMode,
+	isDevMode
 };
 const appInterface = {
 	// Application specific core interface; accessible from the instanciating application's scope
 	...generalInterface,
 	... {
+		connect,
 		setReader: require("./interface/reader").setReader,
-		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor,
-
-		connect
+		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
 	}
 };
 const pluginInterface = {
 	// Plug-in specific core interface; accessible from referenced plug-in scopes
 	...generalInterface,
 	... {
-		output,
-		webPath: require("./support/web-path"),
-
-		setEndpoint: require("./interface/endpoint").setEndpoint,
-		
-		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
-
-		useReader: require("./interface/reader").useReader,
-
 		page,
 
 		initFrontendModule,
-		readConfig,
-		createCache: _ => {
-			return require("./support/cache");
+		setEndpoint: require("./interface/endpoint").setEndpoint,
+		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
+
+		utility: {
+			output,
+			webPath: require("./support/web-path"),
+
+			readConfig,
+			useReader: require("./interface/reader").useReader,
+			createCache: _ => {
+				return require("./support/cache");
+			}
 		}
 	}
 };
 
+
+/**
+ * Connect a plug-in to the core environment.
+ * @param {String} reference Reference to the plug-in
+ * @param {String} [name] Internal name to use instead of having it be derived automatically
+ */
 function connect(reference, name) {
 	try {
 		name = name ? name : pluginManagement.retrievePluginName(reference);
@@ -100,7 +105,7 @@ function connect(reference, name) {
 		
 		module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
 	} catch(err) {
-		output.log(`An error occurred connecting the plug-in from  '${reference}':`);
+		output.log(`An error occurred connecting the plug-in from '${reference}':`);
 		output.error(err, true);
 	}
 }
