@@ -50,7 +50,9 @@ const appInterface = {
 	...generalInterface,
 	... {
 		setReader: require("./interface/reader").setReader,
-		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
+		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor,
+
+		connect
 	}
 };
 const pluginInterface = {
@@ -76,7 +78,34 @@ const pluginInterface = {
 	}
 };
 
-// TODO: Implement custom name argument (for using a set up name instead of deriving it automatically)
+function connect(reference, name) {
+	try {
+		name = name ? name : pluginManagement.retrievePluginName(reference);
+
+		if(name == config.coreModuleIdentifier) {
+			throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
+		}
+		if(pluginManagement.has(name)) {
+			throw new ReferenceError(`Plug-in references '${pluginManagement.getReference(name)}' and '${reference}' illegally resolve to the same internal name '${name}'`);
+		}
+
+		let managementReference;
+		if(/^(@[a-z0-9_-]+\/)?[a-z0-9_-]+$/i.test(reference)) {
+			managementReference = module.constructor._resolveFilename(reference, module.parent);
+		} else {
+			managementReference = join(dirname(require.main.filename), reference);
+		}
+		
+		pluginManagement.set(name, managementReference);
+		
+		module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
+	} catch(err) {
+		output.log(`An error occurred connecting the plug-in from  '${reference}':`);
+		output.error(err, true);
+	}
+}
+
+
 /**
  * Initialize the frontend module of a plug-in.
  * @param {String} path Path to frontend module script file
@@ -175,40 +204,11 @@ function readConfig(key) {
 initFrontendModuleHelper("./frontend.js", {
 	pluginRequestPrefix: utils.pluginRequestPrefix
 }, page.ANY, __dirname, config.coreModuleIdentifier);
+// TODO: Provide isDevMode property on core frontend module
+
+// TODO: Plug-in connection via method
+// TODO: Plug-in connection with explicit name to use
 
 
-/**
- * Create rapidJS core instance.
- * @param {String[]} plugins Array of plug-in names to use
- * @returns Application specific core interface object
- */
-module.exports = plugins => {
-	(plugins || []).forEach(reference => {
-		try {
-			const name = pluginManagement.retrievePluginName(reference);
 
-			if(name == config.coreModuleIdentifier) {
-				throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
-			}
-			if(pluginManagement.has(name)) {
-				throw new ReferenceError(`Plug-in references '${pluginManagement.getReference(name)}' and '${reference}' illegally resolve to the same internal name '${name}'`);
-			}
-
-			let managementReference;
-			if(/^(@[a-z0-9_-]+\/)?[a-z0-9_-]+$/i.test(reference)) {
-				managementReference = module.constructor._resolveFilename(reference, module.parent);
-			} else {
-				managementReference = join(dirname(require.main.filename), reference);
-			}
-			
-			pluginManagement.set(name, managementReference);
-			
-			module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
-		} catch(err) {
-			output.log(`An error occurred connecting the plug-in from  '${reference}':`);
-			output.error(err, true);
-		}
-	});	// TODO: Handle/translate cryptic require errors
-	
-	return appInterface;
-};
+module.exports = appInterface;
