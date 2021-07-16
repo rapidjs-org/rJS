@@ -59,8 +59,14 @@ function readCertFile(pathname) {
 // Create main server depending on set ports
 const port = webConfig.portHttps || webConfig.portHttp;
 require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res) => {
+	// Connection entity combining request and response objects
+	const entity = {
+		req: req,
+		res: res
+	};
+
 	try {
-		handleRequest(req, res);
+		handleRequest(entity);
 	} catch(err) {
 		output.error(err);
 	}
@@ -105,7 +111,7 @@ function respond(res, status, message) {
  * Respond by a simple response or redirecting to an error page depending on the request method.
  * @helper
  */
-function respondWithError(res, method, pathname, status, supportsGzip) {
+function respondWithError(entity, method, pathname, status, supportsGzip) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
 	if(method.toLowerCase() == "get" && ["html", ""].includes(utils.normalizeExtension(extname(pathname)))) {
 		let errorPageDir = pathname;
@@ -115,7 +121,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 			let errorPagePath = join(errorPageDir, String(status));
 			
 			if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
-				let data = handleFile(false, errorPagePath, "html", null);
+				let data = handleFile(entity.req, false, errorPagePath, "html", null);
 				
 				// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
 				data = utils.injectIntoHead(data, `
@@ -129,7 +135,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 				// Compress with GZIP if enabled
 				supportsGzip && (data = gzip(data));
 
-				respond(res, 200, data);
+				respond(entity.res, 200, data);
 
 				return;
 			}
@@ -137,7 +143,7 @@ function respondWithError(res, method, pathname, status, supportsGzip) {
 	}
 
 	// Simple response
-	respond(res, status);
+	respond(entity.res, status);
 }
 
 /**
@@ -153,19 +159,18 @@ function redirect(res, path) {
 
 /**
  * Handle a single request.
- * @param {Object} req Request object
- * @param {Object} res Response object
+ * @param {Object} entity Connection entity
  */
-function handleRequest(req, res) {
-	const method = req.method.toLowerCase();
+function handleRequest(entity) {
+	const method = entity.req.method.toLowerCase();
 
-	let urlParts = parseUrl(req.url, true);
+	let urlParts = parseUrl(entity.req.url, true);
 	let extension = utils.normalizeExtension(extname(urlParts.pathname));
 	
 	// Check GZIP compression header if to to compress response data
 	let supportsGzip = false;
 	if(method == "get") {
-		const urlParts = parseUrl(req.url, true);
+		const urlParts = parseUrl(entity.req.url, true);
 		let extension = 
 		(new RegExp(`^\\/${utils.pluginRequestPrefix}(@[a-z0-9_-]+\\/)?[a-z0-9_-]+$`, "i")).test(urlParts.pathname)
 			? "js"
@@ -173,28 +178,28 @@ function handleRequest(req, res) {
 		
 		// Set MIME type header accordingly
 		const mime = mimesConfig[(extension.length == 0) ? config.defaultFileExtension : extension];
-		mime && res.setHeader("Content-Type", mime);
+		mime && entity.res.setHeader("Content-Type", mime);
 
-		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(extension);
-		supportsGzip && (res.setHeader("Content-Encoding", "gzip"));
+		supportsGzip = gzip && /(^|[, ])gzip($|[ ,])/.test(entity.req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(extension);
+		supportsGzip && (entity.res.setHeader("Content-Encoding", "gzip"));
 	}
 
 	// Block request if maximum 
-	if(rateLimiter && rateLimiter.mustBlock(req.connection.remoteAddress)) {
-		res.setHeader("Retry-After", 30000);
-		respondWithError(res, req.method, req.url, 429, supportsGzip);
+	if(rateLimiter && rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
+		entity.res.setHeader("Retry-After", 30000);
+		respondWithError(entity, req.method, entity.req.url, 429, supportsGzip);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
-	if(req.url.length > webConfig.maxUrlLength) {
-		respondWithError(res, req.method, req.url, 414, supportsGzip);
+	if(entity.req.url.length > webConfig.maxUrlLength) {
+		respondWithError(entity, entity.req.method, entity.req.url, 414, supportsGzip);
 
 		return;
 	}
 	// Block request if method not allowed
 	if(!["get", "post"].includes(method)) {
-		respond(res, 405);
+		respond(entity.res, 405);
 
 		return;
 	}
@@ -206,41 +211,41 @@ function handleRequest(req, res) {
 		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
                      + (urlParts.search || "");
         
-		redirect(res, newUrl);
+		redirect(entity.res, newUrl);
 
 		return;
 	}
 		
 	// Set basic response headers
-	webConfig.portHttps && (res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
-	webConfig.allowFramedLoading && (res.setHeader("X-Frame-Options", "SAMEORIGIN"));
+	webConfig.portHttps && (entity.res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
+	webConfig.allowFramedLoading && (entity.res.setHeader("X-Frame-Options", "SAMEORIGIN"));
 
-	res.setHeader("X-XSS-Protection", "1");
-	res.setHeader("X-Content-Type-Options", "nosniff");
+	entity.res.setHeader("X-XSS-Protection", "1");
+	entity.res.setHeader("X-Content-Type-Options", "nosniff");
 
 	// Apply the related handler
 	switch(method) {
 	case "get":
-		handleGET(res, urlParts.pathname, extension, urlParts.query, supportsGzip);
+		handleGET(entity, urlParts.pathname, extension, urlParts.query, supportsGzip);
 		break;
 	case "post":
-		handlePOST(req, res, urlParts.pathname);
+		handlePOST(entity, urlParts.pathname);
 		break;
 	}
 
 	// Apply request interceptors once response has been completed so manipulation will have no influence
-	requestInterceptor.applyRequestInterceptors(req);	// TODO: Add final status code to request object
+	requestInterceptor.applyRequestInterceptors(entity.req);	// TODO: Add final status code to request object
 }
 
 /**
  * Handle a GET request accordingly.
- * @param {Object} res Active response object
+ * @param {Object} entity Open connection entity
  * @param {String} pathname URL pathname part
  * @param {String} extension Pathname stated file extension
- * @param {String} queryParametersObj Query string parameters in object representation
+ * @param {String} queryParameterObj Query string parameters in object representation
  * @param {Boolean} supportsGzip Whether the requesting entity supports GZIP decompression and GZIP compression is enabled
  */
-function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
+function handleGET(entity, pathname, extension, queryParameterObj, supportsGzip) {
 	let data;
 	
 	if(frontendModules.data.has(pathname)) {
@@ -249,21 +254,21 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		// Compress with GZIP if enabled
 		supportsGzip && (data = gzip(data));
 
-		respond(res, 200, data);
+		respond(entity.res, 200, data);
 		
 		return;
 	}
 
 	const isStaticRequest = extension.length > 0;	// Whether a static file (non-page asset) has been requested
-
+	
 	// Set client-side cache control for static files too
-	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
+	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 	
 	// Block request if blacklist enabled but requested extension blacklisted
 	// or a non-standalone file has been requested
 	if(isStaticRequest && webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(pathname))) {
-		respondWithError(res, "get", pathname, 403, supportsGzip);
+		respondWithError(entity, "get", pathname, 403, supportsGzip);
 		
 		return;
 	}
@@ -275,13 +280,13 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		// Compress with GZIP if enabled
 		supportsGzip && (data = gzip(data));
 
-		respond(res, 200, data);
+		respond(entity.res, 200, data);
 
 		return;
 	}
 
 	try {
-		data = handleFile(isStaticRequest, pathname, extension, queryParametersObj);
+		data = handleFile(entity.req, isStaticRequest, pathname, extension, queryParameterObj);
 
 		// Set server-side cache
 		isStaticRequest && staticCache.write(pathname, data);
@@ -289,15 +294,15 @@ function handleGET(res, pathname, extension, queryParametersObj, supportsGzip) {
 		// Compress with GZIP if enabled
 		supportsGzip && (data = gzip(data));
 
-		respond(res, 200, data);
+		respond(entity.res, 200, data);
 	} catch(err) {
 		output.error(err);
 
-		respondWithError(res, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
+		respondWithError(entity, "get", pathname, isNaN(err) ? 500 : err, supportsGzip);
 	}
 }
 
-function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
+function handleFile(req, isStaticRequest, pathname, extension, queryParameterObj) {
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
@@ -343,13 +348,21 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 		
 		throw err;
 	}
+
+	// Construct reduced request object to be passed to each response modifier handler
+	const reducedRequestObject = {
+		ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+		pathname: localPath,
+		queryParameter: queryParameterObj
+	};
 	
 	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
 	try {
-		data = responseModifier.applyResponseModifiers(extension, data, localPath, queryParametersObj);
+		data = responseModifier.applyResponseModifiers(extension, data, reducedRequestObject);
 		
-		isCompoundPage && (data = responseModifier.applyResponseModifiers(":html", data, localPath, queryParametersObj));	// Compound page specific modifiers
+		isCompoundPage && (data = responseModifier.applyResponseModifiers(":html", data, reducedRequestObject));	// Compound page specific modifiers
 	} catch(err) {
+		output.log(`Error applying response modifiers for '${pathname}'`);
 		output.error(err);
 		
 		throw err;
@@ -381,21 +394,20 @@ function handleFile(isStaticRequest, pathname, extension, queryParametersObj) {
 
 /**
  * Handle a POST request accordingly.
- * @param {Object} req Active request object
- * @param {Object} res Active response object
+ * @param {Object} entity Open connection entity
  * @param {String} pathname URL pathname part (resembling plug-in name as of dedicated endpoints paradigm)
  */
-function handlePOST(req, res, pathname) {
+function handlePOST(entity, pathname) {
 	if(!endpoint.hasEndpoint(pathname)) {
 		// Block request if no related POST handler defined
-		respond(res, 404);
+		respond(entity.res, 404);
 
 		return;
 	}
 
 	let blockBodyProcessing;
 	let body = [];
-	req.on("data", chunk => {
+	entity.req.on("data", chunk => {
 		body.push(chunk);
 
 		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
@@ -403,10 +415,10 @@ function handlePOST(req, res, pathname) {
 			// Block request if request payload is exceeds maximum size as put in web config
 			blockBodyProcessing = true;
 
-			respond(res, 413);
+			respond(entity.res, 413);
 		}
 	});
-	req.on("end", _ => {
+	entity.req.on("end", _ => {
 		if(blockBodyProcessing) {
 			// Ignore further processing as maximum payload has been exceeded
 			return;
@@ -427,15 +439,15 @@ function handlePOST(req, res, pathname) {
 			
 			data = JSON.stringify(data);
 
-			respond(res, 200, data);
+			respond(entity.res, 200, data);
 		} catch(err) {
 			output.error(err);
 
-			respond(res, isNaN(err) ? 500 : err);
+			respond(entity.res, isNaN(err) ? 500 : err);
 		}
 	});
-	req.on("error", _ => {
-		respond(res, 500);
+	entity.req.on("error", _ => {
+		respond(entity.res, 500);
 	});
 }
 
