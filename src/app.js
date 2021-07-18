@@ -103,6 +103,10 @@ function connect(reference, name) {
 		
 		pluginManagement.set(name, managementReference);
 		
+		if(utils.isFunction(module.parent.require(reference))) {
+			throw new SyntaxError(`Plug-in module does not export a function given reference '${reference}'`);
+		}
+
 		module.parent.require(reference)(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
 	} catch(err) {
 		output.log(`An error occurred connecting the plug-in from '${reference}':`);
@@ -210,10 +214,6 @@ initFrontendModuleHelper("./frontend.js", {
 	pluginRequestPrefix: utils.pluginRequestPrefix
 }, page.ANY, __dirname, config.coreModuleIdentifier);
 // TODO: Provide isDevMode property on core frontend module
-
-// TODO: Plug-in connection via method
-// TODO: Plug-in connection with explicit name to use
-
 
 
 module.exports = appInterface;

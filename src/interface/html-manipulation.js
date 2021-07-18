@@ -3,5 +3,5 @@ function x() {
 }
 
 module.exports = {
-    x
+	x
 };
