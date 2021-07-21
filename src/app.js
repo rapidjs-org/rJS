@@ -29,6 +29,9 @@ const webConfig = require("./support/config").webConfig;
 const server = require("./server");
 
 
+const Closing = require("./interface/Closing");
+
+
 /**
  * Page environment enumeration
  */
@@ -58,13 +61,16 @@ const pluginInterface = {
 	// Plug-in specific core interface; accessible from referenced plug-in scopes
 	...generalInterface,
 	... {
-		page,
+		Closing,
 
+		page,
+		
 		initFrontendModule,
 		setEndpoint: require("./interface/endpoint").setEndpoint,
 		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 
 		utility: {
+
 			output,
 			webPath: require("./support/web-path"),
 
@@ -76,7 +82,6 @@ const pluginInterface = {
 		}
 	}
 };
-
 
 /**
  * Connect a plug-in to the core environment.
@@ -103,7 +108,7 @@ function connect(reference, name) {
 		
 		pluginManagement.set(name, managementReference);
 		
-		if(utils.isFunction(module.parent.require(reference))) {
+		if(!utils.isFunction(module.parent.require(reference))) {
 			throw new SyntaxError(`Plug-in module does not export a function given reference '${reference}'`);
 		}
 
