@@ -17,23 +17,56 @@ function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATIO
 
 /**
  * Perform request ro plug-in related endpoint (id set up).
- * @param {Object} body Body object to send along being passed to the endpoint callback
- * @returns {Promise} Request promise eventualy resolving to response on success
+ * @param {Object} [body] Body object to send along being passed to the endpoint callback
+ * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
+ * @returns {Promise} Request promise eventualy resolving to response message on success
  */
-PUBLIC.useEndpoint = function(body) {
+PUBLIC.useEndpoint = function(body, progressHandler) {
 	const pathname = `/${getPluginUrl()}`;
 	
-	return fetch(pathname, {
-		method: "POST",
-		mode: "same-origin",
-		credentials: "same-origin",
-		headers: {
-			"Content-Type": "application/json"
-		},
-		redirect: "follow",
-		referrerPolicy: "no-referrer",
-		body: JSON.stringify(body)
+	return new Promise((resolve, reject) => {
+		fetch(pathname, {
+			method: "POST",
+			mode: "same-origin",
+			credentials: "same-origin",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			redirect: "follow",
+			referrerPolicy: "no-referrer",
+			body: JSON.stringify(body)
+		}).then(async res => {
+			// Explicitly download body to handle progress
+			const contentLength = res.headers.get("Content-Length");
+			let receivedLength = 0;
+
+			const reader = res.body.getReader();
+			let chunks = [];
+			let curChunk;
+			while((curChunk = await reader.read()) && !curChunk.done) {
+				applyProgressHandler(receivedLength / contentLength);
+
+				receivedLength += curChunk.value.length;
+				chunks.push(curChunk.value);
+			}
+			applyProgressHandler(1);
+			
+			let chunksAll = new Uint8Array(receivedLength);
+			let position = 0;
+			for(let chunk of chunks) {
+				chunksAll.set(chunk, position);
+				position += chunk.length;
+			}
+
+			const message = JSON.parse(new TextDecoder("utf-8").decode(chunksAll));
+			
+			(res.status == 200) ? resolve(message) : reject(message);
+		});
 	});
+
+	function applyProgressHandler(progress) {
+		progressHandler && progressHandler(progress);
+	}
 };
 
 // TODO: Method to load closest error?
