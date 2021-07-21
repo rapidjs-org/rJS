@@ -4,7 +4,9 @@ const {normalizeExtension, isFunction, isString} = require("../utils");
 
 const output = require("./output");
 
+
 let readerHandlers = {};
+
 
 module.exports = {
 	/**
@@ -32,9 +34,9 @@ module.exports = {
 	useReader: (extension, pathname) => {
 		if(!isFunction(readerHandlers[extension])) {
 			if(!existsSync(pathname)) {
-				throw 404;
+				throw new ReferenceError(`Neither explicit reader for extension '${extension}' nor file found at '${pathname}'`);
 			}
-
+			
 			return readFileSync(pathname);
 		}
 

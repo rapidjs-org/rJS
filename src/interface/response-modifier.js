@@ -27,7 +27,10 @@ module.exports = {
 	 * @returns {*} Serializable modified data
 	 */
 	applyResponseModifiers: (extension, data, reducedReq) => {
-		for(let responseModifier of (responseModifierHandlers[extension] || [])) {
+		const handlers = responseModifierHandlers[extension];
+		handlers && handlers.push(data => data);	// For error check upon last modifier
+
+		for(let responseModifier of (handlers || [])) {
 			if(!isString(data) && !Buffer.isBuffer(data)) {
 				output.error(new TypeError(`Response modifier ('${extension}') must return value of type String or Buffer, given ${typeof(curData)}.`));
 			} else {

@@ -1,3 +1,6 @@
+const Closing = require("./Closing");
+
+
 const config = {
 	appName: "rJS"
 };
@@ -21,7 +24,7 @@ module.exports = {
 	 * @param {Boolean} [terminate=false] Whether to terminate application execution after error logging
 	 */
 	error: (err, terminate = false) => {
-		if(!isNaN(err)) {
+		if(err instanceof Closing) {
 			// Do not log thrown status error used for internal redirect
 			return;
 		}
