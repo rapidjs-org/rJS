@@ -25,11 +25,9 @@ const isDevMode = require("./support/is-dev-mode");
 
 const webConfig = require("./support/config").webConfig;
 
+const frontendManagement = require("./server/frontend-management");
 
-const server = require("./server");
-
-
-const ClientError = require("./interface/ClientError");
+require("./server/server.js");
 
 
 /**
@@ -61,7 +59,7 @@ const pluginInterface = {
 	// Plug-in specific core interface; accessible from referenced plug-in scopes
 	...generalInterface,
 	... {
-		ClientError,
+		ClientError: require("./interface/ClientError"),
 
 		page,
 		
@@ -197,7 +195,7 @@ function initFrontendModuleHelper(path, pluginConfig, pageEnvironment, pluginPat
 	});
 	
 	// Add GET route to retrieve frontend module script
-	server.registerFrontendModule(pluginName, frontendFileLocation, frontendModuleData);
+	frontendManagement.registerModule(pluginName, frontendFileLocation, frontendModuleData);
 }
 
 /**
