@@ -5,7 +5,7 @@
 class ClientError {
 	constructor(status, message) {
 		if(!((status % 400) < 99)) {
-			throw new RangeError(`Status code ${status} not located within the client error value range`);
+			throw new RangeError(`Status code ${status} not located within the client error value range (4**)`);
 		}
 
 		this.status = status;

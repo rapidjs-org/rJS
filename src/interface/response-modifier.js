@@ -1,4 +1,4 @@
-const {normalizeExtension, isString} = require("../utils");
+const utils = require("../utils");
 
 const output = require("./output");
 
@@ -12,8 +12,8 @@ module.exports = {
 	 * @param {Function} callback Callback getting passed the data string to modify and the current request object returning the eventually send response data. Throwing an error code will lead to a related response.
 	 */
 	addResponseModifier: (extension, callback) => {
-		extension = normalizeExtension(extension);
-
+		extension = utils.normalizeExtension(extension);
+		
 		!responseModifierHandlers[extension] && (responseModifierHandlers[extension] = []);
 		
 		responseModifierHandlers[extension].push(callback);
@@ -31,7 +31,7 @@ module.exports = {
 		handlers && handlers.push(data => data);	// For error check upon last modifier
 
 		for(let responseModifier of (handlers || [])) {
-			if(!isString(data) && !Buffer.isBuffer(data)) {
+			if(!utils.isString(data) && !Buffer.isBuffer(data)) {
 				output.error(new TypeError(`Response modifier ('${extension}') must return value of type String or Buffer, given ${typeof(curData)}.`));
 			} else {
 				data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, reducedReq);
