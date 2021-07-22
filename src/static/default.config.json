@@ -4,7 +4,6 @@
         "server": 86400,
         "client": 31536000
     },
-    "extensionWhitelist": ["html", "js"],
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
