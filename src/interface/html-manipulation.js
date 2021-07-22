@@ -1,7 +1,8 @@
-function x() {
+function parse(markup) {
 
+	return markup;
 }
 
 module.exports = {
-	x
+	parse
 };

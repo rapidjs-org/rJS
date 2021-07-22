@@ -27,7 +27,7 @@ const webConfig = require("./support/config").webConfig;
 
 const frontendManagement = require("./server/frontend-management");
 
-require("./server/server.js");
+require("./server/instance.js");
 
 
 /**
@@ -68,10 +68,11 @@ const pluginInterface = {
 		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 
 		utility: {
-
 			output,
 			webPath: require("./support/web-path"),
 
+
+			html: require("./interface/html-manipulation"),
 			readConfig,
 			useReader: require("./interface/reader").useReader,
 			createCache: _ => {
