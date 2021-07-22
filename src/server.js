@@ -36,7 +36,7 @@ const responseModifier = require("./interface/response-modifier");
 const requestInterceptor = require("./interface/request-interceptor");
 
 
-const Closing = require("./interface/Closing");
+const ClientError = require("./interface/ClientError");
 
 
 const frontendModules = {
@@ -99,6 +99,15 @@ if(webConfig.portHttps && webConfig.portHttp) {
 
 
 function respond(entity, status, message) {
+	// Retrieve default message of status code if none given
+	!message && (message = require("http").STATUS_CODES[status] || "");
+    
+	entity.res.statusCode = isNaN(status) ? 500 : status;
+	
+	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
+		message = JSON.stringify(message);
+	}
+	
 	if(entity.req.method == "get") {
 		// Set MIME type header accordingly
 		const mime = mimesConfig[entity.url.extension];
@@ -110,19 +119,10 @@ function respond(entity, status, message) {
 			message = gzip(message);
 		}
 	}
-
-	// Retrieve default message of status code if none given
-	!message && (message = require("http").STATUS_CODES[status] || "");
-    
-	entity.res.statusCode = status;
-	
-	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
-		message = JSON.stringify(message);
-	}
     
 	entity.res.setHeader("Content-Length", Buffer.byteLength(message));
 	
-	entity.res.end(message);
+	entity.res.end(isNaN(status) ? null : message);
 }
 
 /**
@@ -288,7 +288,7 @@ function handleGET(entity) {
 	} catch(err) {
 		output.error(err);
 
-		respondWithError(entity, isNaN(err.status) ? 500 : err.status);
+		respondWithError(entity, err.status);
 	}
 }
 
@@ -408,6 +408,8 @@ function handlePOST(entity) {
 			blockBodyProcessing = true;
 
 			respond(entity, 413);
+
+			//entity.req.end();
 		}
 	});
 	entity.req.on("end", _ => {
@@ -427,7 +429,7 @@ function handlePOST(entity) {
 		}
 
 		try {
-			let data = endpoint.applyEndpoint(entity.url.pathname, body);
+			let data = endpoint.useEndpoint(entity.url.pathname, body);
 
 			data = JSON.stringify(data);
 
@@ -435,7 +437,7 @@ function handlePOST(entity) {
 		} catch(err) {
 			output.error(err);
 
-			respond(entity, isNaN(err.status) ? 500 : err.status, JSON.stringify(err.message));
+			respond(entity, err.status, err.message ? JSON.stringify(err.message) : null);
 		}
 	});
 	entity.req.on("error", _ => {

@@ -19,7 +19,7 @@ function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATIO
  * Perform request ro plug-in related endpoint (id set up).
  * @param {Object} [body] Body object to send along being passed to the endpoint callback
  * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
- * @returns {Promise} Request promise eventualy resolving to response message on success
+ * @returns {Promise} Request promise eventualy resolving to response message
  */
 PUBLIC.useEndpoint = function(body, progressHandler) {
 	const pathname = `/${getPluginUrl()}`;
@@ -60,7 +60,9 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 
 			const message = JSON.parse(new TextDecoder("utf-8").decode(chunksAll));
 			
-			(res.status == 200) ? resolve(message) : reject(message);
+			resolve(message);
+		}).catch(_ => {
+			reject();
 		});
 	});
 

@@ -25,7 +25,7 @@ module.exports =  {
 		return routeHandlers.has(pathname) ? true : false;
 	},
 
-	applyEndpoint: (pathname, args) => {
+	useEndpoint: (pathname, args) => {
 		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}

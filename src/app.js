@@ -29,7 +29,7 @@ const webConfig = require("./support/config").webConfig;
 const server = require("./server");
 
 
-const Closing = require("./interface/Closing");
+const ClientError = require("./interface/ClientError");
 
 
 /**
@@ -61,7 +61,7 @@ const pluginInterface = {
 	// Plug-in specific core interface; accessible from referenced plug-in scopes
 	...generalInterface,
 	... {
-		Closing,
+		ClientError,
 
 		page,
 		
