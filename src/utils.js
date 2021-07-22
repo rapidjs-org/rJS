@@ -1,6 +1,17 @@
+function isString(value) {
+	return typeof value === "string" || value instanceof String;
+}
+     
+function isFunction(value) {
+	return value && {}.toString.call(value) === "[object Function]";
+}
+
 module.exports = {
 
 	pluginRequestPrefix: "plug-in:",
+	
+	isString,
+	isFunction,
 
 	getCallerPath: fileName => {
 		const err = new Error();
@@ -26,16 +37,12 @@ module.exports = {
 		
 		throw new SyntaxError("Failed to retrieve path to caller module");
 	},
-		
-	isString: value => {
-		return typeof value === "string" || value instanceof String;
-	},
-     
-	isFunction: value => {
-		return value && {}.toString.call(value) === "[object Function]";
-	},
 
 	normalizeExtension: extension => {
+		if(!isString(extension)) {
+			throw new ReferenceError(`Given extension of type ${typeof(extension)}, expecting type String instead`);
+		}
+
 		return extension.trim().replace(/^\./, "").toLowerCase();
 	},
 
