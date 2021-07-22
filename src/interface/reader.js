@@ -33,7 +33,7 @@ module.exports = {
 	 */
 	useReader: (extension, pathname) => {
 		if(!isFunction(readerHandlers[extension])) {
-			if(!existsSync(pathname)) {
+			if(!existsSync(pathname)) {	// TODO: Error only if externally used
 				throw new ReferenceError(`Neither explicit reader for extension '${extension}' nor file found at '${pathname}'`);
 			}
 			
