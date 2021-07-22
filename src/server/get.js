@@ -99,6 +99,8 @@ function processFile(req, isStaticRequest, pathname, extension, queryParameterOb
 	// Use compound page path if respective directory exists
 	let compoundPath;
 	if(!isStaticRequest) {
+		let isCompoundPage = false;
+
 		compoundPath = "";
 		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
 		for(let part of pathParts) {
@@ -111,17 +113,18 @@ function processFile(req, isStaticRequest, pathname, extension, queryParameterOb
 			if(existsSync(localCompoundPath)) {
 				localPath = localCompoundPath;
 
+				isCompoundPage = true;
+
 				break;
 			}
 		}
 		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
 		
-		if(!compoundPath) {
-			// Add default file extension if is not a compound page and none explicitly stated in request URL
-			localPath += `.${extension}`;
+		if(!isCompoundPage) {
+			compoundPath = null;
 		}
 	}
-
+	console.log(localPath)
 	let data;
 
 	// Read file either by custom reader handler or by default reader
@@ -200,8 +203,10 @@ function handle(entity) {
 	
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
-	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.includes(entity.url.extension)
+	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat([config.defaultFileExtension, "js"]).includes(entity.url.extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
+		console.log(webConfig.extensionWhitelist);
+		console.log(!webConfig.extensionWhitelist.includes(entity.url.extension));
 		respondWithError(entity, 403);
 		
 		return;

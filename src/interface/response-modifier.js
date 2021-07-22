@@ -24,15 +24,17 @@ module.exports = {
 	 * @param {String} extension Extension name (without a leading dot) (Use ":html" if to apply compound base page associated modifiers)
 	 * @param {String} data Data to modifiy
 	 * @param {Object} reducedReq Reduced request object to pass to callback
-	 * @returns {*} Serializable modified data
+	 * @returns {String|Buffer} Serialized, furtheron modifiable data
 	 */
 	applyResponseModifiers: (extension, data, reducedReq) => {
 		const handlers = responseModifierHandlers[extension];
 		handlers && handlers.push(data => data);	// For error check upon last modifier
-
+		
 		for(let responseModifier of (handlers || [])) {
 			if(!utils.isString(data) && !Buffer.isBuffer(data)) {
-				output.error(new TypeError(`Response modifier ('${extension}') must return value of type String or Buffer, given ${typeof(curData)}.`));
+				output.error(new TypeError(`Response modifier for extension '${extension}' does not return value of type String or Buffer, given ${typeof(curData)}.`));
+				
+				return null;
 			} else {
 				data = responseModifier(Buffer.isBuffer(data) ? String(data) : data, reducedReq);
 			}
