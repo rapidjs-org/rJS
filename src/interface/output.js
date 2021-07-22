@@ -1,4 +1,4 @@
-const Closing = require("./Closing");
+ClientError = require("./ClientError");
 
 
 const config = {
@@ -24,8 +24,8 @@ module.exports = {
 	 * @param {Boolean} [terminate=false] Whether to terminate application execution after error logging
 	 */
 	error: (err, terminate = false) => {
-		if(err instanceof Closing) {
-			// Do not log thrown status error used for internal redirect
+		if(err instanceof ClientError) {
+			// Do not log thrown status error as of manipulation interface usage
 			return;
 		}
 
