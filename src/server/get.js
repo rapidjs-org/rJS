@@ -56,8 +56,10 @@ function respond(entity, status, message) {
  */
 function respondWithError(entity, status) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
-	if(entity.url.extname == config.defaultFileExtension) {
+	if(entity.url.extname != config.defaultFileExtension) {
 		respond(entity, status);
+
+		return;
 	}
 
 	let errorPageDir = entity.url.pathname;
