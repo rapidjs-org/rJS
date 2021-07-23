@@ -71,8 +71,7 @@ const pluginInterface = {
 			output,
 			webPath: require("./support/web-path"),
 
-
-			html: require("./interface/html-manipulation"),
+			block: require("./interface/block-manipulation"),
 			readConfig,
 			useReader: require("./interface/reader").useReader,
 			createCache: _ => {
@@ -88,8 +87,12 @@ const pluginInterface = {
  * @param {String} [name] Internal name to use instead of having it be derived automatically
  */
 function connect(reference, name) {
+	if(name && !/(@[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(name.trim())) {
+		throw SyntaxError(`Invalid alias for connecting plug-in with reference '${reference}'`);
+	}
+
 	try {
-		name = name ? name : pluginManagement.retrievePluginName(reference);
+		name = name ? name.trim() : pluginManagement.retrievePluginName(reference);
 
 		if(name == config.coreModuleIdentifier) {
 			throw new SyntaxError(`Plug-in must not use reserved name '${config.coreModuleIdentifier}'`);
