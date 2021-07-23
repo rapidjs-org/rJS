@@ -55,7 +55,6 @@ require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res)
 	const urlParts = parseUrl(entity.req.url, true);
 	entity.url.pathname = urlParts.pathname;
 	entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : config.defaultFileExtension;
-	entity.url.search = urlParts.search;
 	entity.url.query = urlParts.query;
 
 	try {
@@ -110,7 +109,7 @@ function handleRequest(entity) {
 	if((explicitBase = basename(entity.url.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.${config.defaultFileExtension})?$`)))
 		&& explicitBase[0].length > 1) {
 		const newUrl = entity.url.pathname.replace(explicitBase[0], "")
-                     + (entity.url.search || "");
+                     + (parseUrl(entity.req.url).search || "");
         
 		response.redirect(entity.res, newUrl);
 

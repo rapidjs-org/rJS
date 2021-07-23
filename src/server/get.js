@@ -67,7 +67,7 @@ function respondWithError(entity, status) {
 		let errorPagePath = join(errorPageDir, String(status));
         
 		if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
-			let data = processFile(entity.req, false, errorPagePath, config.defaultFileExtension, null);
+			let data = processFile(entity, false, errorPagePath, config.defaultFileExtension, null);
             
 			// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
 			data = utils.injectIntoHead(data, `
@@ -78,7 +78,7 @@ function respondWithError(entity, status) {
                 document.currentScript.parentNode.removeChild(document.currentScript);
             </script>`);	// TODO: Efficitenly retrieve hostname to insert base tag already
 
-			respond(entity.res, status, data);
+			respond(entity, status, data);
 
 			return;
 		}
@@ -89,7 +89,7 @@ function respondWithError(entity, status) {
 }
 
 
-function processFile(req, isStaticRequest, pathname, extension, queryParameterObj) {
+function processFile(entity, isStaticRequest, pathname, extension, queryParameterObj) {
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
@@ -124,21 +124,23 @@ function processFile(req, isStaticRequest, pathname, extension, queryParameterOb
 			compoundPath = null;
 		}
 	}
-	console.log(localPath)
-	let data;
 
+	let data;
+	
 	// Read file either by custom reader handler or by default reader
 	try {
 		data = reader.useReader(extension, localPath);
 	} catch(err) {
-		output.error(err);
-		
+		if(err instanceof ReferenceError) {
+			throw new (require("../interface/ClientError"))(404);
+		}
+
 		throw err;
 	}
 
 	// Construct reduced request object to be passed to each response modifier handler
 	const reducedRequestObject = {
-		ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+		ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
 		pathname: localPath,
 		queryParameter: queryParameterObj
 	};
@@ -205,8 +207,6 @@ function handle(entity) {
 	// or a non-standalone file has been requested
 	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat([config.defaultFileExtension, "js"]).includes(entity.url.extension)
 	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
-		console.log(webConfig.extensionWhitelist);
-		console.log(!webConfig.extensionWhitelist.includes(entity.url.extension));
 		respondWithError(entity, 403);
 		
 		return;
@@ -222,12 +222,14 @@ function handle(entity) {
 	}
 
 	try {
-		data = processFile(entity.req, isStaticRequest, entity.url.pathname, entity.url.extension, entity.url.query);
+		data = processFile(entity, isStaticRequest, entity.url.pathname, entity.url.extension, entity.url.query);
 
 		// Set server-side cache
 		isStaticRequest && staticCache.write(entity.url.pathname, data);
 		
 		respond(entity, 200, data);
+
+		return;
 	} catch(err) {
 		output.error(err);
 
