@@ -4,7 +4,7 @@ const response = require("./response");
 
 const webConfig = require("../support/config").webConfig;
 
-const output = require("../interface/output");
+const output = require("../support/output");
 const endpoint = require("../interface/endpoint");
 
 

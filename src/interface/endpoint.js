@@ -1,5 +1,5 @@
 const cache = require("../support/cache");
-const pluginManagement = require("../support/plugin-management");
+const pluginManagement = require("./plugin-management");
 
 const {getCallerPath} = require("../utils");
 
