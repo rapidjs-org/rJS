@@ -5,32 +5,31 @@ const config = {
 		argumentsProperty: "args",
 	},
 	compoundPageDirPrefix: ":",
-	defaultFileExtension: "html",
-	defaultFileName: "index",
-	supportFilePrefix: "_",
+	defaultFileName: "index"
 };
 
 
 const {dirname, join, basename} = require("path");
 const {existsSync} = require("fs");
+const {gzipSync} = require("zlib");
 
 const utils = require("../utils");
 
-const response = require("./response");
+const template = require("../support/templating");
 
-const output = require("../interface/output");
-const reader = require("../interface/reader");
-const responseModifier = require("../interface/response-modifier");
+const webPath = require("../support/web-path");
+const staticCache = require("../support/cache");
+const output = require("../support/output");
+const isDevMode = require("../support/is-dev-mode");
 
 const webConfig = require("../support/config").webConfig;
 const mimesConfig = require("../support/config").mimesConfig;
-const isDevMode = require("../support/is-dev-mode");
-const webPath = require("../support/web-path");
-const gzip = require("../support/gzip");
 
-const frontendManagement = require("./frontend-management");
+const frontendManagement = require("../interface/frontend-management");
+const page = require("../interface/page");
+const reader = require("../interface/reader");
 
-const staticCache = require("../support/cache");
+const response = require("./response");
 
 
 function respond(entity, status, message) {
@@ -44,7 +43,7 @@ function respond(entity, status, message) {
 	// Check GZIP compression header if to to compress response data
 	if(/(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || "") && webConfig.gzipCompressList.includes(entity.url.extension)) {
 		entity.res.setHeader("Content-Encoding", "gzip");
-		message = gzip(message);
+		message = gzipSync(message);
 	}
 
 	response.respond(entity, status, message);
@@ -56,7 +55,7 @@ function respond(entity, status, message) {
  */
 function respondWithError(entity, status) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
-	if(entity.url.extname != config.defaultFileExtension) {
+	if(entity.url.extname != "html") {
 		respond(entity, status);
 
 		return;
@@ -69,7 +68,7 @@ function respondWithError(entity, status) {
 		let errorPagePath = join(errorPageDir, String(status));
         
 		if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
-			let data = processFile(entity, false, errorPagePath, config.defaultFileExtension, null);
+			let data = processFile(entity, false, errorPagePath, "html", null);
             
 			// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
 			data = utils.injectIntoHead(data, `
@@ -95,8 +94,9 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
-	let localPath = join(webPath, pathname);
-	(extension == config.defaultFileExtension) && (localPath = `${localPath.replace(/\/$/, `/${config.defaultFileName}`)}.${config.defaultFileExtension}`);
+	let localPath = pathname;
+	
+	!isStaticRequest && (localPath = `${localPath.replace(/\/$/, `/${config.defaultFileName}`)}.html`);
 
 	// Use compound page path if respective directory exists
 	let compoundPath;
@@ -107,12 +107,12 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
 		for(let part of pathParts) {
 			// Construct possible internal compound path
-			const localCompoundPath = join(webPath, compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
+			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
 			
 			compoundPath = join(compoundPath, part);
 
 			// Return compound path if related file exists in file system
-			if(existsSync(localCompoundPath)) {
+			if(existsSync(join(webPath, localCompoundPath))) {
 				localPath = localCompoundPath;
 
 				isCompoundPage = true;
@@ -126,19 +126,8 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 			compoundPath = null;
 		}
 	}
-
-	let data;
 	
-	// Read file either by custom reader handler or by default reader
-	try {
-		data = reader.useReader(extension, localPath);
-	} catch(err) {
-		if(err instanceof ReferenceError) {
-			throw new (require("../interface/ClientError"))(404);
-		}
-
-		throw err;
-	}
+	let data;
 
 	// Construct reduced request object to be passed to each response modifier handler
 	const reducedRequestObject = {
@@ -147,38 +136,56 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 		queryParameter: queryParameterObj
 	};
 	
-	// Sequentially apply defined response modifiers (compound pages without extension use both empty and default extension handlers)
+	// Read file either by custom reader handler or by default reader
 	try {
-		data = responseModifier.applyResponseModifiers(extension, data, reducedRequestObject);
-		
-		compoundPath && (data = responseModifier.applyResponseModifiers(":html", data, reducedRequestObject));	// Compound page specific modifiers
+		data = String(reader.useReader(localPath));	// Pass red req obj?
 	} catch(err) {
-		output.log(`Error applying response modifiers for '${pathname}'`);
-		output.error(err);
-		
+		if(err instanceof ReferenceError) {
+			throw new (require("../interface/ClientError"))(404);
+		}
+
+		output.log("Error reading requested file:");
+
 		throw err;
+	}
+	
+	// No more processing on static file data
+	if(isStaticRequest) {
+		return data;
+	}
+
+	// Sequentially apply defined plug-in module modifiers
+	data = frontendManagement.applyModifier(data, compoundPath ? page.COMPOUND :  page.ANY)
+	
+	if(!compoundPath) {
+		return data;
+	}
+
+	// Templating
+	try {
+		data = template(data, localPath, reducedRequestObject);
+	} catch(err) {
+		output.error(err, true);
 	}
 
 	// Implement compound page information into compound pages
-	if(compoundPath) {
-		let serializedArgsArray = pathname.slice(compoundPath.length + 2)
-			.split(/\//g)
-			.filter(arg => arg.length > 0);
-		serializedArgsArray = (serializedArgsArray.length > 0)
-			? serializedArgsArray
-				.map(arg => `"${arg}"`)
-				.join(",")
-			: null;
-		
-		data = utils.injectIntoHead(String(data), `
-		<script>
-			rapidJS.core.${config.compoundObject.name} = {
-				${config.compoundObject.basePathProperty}: "/${compoundPath}",
-				${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
-			};
-			document.currentScript.parentNode.removeChild(document.currentScript);
-		</script>`, true);
-	}
+	let serializedArgsArray = pathname.slice(compoundPath.length + 2)
+		.split(/\//g)
+		.filter(arg => arg.length > 0);
+	serializedArgsArray = (serializedArgsArray.length > 0)
+		? serializedArgsArray
+			.map(arg => `"${arg}"`)
+			.join(",")
+		: null;
+	
+	data = utils.injectIntoHead(String(data), `
+	<script>
+		rapidJS.core.${config.compoundObject.name} = {
+			${config.compoundObject.basePathProperty}: "/${compoundPath}",
+			${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
+		};
+		document.currentScript.parentNode.removeChild(document.currentScript);
+	</script>`, true);
 	
 	return data;
 }
@@ -200,15 +207,15 @@ function handle(entity) {
 		return;
 	}
 
-	const isStaticRequest = entity.url.extension != config.defaultFileExtension;	// Whether a static file (non-page asset) has been requested
+	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 	
 	// Set client-side cache control for static files
 	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 	
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
-	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat([config.defaultFileExtension, "js"]).includes(entity.url.extension)
-	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
+	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)
+	|| (new RegExp(`^${utils.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
 		respondWithError(entity, 403);
 		
 		return;

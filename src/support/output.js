@@ -1,4 +1,4 @@
-const ClientError = require("./ClientError");
+const ClientError = require("../interface/ClientError");
 
 
 const config = {
@@ -29,8 +29,8 @@ module.exports = {
 			return;
 		}
 
-		let message = (err instanceof Error) ? `${err.name}: "${err.message}"${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""}` : err;
-		out(`${message}\n`, "\x1b[41m\x1b[37m");
+		let message = (err instanceof Error) ? `${err.name}: ${err.message}${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""}` : err;
+		out(`${message}`, "\x1b[41m\x1b[37m");
 
 		console.error(err);
 		

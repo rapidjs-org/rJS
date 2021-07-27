@@ -20,7 +20,7 @@ function createCache() {
 	return {
 		/**
 		 * Check if the cache holds an entry for the requested URL (pathname as key).
-		 * Clears outdated entries implicitly resulting in a false return value.
+		 * Clears outdated entries implicitly result g in a false return value.
 		 * @param {String} key Unique key
 		 * @returns {Boolean} Whether the cache holds an entry for the requested URL
 		 */

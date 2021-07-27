@@ -1,5 +1,4 @@
 const config = {
-	defaultFileExtension: "html",
 	defaultFileName: "index"
 };	// TODO: Allow for default file name and extension / type to be changed via configuration file?
 
@@ -17,8 +16,7 @@ const rateLimiter = (!isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require(
 
 const response = require("./response");
 
-const output = require("../interface/output");
-const requestInterceptor = require("../interface/request-interceptor");
+const output = require("../support/output");
 
 
 const requestHandler = {
@@ -54,7 +52,7 @@ require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res)
 
 	const urlParts = parseUrl(entity.req.url, true);
 	entity.url.pathname = urlParts.pathname;
-	entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : config.defaultFileExtension;
+	entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
 	entity.url.query = urlParts.query;
 
 	try {
@@ -106,7 +104,7 @@ function handleRequest(entity) {
 
 	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
 	let explicitBase;
-	if((explicitBase = basename(entity.url.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.${config.defaultFileExtension})?$`)))
+	if((explicitBase = basename(entity.url.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
 		&& explicitBase[0].length > 1) {
 		const newUrl = entity.url.pathname.replace(explicitBase[0], "")
                      + (parseUrl(entity.req.url).search || "");
@@ -132,7 +130,4 @@ function handleRequest(entity) {
 		requestHandler.POST(entity);
 		break;
 	}
-
-	// Apply request interceptors once response has been completed so manipulation will have no influence
-	requestInterceptor.applyRequestInterceptors(entity.req);	// TODO: Add final status code to request object
 }
