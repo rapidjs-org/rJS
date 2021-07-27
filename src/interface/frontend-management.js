@@ -10,18 +10,17 @@ const frontendModules = {
 	data: new Map()
 };
 
+const environments = {};	// TODO: Optimize storage model complexity
 
-const modifiers = {};
-
-function addModifier(pluginName, pageEnvironment) {
+function addEnvironment(pluginName, pageEnvironment) {
 	if(pageEnvironment == page.SPECIFIC) {
 		return;
 	}
 	
 	pageEnvironment = String(pageEnvironment);
 
-	!modifiers[pageEnvironment] && (modifiers[pageEnvironment] = []);
-	modifiers[pageEnvironment].push(pluginName);
+	!environments[pageEnvironment] && (environments[pageEnvironment] = []);
+	environments[pageEnvironment].push(pluginName);
 }
 
 
@@ -39,12 +38,12 @@ module.exports = {
 		frontendModules.registered.add(pluginName);
 		frontendModules.data.set(getPathname(pluginName), data);
 
-		addModifier(pluginName, pageEnvironment);
+		addEnvironment(pluginName, pageEnvironment);
 	},
 
-	applyModifier: (data, type) => {
-		(modifiers[String(type)] || []).forEach(pluginName => {
-			data = utils.injectIntoHead(data, `<script src="${getPathname(pluginName)}"></script>`)
+	integrateEnvironment: (data, type) => {
+		(environments[String(type)] || []).forEach(pluginName => {
+			data = utils.injectIntoHead(data, `<script src="${getPathname(pluginName)}"></script>`);
 		});
 
 		return data;
