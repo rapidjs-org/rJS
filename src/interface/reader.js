@@ -33,27 +33,29 @@ module.exports = {
 	 */
 	useReader: (pathname) => {
 		// TODO: Read from compound directory if exists?
-
 		const extension = utils.normalizeExtension(extname(pathname));
+		const localPath = join(webPath, pathname);
 
-		if(!readerHandlers[extension]) {
-			const localPath = join(webPath, pathname);
-			
+		if(!readerHandlers[extension]) {			
 			if(!existsSync(localPath)) {	// TODO: Error only if externally used
 				throw new ReferenceError(`File not found at '${pathname}'`);
 			}
 			
-			return String(readFileSync(localPath));
+			return readFileSync(localPath);
 		}
 		if(!utils.isFunction(readerHandlers[extension])) {
 			throw new TypeError(`Given explicit reader handler for extension '${extension}' of type '${typeof(readerHandlers[extension])}, expecting Function'`);
 		}
 
-		const data = readerHandlers[extension]();
+		const data = readerHandlers[extension](localPath);
+		
 		if(!utils.isString(data) && !Buffer.isBuffer(data)) {
 			throw new TypeError(`Explicit reader for extension "${extension}" does not return serialized data of type String or Buffer, given ${typeof(data)} instead.`);
 		}
 
 		return data;
 	}
+
+	// TODO: exists function
+	// TODO: rename member names to shorter representations
 };

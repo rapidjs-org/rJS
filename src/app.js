@@ -56,12 +56,10 @@ const pluginInterface = {
 		initFrontendModule,
 		setEndpoint: require("./interface/endpoint").setEndpoint,
 
-		utility: {
-			readConfig,
-			useReader: require("./interface/reader").useReader,
-			createCache: _ => {
-				return require("./support/cache");
-			}
+		readConfig,
+		useReader: require("./interface/reader").useReader,
+		createCache: _ => {
+			return require("./support/cache");
 		}
 	}
 };
@@ -106,7 +104,6 @@ function connect(reference, name) {
 	}
 }
 
-// TODO: Implement includes feature
 // TODO: Integrate ClientError interface comprehensively
 // TODO: Clean up reader
 // TODO: Implement finalizer?

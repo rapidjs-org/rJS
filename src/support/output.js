@@ -29,6 +29,8 @@ module.exports = {
 			return;
 		}
 
+		// TODO: Improve message quality (message, full path to file, exact position if possible)
+
 		let message = (err instanceof Error) ? `${err.name}: ${err.message}${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""}` : err;
 		out(`${message}`, "\x1b[41m\x1b[37m");
 

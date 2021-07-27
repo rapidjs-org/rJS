@@ -15,7 +15,7 @@ const {gzipSync} = require("zlib");
 
 const utils = require("../utils");
 
-const template = require("../support/templating");
+const templating = require("../support/templating");
 
 const webPath = require("../support/web-path");
 const staticCache = require("../support/cache");
@@ -39,7 +39,7 @@ function respond(entity, status, message) {
 		entity.res.setHeader("Content-Type", mime);
 		entity.res.setHeader("X-Content-Type-Options", "nosniff");
 	}
-
+	
 	// Check GZIP compression header if to to compress response data
 	if(/(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || "") && webConfig.gzipCompressList.includes(entity.url.extension)) {
 		entity.res.setHeader("Content-Encoding", "gzip");
@@ -138,7 +138,7 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = String(reader.useReader(localPath));	// Pass red req obj?
+		data = reader.useReader(localPath);	// Pass red req obj?
 	} catch(err) {
 		if(err instanceof ReferenceError) {
 			throw new (require("../interface/ClientError"))(404);
@@ -154,16 +154,22 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 		return data;
 	}
 
+	data = String(data);	// Further processig steps will need string representation of input
+
 	// Sequentially apply defined plug-in module modifiers
-	data = frontendManagement.applyModifier(data, compoundPath ? page.COMPOUND :  page.ANY)
+	data = frontendManagement.integrateEnvironment(data, page.ANY);
+	compoundPath && (data = frontendManagement.integrateEnvironment(data, page.COMPOUND));
+
+	// Template includes
+	data = templating.renderIncludes(data, localPath);
 	
 	if(!compoundPath) {
 		return data;
 	}
 
-	// Templating
+	// Template dynamics (compound page only; requires templating module)
 	try {
-		data = template(data, localPath, reducedRequestObject);
+		data = templating.renderDynamics(data, localPath, reducedRequestObject);
 	} catch(err) {
 		output.error(err, true);
 	}
