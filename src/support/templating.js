@@ -19,6 +19,8 @@ const reader = require("../interface/reader");
 
 const ClientError = require("../interface/ClientError");
 
+// TODO: Caching, regex storage?, code optimization
+
 
 const regex = {
 	block: (identifier, opening) => {
@@ -31,7 +33,7 @@ const regex = {
 	attr: name => {
 		return new RegExp(`${name}\\s*=\\s*("|')((?!("|'))(\\s|.))*("|')`, "i");
 	}
-}
+};
 
 
 class Node {
@@ -85,15 +87,17 @@ function buildTree(data, identifier) {
 
 	let curIndex = 0;
 	let curNode = tree.root;
-
-	while(true) {
+	
+	while(curIndex >= 0) {
 		const curData = data.slice(curIndex);
 
 		const open = curData.search(regex.block(identifier, true));
 		const close = curData.search(regex.block(identifier, false));
+		
+		if(open - close == 0) {
+			curIndex = -1;
 
-		if((open - close) == 0) {
-			break;
+			continue;
 		}
 
 		const minIndex = Math.min(((open < 0) ? Infinity : open), ((close < 0) ? Infinity : close));
@@ -140,7 +144,7 @@ function prepareBlock(block, blockIdentifier, attrName) {
 	const content = block.slice(openingTag.length).replace(regex.block(blockIdentifier, false), "");
 	
 	return {
-		content: content,
+		content: content.trim(),
 		source: source
 	};
 }
@@ -186,7 +190,7 @@ function renderIncludes(data, path) {
 			return content;
 		}
 
-		const filePath = value.source;
+		let filePath = value.source;
 		
 		let rendered;
 		try {
@@ -194,15 +198,27 @@ function renderIncludes(data, path) {
 				throw new ReferenceError(`Missing source on include block at '${path}'`);
 			}
 
-			rendered = reader.useReader(join(dirname(path), filePath.replace(new RegExp(`(${utils.supportFilePrefix})?([a-z0-9_-]+)(\\.html)?`), `${utils.supportFilePrefix}$2.html`)));
+			filePath = filePath.replace(new RegExp(`(${utils.supportFilePrefix})?([a-z0-9_-]+)(\\.html)?$`), `${utils.supportFilePrefix}$2.html`);
+			rendered = String(reader.useReader(join(dirname(path), filePath)));
 			
-			let unitsMap = new Map();
-			const units = content.match(new RegExp(`${regex.block(config.includeIdentifier + config.unitSuffix, true).source}((?!${regex.block(config.includeIdentifier + config.unitSuffix, false).source})(\\s|.))*${regex.block(config.includeIdentifier + config.unitSuffix, false).source}`, "gi"));
-			console.log(content);
-			(units || []).forEach(unit => {
-				console.log(unit)
-				unit = prepareBlock(unit, config.includeIdentifier + config.unitSuffix, config.nameAttributeName);
+			// Update src and href attributes according to include host location
+			// TODO: Improve for better reliability and more reference cases
+			rendered = rendered.replace(/\s(href|src)\s*=\s*("|')\s*[a-zA-Z._][a-zA-Z._/\\-]*\s*\2/g, attr => {
+				let reference = attr.match(/[a-zA-Z._/\\-]+\s*("|')$/)[0].slice(0, -1).trim();
 
+				// Get relative paths joined from value and base path
+				reference = join(dirname(filePath), reference);
+				
+				return attr.replace(/("|')\s*[a-zA-Z._/\\-]+\s*(\1)/, `$1/${reference}$2`);
+			});
+
+			// Substitute marks by related units
+			let unitsMap = new Map();
+			
+			const units = content.match(new RegExp(`${regex.block(config.includeIdentifier + config.unitSuffix, true).source}((?!${regex.block(config.includeIdentifier + config.unitSuffix, false).source})(\\s|.))*${regex.block(config.includeIdentifier + config.unitSuffix, false).source}`, "gi"));
+			(units || []).forEach(unit => {
+				unit = prepareBlock(unit, config.includeIdentifier + config.unitSuffix, config.nameAttributeName);
+				
 				unitsMap.set(unit.source, unit.content);
 			});
 			
@@ -210,7 +226,7 @@ function renderIncludes(data, path) {
 		} catch(err) {
 			output.error(err);
 		}
-		
+
 		return rendered || "";
 	}
 }
@@ -223,21 +239,17 @@ function renderDynamics(data, path, reducedRequestObject) {
 		return tree.root.getValue().content;
 	}
 
-	const templatingModulePath = join(webPath, path.replace(/\.[a-z0-9]+$/i, ".js"));
+	const templatingModulePath = join(webPath, path.replace(/(\/)(.+\.)[a-z0-9]+$/i, `$1${utils.supportFilePrefix}$2js`));
 	if(!existsSync(templatingModulePath)) {
 		// No further action if no templating module deployed
-		return tree.getValue().content;
+		return tree.root.getValue().content;
 	}
 
 	let templatingModule;
 	try {
 		templatingModule = require(templatingModulePath);
 		
-		if(!utils.isFunction(templatingModule)) {
-			throw new SyntaxError("Module does not export a function to be passed the request object");
-		}
-		
-		templatingModule = templatingModule(reducedRequestObject);
+		utils.isFunction(templatingModule) && (templatingModule = templatingModule(reducedRequestObject));
 	} catch(err) {
 		if(!(err instanceof ClientError)) {
 			output.log(`Error executing templating module '${templatingModulePath}':`);
@@ -265,6 +277,10 @@ function renderDynamics(data, path, reducedRequestObject) {
 			content = content.slice(0, childIndex) + renderBlock(node.children[i], subObject) + content.slice(childIndex);
 		}
 
+		if(firstCall) {
+			return content;
+		}
+
 		const marks = scanMarks(content);
 		
 		let rendered = "";
@@ -277,12 +293,7 @@ function renderDynamics(data, path, reducedRequestObject) {
 }
 
 
-function template(data, path, reducedRequestObject) {
-	data = renderIncludes(data, path);
-	data = renderDynamics(data, path, reducedRequestObject);
-
-	return data;
-}
-
-
-module.exports = template;
+module.exports = {
+	renderIncludes,
+	renderDynamics
+};

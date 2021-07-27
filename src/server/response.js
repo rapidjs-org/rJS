@@ -3,6 +3,8 @@ function respond(entity, status, message) {
     
 	// Retrieve default message of status code if none given
 	!message && (message = require("http").STATUS_CODES[entity.res.statusCode] || "");
+
+	message = Buffer.isBuffer(message) ? message : Buffer.from(message, "utf-8");
     
 	entity.res.setHeader("Content-Length", Buffer.byteLength(message));
 	

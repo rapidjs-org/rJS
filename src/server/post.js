@@ -67,9 +67,7 @@ function handle(entity) {
 
 		try {
 			let data = endpoint.useEndpoint(entity.url.pathname, body);
-
-			data = JSON.stringify(data);
-
+			
 			respond(entity, 200, data);
 		} catch(err) {
 			output.error(err);
