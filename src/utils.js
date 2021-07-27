@@ -9,6 +9,7 @@ function isFunction(value) {
 module.exports = {
 
 	pluginRequestPrefix: "plug-in:",
+	supportFilePrefix: "_",
 	
 	isString,
 	isFunction,

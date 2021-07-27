@@ -18,26 +18,17 @@ const {join, dirname, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("./utils");
-const output = require("./interface/output");
-const pluginManagement = require("./support/plugin-management");
-
-const isDevMode = require("./support/is-dev-mode");
+const output = require("./support/output");
+const pluginManagement = require("./interface/plugin-management");
 
 const webConfig = require("./support/config").webConfig;
+const isDevMode = require("./support/is-dev-mode");
+const page = require("./interface/page");
 
-const frontendManagement = require("./server/frontend-management");
+const frontendManagement = require("./interface/frontend-management");
+
 
 require("./server/instance.js");
-
-
-/**
- * Page environment enumeration
- */
-const page = {
-	ANY: 0,
-	COMPOUND: 1,
-	SPECIFIC: 2
-};
 
 
 // Core interface
@@ -51,8 +42,7 @@ const appInterface = {
 	...generalInterface,
 	... {
 		connect,
-		setReader: require("./interface/reader").setReader,
-		setRequestInterceptor: require("./interface/request-interceptor").setRequestInterceptor
+		setReader: require("./interface/reader").setReader
 	}
 };
 const pluginInterface = {
@@ -65,13 +55,8 @@ const pluginInterface = {
 		
 		initFrontendModule,
 		setEndpoint: require("./interface/endpoint").setEndpoint,
-		addResponseModifier: require("./interface/response-modifier").addResponseModifier,
 
 		utility: {
-			output,
-			webPath: require("./support/web-path"),
-
-			block: require("./interface/block-manipulation"),
 			readConfig,
 			useReader: require("./interface/reader").useReader,
 			createCache: _ => {
@@ -121,6 +106,13 @@ function connect(reference, name) {
 	}
 }
 
+// TODO: Implement includes feature
+// TODO: Integrate ClientError interface comprehensively
+// TODO: Clean up reader
+// TODO: Implement finalizer?
+// TODO: Implement URL rewrite feature?
+// TODO: Clean/code up templating module and usage
+// TODO: General clean up
 
 /**
  * Initialize the frontend module of a plug-in.
@@ -180,27 +172,9 @@ function initFrontendModuleHelper(path, pluginConfig, pageEnvironment, pluginPat
 		})(${config.frontendModuleAppName} || {});
 	`;	// TODO: rapidJS.scope = ...(no access to entire scope from within)
 	
-	const frontendFileLocation = `/${utils.pluginRequestPrefix}${pluginName}`;
-	
-	// Add response modifier for inserting the script tag into document markup files
-	let modExtension;
-	switch(pageEnvironment) {
-	case page.ANY:
-		modExtension = "html";
-		break;
-	case page.COMPOUND:
-		modExtension = ":html";
-		break;
-	}
-	
-	modExtension && pluginInterface.addResponseModifier(modExtension, data => {
-		// Insert referencing script tag into page head (if exists)
-		return utils.injectIntoHead(data, `<script src="${frontendFileLocation}"></script>`);
-	});
-	
 	// Add GET route to retrieve frontend module script
-	frontendManagement.registerModule(pluginName, frontendFileLocation, frontendModuleData);
-}
+	frontendManagement.registerModule(pluginName, frontendModuleData, pageEnvironment);
+}	// TODO: Auto-init (via connect)!!!
 
 /**
  * Get a value from the config object stored in the plug-in related sib object.
@@ -224,3 +198,5 @@ initFrontendModuleHelper("./frontend.js", {
 
 
 module.exports = appInterface;
+
+// TODO: Implement templating feature on core (including to "includes" functionality)

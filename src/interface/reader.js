@@ -1,8 +1,9 @@
+const {extname, join} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
-const {normalizeExtension, isFunction, isString} = require("../utils");
-
-const output = require("./output");
+const utils = require("../utils");
+const webPath = require("../support/web-path");
+const output = require("../support/output");
 
 
 let readerHandlers = {};
@@ -13,10 +14,10 @@ module.exports = {
 	 * Set up a handler to read each GET request response data of a certain file extension in a specific manner (instead of using the default reader).
 	 * By nature of a reading process only one reader handler may be set per extension (overriding allowed).
 	 * @param {String} extension Extension name (without a leading dot)
-	 * @param {Function} callback Callback getting passed the the associated pathname. The callback has to return serialized data (Buffer or String). Throwing an error code will lead to a related response.
+	 * @param {Function} callback Callback getting passed the the associated request object. The callback has to return serialized data (Buffer or String). Throwing a client error will lead to a respective response.
 	 */
 	setReader: (extension, callback) => {
-		extension = normalizeExtension(extension);
+		extension = utils.normalizeExtension(extension);
 
 		(extension.length == 0) && (extension = "html");
 
@@ -27,24 +28,32 @@ module.exports = {
 
 	/**
 	 * Call reader for a specific extension.
-	 * @param {String} extension Extension name (without a leading dot)
-	 * @param {String} pathname Path to file to be read
+	 * @param {String} pathname Web directory relative path to file to be read
 	 * @returns {String|Buffer} Serialized read data (plain contents string if no according reader defined)
 	 */
-	useReader: (extension, pathname) => {
-		if(!isFunction(readerHandlers[extension])) {
-			if(!existsSync(pathname)) {	// TODO: Error only if externally used
-				throw new ReferenceError(`Neither explicit reader for extension '${extension}' nor file found at '${pathname}'`);
+	useReader: (pathname) => {
+		// TODO: Read from compound directory if exists?
+
+		const extension = utils.normalizeExtension(extname(pathname));
+
+		if(!readerHandlers[extension]) {
+			const localPath = join(webPath, pathname);
+			
+			if(!existsSync(localPath)) {	// TODO: Error only if externally used
+				throw new ReferenceError(`File not found at '${pathname}'`);
 			}
 			
-			return readFileSync(pathname);
+			return String(readFileSync(localPath));
+		}
+		if(!utils.isFunction(readerHandlers[extension])) {
+			throw new TypeError(`Given explicit reader handler for extension '${extension}' of type '${typeof(readerHandlers[extension])}, expecting Function'`);
 		}
 
-		const data = readerHandlers[extension](pathname);
-		if(!isString(data) && !Buffer.isBuffer(data)) {
+		const data = readerHandlers[extension]();
+		if(!utils.isString(data) && !Buffer.isBuffer(data)) {
 			throw new TypeError(`Explicit reader for extension "${extension}" does not return serialized data of type String or Buffer, given ${typeof(data)} instead.`);
 		}
 
-		return readerHandlers[extension](pathname);
+		return data;
 	}
 };
