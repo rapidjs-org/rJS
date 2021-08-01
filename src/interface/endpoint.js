@@ -14,7 +14,7 @@ module.exports =  {
 	set: (callback, useCache = false) => {
 		const pluginName = getNameByPath(utils.getCallerPath(__filename));
 		const pathname = `/${pluginName}`;
-		
+				
 		if(routeHandlers.has(pathname)){
 			throw new ReferenceError(`Overriding endpoint for plug-in with name '${pluginName}'`);
 		}
@@ -29,13 +29,11 @@ module.exports =  {
 		return routeHandlers.has(pathname) ? true : false;
 	},
 
-	use: (body, reducedRequestObject) => {
-		const pathname = reducedRequestObject.pathname;
-		
+	use: (pathname, body, reducedRequestObject) => {
 		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}
-		
+
 		// TODO: Provide request location instead of endpoint URL in reduced req obj!
 		
 		const data = routeHandlers.get(pathname).callback.call(null, body, reducedRequestObject);
