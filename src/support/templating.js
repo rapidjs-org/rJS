@@ -176,7 +176,7 @@ function subMarks(content, marks, strategy) {
 }
 
 
-function renderIncludes(data, path, reducedRequestObject) {
+function renderIncludes(data, reducedRequestObject) {
 	const tree = buildTree(data, config.includeIdentifier);
 	if(tree.root.children.length == 0) {
 		// No further action if no blocks found
@@ -202,25 +202,23 @@ function renderIncludes(data, path, reducedRequestObject) {
 		let filePath = value.source;
 		
 		if(!filePath) {
-			throw new ReferenceError(`Missing source on include block at '${path}'`);
+			throw new ReferenceError(`Missing source on include block at '${reducedRequestObject.pathname}'`);
 		}
 		
 		let rendered;
 
 		filePath = filePath.replace(new RegExp(`(${config.supportFilePrefix})?([a-z0-9_-]+)(\\.html)?$`), `${config.supportFilePrefix}$2.html`);
-		rendered = String(readFile(join(dirname(path), filePath)));
+		rendered = String(readFile(join(dirname(reducedRequestObject.pathname), filePath)));
 
 		// Update src and href attributes according to include host location
 		// TODO: Improve for better reliability and more reference cases
-		rendered = rendered.replace(/\s(href|src)\s*=\s*("|')\s*(\.{1,2}\/)?[a-z0-9._-][a-z0-9._-]*\s*\2/gi, attr => {
+		rendered = rendered.replace(/\s(href|src)\s*=\s*("|')\s*(\.{1,2}\/)?[a-z0-9._-][a-z0-9./_-]*\s*\2/gi, attr => {
 			const valueIndex = attr.search(/("|')/) + 1;
 
 			// Get relative paths joined from value and base path
 			let reference = attr.slice(valueIndex, -1).trim();
-			reference = join(reducedRequestObject.pathname.replace(/([^/])$/, "$1/"), dirname(filePath), reference);
-				console.log(dirname(reducedRequestObject.pathname))
-				console.log(reducedRequestObject.pathname.replace(/([^/])$/, "$1/"))
-				console.log(reference)
+			reference = join(reducedRequestObject.base || dirname(reducedRequestObject.pathname), dirname(filePath), reference);
+
 			const i18nPart = `${reducedRequestObject.lang ? reducedRequestObject.lang : ""}${reducedRequestObject.locale ? `${reducedRequestObject.lang ? "-" : ""}${reducedRequestObject.locale}` : ""}`;
 			
 			return `${attr.slice(0, valueIndex)}${i18nPart ? `/${i18nPart}` : ""}${reference}${attr.slice(-1)}`;
@@ -242,7 +240,7 @@ function renderIncludes(data, path, reducedRequestObject) {
 	}
 }
 
-function renderDynamics(data, path, reducedRequestObject) {
+function renderDynamics(data, reducedRequestObject) {
 	const tree = buildTree(data, config.dynamicIdentifier);
 
 	if(tree.root.children.length == 0) {
@@ -250,7 +248,7 @@ function renderDynamics(data, path, reducedRequestObject) {
 		return tree.root.getValue().content;
 	}
 
-	const templatingModulePath = join(webPath, path.replace(/(\/)(.+\.)[a-z0-9]+$/i, `$1${config.supportFilePrefix}$2js`));
+	const templatingModulePath = join(webPath, reducedRequestObject.pathname.replace(/(\/)(.+\.)[a-z0-9]+$/i, `$1${config.supportFilePrefix}$2js`));
 	if(!existsSync(templatingModulePath)) {
 		// No further action if no templating module deployed
 		return tree.root.getValue().content;
@@ -277,7 +275,7 @@ function renderDynamics(data, path, reducedRequestObject) {
 		let content = value.content;
 
 		if(!value.source && !firstCall) {
-			output.error(`Missing source on dynamic block at '${path}'`);
+			output.error(`Missing source on dynamic block at '${reducedRequestObject.pathname}'`);
 		}
 
 		let subObject = !value.source ? object : (object || {})[value.source];

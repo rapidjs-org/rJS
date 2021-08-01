@@ -8,5 +8,7 @@
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
-    "portHttp": 80
+    "port": {
+        "http": 80
+    }
 }

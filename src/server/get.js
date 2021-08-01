@@ -1,18 +1,12 @@
 const config = {
-	compoundObject: {
-		name: "compoundPage",
-		basePathProperty: "base",
-		argumentsProperty: "args",
-	},
-	compoundPageDirPrefix: ":",
-	defaultFileName: "index",
 	supportFilePrefix: "_"	// TODO: Used among two modules, fix
 };
 
 
-const {dirname, join, basename} = require("path");
+const {join, extname, dirname, basename} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
+const {parse: parseUrl} = require("url");
 
 const utils = require("../utils");
 
@@ -61,24 +55,26 @@ function respondWithError(entity, status) {
 
 		return;
 	}
+
+	// TODO: Build error tree successively to reduce computation throughout runtime?
 	
 	let errorPageDir = entity.url.pathname;
 	do {
 		errorPageDir = dirname(errorPageDir);
 
-		let errorPagePath = join(errorPageDir, String(status));
+		const errorPagePath = join(errorPageDir, `${String(status)}.html`);
         
-		if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
-			let data = processFile(entity, false, errorPagePath);
+		if(existsSync(join(webPath, errorPagePath))) {
+			entity.url = {
+				...entity.url,
+				...utils.getPathInfo(errorPagePath)
+			};
 
+			let data = processFile(entity, false, errorPagePath);
+			
 			// Normalize references by updating the base URL accordingly
 			data = utils.injectIntoHead(data, `
-            <script>
-                const base = document.createElement("base");
-                base.setAttribute("href", document.location.protocol + "//" + document.location.host + "${errorPageDir}");
-                document.querySelector("head").appendChild(base);
-                document.currentScript.parentNode.removeChild(document.currentScript);
-            </script>`);	// TODO: Efficitenly retrieve hostname to insert base tag already
+			<base href="http${webConfig.port.https ? "s" : ""}://${entity.req.headers["host"]}"></base>`);
 
 			respond(entity, status, data);
 
@@ -92,49 +88,12 @@ function respondWithError(entity, status) {
 
 
 function processFile(entity, isStaticRequest, pathname) {
-	// Add default file name if none explicitly stated in request URL
-	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
-
-	let localPath = pathname;
-	
-	!isStaticRequest && (localPath = `${localPath.replace(/\/$/, `/${config.defaultFileName}`)}.html`);
-
-	// Use compound page path if respective directory exists
-	let compoundPath;
-	if(!isStaticRequest) {
-		let isCompoundPage = false;
-
-		compoundPath = "";
-		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
-		for(let part of pathParts) {
-			// Construct possible internal compound path
-			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.html`);
-			
-			compoundPath = join(compoundPath, part);
-
-			// Return compound path if related file exists in file system
-			if(existsSync(join(webPath, localCompoundPath))) {
-				localPath = localCompoundPath;
-
-				isCompoundPage = true;
-
-				break;
-			}
-		}
-		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
-		
-		if(!isCompoundPage) {
-			compoundPath = null;
-		}
-	}
-	
 	let data;
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = readFile(localPath);	// Pass red req obj?
+		data = readFile(pathname);
 	} catch(err) {
-		
 		throw new ClientError(404);
 	}
 	
@@ -147,43 +106,25 @@ function processFile(entity, isStaticRequest, pathname) {
 
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, Environment.ANY);
-	compoundPath && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
+	entity.url.isCompound && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
 
 	const reducedRequestObject = utils.createReducedRequestObject(entity);
-
+		
 	// Template includes
-	data = templating.renderIncludes(data, localPath, reducedRequestObject);
+	data = templating.renderIncludes(data, reducedRequestObject);
 	
-	if(!compoundPath) {
+	// No more processing on default page markup data
+	if(!entity.url.isCompound) {
 		return data;
 	}
 
 	// Template dynamics (compound page only; requires templating module)
 	try {
-		data = templating.renderDynamics(data, localPath, reducedRequestObject);
+		data = templating.renderDynamics(data, reducedRequestObject);
 	} catch(err) {
 		output.error(err, true);
 	}
 
-	// Implement compound page information into compound pages
-	let serializedArgsArray = pathname.slice(compoundPath.length + 2)
-		.split(/\//g)
-		.filter(arg => arg.length > 0);
-	serializedArgsArray = (serializedArgsArray.length > 0)
-		? serializedArgsArray
-			.map(arg => `"${arg}"`)
-			.join(",")
-		: null;
-	
-	data = utils.injectIntoHead(String(data), `
-	<script>
-		rapidJS.${config.compoundObject.name} = {
-			${config.compoundObject.basePathProperty}: "/${compoundPath}",
-			${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
-		};
-		document.currentScript.parentNode.removeChild(document.currentScript);
-	</script>`, true);
-	
 	return data;
 }
 
@@ -192,6 +133,9 @@ function processFile(entity, isStaticRequest, pathname) {
  * @param {Object} entity Open connection entity
  */
 function handle(entity) {
+	const urlParts = parseUrl(entity.req.url, true);
+	entity.url.pathname = i18n.adjustPathname(urlParts.pathname);
+	
 	let data;
 
 	if(data = pluginManagement.retrieveFrontendModule(entity.url.pathname)) {
@@ -201,12 +145,23 @@ function handle(entity) {
 		
 		return;
 	}
-	
-	// Prepare request according to i18n settings
-	entity.url = i18n.prepare(entity.url);
+
+	entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
 	
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 	
+	// Prepare request according to i18n settings
+	if(!isStaticRequest) {
+		entity.url = i18n.prepare(entity.url);
+		entity.url.base && (entity.url.base = i18n.adjustPathname(entity.url.base));
+
+		entity.url = {
+			...entity.url,
+			...utils.getPathInfo(entity.url.pathname)
+		};
+	};
+	entity.url.query = urlParts.query;
+
 	// Set client-side cache control for static files
 	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 	
@@ -230,7 +185,7 @@ function handle(entity) {
 
 	try {
 		data = processFile(entity, isStaticRequest, entity.url.pathname);
-
+		
 		// Set server-side cache
 		isStaticRequest && staticCache.write(entity.url.pathname, data);
 		

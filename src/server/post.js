@@ -1,11 +1,12 @@
 const utils = require("../utils");
 
-const response = require("./response");
-
 const webConfig = require("../support/web-config").webConfig;
-
 const output = require("../support/output");
+const i18n = require("../support/i18n");
+
 const endpoint = require("../interface/endpoint");
+
+const response = require("./response");
 
 
 function respond(entity, status, message) {
@@ -21,8 +22,10 @@ function respond(entity, status, message) {
  * Handle a POST request accordingly.
  * @param {Object} entity Open connection entity
  */
-function handle(entity) {
-	if(!endpoint.has(entity.url.pathname)) {
+function handle(entity, pathname) {
+	pathname = i18n.adjustPathname(pathname);
+
+	if(!endpoint.has(pathname)) {
 		// No related POST handler defined
 		respond(entity, 404);
 
@@ -64,7 +67,9 @@ function handle(entity) {
 		}
 
 		try {
-			const data = endpoint.use(body, utils.createReducedRequestObject(entity));
+			entity.url = utils.getPathInfo(i18n.adjustPathname(body.meta.pathname));
+
+			const data = endpoint.use(pathname, body.body, utils.createReducedRequestObject(entity));
 			
 			respond(entity, 200, data);
 		} catch(err) {
