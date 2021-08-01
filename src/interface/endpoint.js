@@ -1,7 +1,7 @@
-const cache = require("../support/cache");
-const pluginManagement = require("./plugin-management");
+const cache = require("./cache")();
+const {getNameByPath} = require("./plugin-management");
 
-const {getCallerPath} = require("../utils");
+const utils = require("../utils");
 
 const routeHandlers = new Map();
 
@@ -11,28 +11,34 @@ module.exports =  {
 	 * @param {Function} callback Callback getting passed the request body object to be handled for creating and returning the response data
 	 * @param {Boolean} [useCache=false] Whether to cache the processed response using the server-side cache
 	 */
-	setEndpoint: (callback, useCache = false) => {
-		const pathname = pluginManagement.getName(getCallerPath(__filename));
+	set: (callback, useCache = false) => {
+		const pluginName = getNameByPath(utils.getCallerPath(__filename));
+		const pathname = `/${pluginName}`;
+		
+		if(routeHandlers.has(pathname)){
+			throw new ReferenceError(`Overriding endpoint for plug-in with name '${pluginName}'`);
+		}
 
-		routeHandlers.set(`/${pathname}`, {
+		routeHandlers.set(pathname, {
 			callback: callback,
 			useCache: useCache
 		});
-		// TODO: Argument whether to apply related response modifiers to route handler response (false by default)?
 	},
 
-	hasEndpoint: (pathname) => {
+	has: (pathname) => {
 		return routeHandlers.has(pathname) ? true : false;
 	},
 
-	useEndpoint: (pathname, args) => {
+	use: (body, reducedRequestObject) => {
+		const pathname = reducedRequestObject.pathname;
+		
 		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}
 		
-		(args && !Array.isArray(args)) && (args = [args]);
-
-		const data = routeHandlers.get(pathname).callback.apply(null, args);
+		// TODO: Provide request location instead of endpoint URL in reduced req obj!
+		
+		const data = routeHandlers.get(pathname).callback.call(null, body, reducedRequestObject);
 		routeHandlers.get(pathname).useCache && (cache.write(pathname, data));
 		
 		return data;

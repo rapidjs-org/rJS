@@ -1,4 +1,4 @@
-const cachingDuration = require("./is-dev-mode") ? null : require("./config").webConfig.cachingDuration.server;
+const cachingDuration = require("../support/is-dev-mode") ? null : require("../support/web-config").webConfig.cachingDuration.server;
 
 const storage = new Map();
 
@@ -7,7 +7,7 @@ function checkEmpty(key, cachingDuration) {
 		return true;
 	}
 
-	if((storage.get(key).time + (cachingDuration || Math.infiniti)) < Date.now()) {
+	if((storage.get(key).time + (cachingDuration || Infinity)) < Date.now()) {
 		storage.delete(key);
 		
 		return true;
@@ -66,4 +66,4 @@ function createCache() {
 }
 
 
-module.exports = createCache();
+module.exports = createCache;

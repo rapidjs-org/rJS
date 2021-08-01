@@ -4,7 +4,8 @@ const config = {
 	includeIdentifier: "include",
 	nameAttributeName: "name",
 	sourceAttributeName: "src",
-	unitSuffix: "-unit",
+	supportFilePrefix: "_",
+	unitSuffix: "-unit"
 };
 
 
@@ -15,7 +16,7 @@ const utils = require("../utils");
 const output = require("./output");
 const webPath = require("./web-path");
 
-const reader = require("../interface/reader");
+const readFile = require("../interface/reader");
 
 const ClientError = require("../interface/ClientError");
 
@@ -42,7 +43,7 @@ class Node {
 		this.parent = null;
 
 		this.value = value;
-		this.childIndexes = [];
+		this.index = null;
 	}
 
 	setParent(node) {
@@ -61,8 +62,12 @@ class Node {
 	getValue() {
 		return this.value;
 	}
-	addChildIndex(index) {
-		this.childIndexes.push(index);
+
+	setIndex(index) {
+		this.index = index;
+	}
+	getIndex() {
+		return this.index;
 	}
 }
 
@@ -72,8 +77,10 @@ class Tree {
 	}
 
 	append(parentNode, index) {
-		const node = new Node(index);
+		const node = new Node();
 
+		node.setIndex(index);	
+	
 		node.setParent(parentNode);
 		parentNode.addChild(node);
 
@@ -107,15 +114,18 @@ function buildTree(data, identifier) {
 		
 		if(!isOpening && curNode != tree.root) {
 			const endIndex = curIndex + curData.match(regex.block(identifier, false))[0].length;
-			curIndex = curNode.getValue();
+			curIndex = curNode.getIndex();
 
 			let block = data.slice(curIndex, endIndex);
+
 			curNode.setValue(prepareBlock(block, identifier, config.sourceAttributeName));
 
 			data = data.slice(0, curIndex) + data.slice(endIndex);
 			
 			const parentNode = curNode.getParent();
-			parentNode.addChildIndex(curIndex - (parentNode.getValue() || 0));
+
+			curNode.setIndex(curIndex - (parentNode.getIndex() || 0));
+
 			curNode = parentNode;
 
 			continue;
@@ -159,15 +169,14 @@ function scanMarks(content) {
 
 function subMarks(content, marks, strategy) {
 	marks.forEach(mark => {
-		const regex = new RegExp(`\\{\\{\\s*${mark}\\s*\\}\\}`, "g");
-		content = content.replace(regex, String(strategy(mark)));
+		content = content.replace(new RegExp(`\\{\\{\\s*${mark}\\s*\\}\\}`, "g"), String(strategy(mark)));
 	});
 
 	return content;
 }
 
 
-function renderIncludes(data, path) {
+function renderIncludes(data, path, reducedRequestObject) {
 	const tree = buildTree(data, config.includeIdentifier);
 	if(tree.root.children.length == 0) {
 		// No further action if no blocks found
@@ -180,9 +189,9 @@ function renderIncludes(data, path) {
 	function renderBlock(node, firstCall = false) {
 		const value = node.getValue();
 		let content = value.content;
-
+		
 		for(let i = ((node.children || []).length - 1); i >= 0; i--) {
-			const childIndex = node.childIndexes[i];
+			const childIndex = node.children[i].getIndex();
 			content = content.slice(0, childIndex) + renderBlock(node.children[i]) + content.slice(childIndex);
 		}
 
@@ -192,41 +201,43 @@ function renderIncludes(data, path) {
 
 		let filePath = value.source;
 		
-		let rendered;
-		try {
-			if(!filePath) {
-				throw new ReferenceError(`Missing source on include block at '${path}'`);
-			}
-
-			filePath = filePath.replace(new RegExp(`(${utils.supportFilePrefix})?([a-z0-9_-]+)(\\.html)?$`), `${utils.supportFilePrefix}$2.html`);
-			rendered = String(reader.useReader(join(dirname(path), filePath)));
-			
-			// Update src and href attributes according to include host location
-			// TODO: Improve for better reliability and more reference cases
-			rendered = rendered.replace(/\s(href|src)\s*=\s*("|')\s*[a-zA-Z._][a-zA-Z._/\\-]*\s*\2/g, attr => {
-				let reference = attr.match(/[a-zA-Z._/\\-]+\s*("|')$/)[0].slice(0, -1).trim();
-
-				// Get relative paths joined from value and base path
-				reference = join(dirname(filePath), reference);
-				
-				return attr.replace(/("|')\s*[a-zA-Z._/\\-]+\s*(\1)/, `$1/${reference}$2`);
-			});
-
-			// Substitute marks by related units
-			let unitsMap = new Map();
-			
-			const units = content.match(new RegExp(`${regex.block(config.includeIdentifier + config.unitSuffix, true).source}((?!${regex.block(config.includeIdentifier + config.unitSuffix, false).source})(\\s|.))*${regex.block(config.includeIdentifier + config.unitSuffix, false).source}`, "gi"));
-			(units || []).forEach(unit => {
-				unit = prepareBlock(unit, config.includeIdentifier + config.unitSuffix, config.nameAttributeName);
-				
-				unitsMap.set(unit.source, unit.content);
-			});
-			
-			rendered = subMarks(rendered, scanMarks(rendered), mark => unitsMap.get(mark) || "");
-		} catch(err) {
-			output.error(err);
+		if(!filePath) {
+			throw new ReferenceError(`Missing source on include block at '${path}'`);
 		}
+		
+		let rendered;
 
+		filePath = filePath.replace(new RegExp(`(${config.supportFilePrefix})?([a-z0-9_-]+)(\\.html)?$`), `${config.supportFilePrefix}$2.html`);
+		rendered = String(readFile(join(dirname(path), filePath)));
+
+		// Update src and href attributes according to include host location
+		// TODO: Improve for better reliability and more reference cases
+		rendered = rendered.replace(/\s(href|src)\s*=\s*("|')\s*(\.{1,2}\/)?[a-z0-9._-][a-z0-9._-]*\s*\2/gi, attr => {
+			const valueIndex = attr.search(/("|')/) + 1;
+
+			// Get relative paths joined from value and base path
+			let reference = attr.slice(valueIndex, -1).trim();
+			reference = join(reducedRequestObject.pathname.replace(/([^/])$/, "$1/"), dirname(filePath), reference);
+				console.log(dirname(reducedRequestObject.pathname))
+				console.log(reducedRequestObject.pathname.replace(/([^/])$/, "$1/"))
+				console.log(reference)
+			const i18nPart = `${reducedRequestObject.lang ? reducedRequestObject.lang : ""}${reducedRequestObject.locale ? `${reducedRequestObject.lang ? "-" : ""}${reducedRequestObject.locale}` : ""}`;
+			
+			return `${attr.slice(0, valueIndex)}${i18nPart ? `/${i18nPart}` : ""}${reference}${attr.slice(-1)}`;
+		});
+		
+		// Substitute marks by related units
+		let unitsMap = new Map();
+		
+		const units = content.match(new RegExp(`${regex.block(config.includeIdentifier + config.unitSuffix, true).source}((?!${regex.block(config.includeIdentifier + config.unitSuffix, false).source})(\\s|.))*${regex.block(config.includeIdentifier + config.unitSuffix, false).source}`, "gi"));
+		(units || []).forEach(unit => {
+			unit = prepareBlock(unit, config.includeIdentifier + config.unitSuffix, config.nameAttributeName);
+			
+			unitsMap.set(unit.source, unit.content);
+		});
+		
+		rendered = subMarks(rendered, scanMarks(rendered), mark => unitsMap.get(mark) || "");
+		
 		return rendered || "";
 	}
 }
@@ -239,7 +250,7 @@ function renderDynamics(data, path, reducedRequestObject) {
 		return tree.root.getValue().content;
 	}
 
-	const templatingModulePath = join(webPath, path.replace(/(\/)(.+\.)[a-z0-9]+$/i, `$1${utils.supportFilePrefix}$2js`));
+	const templatingModulePath = join(webPath, path.replace(/(\/)(.+\.)[a-z0-9]+$/i, `$1${config.supportFilePrefix}$2js`));
 	if(!existsSync(templatingModulePath)) {
 		// No further action if no templating module deployed
 		return tree.root.getValue().content;
@@ -253,9 +264,9 @@ function renderDynamics(data, path, reducedRequestObject) {
 	} catch(err) {
 		if(!(err instanceof ClientError)) {
 			output.log(`Error executing templating module '${templatingModulePath}':`);
+			
+			throw err;
 		}
-
-		throw err;
 	}
 
 	// Run tree for render
@@ -273,7 +284,7 @@ function renderDynamics(data, path, reducedRequestObject) {
 		subObject = utils.isFunction(subObject) ? subObject() : (subObject || []);
 		
 		for(let i = ((node.children || []).length - 1); i >= 0; i--) {
-			const childIndex = node.childIndexes[i];
+			const childIndex = node.children[i].getIndex();
 			content = content.slice(0, childIndex) + renderBlock(node.children[i], subObject) + content.slice(childIndex);
 		}
 
