@@ -5,15 +5,19 @@ const iso = {
     locale: require("./locale.json")
 };
 
+function getPart(pathname) {
+    const part = pathname.match(/^\/([a-z]{2}(-[A-Z]{2})?|[A-Z]{2})(?:\/|$)/);
+    
+    return part ? part[0] : undefined;
+}
+
 function prepare(entityUrl) {
-    const part = (entityUrl.pathname.match(/^\/([a-z]{2}(-[A-Z]{2})?|[A-Z]{2})\//) || [])[0];
+    const part = getPart(entityUrl.pathname);
 
     if(!part) {
         return entityUrl;
     }
 
-    omitInternally && (entityUrl.pathname = entityUrl.pathname.slice(part.length - 1));
-    
     const lang = (part.match(/[a-z]{2}/) || [])[0];
     const locale = (part.match(/[A-Z]{2}/) || [])[0];
 
@@ -23,6 +27,17 @@ function prepare(entityUrl) {
     return entityUrl;
 }
 
+function adjustPathname(pathname) {
+    if(!omitInternally) {
+        return entityUrl;
+    }
+
+    const part = getPart(pathname);
+    
+    return part ? `/${pathname.slice(part.length)}` : pathname;
+}
+
 module.exports = {
-    prepare
+    prepare,
+    adjustPathname
 }

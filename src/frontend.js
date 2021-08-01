@@ -34,7 +34,12 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 			},
 			redirect: "follow",
 			referrerPolicy: "no-referrer",
-			body: JSON.stringify(body)
+			body: JSON.stringify({
+				meta: {
+					pathname: document.location.pathname
+				},
+				body: body
+			})
 		}).then(async res => {
 			// Explicitly download body to handle progress
 			const contentLength = res.headers.get("Content-Length");

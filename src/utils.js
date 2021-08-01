@@ -1,3 +1,13 @@
+const config = {
+	compoundPageDirPrefix: ":",
+	defaultFileName: "index"
+};
+
+
+const {join} = require("path");
+const {existsSync} = require("fs");
+
+const webPath = require("./support/web-path");
 const output = require("./support/output");
 
 
@@ -77,14 +87,52 @@ module.exports = {
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
 			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
-			pathname: entity.url.pathname,
 			lang: entity.url.lang,
 			locale: entity.url.locale,
-			queryParameter: entity.url.query,
+			pathname: entity.url.pathname,
+			isCompound: entity.url.isCompound,
+			... entity.url.isCompound
+			? {
+				base: entity.url.base,
+				args: entity.url.args
+			}
+			: {}
 		};
+	},
+
+	getPathInfo: (pathname) => {
+		// Use compound page path if respective directory exists
+		let compoundPath = "";
+		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
+		for(let part of pathParts) {
+			// Construct possible internal compound path
+			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.html`);
+			compoundPath = join(compoundPath, part);
+			
+			// Return compound path if related file exists in file system
+			if(existsSync(join(webPath, localCompoundPath))) {
+				const args = pathname.slice(compoundPath.length + 2)
+							.split(/\//g)
+							.filter(arg => arg.length > 0);
+				
+				return {
+					isCompound: true,
+					pathname: localCompoundPath,
+					base: `/${compoundPath}`,
+					args: args
+				};
+			}
+		}
+		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
+		
+		// Add default file name if none explicitly stated in request URL
+		pathname = `${pathname.replace(/\/$/, `/${config.defaultFileName}`)}`;
+		pathname += ".html";
+		
+		return {
+			isCompound: false,
+			pathname: pathname
+		}
 	}
-
-
-	// TODO: Helper => checkPageType for path (is compound? ~ get base)
 
 };
