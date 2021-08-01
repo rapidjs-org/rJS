@@ -5,7 +5,8 @@ const config = {
 		argumentsProperty: "args",
 	},
 	compoundPageDirPrefix: ":",
-	defaultFileName: "index"
+	defaultFileName: "index",
+	supportFilePrefix: "_"	// TODO: Used among two modules, fix
 };
 
 
@@ -15,19 +16,19 @@ const {gzipSync} = require("zlib");
 
 const utils = require("../utils");
 
-const templating = require("../support/templating");
-
-const webPath = require("../support/web-path");
-const staticCache = require("../support/cache");
-const output = require("../support/output");
 const isDevMode = require("../support/is-dev-mode");
+const webPath = require("../support/web-path");
+const output = require("../support/output");
+const i18n = require("../support/i18n");
+const templating = require("../support/templating");
+const webConfig = require("../support/web-config").webConfig;
+const mimesConfig = require("../support/web-config").mimesConfig;
 
-const webConfig = require("../support/config").webConfig;
-const mimesConfig = require("../support/config").mimesConfig;
-
-const frontendManagement = require("../interface/frontend-management");
-const page = require("../interface/page");
-const reader = require("../interface/reader");
+const readFile = require("../interface/reader");
+const staticCache = require("../interface/cache")();
+const pluginManagement = require("../interface/plugin-management");
+const Environment = require("../interface/Environment");
+const ClientError = require("../interface/ClientError");
 
 const response = require("./response");
 
@@ -55,12 +56,12 @@ function respond(entity, status, message) {
  */
 function respondWithError(entity, status) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
-	if(entity.url.extname != "html") {
+	if(entity.url.extension != "html") {
 		respond(entity, status);
 
 		return;
 	}
-
+	
 	let errorPageDir = entity.url.pathname;
 	do {
 		errorPageDir = dirname(errorPageDir);
@@ -68,9 +69,9 @@ function respondWithError(entity, status) {
 		let errorPagePath = join(errorPageDir, String(status));
         
 		if(existsSync(`${join(webPath, errorPagePath)}.html`)) {
-			let data = processFile(entity, false, errorPagePath, "html", null);
-            
-			// Normalize references by updating the base URL accordingly (as will keep error URL in frontend)
+			let data = processFile(entity, false, errorPagePath);
+
+			// Normalize references by updating the base URL accordingly
 			data = utils.injectIntoHead(data, `
             <script>
                 const base = document.createElement("base");
@@ -90,7 +91,7 @@ function respondWithError(entity, status) {
 }
 
 
-function processFile(entity, isStaticRequest, pathname, extension, queryParameterObj) {
+function processFile(entity, isStaticRequest, pathname) {
 	// Add default file name if none explicitly stated in request URL
 	pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
 
@@ -107,7 +108,7 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
 		for(let part of pathParts) {
 			// Construct possible internal compound path
-			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.${extension}`);
+			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.html`);
 			
 			compoundPath = join(compoundPath, part);
 
@@ -128,25 +129,13 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 	}
 	
 	let data;
-
-	// Construct reduced request object to be passed to each response modifier handler
-	const reducedRequestObject = {
-		ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
-		pathname: localPath,
-		queryParameter: queryParameterObj
-	};
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = reader.useReader(localPath);	// Pass red req obj?
+		data = readFile(localPath);	// Pass red req obj?
 	} catch(err) {
-		if(err instanceof ReferenceError) {
-			throw new (require("../interface/ClientError"))(404);
-		}
-
-		output.log("Error reading requested file:");
-
-		throw err;
+		
+		throw new ClientError(404);
 	}
 	
 	// No more processing on static file data
@@ -157,11 +146,13 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 	data = String(data);	// Further processig steps will need string representation of input
 
 	// Sequentially apply defined plug-in module modifiers
-	data = frontendManagement.integrateEnvironment(data, page.ANY);
-	compoundPath && (data = frontendManagement.integrateEnvironment(data, page.COMPOUND));
+	data = pluginManagement.buildEnvironment(data, Environment.ANY);
+	compoundPath && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
+
+	const reducedRequestObject = utils.createReducedRequestObject(entity);
 
 	// Template includes
-	data = templating.renderIncludes(data, localPath);
+	data = templating.renderIncludes(data, localPath, reducedRequestObject);
 	
 	if(!compoundPath) {
 		return data;
@@ -186,7 +177,7 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
 	
 	data = utils.injectIntoHead(String(data), `
 	<script>
-		rapidJS.core.${config.compoundObject.name} = {
+		rapidJS.${config.compoundObject.name} = {
 			${config.compoundObject.basePathProperty}: "/${compoundPath}",
 			${config.compoundObject.argumentsProperty}: ${serializedArgsArray ? `[${serializedArgsArray}]`: "null"}
 		};
@@ -202,17 +193,18 @@ function processFile(entity, isStaticRequest, pathname, extension, queryParamete
  */
 function handle(entity) {
 	let data;
-	
-	if(frontendManagement.has(entity.url.pathname)) {
-		data = frontendManagement.get(entity.url.pathname);
 
+	if(data = pluginManagement.retrieveFrontendModule(entity.url.pathname)) {
 		entity.url.extension = "js";
 
 		respond(entity, 200, data);
 		
 		return;
 	}
-
+	
+	// Prepare request according to i18n settings
+	entity.url = i18n.prepare(entity.url);
+	
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 	
 	// Set client-side cache control for static files
@@ -221,7 +213,7 @@ function handle(entity) {
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
 	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)
-	|| (new RegExp(`^${utils.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
+	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
 		respondWithError(entity, 403);
 		
 		return;
@@ -237,7 +229,7 @@ function handle(entity) {
 	}
 
 	try {
-		data = processFile(entity, isStaticRequest, entity.url.pathname, entity.url.extension, entity.url.query);
+		data = processFile(entity, isStaticRequest, entity.url.pathname);
 
 		// Set server-side cache
 		isStaticRequest && staticCache.write(entity.url.pathname, data);

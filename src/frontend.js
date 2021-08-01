@@ -1,6 +1,6 @@
 /* global config */
 
-function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATION!
+const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
 	const pluginName = (new Error).stack
 		.split(/\n+/g)
 		.filter(call => {
@@ -11,9 +11,9 @@ function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATIO
 	if(!pluginName) {
 		throw new ReferenceError("Could not retrieve name of active plug-in. Revise naming rules.");
 	}
-
+	
 	return pluginName[1];
-}
+};
 
 /**
  * Perform request ro plug-in related endpoint (id set up).
@@ -22,7 +22,7 @@ function getPluginUrl() {	// TODO: FIND MORE RELIABLE APPROACH AND IMPLEMENTATIO
  * @returns {Promise} Request promise eventualy resolving to response message
  */
 PUBLIC.useEndpoint = function(body, progressHandler) {
-	const pathname = `/${getPluginUrl()}`;
+	const pathname = `/${retrieveEndpoint()}`;
 	
 	return new Promise((resolve, reject) => {
 		fetch(pathname, {

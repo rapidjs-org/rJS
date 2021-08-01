@@ -2,15 +2,15 @@ const utils = require("../utils");
 
 const response = require("./response");
 
-const webConfig = require("../support/config").webConfig;
+const webConfig = require("../support/web-config").webConfig;
 
 const output = require("../support/output");
 const endpoint = require("../interface/endpoint");
 
 
 function respond(entity, status, message) {
-	if(!utils.isString(message) && !Buffer.isBuffer(message)) {
-		message = JSON.stringify(message);
+	if(!utils.isString(message)) {
+		message = JSON.stringify(Buffer.isBuffer(message) ? String(message) : message);
 	}
 
 	response.respond(entity, status, message);
@@ -22,7 +22,7 @@ function respond(entity, status, message) {
  * @param {Object} entity Open connection entity
  */
 function handle(entity) {
-	if(!endpoint.hasEndpoint(entity.url.pathname)) {
+	if(!endpoint.has(entity.url.pathname)) {
 		// No related POST handler defined
 		respond(entity, 404);
 
@@ -45,8 +45,6 @@ function handle(entity) {
 			blockBodyProcessing = true;
 
 			respond(entity, 413);
-
-			//entity.req.end();
 		}
 	});
 	entity.req.on("end", _ => {
@@ -61,18 +59,18 @@ function handle(entity) {
 			try {
 				body = JSON.parse(body);
 			} catch(err) {
-				throw new SyntaxError(`POST request does not provide a valid JSON body object '${entity.url.pathname}'`);
+				throw new SyntaxError(`Endpoint request does not provide a valid JSON body object '${entity.url.pathname}'`);
 			}
 		}
 
 		try {
-			let data = endpoint.useEndpoint(entity.url.pathname, body);
+			const data = endpoint.use(body, utils.createReducedRequestObject(entity));
 			
 			respond(entity, 200, data);
 		} catch(err) {
 			output.error(err);
 
-			respond(entity, err.status, err.message ? JSON.stringify(err.message) : null);
+			respond(entity, err.status, err.message || null);
 		}
 	});
 	entity.req.on("error", _ => {
