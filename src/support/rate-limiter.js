@@ -1,7 +1,12 @@
-const limiter = {};
+const PERIOD_LENGTH = 60000;
+const REQUEST_LIMIT = require("../support/is-dev-mode") ? null : require("../support/web-config").webConfig.maxRequestsPerMin;
+
+const limiter = {
+	previous: null,
+	current: null
+};
 let windowStart;
 
-const PERIOD_LENGTH = 60000;
 
 function updateWindow() {
 	const now = Date.now();
@@ -19,29 +24,29 @@ function updateWindow() {
 	return (timeIn / PERIOD_LENGTH);
 }
 
-/**
- * @param {Number} limit - Request limit (as set in configuration file)
- */
-module.exports = limit => {
-	return {
-		/**
-		 * Check whether to block the request by the rate limiter.
-		 * @param {String} ip - IP address of request's remote connection
-		 * @return {Boolean} - Whether the request must be blocked due to 429 (Too many requests)
-		 */
-		mustBlock: ip => {
-			const curWindowWeight = updateWindow();
-			const slideSum = Math.floor((curWindowWeight * (limiter.current[ip] || 0))
-							+ ((1 - curWindowWeight) * (limiter.previous[ip] || 0)));
-			if(slideSum >= limit) {
-				// Deny request
-				return true;
-			}
 
-			limiter.current[ip] = isNaN(limiter.current[ip]) ? 0 : ++limiter.current[ip];
-			
-			// Allow request
+module.exports = {
+	/**
+	 * Check whether to block the request by the rate limiter.
+	 * @param {String} ip - IP address of request's remote connection
+	 * @return {Boolean} - Whether the request must be blocked due to 429 (Too many requests)
+	 */
+	mustBlock: ip => {
+		if(!REQUEST_LIMIT) {	// TODO: Check 0
 			return false;
 		}
-	};
+
+		const curWindowWeight = updateWindow();
+		const slideSum = Math.floor((curWindowWeight * (limiter.current[ip] || 0))
+						+ ((1 - curWindowWeight) * (limiter.previous[ip] || 0)));
+		if(slideSum >= REQUEST_LIMIT) {
+			// Deny request
+			return true;
+		}
+
+		limiter.current[ip] = isNaN(limiter.current[ip]) ? 0 : ++limiter.current[ip];
+		
+		// Allow request
+		return false;
+	}
 };

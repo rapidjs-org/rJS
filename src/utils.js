@@ -1,3 +1,6 @@
+const output = require("./support/output");
+
+
 function isString(value) {
 	return typeof value === "string" || value instanceof String;
 }
@@ -7,12 +10,20 @@ function isFunction(value) {
 }
 
 module.exports = {
-
-	pluginRequestPrefix: "plug-in:",
-	supportFilePrefix: "_",
 	
 	isString,
 	isFunction,
+
+	createInterface: (func, scopeDefinition, terminateOnError = false) => {
+		return (...args) => {
+			try {
+				return func.apply(null, args);
+			} catch(err) {
+				output.log(`An error occurred${scopeDefinition ? ` ${scopeDefinition}` : ""}:`);
+				output.error(err, terminateOnError);
+			}
+		};
+	},
 
 	getCallerPath: fileName => {
 		const err = new Error();
@@ -21,17 +32,10 @@ module.exports = {
 			return stack;
 		};
 
-		while(fileName && err.stack.length) {
-			const callerFile = err.stack.shift().getFileName();
-			
-			if(callerFile === fileName) {
-				break;
-			}
-		}
 		while(err.stack.length) {
 			const callerFile = err.stack.shift().getFileName();
 			
-			if(callerFile !== fileName) {
+			if(callerFile !== (fileName || null) && callerFile !== __filename) {
 				return callerFile;
 			}
 		}
@@ -67,6 +71,20 @@ module.exports = {
 		return atBottom
 			? hostData.replace(headTag.close[0], `${insertData}${headTag.close[0]}`)
 			: hostData.replace(headTag.open[0], `${headTag.open[0]}${insertData}`);
+	},
+
+	createReducedRequestObject: entity => {
+		// Construct reduced request object to be passed to each response modifier handler
+		return {
+			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
+			pathname: entity.url.pathname,
+			lang: entity.url.lang,
+			locale: entity.url.locale,
+			queryParameter: entity.url.query,
+		};
 	}
+
+
+	// TODO: Helper => checkPageType for path (is compound? ~ get base)
 
 };

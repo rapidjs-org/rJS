@@ -28,16 +28,17 @@ module.exports = {
 			// Do not log thrown status error as of manipulation interface usage
 			return;
 		}
-
+		
 		// TODO: Improve message quality (message, full path to file, exact position if possible)
 
-		let message = (err instanceof Error) ? `${err.name}: ${err.message}${(err.fileName && err.lineNumber) ? ` at ${err.fileName}:${err.lineNumber}` : ""}` : err;
-		out(`${message}`, "\x1b[41m\x1b[37m");
-
-		console.error(err);
-		
-		if(terminate) {
-			process.exit();
+		let message = (err instanceof Error) ? `${err.name}: ${err.message}` : err;
+		out(message, "\x1b[41m\x1b[37m");
+		try {
+			console.error(err.stack.map(cs => `at ${String(cs)}`).join("\n"));
+		} catch(_) {
+			// ...
 		}
+		
+		terminate && (process.exit());
 	}
 };

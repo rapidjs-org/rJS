@@ -9,10 +9,10 @@ const {parse: parseUrl} = require("url");
 
 const utils = require("../utils");
 
-const webConfig = require("../support/config").webConfig;
+const webConfig = require("../support/web-config").webConfig;
 const webPath = require("../support/web-path");
 const isDevMode = require("../support/is-dev-mode");
-const rateLimiter = (!isDevMode && (webConfig.maxRequestsPerMin > 0)) ? require("../support/rate-limiter")(webConfig.maxRequestsPerMin) : null;
+const rateLimiter = require("../support/rate-limiter");
 
 const response = require("./response");
 
@@ -59,6 +59,8 @@ require(webConfig.portHttps ? "https" : "http").createServer(options, (req, res)
 		handleRequest(entity);
 	} catch(err) {
 		output.error(err);
+
+		res.end();
 	}
 }).listen(port, null, null, _ => {
 	output.log(`Server started listening on port ${port}`);
@@ -83,15 +85,15 @@ if(webConfig.portHttps && webConfig.portHttp) {
  */
 function handleRequest(entity) {
 	// Block request if maximum 
-	if(rateLimiter && rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
+	if(rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
 		entity.res.setHeader("Retry-After", 30000);
-		response.respondWithError(entity, 429);
+		response.respond(entity, 429);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(entity.req.url.length > webConfig.maxUrlLength) {
-		response.respondWithError(entity, 414);
+		response.respond(entity, 414);
 
 		return;
 	}
