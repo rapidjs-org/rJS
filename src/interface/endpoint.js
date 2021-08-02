@@ -2,6 +2,7 @@ const cache = require("./cache")();
 const {getNameByPath} = require("./plugin-management");
 
 const utils = require("../utils");
+const output = require("../support/output");
 
 const routeHandlers = new Map();
 
@@ -16,7 +17,7 @@ module.exports =  {
 		const pathname = `/${pluginName}`;
 				
 		if(routeHandlers.has(pathname)){
-			throw new ReferenceError(`Overriding endpoint for plug-in with name '${pluginName}'`);
+			throw new ReferenceError(`Must not override already set up endpoint for plug-in with name '${pluginName}'`);
 		}
 
 		routeHandlers.set(pathname, {
@@ -33,11 +34,16 @@ module.exports =  {
 		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}
-
-		// TODO: Provide request location instead of endpoint URL in reduced req obj!
 		
+		/* const oldLog = console.log;
+		console.log = message => {
+			process.stdout.write("Error executing ...: " + message)
+		}; */
+		// TODO: Provide request location instead of endpoint URL in reduced req obj!
 		const data = routeHandlers.get(pathname).callback.call(null, body, reducedRequestObject);
 		routeHandlers.get(pathname).useCache && (cache.write(pathname, data));
+
+		/* console.log = oldLog; */
 		
 		return data;
 	}

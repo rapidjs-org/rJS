@@ -98,6 +98,8 @@ module.exports = {
 			}
 			: {}
 		};
+
+		// TODO: Provide header values useful for session management
 	},
 
 	getPathInfo: (pathname) => {
@@ -117,7 +119,7 @@ module.exports = {
 				
 				return {
 					isCompound: true,
-					pathname: localCompoundPath,
+					pathname: `/${localCompoundPath}`,
 					base: `/${compoundPath}`,
 					args: args
 				};

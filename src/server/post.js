@@ -22,11 +22,9 @@ function respond(entity, status, message) {
  * Handle a POST request accordingly.
  * @param {Object} entity Open connection entity
  */
-function handle(entity, pathname) {
-	pathname = i18n.adjustPathname(pathname);
-
-	if(!endpoint.has(pathname)) {
-		// No related POST handler defined
+function handle(entity) {
+	if(!endpoint.has(entity.url.pathname)) {
+	// No related POST handler defined
 		respond(entity, 404);
 
 		return;
@@ -66,13 +64,15 @@ function handle(entity, pathname) {
 			}
 		}
 
+		const internalPathname = entity.url.pathname;
 		try {
 			entity.url = utils.getPathInfo(i18n.adjustPathname(body.meta.pathname));
 
-			const data = endpoint.use(pathname, body.body, utils.createReducedRequestObject(entity));
+			const data = endpoint.use(internalPathname, body.body, utils.createReducedRequestObject(entity));
 			
 			respond(entity, 200, data);
 		} catch(err) {
+			output.log(`An error occurred using the endpoint for plug-in '${internalPathname.slice(1)}':`);
 			output.error(err);
 
 			respond(entity, err.status, err.message || null);
