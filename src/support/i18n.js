@@ -5,6 +5,8 @@ const iso = {
     locale: require("./locale.json")
 };
 
+//const readFileSync(dirname(require.main.filename), "langs")
+
 function getPart(pathname) {
     const part = pathname.match(/^\/([a-z]{2}(-[A-Z]{2})?|[A-Z]{2})(?:\/|$)/);
     

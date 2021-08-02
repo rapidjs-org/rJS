@@ -4,17 +4,19 @@ const config = {
 
 
 const {readFileSync} = require("fs");
-const {join, basename} = require("path");
+const {join, basename, extname} = require("path");
 const {parse: parseUrl} = require("url");
+
+const utils = require("../utils");
 
 const webConfig = require("../support/web-config").webConfig;
 const webPath = require("../support/web-path");
 const isDevMode = require("../support/is-dev-mode");
 const rateLimiter = require("../support/rate-limiter");
+const output = require("../support/output");
+const i18n = require("../support/i18n");
 
 const response = require("./response");
-
-const output = require("../support/output");
 
 
 const requestHandler = {
@@ -116,13 +118,19 @@ async function handleRequest(entity) {
 	entity.res.setHeader("X-XSS-Protection", "1");
 	entity.res.setHeader("X-Powered-By", null);
 
+	entity.url.pathname = i18n.adjustPathname(urlParts.pathname);
+	entity.url = i18n.prepare(entity.url);
+
 	// Apply the related handler
 	switch(entity.req.method) {
 	case "get":
+		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
+		entity.url.query = urlParts.query;
+	
 		requestHandler.GET(entity);
 		break;
 	case "post":
-		requestHandler.POST(entity, urlParts.pathname);
+		requestHandler.POST(entity);
 		break;
 	}
 }

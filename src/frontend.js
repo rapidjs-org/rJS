@@ -3,7 +3,7 @@
 const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
 	const pluginName = (new Error).stack
 		.split(/\n+/g)
-		.filter(call => {
+		.filter(call => {
 			return call.includes("http");
 		})[2]
 		.match(new RegExp(`${config.pluginRequestPrefix}((@[a-z0-9_-]+\\/)?[a-z0-9_-]+)`, "i"));

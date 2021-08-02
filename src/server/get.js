@@ -3,10 +3,9 @@ const config = {
 };
 
 
-const {join, extname, dirname, basename} = require("path");
+const {join, dirname, basename} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
-const {parse: parseUrl} = require("url");
 
 const utils = require("../utils");
 
@@ -14,7 +13,6 @@ const isDevMode = require("../support/is-dev-mode");
 const webPath = require("../support/web-path");
 const output = require("../support/output");
 const i18n = require("../support/i18n");
-const templating = require("../support/templating");
 const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
@@ -107,23 +105,9 @@ function processFile(entity, isStaticRequest, pathname) {
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, Environment.ANY);
 	entity.url.isCompound && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
-
-	const reducedRequestObject = utils.createReducedRequestObject(entity);
-		
-	// Template includes
-	data = templating.renderIncludes(data, reducedRequestObject);
 	
-	// No more processing on default page markup data
-	if(!entity.url.isCompound) {
-		return data;
-	}
-
-	// Template dynamics (compound page only; requires templating module)
-	try {
-		data = templating.renderDynamics(data, reducedRequestObject);
-	} catch(err) {
-		output.error(err, true);
-	}
+	// TODO: Re-introduce optional response modifiers?
+	//const reducedRequestObject = utils.createReducedRequestObject(entity);
 
 	return data;
 }
@@ -132,10 +116,7 @@ function processFile(entity, isStaticRequest, pathname) {
  * Handle a GET request accordingly.
  * @param {Object} entity Open connection entity
  */
-function handle(entity) {
-	const urlParts = parseUrl(entity.req.url, true);
-	entity.url.pathname = i18n.adjustPathname(urlParts.pathname);
-	
+function handle(entity) {		
 	let data;
 
 	if(data = pluginManagement.retrieveFrontendModule(entity.url.pathname)) {
@@ -146,21 +127,16 @@ function handle(entity) {
 		return;
 	}
 
-	entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
-	
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 	
 	// Prepare request according to i18n settings
 	if(!isStaticRequest) {
-		entity.url = i18n.prepare(entity.url);
-		entity.url.base && (entity.url.base = i18n.adjustPathname(entity.url.base));
-
 		entity.url = {
 			...entity.url,
 			...utils.getPathInfo(entity.url.pathname)
 		};
 	};
-	entity.url.query = urlParts.query;
+	entity.url.base && (entity.url.base = i18n.adjustPathname(entity.url.base));
 
 	// Set client-side cache control for static files
 	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
