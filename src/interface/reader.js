@@ -1,41 +1,37 @@
-const {join} = require("path");
+const {join, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
+const utils = require("../utils");
+
+const output = require("../support/output");
 const webPath = require("../support/web-path");
 
-function read(pathname) {
-	/* if(read.caller.name != "processFile") {
-		console.log(read.caller)
-	} */
-	const localPath = join(webPath, pathname);
-	
-	if(!existsSync(localPath)) {
-		throw new ReferenceError(`Web file supposed to be read could not be located '${pathname}'`);
-	}
+const explicitReaders = new Map();
 
-	let contents = readFileSync(localPath);
+function set(extension, callback) {
+	extension = utils.normalizeExtension(extension);
 
-	// TODO: Apply templating to any HTML file?
-	// TODO: How to access reduced request object from anywhere?
-	/* if(/^.*\.html$/.test(pathname)) {
-		// Template includes if is web page
-		data = templating.renderIncludes(String(data), reducedRequestObject);
+	explicitReaders.has(extension) && output.log(`Redundant set up of explicit reader for extension'${extension}'`);
 
-		if(!/.*(^|\/):[a-z0-9_-]\/*.*$/i.test(pathname)) {
-			// No compound directory involved
-			return contents;
-		}
-
-		// Template dynamics if is compound page or descendant support markup file (requires templating module)
-		try {
-			data = templating.renderDynamics(data, reducedRequestObject);
-		} catch(err) {
-			output.log(`An error occurred templating dynamics into '${pathname}'`);
-			output.error(err, true);
-		}
-	}; */
-
-	return contents;
+	explicitReaders.set(extension, callback);
 }
 
-module.exports = read;
+function apply(pathname) {
+	const extension = utils.normalizeExtension(extname(pathname));
+	const localPath = join(webPath, pathname);
+	
+	if(explicitReaders.has(extension)) {
+		return explicitReaders.get(extension)(localPath);
+	}
+	
+	if(!existsSync(localPath)) {
+		throw new ReferenceError(`Could not read web file from '${pathname}'`);
+	}
+
+	return readFileSync(localPath);
+}
+
+module.exports = {
+	set,
+	apply
+};

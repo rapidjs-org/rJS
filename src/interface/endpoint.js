@@ -2,7 +2,6 @@ const cache = require("./cache")();
 const {getNameByPath} = require("./plugin-management");
 
 const utils = require("../utils");
-const output = require("../support/output");
 
 const routeHandlers = new Map();
 

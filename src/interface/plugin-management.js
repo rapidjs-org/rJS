@@ -46,7 +46,7 @@ registerFrontendModule(join(__dirname, "../frontend.js"), {
  * @param {String} key Key name
  * @returns {*} Respective value if defined
  */
- function readConfig(key) {
+function readConfig(key) {
 	const pluginSubKey = getNameByPath(utils.getCallerPath(__filename));
 
 	const subObj = (webConfig[config.configFilePluginScopeName] || {})[pluginSubKey];
@@ -67,7 +67,7 @@ function getNameByPath(path) {
 			let parts = data.path.split(path);
 			if(parts.length == 2 && parts[0] == "") {
 				throw name;
-			};
+			}
 		});
 	} catch(name) {
 		if(utils.isString(name)) {
@@ -123,8 +123,8 @@ function plugin(reference, pageEnvironment, alias) {
 	}
 	
 	const pluginPath = pluginNameRegex.test(reference)
-	? module.constructor._resolveFilename(reference, module.parent)
-	: join(dirname(require.main.filename), reference);
+		? module.constructor._resolveFilename(reference, module.parent)
+		: join(dirname(require.main.filename), reference);
 	
 	if(!pageEnvironment) {
 		pageEnvironment = Environment.ANY;
@@ -170,30 +170,30 @@ function registerFrontendModule(frontendFilePath, pluginConfig, pluginName) {
 	(extname(frontendFilePath).length == 0) && (frontendFilePath = `${frontendFilePath}.js`);
 	
 	if(!existsSync(frontendFilePath)) {
-		throw new ReferenceError(`Frontend module file for plug-in '${pluginName}' could not be located at given path '${path}'`);
+		throw new ReferenceError(`Frontend module file for plug-in '${pluginName}' could not be located at given path '${frontendFilePath}'`);
 	}
 
 	let frontendModuleData = String(readFileSync(frontendFilePath));
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
 	pluginConfig && (frontendModuleData= frontendModuleData
-	.replace(new RegExp(`[^a-zA-Z0-9_.]${config.frontendModuleReferenceName.config}\\s*(\\.\\s*[a-zA-Z0-9_]+)+`, "g"), configAttr => {
-		const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
-			.map(attr => {
-				return attr.slice(1).trim();
+		.replace(new RegExp(`[^a-zA-Z0-9_.]${config.frontendModuleReferenceName.config}\\s*(\\.\\s*[a-zA-Z0-9_]+)+`, "g"), configAttr => {
+			const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
+				.map(attr => {
+					return attr.slice(1).trim();
+				});
+
+			let value = pluginConfig;
+			attrs.forEach(attr => {
+				value = value[attr];
+			
+				if(value === undefined) {
+					throw new ReferenceError(`Implemented property '${attrs}' not defined on given config object at '${frontendFilePath}'`);
+				}
 			});
 
-		let value = pluginConfig;
-		attrs.forEach(attr => {
-			value = value[attr];
-			
-			if(value === undefined) {
-				throw new ReferenceError(`Implemented property '${attrs}' not defined on given config object at '${frontendFilePath}'`);
-			}
-		});
-
-		value = utils.isString(value) ? `"${value}"` : value;	// Wrap strings in doublequotes
-		return `${configAttr.charAt(0)}${value}`;
-	}));
+			value = utils.isString(value) ? `"${value}"` : value;	// Wrap strings in doublequotes
+			return `${configAttr.charAt(0)}${value}`;
+		}));
 
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
 	frontendModuleData = `
@@ -249,6 +249,6 @@ let pluginInterface = {
 	initFrontendModule: createInterface(initFrontendModule, "initializing a frontend module", true),
 
 	readConfig,
-	readFile: require("./reader"),
+	fileRead: require("./reader").apply,
 	createCache: require("./cache")
 };
