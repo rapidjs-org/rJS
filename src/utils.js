@@ -92,11 +92,11 @@ module.exports = {
 			pathname: entity.url.pathname,
 			isCompound: entity.url.isCompound,
 			... entity.url.isCompound
-			? {
-				base: entity.url.base,
-				args: entity.url.args
-			}
-			: {}
+				? {
+					base: entity.url.base,
+					args: entity.url.args
+				}
+				: {}
 		};
 
 		// TODO: Provide header values useful for session management
@@ -114,8 +114,8 @@ module.exports = {
 			// Return compound path if related file exists in file system
 			if(existsSync(join(webPath, localCompoundPath))) {
 				const args = pathname.slice(compoundPath.length + 2)
-							.split(/\//g)
-							.filter(arg => arg.length > 0);
+					.split(/\//g)
+					.filter(arg => arg.length > 0);
 				
 				return {
 					isCompound: true,
@@ -134,7 +134,7 @@ module.exports = {
 		return {
 			isCompound: false,
 			pathname: pathname
-		}
+		};
 	}
 
 };

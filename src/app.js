@@ -16,7 +16,9 @@ module.exports = {
 
 	isDevMode: require("./support/is-dev-mode"),	// TODO: Improve approach?
 
-	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true)
+	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true),
+	explicitReader: createInterface(require("./interface/reader").set, "setting up an explicit reader", true),
+	explicitWriter: createInterface(require("./interface/writer").set, "setting up an explicit writer", true)
 };
 
 // TODO: Implement templating feature on core (including to "includes" functionality)
