@@ -51,11 +51,11 @@ require(webConfig.port.https ? "https" : "http").createServer(options, (req, res
 	entity.req.method = entity.req.method.toLowerCase();
 
 	handleRequest(entity)
-	.catch(err => {
-		output.error(err);
+		.catch(err => {
+			output.error(err);
 
-		res.end();
-	});
+			res.end();
+		});
 }).listen(port, null, null, _ => {
 	output.log(`Server started listening on port ${port}`);
 	

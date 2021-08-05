@@ -16,7 +16,7 @@ const i18n = require("../support/i18n");
 const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
-const readFile = require("../interface/reader");
+const reader = require("../interface/reader");
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
 const Environment = require("../interface/Environment");
@@ -90,7 +90,7 @@ function processFile(entity, isStaticRequest, pathname) {
 	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = readFile(pathname);
+		data = reader.apply(pathname);
 	} catch(err) {
 		throw new ClientError(404);
 	}
@@ -117,9 +117,9 @@ function processFile(entity, isStaticRequest, pathname) {
  * @param {Object} entity Open connection entity
  */
 function handle(entity) {		
-	let data;
+	let data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 
-	if(data = pluginManagement.retrieveFrontendModule(entity.url.pathname)) {
+	if(data) {
 		entity.url.extension = "js";
 
 		respond(entity, 200, data);
@@ -135,7 +135,7 @@ function handle(entity) {
 			...entity.url,
 			...utils.getPathInfo(entity.url.pathname)
 		};
-	};
+	}
 	entity.url.base && (entity.url.base = i18n.adjustPathname(entity.url.base));
 
 	// Set client-side cache control for static files

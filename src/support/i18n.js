@@ -1,45 +1,45 @@
 const omitInternally = require("./web-config").webConfig.i18nOmitPart;
 
 const iso = {
-    lang: require("./lang.json"),
-    locale: require("./locale.json")
+	lang: require("./lang.json"),
+	locale: require("./locale.json")
 };
 
 //const readFileSync(dirname(require.main.filename), "langs")
 
 function getPart(pathname) {
-    const part = pathname.match(/^\/([a-z]{2}(-[A-Z]{2})?|[A-Z]{2})(?:\/|$)/);
+	const part = pathname.match(/^\/([a-z]{2}(-[A-Z]{2})?|[A-Z]{2})(?:\/|$)/);
     
-    return part ? part[0] : undefined;
+	return part ? part[0] : undefined;
 }
 
 function prepare(entityUrl) {
-    const part = getPart(entityUrl.pathname);
+	const part = getPart(entityUrl.pathname);
 
-    if(!part) {
-        return entityUrl;
-    }
+	if(!part) {
+		return entityUrl;
+	}
 
-    const lang = (part.match(/[a-z]{2}/) || [])[0];
-    const locale = (part.match(/[A-Z]{2}/) || [])[0];
+	const lang = (part.match(/[a-z]{2}/) || [])[0];
+	const locale = (part.match(/[A-Z]{2}/) || [])[0];
 
-    entityUrl.lang = iso.lang.includes(lang) ? lang : undefined;
-    entityUrl.locale = iso.locale.includes(locale) ? locale : undefined;
+	entityUrl.lang = iso.lang.includes(lang) ? lang : undefined;
+	entityUrl.locale = iso.locale.includes(locale) ? locale : undefined;
 
-    return entityUrl;
+	return entityUrl;
 }
 
 function adjustPathname(pathname) {
-    if(!omitInternally) {
-        return entityUrl;
-    }
+	if(!omitInternally) {
+		return pathname;
+	}
 
-    const part = getPart(pathname);
+	const part = getPart(pathname);
     
-    return part ? `/${pathname.slice(part.length)}` : pathname;
+	return part ? `/${pathname.slice(part.length)}` : pathname;
 }
 
 module.exports = {
-    prepare,
-    adjustPathname
-}
+	prepare,
+	adjustPathname
+};
