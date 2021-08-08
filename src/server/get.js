@@ -16,11 +16,12 @@ const i18n = require("../support/i18n");
 const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
-const reader = require("../interface/reader");
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
 const Environment = require("../interface/Environment");
 const ClientError = require("../interface/ClientError");
+const reader = require("../interface/reader");
+const writer = require("../interface/writer");
 
 const response = require("./response");
 
@@ -101,13 +102,13 @@ function processFile(entity, isStaticRequest, pathname) {
 	}
 
 	data = String(data);	// Further processig steps will need string representation of input
-
+	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, Environment.ANY);
 	entity.url.isCompound && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
 	
-	// TODO: Re-introduce optional response modifiers?
-	//const reducedRequestObject = utils.createReducedRequestObject(entity);
+	// Optional writer interface application
+	data = writer.apply(entity.url.extension, data, utils.createReducedRequestObject(entity));
 
 	return data;
 }

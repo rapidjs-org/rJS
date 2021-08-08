@@ -248,7 +248,8 @@ let pluginInterface = {
 	setEndpoint:  createInterface(require("./endpoint").set, "creating an endpoint", true),
 	initFrontendModule: createInterface(initFrontendModule, "initializing a frontend module", true),
 
-	readConfig,
-	fileRead: require("./reader").apply,
-	createCache: require("./cache")
+	file: require("./reader").interface,
+	createCache: require("./cache"),
+	
+	readConfig
 };
