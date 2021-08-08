@@ -8,12 +8,12 @@ function set(extension, callback) {
 	explicitWriters.set(extension, callback);
 }
 
-function apply(extension, data) {
+function apply(extension, data, reducedRequestObject) {
 	if(!explicitWriters.has(extension)) {
 		return data;
 	}
 
-	return explicitWriters.get(extension)(data);
+	return explicitWriters.get(extension)(data, reducedRequestObject);
 }
 
 module.exports = {
