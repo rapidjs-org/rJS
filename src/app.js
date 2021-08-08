@@ -18,7 +18,9 @@ module.exports = {
 
 	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true),
 	explicitReader: createInterface(require("./interface/reader").set, "setting up an explicit reader", true),
-	explicitWriter: createInterface(require("./interface/writer").set, "setting up an explicit writer", true)
+	explicitWriter: createInterface(require("./interface/writer").set, "setting up an explicit writer", true),
+
+	file: require("./interface/reader").interface
 };
 
 // TODO: Implement templating feature on core (including to "includes" functionality)

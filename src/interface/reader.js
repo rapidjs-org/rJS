@@ -31,7 +31,18 @@ function apply(pathname) {
 	return readFileSync(localPath);
 }
 
+function exists(pathname) {
+	const localPath = join(webPath, pathname);
+
+	return existsSync(localPath);
+}
+
 module.exports = {
 	set,
-	apply
+	apply,
+	
+	interface: {
+		read: apply,
+		exists
+	}
 };
