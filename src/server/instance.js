@@ -14,7 +14,6 @@ const webPath = require("../support/web-path");
 const isDevMode = require("../support/is-dev-mode");
 const rateLimiter = require("../support/rate-limiter");
 const output = require("../support/output");
-const i18n = require("../support/i18n");
 
 const response = require("./response");
 
@@ -103,10 +102,10 @@ async function handleRequest(entity) {
 	let explicitBase;
 	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
 		&& explicitBase[0].length > 1) {
-		const newUrl = entity.url.pathname.replace(explicitBase[0], "")
+		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
                      + (urlParts.search || "");
         
-		response.redirect(entity.res, newUrl);
+		response.redirect(entity, newUrl);
 
 		return;
 	}
@@ -118,18 +117,18 @@ async function handleRequest(entity) {
 	entity.res.setHeader("X-XSS-Protection", "1");
 	entity.res.setHeader("X-Powered-By", null);
 
-	entity.url.pathname = i18n.adjustPathname(urlParts.pathname);
-	entity.url = i18n.prepare(entity.url);
+	entity.url.pathname = urlParts.pathname;
 
 	// Apply the related handler
 	switch(entity.req.method) {
 	case "get":
 		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
 		entity.url.query = urlParts.query;
-	
+		
 		requestHandler.GET(entity);
 		break;
 	case "post":
+		// TODO: Add language in post request
 		requestHandler.POST(entity);
 		break;
 	}

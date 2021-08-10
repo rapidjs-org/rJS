@@ -13,13 +13,12 @@ function respond(entity, status, message) {
 
 /**
  * Perform a redirect to a given path.
- * @param {Object} res - Open response object
  * @param {String} path - Path to redirect to
  */
-function redirect(res, path) {
-	res.setHeader("Location", path);
+function redirect(entity, path) {
+	entity.res.setHeader("Location", path);
 
-	respond(res, 301);
+	respond(entity, 301);
 }
 
 

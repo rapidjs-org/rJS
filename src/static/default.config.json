@@ -1,10 +1,12 @@
 {
-    "allowFramedLoading": false,
     "cachingDuration": {
         "server": 86400,
         "client": 31536000
     },
-    "i18nOmitPart": false,
+    "i18n": {
+        "unifyStated": true,
+        "implyDefaultLang": true
+    },
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,

@@ -95,7 +95,12 @@ function processFile(entity, isStaticRequest, pathname) {
 	} catch(err) {
 		throw new ClientError(404);
 	}
+
+	const reducedRequestObject = utils.createReducedRequestObject(entity);
 	
+	// Optional writer interface application
+	data = writer.apply(entity.url.extension, data, reducedRequestObject);
+
 	// No more processing on static file data
 	if(isStaticRequest) {
 		return data;
@@ -103,12 +108,12 @@ function processFile(entity, isStaticRequest, pathname) {
 
 	data = String(data);	// Further processig steps will need string representation of input
 	
+	// TODO: Lang
+	data = i18n.translate(data, reducedRequestObject);
+	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, Environment.ANY);
 	entity.url.isCompound && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
-	
-	// Optional writer interface application
-	data = writer.apply(entity.url.extension, data, utils.createReducedRequestObject(entity));
 
 	return data;
 }
@@ -117,19 +122,36 @@ function processFile(entity, isStaticRequest, pathname) {
  * Handle a GET request accordingly.
  * @param {Object} entity Open connection entity
  */
-function handle(entity) {		
-	let data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
+function handle(entity) {
+	let data;
 
-	if(data) {
+	if(pluginManagement.isFrontendRequest(entity.url.pathname)) {
 		entity.url.extension = "js";
 
-		respond(entity, 200, data);
+		data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 		
+		respond(entity, 200, data);
+
 		return;
 	}
+	
+	//const origPathname = entity.url.pathname;
+	entity.url = i18n.prepare(entity.url);
+	/* let redirectLang;
+	if(i18n.getInfo(origPathname).lang !== entity.url.lang || entity.url.lang == i18n.defaultLang)) {
+
+	}
+	if(webConfig.i18n.implyDefaultLang) {
+
+		response.redirect(entity, origPathname
+		.replace(new RegExp(`^\\/${entity.url.lang}`), redirectLang || "")
+		.replace(/^(-|$)/, "/"));
+
+		return;
+	} */
 
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
-	
+
 	// Prepare request according to i18n settings
 	if(!isStaticRequest) {
 		entity.url = {
@@ -137,8 +159,7 @@ function handle(entity) {
 			...utils.getPathInfo(entity.url.pathname)
 		};
 	}
-	entity.url.base && (entity.url.base = i18n.adjustPathname(entity.url.base));
-
+	
 	// Set client-side cache control for static files
 	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 	
@@ -159,13 +180,13 @@ function handle(entity) {
 
 		return;
 	}
-
+	
 	try {
 		data = processFile(entity, isStaticRequest, entity.url.pathname);
 		
 		// Set server-side cache
 		isStaticRequest && staticCache.write(entity.url.pathname, data);
-		
+
 		respond(entity, 200, data);
 
 		return;
