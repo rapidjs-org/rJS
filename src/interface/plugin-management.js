@@ -229,7 +229,11 @@ function retrieveFrontendModule(pathname) {
 
 
 function buildEnvironment(data, pageEnvironment) {
-	(registry.envs[pageEnvironment] || []).reverse().forEach(name => {
+	(registry.envs[pageEnvironment] || [])
+	.filter(env => {
+		return registry.data.get(env).frontend;
+	})
+	.reverse().forEach(name => {
 		data = utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${name}"></script>`);
 	});
 
