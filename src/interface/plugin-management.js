@@ -28,6 +28,7 @@ const registry = {
 };
 
 const pluginNameRegex = /^(@[a-z0-9_-]+\/)?[a-z0-9_-]+$/i;
+const urlPrefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
 
 // Register core frontend module
@@ -175,7 +176,7 @@ function registerFrontendModule(frontendFilePath, pluginConfig, pluginName) {
 
 	let frontendModuleData = String(readFileSync(frontendFilePath));
 	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
-	pluginConfig && (frontendModuleData= frontendModuleData
+	pluginConfig && (frontendModuleData = frontendModuleData
 		.replace(new RegExp(`[^a-zA-Z0-9_.]${config.frontendModuleReferenceName.config}\\s*(\\.\\s*[a-zA-Z0-9_]+)+`, "g"), configAttr => {
 			const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
 				.map(attr => {
@@ -209,13 +210,16 @@ function registerFrontendModule(frontendFilePath, pluginConfig, pluginName) {
 	registry.data.get(pluginName).frontend = frontendModuleData;
 }
 
-function retrieveFrontendModule(path) {
-	const prefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
-	if(!(new RegExp(`${prefixRegex.source}${pluginNameRegex.source.slice(1)}`, "i")).test(path)) {
-		return undefined;
+function isFrontendRequest(pathname) {
+	if(!(new RegExp(`${urlPrefixRegex.source}${pluginNameRegex.source.slice(1)}`, "i")).test(pathname)) {
+		return false;
 	}
 
-	const name = path.replace(prefixRegex, "");
+	return true;
+}
+
+function retrieveFrontendModule(pathname) {
+	const name = pathname.replace(urlPrefixRegex, "");
 	if(!pluginNameRegex.test(name) || !registry.data.has(name)) {
 		return undefined;
 	}
@@ -235,6 +239,7 @@ function buildEnvironment(data, pageEnvironment) {
 
 module.exports = {
 	plugin,
+	isFrontendRequest,
 	retrieveFrontendModule,
 	buildEnvironment,
 	getNameByPath

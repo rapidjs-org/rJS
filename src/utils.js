@@ -107,10 +107,12 @@ module.exports = {
 		let compoundPath = "";
 		const pathParts = pathname.replace(/^\//, "").split(/\//g) || [pathname];
 		for(let part of pathParts) {
+			part = part || config.defaultFileName;
+
 			// Construct possible internal compound path
 			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.html`);
 			compoundPath = join(compoundPath, part);
-			
+						
 			// Return compound path if related file exists in file system
 			if(existsSync(join(webPath, localCompoundPath))) {
 				const args = pathname.slice(compoundPath.length + 2)
@@ -128,9 +130,9 @@ module.exports = {
 		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
 		
 		// Add default file name if none explicitly stated in request URL
-		pathname = `${pathname.replace(/\/$/, `/${config.defaultFileName}`)}`;
-		pathname += ".html";
-		
+		pathname = pathname.replace(/\/$/, `/${config.defaultFileName}`);
+		pathname = pathname.replace(/(\.html)?$/, ".html");
+
 		return {
 			isCompound: false,
 			pathname: pathname

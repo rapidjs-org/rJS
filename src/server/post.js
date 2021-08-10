@@ -63,11 +63,12 @@ function handle(entity) {
 				throw new SyntaxError(`Endpoint request does not provide a valid JSON body object '${entity.url.pathname}'`);
 			}
 		}
-
+		
 		const internalPathname = entity.url.pathname;
 		try {
-			entity.url = utils.getPathInfo(i18n.adjustPathname(body.meta.pathname));
-
+			entity.url = i18n.prepare(body.meta.pathname);
+			entity.url = utils.getPathInfo(entity.url.pathname);
+			console.log(entity.url);
 			const data = endpoint.use(internalPathname, body.body, utils.createReducedRequestObject(entity));
 			
 			respond(entity, 200, data);
