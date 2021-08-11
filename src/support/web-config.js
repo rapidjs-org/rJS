@@ -48,14 +48,17 @@ const readConfigFile = (webPath, defaultName, customNames) => {
 				return;
 			}
 
-			defaultFile[subKey] = {...defaultFile[subKey], ...customFile[subKey]};
+			customFile[subKey] = {
+				...defaultFile[subKey],
+				...customFile[subKey]
+			};
 		});
 	}
 
 	customFiles.forEach(customFile => {
 		defaultFile = {...defaultFile, ...customFile};
 	});
-
+	
 	return defaultFile;
 };
 
