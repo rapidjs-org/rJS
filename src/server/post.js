@@ -2,7 +2,7 @@ const utils = require("../utils");
 
 const webConfig = require("../support/web-config").webConfig;
 const output = require("../support/output");
-const i18n = require("../support/i18n");
+const locale = require("../support/locale");
 
 const endpoint = require("../interface/endpoint");
 
@@ -66,9 +66,12 @@ function handle(entity) {
 		
 		const internalPathname = entity.url.pathname;
 		try {
-			entity.url = i18n.prepare(body.meta.pathname);
-			entity.url = utils.getPathInfo(entity.url.pathname);
-			console.log(entity.url);
+			entity.url = locale.prepare({
+				pathname: body.meta.pathname
+			});
+			
+			entity.url = utils.getPathInfo(entity.url);
+
 			const data = endpoint.use(internalPathname, body.body, utils.createReducedRequestObject(entity));
 			
 			respond(entity, 200, data);

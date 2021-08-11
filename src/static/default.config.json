@@ -3,9 +3,9 @@
         "server": 86400,
         "client": 31536000
     },
-    "i18n": {
-        "unifyStated": true,
-        "implyDefaultLang": true
+    "locale": {
+        "reduceInternally": true,
+        "supportedCountryCodes": []
     },
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,

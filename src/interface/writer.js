@@ -13,7 +13,7 @@ function apply(extension, data, reducedRequestObject) {
 		return data;
 	}
 
-	return explicitWriters.get(extension)(data, reducedRequestObject);
+	return explicitWriters.get(extension)(String(data), reducedRequestObject);
 }
 
 module.exports = {
