@@ -12,13 +12,12 @@ const utils = require("../utils");
 const isDevMode = require("../support/is-dev-mode");
 const webPath = require("../support/web-path");
 const output = require("../support/output");
-const i18n = require("../support/i18n");
+const locale = require("../support/locale");
 const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
-const Environment = require("../interface/Environment");
 const ClientError = require("../interface/ClientError");
 const reader = require("../interface/reader");
 const writer = require("../interface/writer");
@@ -62,12 +61,13 @@ function respondWithError(entity, status) {
 		errorPageDir = dirname(errorPageDir);
 
 		const errorPagePath = join(errorPageDir, `${String(status)}.html`);
-        
 		if(existsSync(join(webPath, errorPagePath))) {
-			entity.url = {
+			entity.url = utils.getPathInfo({
 				...entity.url,
-				...utils.getPathInfo(errorPagePath)
-			};
+				... {
+					pathname: errorPagePath
+				}
+			});
 
 			let data = processFile(entity, false, errorPagePath);
 			
@@ -106,14 +106,11 @@ function processFile(entity, isStaticRequest, pathname) {
 		return data;
 	}
 
-	data = String(data);	// Further processig steps will need string representation of input
-	
 	// TODO: Lang
-	data = i18n.translate(data, reducedRequestObject);
+	data = locale.translate(String(data), reducedRequestObject);
 	
 	// Sequentially apply defined plug-in module modifiers
-	data = pluginManagement.buildEnvironment(data, Environment.ANY);
-	entity.url.isCompound && (data = pluginManagement.buildEnvironment(data, Environment.COMPOUND));
+	data = pluginManagement.buildEnvironment(data, entity.url.isCompound);
 
 	return data;
 }
@@ -130,39 +127,11 @@ function handle(entity) {
 
 		data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 		
-		respond(entity, 200, data);
+		respond(entity, data ? 200 : 404, data);
 
 		return;
 	}
-	
-	//const origPathname = entity.url.pathname;
-	entity.url = i18n.prepare(entity.url);
-	/* let redirectLang;
-	if(i18n.getInfo(origPathname).lang !== entity.url.lang || entity.url.lang == i18n.defaultLang)) {
 
-	}
-	if(webConfig.i18n.implyDefaultLang) {
-
-		response.redirect(entity, origPathname
-		.replace(new RegExp(`^\\/${entity.url.lang}`), redirectLang || "")
-		.replace(/^(-|$)/, "/"));
-
-		return;
-	} */
-
-	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
-
-	// Prepare request according to i18n settings
-	if(!isStaticRequest) {
-		entity.url = {
-			...entity.url,
-			...utils.getPathInfo(entity.url.pathname)
-		};
-	}
-	
-	// Set client-side cache control for static files
-	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
-	
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
 	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)
@@ -171,6 +140,37 @@ function handle(entity) {
 		
 		return;
 	}
+
+	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
+
+	// TODO: Improve lang redirect (and locale handling)
+	// Prepare request according to locale settings
+	const origPathname = entity.url.pathname;
+	entity.url = locale.prepare(entity.url);
+	if(!isStaticRequest) {
+		const origInfo = locale.getInfo(origPathname);
+		const redirectLang = origInfo.lang && (!entity.url.lang || entity.url.lang == locale.defaultLang);
+		const redirectCountry = origInfo.country && !entity.url.country;
+		if(redirectLang || redirectCountry) {
+			let redirectPathname = origPathname;
+			redirectPathname = !redirectLang ? redirectPathname
+				: redirectPathname
+					.replace(new RegExp(`^\\/${origInfo.lang}`), "")
+					.replace(/^(-|$)/, "/");
+			redirectPathname = !redirectCountry ? redirectPathname
+				: redirectPathname
+					.replace(new RegExp(`(\\/|-)${origInfo.country}`), "");
+			
+			response.redirect(entity, redirectPathname);
+			
+			return;
+		}
+
+		entity.url = utils.getPathInfo(entity.url);
+	}
+	
+	// Set client-side cache control for static files
+	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 
 	// Use cached data if is static file request (and not outdated)
 	if(isStaticRequest && staticCache.has(entity.url.pathname)) {

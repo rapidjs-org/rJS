@@ -118,13 +118,13 @@ async function handleRequest(entity) {
 	entity.res.setHeader("X-Powered-By", null);
 
 	entity.url.pathname = urlParts.pathname;
-
+	entity.url.query = urlParts.query;
+	
 	// Apply the related handler
 	switch(entity.req.method) {
 	case "get":
 		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
-		entity.url.query = urlParts.query;
-		
+
 		requestHandler.GET(entity);
 		break;
 	case "post":
