@@ -3,7 +3,9 @@ const {getNameByPath} = require("./plugin-management");
 
 const utils = require("../utils");
 
+
 const routeHandlers = new Map();
+
 
 module.exports =  {
 	/**
@@ -30,19 +32,20 @@ module.exports =  {
 	},
 
 	use: (pathname, body, reducedRequestObject) => {
-		if(routeHandlers.get(pathname).useCache && cache.has(pathname)) {
+		const handler = routeHandlers.get(pathname);
+		if(handler.useCache && cache.has(pathname)) {
 			return cache.read(pathname);
 		}
 		
-		/* const oldLog = console.log;
+		/* const origLog = console.log;
 		console.log = message => {
-			process.stdout.write("Error executing ...: " + message)
+			process.stdout.write("Message from within endpoint:");
 		}; */
-		// TODO: Provide request location instead of endpoint URL in reduced req obj!
-		const data = routeHandlers.get(pathname).callback.call(null, body, reducedRequestObject);
-		routeHandlers.get(pathname).useCache && (cache.write(pathname, data));
-
-		/* console.log = oldLog; */
+		
+		const data = handler.callback.call(null, body, reducedRequestObject);
+		handler.useCache && (cache.write(pathname, data));
+		
+		/* console.log = origLog; */
 		
 		return data;
 	}
