@@ -17,10 +17,10 @@ module.exports = {
 	isDevMode: require("./support/is-dev-mode"),	// TODO: Improve approach?
 
 	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true),
-	explicitReader: createInterface(require("./interface/reader").set, "setting up an explicit reader", true),
-	explicitWriter: createInterface(require("./interface/writer").set, "setting up an explicit writer", true),
-
-	file: require("./interface/reader").interface
+	explicitReader: createInterface(require("./interface/file").reader.explicit, "setting up an explicit reader", true),
+	explicitWriter: createInterface(require("./interface/file").writer.explicit, "setting up an explicit writer", true),
+	
+	file: require("./interface/file").interface
 };
 
 // TODO: Implement templating feature on core (including to "includes" functionality)

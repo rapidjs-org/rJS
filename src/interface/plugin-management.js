@@ -260,7 +260,7 @@ let pluginInterface = {
 	setEndpoint:  createInterface(require("./endpoint").set, "creating an endpoint", true),
 	initFrontendModule: createInterface(initFrontendModule, "initializing a frontend module", true),
 
-	file: require("./reader").interface,
+	file: require("./file").interface,
 	createCache: require("./cache"),
 	
 	readConfig
