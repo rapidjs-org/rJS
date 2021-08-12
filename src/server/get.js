@@ -19,8 +19,8 @@ const mimesConfig = require("../support/web-config").mimesConfig;
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
 const ClientError = require("../interface/ClientError");
-const reader = require("../interface/reader");
-const writer = require("../interface/writer");
+const fileRead = require("../interface/file").reader.apply;
+const {setContext} = require("../interface/file");
 
 const response = require("./response");
 
@@ -89,23 +89,22 @@ function respondWithError(entity, status) {
 function processFile(entity, isStaticRequest, pathname) {
 	let data;
 	
+	const reducedRequestObject = utils.createReducedRequestObject(entity);
+	
+	setContext(reducedRequestObject);	// TODO: Check for asnc race cond (could use queue for fix)
+	
 	// Read file either by custom reader handler or by default reader
 	try {
-		data = reader.apply(pathname);
+		data = fileRead(pathname, reducedRequestObject);
 	} catch(err) {
 		throw new ClientError(404);
 	}
-
-	const reducedRequestObject = utils.createReducedRequestObject(entity);
 	
-	// Optional writer interface application
-	data = writer.apply(entity.url.extension, data, reducedRequestObject);
-
 	// No more processing on static file data
 	if(isStaticRequest) {
 		return data;
 	}
-
+	
 	// TODO: Lang
 	data = locale.translate(String(data), reducedRequestObject);
 	
