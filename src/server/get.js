@@ -1,8 +1,3 @@
-const config = {
-	supportFilePrefix: "_"	// TODO: Used among two modules, fix
-};
-
-
 const {join, dirname, basename} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
@@ -128,8 +123,8 @@ function handle(entity) {
 
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
-	if(webConfig.extensionWhitelist && !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)
-	|| (new RegExp(`^${config.supportFilePrefix}.+$`)).test(basename(entity.url.pathname))) {
+	if(webConfig.extensionWhitelist
+		&& !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)) {
 		respondWithError(entity, 403);
 		
 		return;
