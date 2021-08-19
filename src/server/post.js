@@ -5,7 +5,6 @@ const output = require("../support/output");
 const locale = require("../support/locale");
 
 const endpoint = require("../interface/endpoint");
-const {setContext} = require("../interface/file");
 
 const response = require("./response");
 
@@ -75,8 +74,6 @@ function handle(entity) {
 
 			const reducedRequestObject = utils.createReducedRequestObject(entity);
 
-			setContext(reducedRequestObject);	// TODO: Check for asnc race cond (could use queue for fix)
-			
 			const data = endpoint.use(internalPathname, body.body, reducedRequestObject);
 			
 			respond(entity, 200, data);
