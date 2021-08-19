@@ -4,7 +4,6 @@
         "client": 31536000
     },
     "locale": {
-        "reduceInternally": true,
         "supportedCountryCodes": []
     },
     "maxPayloadSize": 1000,

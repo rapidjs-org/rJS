@@ -1,16 +1,16 @@
 const config = {
 	langDirName: "lang",
 	markTag: {
-		opening: "\\{%",
-		closing: "%\\}",
+		opening: "\\[%",
+		closing: "%\\]",
 	}
 };
-
-// TODO: Provide option to disable lang/locale feature in web config?
 
 
 const {join, dirname} = require("path");
 const {existsSync} = require("fs");
+
+const webPath = require("../support/web-path");
 
 const langDirPath = join(dirname(require.main.filename), config.langDirName);
 
@@ -20,7 +20,9 @@ const iso = {
 };
 
 const webConfig = require("./web-config").webConfig;
-const defaultLang = iso.lang.includes(webConfig.locale.defaultLang) ? webConfig.locale.defaultLang : undefined;
+const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig.locale.defaultLang))
+? webConfig.locale.defaultLang
+: undefined;
 
 function getInfo(pathname) {
 	let part = pathname.match(/^\/(([a-z]{2})(-([A-Z]{2}))?|([A-Z]{2}))\//);
@@ -50,13 +52,9 @@ function prepare(entityUrl) {
 
 	entityUrl.lang = hasLangObj(info.lang) ? info.lang : defaultLang;
 
-	if(webConfig.locale.reduceInternally) {
-		entityUrl.pathname = entityUrl.pathname.slice(
-			(info.lang ? info.lang.length + 1 : 0)
-		+ (info.country ? info.country.length + 1 : 0));
-	} else if(!info.lang && defaultLang) {
-		entityUrl.pathname = `/${defaultLang}${info.country ? "-" : ""}/${entityUrl.pathname.slice(1)}`;
-	}
+	entityUrl.pathname = entityUrl.pathname.slice(
+		(info.lang ? info.lang.length + 1 : 0)
+	+ (info.country ? info.country.length + 1 : 0));
 		
 	return entityUrl;
 
@@ -102,9 +100,18 @@ function translate(data, reducedRequestObject) {
 	return data;
 
 	function getLangObj(lang) {
-		const langFilePath = join(langDirPath, `${lang}.json`);
-		return existsSync(langFilePath)
-			? require(langFilePath)
+		const langFileName = `${lang}.json`;
+
+		if(reducedRequestObject.isCompound) {
+			const localLangFilePath = join(webPath, dirname(reducedRequestObject.pathname), langFileName);
+			if(existsSync(localLangFilePath)) {
+				return require(localLangFilePath)
+			}
+		}
+
+		const globalLangFilePath = join(langDirPath, langFileName);	// TODO: Cache?
+		return existsSync(globalLangFilePath)
+			? require(globalLangFilePath)
 			: undefined;
 	}
 }
