@@ -46,11 +46,11 @@ function prepare(entityUrl) {
 		? info.country
 		: undefined;
 	
-	if(!defaultLang) {
+	entityUrl.lang = hasLangObj(info.lang) ? info.lang : defaultLang;
+
+	if(!entityUrl.lang) {
 		return entityUrl;
 	}
-
-	entityUrl.lang = hasLangObj(info.lang) ? info.lang : defaultLang;
 
 	entityUrl.pathname = entityUrl.pathname.slice(
 		(info.lang ? info.lang.length + 1 : 0)
@@ -65,14 +65,15 @@ function prepare(entityUrl) {
 }
 
 function translate(data, reducedRequestObject) {
-	if(!defaultLang) {
+	if(!reducedRequestObject) {
 		return data;
 	}
+
 	const langObj = getLangObj(reducedRequestObject.lang) || getLangObj(defaultLang);
 	if(!langObj) {
 		return data;
 	}
-
+	
 	const markRegex = new RegExp(`${config.markTag.opening}\\s*[a-z_][a-z0-9_]*(\\s*\\.\\s*[a-z_][a-z0-9_]*)*\\s*${config.markTag.closing}`, "gi");
 	data = data.replace(markRegex, attrs => {
 		attrs = attrs

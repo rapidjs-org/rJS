@@ -67,7 +67,7 @@ function respondWithError(entity, status = 500) {
 				}
 			});
 
-			let data = processFile(entity, false, errorPagePath);
+			let data = processDynamicFile(entity, errorPagePath);
 			
 			// Normalize references by updating the base URL accordingly
 			data = utils.injectIntoHead(data, `
@@ -84,24 +84,30 @@ function respondWithError(entity, status = 500) {
 }
 
 
-function processFile(entity, isStaticRequest, pathname) {
+
+function processStaticFile(entity) {
 	let data;
 	
 	const reducedRequestObject = utils.createReducedRequestObject(entity);
 	
 	// Read file either by custom reader handler or by default reader
-	data = fileRead(pathname, reducedRequestObject);
+	data = fileRead(entity.url.pathname, reducedRequestObject);
+	
+	return data;
+}
 
-	// No more processing on static file data
-	if(isStaticRequest) {
-		return data;
-	}
+function processDynamicFile(entity, pathname) {
+	const reducedRequestObject = utils.createReducedRequestObject(entity);
+	
+	// Read file either by custom reader handler or by default reader
+	let data = fileRead(pathname || entity.url.pathname, reducedRequestObject);
 	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, entity.url.isCompound);
 
 	return data;
 }
+
 
 /**
  * Handle a GET request accordingly.
@@ -170,7 +176,7 @@ function handle(entity) {
 	}
 	
 	try {
-		data = processFile(entity, isStaticRequest, entity.url.pathname);
+		data = isStaticRequest ? processStaticFile(entity) : processDynamicFile(entity);
 		
 		// Set server-side cache
 		isStaticRequest && staticCache.write(entity.url.pathname, data);
