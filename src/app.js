@@ -18,8 +18,8 @@ module.exports = {
 	isDevMode: require("./support/is-dev-mode"),	// TODO: Improve approach?
 	file: require("./interface/file").interface,
 
-	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true),
-	explicitReader: createInterface(require("./interface/file").explicitReader, "creating an explicit reader")
+	bindTemplating: createInterface(require("./interface/templater").bind, "binding a templating handler", true),
+	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true)
 };
 
 // TODO: Implement templating feature on core (including to "includes" functionality)
