@@ -103,6 +103,17 @@ module.exports = {
 	},
 
 	getPathInfo: (entityUrl) => {
+		// Add default file name if none explicitly stated in request URL
+		const pathname = entityUrl.pathname
+		.replace(/\/$/, `/${config.defaultFileName}`)
+		.replace(/(\.html)?$/, ".html");
+
+		if(existsSync(join(webPath, pathname))) {
+			return formEntity({
+				pathname: pathname
+			}, false);
+		}
+
 		// Use compound page path if respective directory exists
 		let compoundPath = "";
 		const pathParts = entityUrl.pathname.replace(/^\//, "").split(/\//g) || [entityUrl.pathname];
@@ -128,12 +139,8 @@ module.exports = {
 		}
 		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
 		
-		// Add default file name if none explicitly stated in request URL
-		entityUrl.pathname = entityUrl.pathname.replace(/\/$/, `/${config.defaultFileName}`);
-		entityUrl.pathname = entityUrl.pathname.replace(/(\.html)?$/, ".html");
-
 		return formEntity({
-			pathname: entityUrl.pathname
+			pathname: pathname
 		}, false);
 
 		function formEntity(obj, isCompound) {
