@@ -10,6 +10,9 @@
     "build": "npm run test && node ../../finalize-js/build.js",
     "release": "npm run build && np"
   },
+  "bin": {
+    "rapidjs": "./src/cli.js"
+  },
   "files": [
     "dist"
   ],
