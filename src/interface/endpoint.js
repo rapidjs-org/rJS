@@ -1,8 +1,7 @@
-const cache = require("./cache")();
-const {getNameByPath} = require("./plugin-management");
-
 const utils = require("../utils");
 
+const cache = require("./cache")();
+const {getNameByPath} = require("./plugin-management");
 
 const routeHandlers = new Map();
 
@@ -41,7 +40,7 @@ module.exports =  {
 		console.log = message => {
 			process.stdout.write("Message from within endpoint:");
 		}; */
-		
+
 		const data = handler.callback.call(null, body, reducedRequestObject);
 		handler.useCache && (cache.write(pathname, data));
 		

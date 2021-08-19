@@ -18,9 +18,7 @@ const mimesConfig = require("../support/web-config").mimesConfig;
 
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
-const ClientError = require("../interface/ClientError");
-const fileRead = require("../interface/file").reader.apply;
-const {setContext} = require("../interface/file");
+const fileRead = require("../interface/file").read;
 
 const response = require("./response");
 
@@ -46,7 +44,7 @@ function respond(entity, status, message) {
  * Respond by a simple response or redirecting to an error page depending on the request method.
  * @helper
  */
-function respondWithError(entity, status) {
+function respondWithError(entity, status = 500) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
 	if(entity.url.extension != "html") {
 		respond(entity, status);
@@ -91,22 +89,13 @@ function processFile(entity, isStaticRequest, pathname) {
 	
 	const reducedRequestObject = utils.createReducedRequestObject(entity);
 	
-	setContext(reducedRequestObject);	// TODO: Check for asnc race cond (could use queue for fix)
-	
 	// Read file either by custom reader handler or by default reader
-	try {
-		data = fileRead(pathname, reducedRequestObject);
-	} catch(err) {
-		throw new ClientError(404);
-	}
-	
+	data = fileRead(pathname, reducedRequestObject);
+
 	// No more processing on static file data
 	if(isStaticRequest) {
 		return data;
 	}
-	
-	// TODO: Lang
-	data = locale.translate(String(data), reducedRequestObject);
 	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, entity.url.isCompound);
@@ -148,7 +137,7 @@ function handle(entity) {
 	entity.url = locale.prepare(entity.url);
 	if(!isStaticRequest) {
 		const origInfo = locale.getInfo(origPathname);
-		const redirectLang = origInfo.lang && (!entity.url.lang || entity.url.lang == locale.defaultLang);
+		const redirectLang = origInfo.lang && (entity.url.lang && entity.url.lang == locale.defaultLang);
 		const redirectCountry = origInfo.country && !entity.url.country;
 		if(redirectLang || redirectCountry) {
 			let redirectPathname = origPathname;
@@ -191,7 +180,7 @@ function handle(entity) {
 		return;
 	} catch(err) {
 		output.error(err);
-
+		
 		respondWithError(entity, err.status);
 	}
 }
