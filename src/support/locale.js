@@ -21,8 +21,8 @@ const iso = {
 
 const webConfig = require("./web-config").webConfig;
 const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig.locale.defaultLang))
-? webConfig.locale.defaultLang
-: undefined;
+	? webConfig.locale.defaultLang
+	: undefined;
 
 function getInfo(pathname) {
 	let part = pathname.match(/^\/(([a-z]{2})(-([A-Z]{2}))?|([A-Z]{2}))\//);
@@ -106,7 +106,7 @@ function translate(data, reducedRequestObject) {
 		if(reducedRequestObject.isCompound) {
 			const localLangFilePath = join(webPath, dirname(reducedRequestObject.pathname), langFileName);
 			if(existsSync(localLangFilePath)) {
-				return require(localLangFilePath)
+				return require(localLangFilePath);
 			}
 		}
 
