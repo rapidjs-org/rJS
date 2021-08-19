@@ -105,8 +105,8 @@ module.exports = {
 	getPathInfo: (entityUrl) => {
 		// Add default file name if none explicitly stated in request URL
 		const pathname = entityUrl.pathname
-		.replace(/\/$/, `/${config.defaultFileName}`)
-		.replace(/(\.html)?$/, ".html");
+			.replace(/\/$/, `/${config.defaultFileName}`)
+			.replace(/(\.html)?$/, ".html");
 
 		if(existsSync(join(webPath, pathname))) {
 			return formEntity({
