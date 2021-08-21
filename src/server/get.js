@@ -1,4 +1,4 @@
-const {join, dirname, basename} = require("path");
+const {join, dirname} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
 
@@ -17,6 +17,14 @@ const fileRead = require("../interface/file").read;
 
 const response = require("./response");
 
+
+function normalizeBaseUrl(data, host, pathname) {
+	// Normalize references by updating the base URL accordingly
+	data = utils.injectIntoHead(data, `
+	<base href="http${webConfig.port.https ? "s" : ""}://${host}${pathname}"></base>`);
+
+	return data;
+}
 
 function respond(entity, status, message) {
 	// Set MIME type header accordingly
@@ -64,9 +72,7 @@ function respondWithError(entity, status = 500) {
 
 			let data = processDynamicFile(entity, errorPagePath);
 			
-			// Normalize references by updating the base URL accordingly
-			data = utils.injectIntoHead(data, `
-			<base href="http${webConfig.port.https ? "s" : ""}://${entity.req.headers["host"]}"></base>`);
+			data = normalizeBaseUrl(data, entity.req.headers["host"], errorPageDir);
 
 			respond(entity, status, data);
 
@@ -99,6 +105,12 @@ function processDynamicFile(entity, pathname) {
 	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.buildEnvironment(data, entity.url.isCompound);
+
+	if(!entity.url.isCompound) {
+		return data;
+	}
+
+	data = normalizeBaseUrl(data, entity.req.headers["host"], entity.url.base);
 
 	return data;
 }
@@ -135,7 +147,9 @@ function handle(entity) {
 	// TODO: Improve lang redirect (and locale handling)
 	// Prepare request according to locale settings
 	const origPathname = entity.url.pathname;
-	entity.url = locale.prepare(entity.url);
+
+	entity.url = locale.prepare(entity.url, entity.req.headers["accept-language"]);
+
 	if(!isStaticRequest) {
 		const origInfo = locale.getInfo(origPathname);
 		const redirectLang = origInfo.lang && (entity.url.lang && entity.url.lang == locale.defaultLang);
