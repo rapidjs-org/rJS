@@ -39,14 +39,22 @@ function getInfo(pathname) {
 	};
 }
 
-function prepare(entityUrl) {
+function prepare(entityUrl, clientAcceptLocale) {
 	const info = getInfo(entityUrl.pathname);
+	
+	clientAcceptLocale = clientAcceptLocale
+		? {
+			lang: (clientAcceptLocale.match(/^[a-z]{2}/) || [undefined])[0],
+			country: (clientAcceptLocale.match(/^-([A-Z]{2})/) || [undefined])[1]
+		}
+		: undefined;
 
 	entityUrl.country = (webConfig.locale.supportedCountryCodes || []).includes(info.country)
 		? info.country
-		: undefined;
-	
-	entityUrl.lang = hasLangObj(info.lang) ? info.lang : defaultLang;
+		: clientAcceptLocale.country;
+
+	info.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
+	entityUrl.lang = info.lang ? info.lang : (clientAcceptLocale.lang ? clientAcceptLocale.lang : defaultLang);
 
 	if(!entityUrl.lang) {
 		return entityUrl;
@@ -54,8 +62,8 @@ function prepare(entityUrl) {
 
 	entityUrl.pathname = entityUrl.pathname.slice(
 		(info.lang ? info.lang.length + 1 : 0)
-	+ (info.country ? info.country.length + 1 : 0));
-		
+		+ (info.country ? info.country.length + 1 : 0));
+	
 	return entityUrl;
 
 	function hasLangObj(lang) {

@@ -118,6 +118,7 @@ async function handleRequest(entity) {
 	entity.res.setHeader("X-Powered-By", null);
 
 	entity.url.pathname = urlParts.pathname;
+	
 	entity.url.query = urlParts.query;
 	
 	// Apply the related handler
