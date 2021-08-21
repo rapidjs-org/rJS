@@ -87,19 +87,23 @@ module.exports = {
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
 			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
-			lang: entity.url.lang,
-			country: entity.url.country,
 			pathname: entity.url.pathname,
 			isCompound: entity.url.isCompound,
 			... entity.url.isCompound
 				? {
-					base: entity.url.base,
-					args: entity.url.args
+					compound: {
+						base: entity.url.base,
+						args: entity.url.args
+					}
 				}
-				: {}
+				: {},
+			locale: {
+				lang: entity.url.lang,
+				country: entity.url.country
+			}	
 		};
 
-		// TODO: Provide header values useful for session management
+		// TODO: Provide header values useful for session management?
 	},
 
 	getPathInfo: (entityUrl) => {
@@ -115,27 +119,26 @@ module.exports = {
 		}
 
 		// Use compound page path if respective directory exists
-		let compoundPath = "";
 		const pathParts = entityUrl.pathname.replace(/^\//, "").split(/\//g) || [entityUrl.pathname];
-		for(let part of pathParts) {
-			part = part || config.defaultFileName;
+		const args = [];
+		
+		while(pathParts.length > 0) {
+			// Construct possible compound path information to check for existence
+			const part = pathParts.pop();
+			const baseName = part || config.defaultFileName;
 
-			// Construct possible internal compound path
-			const localCompoundPath = join(compoundPath, `${config.compoundPageDirPrefix}${part}`, `${part}.html`);
-			compoundPath = join(compoundPath, part);
-						
+			const localCompoundPath = join(pathParts.join("/"), `${config.compoundPageDirPrefix}${baseName}`, `${baseName}.html`);
+
 			// Return compound path if related file exists in file system
 			if(existsSync(join(webPath, localCompoundPath))) {
-				const args = entityUrl.pathname.slice(compoundPath.length + 2)
-					.split(/\//g)
-					.filter(arg => arg.length > 0);
-				
 				return formEntity({
 					pathname: `/${localCompoundPath}`,
-					base: `/${compoundPath}`,
-					args: args
+					base: `/${join(pathParts.join("/"), part)}`,
+					args: args.filter(arg => arg.length > 0)
 				}, true);
 			}
+
+			args.push(part);
 		}
 		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
 		

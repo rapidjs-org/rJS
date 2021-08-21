@@ -68,7 +68,7 @@ function handle(entity) {
 		try {
 			entity.url = locale.prepare({
 				pathname: body.meta.pathname
-			});
+			}, entity.req.headers["accept-language"]);
 			
 			entity.url = utils.getPathInfo(entity.url);
 
