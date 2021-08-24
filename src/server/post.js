@@ -78,7 +78,6 @@ function handle(entity) {
 			
 			respond(entity, 200, data);
 		} catch(err) {
-			output.log(`An error occurred using the endpoint for plug-in '${internalPathname.slice(1)}':`);
 			output.error(err);
 
 			respond(entity, err.status, err.message || null);

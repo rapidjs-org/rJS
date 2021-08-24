@@ -4,7 +4,7 @@ const config = {
 };
 
 
-const {join} = require("path");
+const {join, dirname} = require("path");
 const {existsSync} = require("fs");
 
 const webPath = require("./support/web-path");
@@ -87,7 +87,7 @@ module.exports = {
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
 			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
-			pathname: entity.url.pathname,
+			pathname: entity.url.isCompound ? dirname(entity.url.pathname) : entity.url.pathname,
 			isCompound: entity.url.isCompound,
 			... entity.url.isCompound
 				? {
@@ -134,7 +134,7 @@ module.exports = {
 				return formEntity({
 					pathname: `/${localCompoundPath}`,
 					base: `/${join(pathParts.join("/"), part)}`,
-					args: args.filter(arg => arg.length > 0)
+					args: args.filter(arg => arg.length > 0).reverse()
 				}, true);
 			}
 
