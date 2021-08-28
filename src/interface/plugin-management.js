@@ -237,6 +237,11 @@ function buildEnvironment(data, isCompound) {
 				&& registry.data.get(env).frontend;
 		})
 		.reverse().forEach(name => {
+			// Do not inject script tag if hardcoded in head already (use case: ordering)
+			if((new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i")).test(data)) {
+				return;
+			}
+
 			data = utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${name}"></script>`);
 		});
 

@@ -1,4 +1,4 @@
-const {join, extname, dirname, basename} = require("path");
+const {join, extname, basename} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const utils = require("../utils");
@@ -29,8 +29,8 @@ function read(pathname, reducedRequestObject) {
 	// TODO: Handle auto red req obj passing
 	// Markup modifications
 	data = locale.translate(String(data), reducedRequestObject);
-
-	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, dirname(reducedRequestObject.pathname), `${basename(reducedRequestObject.pathname).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
+	
+	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, reducedRequestObject.pathname, `${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
 	data = templater.apply(data, (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {}, reducedRequestObject);
 	
 	return data;
