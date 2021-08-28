@@ -15,7 +15,7 @@ module.exports =  {
 	set: (callback, useCache = false) => {
 		const pluginName = getNameByPath(utils.getCallerPath(__filename));
 		const pathname = `/${pluginName}`;
-				
+
 		if(routeHandlers.has(pathname)){
 			throw new ReferenceError(`Must not override already set up endpoint for plug-in with name '${pluginName}'`);
 		}
@@ -43,7 +43,7 @@ module.exports =  {
 
 		const data = handler.callback.call(null, body, reducedRequestObject);
 		handler.useCache && (cache.write(pathname, data));
-		
+				
 		/* console.log = origLog; */
 		
 		return data;

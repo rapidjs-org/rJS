@@ -10,10 +10,8 @@ const response = require("./response");
 
 
 function respond(entity, status, message) {
-	if(!utils.isString(message)) {
-		message = JSON.stringify(Buffer.isBuffer(message) ? String(message) : message);
-	}
-
+	message = JSON.stringify(Buffer.isBuffer(message) ? String(message) : message);
+	
 	response.respond(entity, status, message);
 }
 
