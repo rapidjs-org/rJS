@@ -23,7 +23,7 @@ const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
  */
 PUBLIC.useEndpoint = function(body, progressHandler) {
 	const pathname = `/${retrieveEndpoint()}`;
-	
+		
 	return new Promise((resolve, reject) => {
 		fetch(pathname, {
 			method: "POST",

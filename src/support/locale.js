@@ -54,7 +54,7 @@ function prepare(entityUrl, clientAcceptLocale) {
 		: clientAcceptLocale.country;
 
 	info.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
-	entityUrl.lang = info.lang ? info.lang : (clientAcceptLocale.lang ? clientAcceptLocale.lang : defaultLang);
+	entityUrl.lang = info.lang ? info.lang : ((clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang)) ? clientAcceptLocale.lang : defaultLang);
 
 	if(!entityUrl.lang) {
 		return entityUrl;
