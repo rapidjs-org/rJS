@@ -27,7 +27,7 @@ module.exports =  {
 	},
 
 	has: (pathname) => {
-		return routeHandlers.has(pathname) ? true : false;
+		return routeHandlers.has(pathname);
 	},
 
 	use: (pathname, body, reducedRequestObject) => {
