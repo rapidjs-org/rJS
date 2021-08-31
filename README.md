@@ -11,7 +11,7 @@ Furthermore it provides a simple, yet powerful interface for individualization o
 ## Get started
 
 [Get started](https://rapidjs.org/docs)\
-[Tutorial](https://rapidjs.org/tutorial/)\
+[Tutorial](https://rapidjs.org/tutorial)\
 [FAQ](https://rapidjs.org/faq)
 
 ---
