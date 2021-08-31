@@ -5,8 +5,7 @@
 <a href="https://www.npmjs.com/package/@rapidjs.org/core"><img src="https://img.shields.io/npm/v/@rapidjs.org/core"></a>
 <a href="https://www.npmjs.com/package/@rapidjs.org/core"><img src="https://img.shields.io/bundlephobia/min/@rapidjs.org/core"></a>
 
-rapidJS is an open-source framework for developing lightweight asset focused server environments for scalable web applications.
-Furthermore it provides a simple, yet powerful interface for individualization of any level of complexity.
+rapidJS is an open-source framework for developing highly abstracted, self-operational server environments. Provides a lean interface for individualization utilizing modular client-server-channel plug-ins.
 
 ## Get started
 
