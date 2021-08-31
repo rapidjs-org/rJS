@@ -55,7 +55,7 @@ require(webConfig.port.https ? "https" : "http").createServer(options, (req, res
 
 			res.end();
 		});
-}).listen(port, null, null, _ => {
+}).listen(port, webConfig.hostname || null, webConfig.maxPending || null, _ => {
 	output.log(`Server started listening on port ${port}`);
 	
 	if(isDevMode) {
@@ -66,7 +66,7 @@ require(webConfig.port.https ? "https" : "http").createServer(options, (req, res
 if(webConfig.port.https && webConfig.port.http) {
 	require("http").createServer((req, res) => {
 		response.redirect(res, `https://${req.headers.host}${req.url}`);
-	}).listen(webConfig.port.http, null, null, _ => {
+	}).listen(webConfig.port.http, webConfig.hostname || null, webConfig.maxPending || null, _ => {
 		output.log(`HTTP (:${webConfig.port.http}) to HTTPS (:${webConfig.port.https}) redirection enabled`);
 	});
 }
@@ -125,7 +125,8 @@ async function handleRequest(entity) {
 	switch(entity.req.method) {
 	case "get":
 		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
-
+		
+		console.log(entity.req.headers.host);
 		requestHandler.GET(entity);
 		break;
 	case "post":
