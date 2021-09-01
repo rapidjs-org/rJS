@@ -158,10 +158,12 @@ function handle(entity) {
 					? ""
 					: `/${entity.url.lang}`
 				)
-			: locale.getDefault() == reqInfo.lang
-				? ""
+			: (reqInfo.lang
+				? locale.getDefault() == reqInfo.lang
+					? ""
+					: null
 				: null
-		;
+			);
 		
 		if(utils.isString(newLocale)) {
 			response.redirect(entity, `${newLocale}${entity.url.pathname}`);
