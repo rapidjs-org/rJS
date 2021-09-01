@@ -145,23 +145,26 @@ function handle(entity) {
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 
 	// Prepare request according to locale settings
-	const origInfo = locale.getInfo(entity.url);
+	const reqInfo = locale.getInfo(entity.url);
 	entity.url = locale.prepare(entity.url, entity.req.headers["accept-language"]);
-
 	if(!isStaticRequest) {
-		const redirectLang = origInfo.lang && (entity.url.lang && entity.url.lang == locale.defaultLang);
-		const redirectCountry = origInfo.country && !entity.url.country;
-		if(redirectLang || redirectCountry) {
-			let redirectPathname = origPathname;
-			redirectPathname = !redirectLang ? redirectPathname
-				: redirectPathname
-					.replace(new RegExp(`^\\/${origInfo.lang}`), "")
-					.replace(/^(-|$)/, "/");
-			redirectPathname = !redirectCountry ? redirectPathname
-				: redirectPathname
-					.replace(new RegExp(`(\\/|-)${origInfo.country}`), "");
-			
-			response.redirect(entity, redirectPathname);
+		const newLocale = reqInfo.country
+			? entity.url.country
+				? (locale.getDefault(entity.url.country) == reqInfo.lang
+					? `/${entity.url.country}`
+					: null
+				)
+				: (locale.getDefault() == reqInfo.lang
+					? ""
+					: `/${entity.url.lang}`
+				)
+			: locale.getDefault() == reqInfo.lang
+				? ""
+				: null
+		;
+		
+		if(utils.isString(newLocale)) {
+			response.redirect(entity, `${newLocale}${entity.url.pathname}`);
 			
 			return;
 		}
