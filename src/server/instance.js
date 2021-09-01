@@ -118,15 +118,18 @@ async function handleRequest(entity) {
 	entity.res.setHeader("X-Powered-By", null);
 
 	entity.url.pathname = urlParts.pathname;
-	
 	entity.url.query = urlParts.query;
+
+	const subdomains = (entity.req.headers.host.match(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+/i) || [""])[0]
+	.split(/\./g)
+	.filter(sub => (sub.length > 0));
+	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
 	
 	// Apply the related handler
 	switch(entity.req.method) {
 	case "get":
 		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
 		
-		console.log(entity.req.headers.host);
 		requestHandler.GET(entity);
 		break;
 	case "post":

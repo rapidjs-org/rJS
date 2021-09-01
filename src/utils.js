@@ -87,6 +87,7 @@ module.exports = {
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
 			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
+			subdomain: entity.url.subdomain,
 			pathname: entity.url.isCompound ? dirname(entity.url.pathname) : entity.url.pathname,
 			isCompound: entity.url.isCompound,
 			... entity.url.isCompound
