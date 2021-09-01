@@ -39,11 +39,19 @@ const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig
 	: undefined;
 
 
+function getDefault(location) {
+	if(!location) {
+		return defaultLang;
+	}
+
+	return supportedCountryCodes.get(location.toUpperCase());
+}
+
 function getInfo(entityUrl) {
 	const reference = webConfig.locale.useSubdomain
-	? (Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain[0] : (entityUrl.subdomain || ""))
-	: entityUrl.pathname.slice(0, entityUrl.pathname.indexOf("/") || entityUrl.pathname.length).replace(/^\//, "");
-
+		? (Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain[0] : (entityUrl.subdomain || ""))
+		: entityUrl.pathname.slice(1).slice(0, Math.max(entityUrl.pathname.slice(1).indexOf("/"), 0)).replace(/^\//, "");
+	
 	let part = reference.match(/^(([a-z]{2})(-([a-z]{2}))?|([A-Z]{2}))/i);
 	part = part
 		? {
@@ -53,8 +61,8 @@ function getInfo(entityUrl) {
 		: {};
 	
 	return {
-		lang: (part.lang && iso.lang.includes(part.lang)) ? part.lang : undefined,
-		country: (part.country && iso.country.includes(part.country)) ? part.country : undefined
+		lang: iso.lang.includes(part.lang) ? part.lang : undefined,
+		country: iso.country.includes(part.country) ? part.country : undefined
 	};
 }
 
@@ -75,15 +83,15 @@ function prepare(entityUrl, clientAcceptLocale) {
 	
 	entityUrl.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
 	entityUrl.lang = info.lang
-	? info.lang
-	: ((clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang))
-		? clientAcceptLocale.lang
-		: (entityUrl.country ? supportedCountryCodes.get(entityUrl.country) : defaultLang));
+		? info.lang
+		: ((clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang))
+			? clientAcceptLocale.lang
+			: (entityUrl.country ? supportedCountryCodes.get(entityUrl.country) : defaultLang));
 	
 	if(webConfig.locale.useSubdomain) {
 		entityUrl.subdomain = info.lang
-		? Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain.slice(1) : null
-		: entityUrl.subdomain;
+			? Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain.slice(1) : null
+			: entityUrl.subdomain;
 
 		return entityUrl;
 	}
@@ -91,7 +99,7 @@ function prepare(entityUrl, clientAcceptLocale) {
 	entityUrl.pathname = entityUrl.pathname.slice(
 		(info.lang ? info.lang.length + 1 : 0)
 		+ (info.country ? info.country.length + 1 : 0));
-	
+
 	return entityUrl;	// TODO: Optimize for static files (remove obsolote steps)
 
 	function hasLangObj(lang) {
@@ -157,8 +165,7 @@ function translate(data, reducedRequestObject) {
 }
 
 module.exports = {
-	defaultLang,
-	
+	getDefault,
 	getInfo,
 	prepare,
 	translate
