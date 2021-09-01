@@ -24,6 +24,7 @@ const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig
 	? webConfig.locale.defaultLang
 	: undefined;
 
+
 function getInfo(pathname) {
 	let part = pathname.match(/^\/(([a-z]{2})(-([A-Z]{2}))?|([A-Z]{2}))\//);
 	part = part

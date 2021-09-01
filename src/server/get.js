@@ -144,10 +144,8 @@ function handle(entity) {
 
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 
-	// TODO: Improve lang redirect (and locale handling)
 	// Prepare request according to locale settings
 	const origPathname = entity.url.pathname;
-
 	entity.url = locale.prepare(entity.url, entity.req.headers["accept-language"]);
 
 	if(!isStaticRequest) {
