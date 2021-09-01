@@ -145,11 +145,10 @@ function handle(entity) {
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
 
 	// Prepare request according to locale settings
-	const origPathname = entity.url.pathname;
+	const origInfo = locale.getInfo(entity.url);
 	entity.url = locale.prepare(entity.url, entity.req.headers["accept-language"]);
 
 	if(!isStaticRequest) {
-		const origInfo = locale.getInfo(origPathname);
 		const redirectLang = origInfo.lang && (entity.url.lang && entity.url.lang == locale.defaultLang);
 		const redirectCountry = origInfo.country && !entity.url.country;
 		if(redirectLang || redirectCountry) {
