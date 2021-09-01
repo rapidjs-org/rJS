@@ -200,7 +200,7 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 	// TODO: Wrap with keeping line numbers
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
 	frontendModuleData = `
-var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {var ${config.frontendModuleReferenceName.external} = {};${frontendModuleData}
+var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {var ${config.frontendModuleReferenceName.external} = {};${frontendModuleData};
 		${config.frontendModuleReferenceName.internal}${(pluginName != config.coreModuleIdentifier) ? `["${pluginName }"]` : ""} = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
