@@ -41,6 +41,7 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 				body: body
 			})
 		}).then(async res => {
+			action = "";
 			// Explicitly download body to handle progress
 			const contentLength = res.headers.get("Content-Length");
 			let receivedLength = 0;
@@ -64,10 +65,10 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 			}
 
 			const message = JSON.parse(new TextDecoder("utf-8").decode(chunksAll));
-			
-			resolve(message);
+
+			((res.status % 200) < 99) ? resolve(message) : reject(message);
 		}).catch(_ => {
-			reject();
+			reject(new NetworkError("Could not connect to endpoint"));
 		});
 	});
 

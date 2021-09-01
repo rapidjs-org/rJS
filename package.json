@@ -11,7 +11,7 @@
     "release": "npm run build && np"
   },
   "bin": {
-    "rapidjs": "./src/cli.js"
+    "rapidjs": "./dist/cli.js"
   },
   "files": [
     "dist"
