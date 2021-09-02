@@ -76,10 +76,10 @@ function prepare(entityUrl, clientAcceptLocale) {
 		}
 		: undefined;
 	
-	entityUrl.country = info.country || clientAcceptLocale.country;
-	entityUrl.country = supportedCountryCodes.has(entityUrl.country)
-		? entityUrl.country
-		: undefined;
+	entityUrl.country = info.country || (clientAcceptLocale ? clientAcceptLocale.country : undefined);
+	entityUrl.country = (entityUrl.country && supportedCountryCodes.has(entityUrl.country))
+	? entityUrl.country
+	: undefined;
 	
 	entityUrl.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
 	entityUrl.lang = info.lang
