@@ -65,7 +65,9 @@ require(webConfig.port.https ? "https" : "http").createServer(options, (req, res
 // Create HTTP to HTTPS redirect server if both ports set up
 if(webConfig.port.https && webConfig.port.http) {
 	require("http").createServer((req, res) => {
-		response.redirect(res, `https://${req.headers.host}${req.url}`);
+		response.redirect({
+			res: res
+		}, `https://${req.headers.host}${req.url}`);
 	}).listen(webConfig.port.http, webConfig.hostname || null, webConfig.maxPending || null, _ => {
 		output.log(`HTTP (:${webConfig.port.http}) to HTTPS (:${webConfig.port.https}) redirection enabled`);
 	});
