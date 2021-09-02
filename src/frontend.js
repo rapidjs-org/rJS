@@ -11,7 +11,7 @@ const performRequest = (method, pathname, body) => {
 		redirect: "follow",
 		referrerPolicy: "no-referrer",
 		body: JSON.stringify(body)
-	})
+	});
 };
 
 const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
@@ -45,7 +45,6 @@ PUBLIC.useEndpoint = (body, progressHandler) => {
 			},
 			body: body
 		}).then(async res => {
-			action = "";
 			// Explicitly download body to handle progress
 			const contentLength = res.headers.get("Content-Length");
 			let receivedLength = 0;
@@ -86,12 +85,6 @@ PUBLIC.useEndpoint = (body, progressHandler) => {
  * @param {Number} status Status code
  */
 PUBLIC.redirectError = status => {
-	performRequest("PUT", pathname, {
-		meta: {
-			pathname: document.location.pathname
-		},
-		body: body
-	}).then(async res => {
-		
-	});
+	console.log(status);
+	// TODO: Implement (on hold)
 };
