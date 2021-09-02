@@ -1,5 +1,19 @@
 /* global config */
 
+const performRequest = (method, pathname, body) => {
+	return fetch(pathname, {
+		method: method,
+		mode: "same-origin",
+		credentials: "same-origin",
+		headers: {
+			"Content-Type": "application/json"
+		},
+		redirect: "follow",
+		referrerPolicy: "no-referrer",
+		body: JSON.stringify(body)
+	})
+};
+
 const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
 	const pluginName = (new Error).stack
 		.split(/\n+/g)
@@ -21,25 +35,15 @@ const retrieveEndpoint = _ => {	// TODO: FIND MORE RELIABLE APPROACH
  * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
  * @returns {Promise} Request promise eventualy resolving to response message
  */
-PUBLIC.useEndpoint = function(body, progressHandler) {
+PUBLIC.useEndpoint = (body, progressHandler) => {
 	const pathname = `/${retrieveEndpoint()}`;
 		
 	return new Promise((resolve, reject) => {
-		fetch(pathname, {
-			method: "POST",
-			mode: "same-origin",
-			credentials: "same-origin",
-			headers: {
-				"Content-Type": "application/json"
+		performRequest("POST", pathname, {
+			meta: {
+				pathname: document.location.pathname
 			},
-			redirect: "follow",
-			referrerPolicy: "no-referrer",
-			body: JSON.stringify({
-				meta: {
-					pathname: document.location.pathname
-				},
-				body: body
-			})
+			body: body
 		}).then(async res => {
 			action = "";
 			// Explicitly download body to handle progress
@@ -68,7 +72,7 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 
 			((res.status % 200) < 99) ? resolve(message) : reject(message);
 		}).catch(_ => {
-			reject(new NetworkError("Could not connect to endpoint"));
+			reject(new Error("Could not connect to endpoint"));
 		});
 	});
 
@@ -77,4 +81,17 @@ PUBLIC.useEndpoint = function(body, progressHandler) {
 	}
 };
 
-// TODO: Method to load closest error?
+/**
+ * Redirect to the next related error page.
+ * @param {Number} status Status code
+ */
+PUBLIC.redirectError = status => {
+	performRequest("PUT", pathname, {
+		meta: {
+			pathname: document.location.pathname
+		},
+		body: body
+	}).then(async res => {
+
+	});
+};
