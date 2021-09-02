@@ -1,3 +1,7 @@
+/**
+ * POST handler: Approached upon plug-in channel (endpoint) usage only.
+ */
+
 const utils = require("../utils");
 
 const webConfig = require("../support/web-config").webConfig;

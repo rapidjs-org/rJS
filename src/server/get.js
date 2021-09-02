@@ -1,3 +1,7 @@
+/**
+ * GET handler: Approached upon asset request only.
+ */
+
 const {join, dirname} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
@@ -21,7 +25,7 @@ const response = require("./response");
 function normalizeBaseUrl(data, host, pathname) {
 	// Normalize references by updating the base URL accordingly
 	data = utils.injectIntoHead(data, `
-	<base href="http${webConfig.port.https ? "s" : ""}://${host}${pathname}"></base>`);
+	<base href="http${webConfig.port.https ? "s" : ""}://${host}${pathname}">`);
 
 	return data;
 }

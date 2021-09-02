@@ -200,7 +200,7 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 	// TODO: Wrap with keeping line numbers
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
 	frontendModuleData = `
-var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {var ${config.frontendModuleReferenceName.external} = {};${frontendModuleData};
+		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {var ${config.frontendModuleReferenceName.external} = {};${frontendModuleData};
 		${config.frontendModuleReferenceName.internal}${(pluginName != config.coreModuleIdentifier) ? `["${pluginName }"]` : ""} = ${config.frontendModuleReferenceName.external};
 		return ${config.frontendModuleReferenceName.internal};
 		})(${config.frontendModuleAppName} || {});
@@ -210,6 +210,7 @@ var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.inte
 	registry.data.get(pluginName).frontend = frontendModuleData;
 	registry.data.get(pluginName).compoundOnly = compoundOnly;
 }
+// TODO: Implement option for plug-in to wait in frontend for another plug-ins intial run completion
 
 function isFrontendRequest(pathname) {
 	if(!(new RegExp(`${urlPrefixRegex.source}${pluginNameRegex.source.slice(1)}`, "i")).test(pathname)) {
