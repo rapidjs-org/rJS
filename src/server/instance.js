@@ -20,7 +20,8 @@ const response = require("./response");
 
 const requestHandler = {
 	GET: require("./get"),
-	POST: require("./post")
+	POST: require("./post"),
+	HEAD: require("./head"),
 };
 
 
@@ -135,7 +136,6 @@ async function handleRequest(entity) {
 		requestHandler.GET(entity);
 		break;
 	case "post":
-		// TODO: Add language in post request
 		requestHandler.POST(entity);
 		break;
 	}
