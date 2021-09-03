@@ -20,8 +20,7 @@ const response = require("./response");
 
 const requestHandler = {
 	GET: require("./get"),
-	POST: require("./post"),
-	HEAD: require("./head"),
+	POST: require("./post")
 };
 
 
