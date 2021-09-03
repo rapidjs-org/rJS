@@ -254,19 +254,12 @@ module.exports = {
 	isFrontendRequest,
 	retrieveFrontendModule,
 	buildEnvironment,
-	getNameByPath
+	getNameByPath,
+
+	initFrontendModule,
+	readConfig
 };
 
 
 // Plug-in specific core interface; accessible from referenced plug-in scopes
-let pluginInterface = {
-	ClientError: require("./ClientError"),
-	
-	setEndpoint:  createInterface(require("./endpoint").set, "creating an endpoint", true),
-	initFrontendModule: createInterface(initFrontendModule, "initializing a frontend module", true),
-
-	file: require("./file").interface,
-	createCache: require("./cache"),
-	
-	readConfig
-};
+let pluginInterface = require("../interface:plugin");

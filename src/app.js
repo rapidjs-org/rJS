@@ -4,22 +4,8 @@
  */
 
 
-const {createInterface} = require("./utils");
-
-
 require("./server/instance.js");
 
 
 // Application specific core interface; accessible from the instanciating application's scope
-module.exports = {
-	ClientError: require("./interface/ClientError"),
-	Environment: require("./interface/Environment"),
-
-	isDevMode: require("./support/is-dev-mode"),	// TODO: Improve approach?
-	file: require("./interface/file").interface,
-
-	bindTemplating: createInterface(require("./interface/templater").bind, "binding a templating handler", true),
-	plugin: createInterface(require("./interface/plugin-management").plugin, "connecting a plug-in", true)
-};
-
-// TODO: Implement templating feature on core (including to "includes" functionality)
+module.exports = require("./interface:app");

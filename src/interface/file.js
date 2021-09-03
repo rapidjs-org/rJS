@@ -46,9 +46,5 @@ function exists(pathname) {
 
 module.exports = {
 	read,
-
-	interface: {
-		read: read,
-		exists: exists
-	}
+	exists
 };
