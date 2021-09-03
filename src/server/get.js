@@ -17,6 +17,7 @@ const mimesConfig = require("../support/web-config").mimesConfig;
 
 const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
+
 const fileRead = require("../interface/file").read;
 
 const response = require("./response");
@@ -89,22 +90,13 @@ function respondWithError(entity, status = 500) {
 }
 
 
-
 function processStaticFile(entity) {
-	let data;
-	
-	const reducedRequestObject = utils.createReducedRequestObject(entity);
-	
-	// Read file either by custom reader handler or by default reader
-	data = fileRead(entity.url.pathname, reducedRequestObject);
-	
-	return data;
+	return fileRead(entity.url.pathname);
 }
 
 function processDynamicFile(entity, pathname) {
 	const reducedRequestObject = utils.createReducedRequestObject(entity);
 	
-	// Read file either by custom reader handler or by default reader
 	let data = fileRead(pathname || entity.url.pathname, reducedRequestObject);
 	
 	// Sequentially apply defined plug-in module modifiers

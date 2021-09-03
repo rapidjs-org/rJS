@@ -84,11 +84,20 @@ module.exports = {
 	},
 
 	createReducedRequestObject: entity => {
+		// Parse and transfer cookies to reduced request object
+		const cookies = {};
+		const cookieHeader = entity.req.headers.cookie;
+		cookieHeader && cookieHeader.split(";").forEach(cookie => {
+			const p = cookie.split("=");
+			cookies[p.shift().trim()] = decodeURI(p.join("="));
+		});
+
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
 			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
 			subdomain: entity.url.subdomain,
 			pathname: entity.url.isCompound ? dirname(entity.url.pathname) : entity.url.pathname,
+			cookies: cookies,
 			isCompound: entity.url.isCompound,
 			... entity.url.isCompound
 				? {
