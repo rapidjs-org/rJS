@@ -1,5 +1,5 @@
 const config = {
-	compoundPageDirPrefix: ":",
+	compoundPageDirPrefix: "#",
 	defaultFileName: "index"
 };
 
