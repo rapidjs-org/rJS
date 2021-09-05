@@ -15,8 +15,13 @@ const locale = require("../support/locale");
 const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
-const staticCache = require("../interface/cache")();
 const pluginManagement = require("../interface/plugin-management");
+
+const cache = {
+	static: require("../interface/cache")(),
+	dynamic: require("../interface/cache")(1000)
+	// Very small caching duration for dynamic files (for saving ressources on load peaks)
+};
 
 const fileRead = require("../interface/file").read;
 
@@ -174,8 +179,9 @@ function handle(entity) {
 	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 
 	// Use cached data if is static file request (and not outdated)
-	if(isStaticRequest && staticCache.has(entity.url.pathname)) {
-		data = staticCache.read(entity.url.pathname);
+	const respCache = cache[isStaticRequest ? "static" : "dynamic"];
+	if(respCache.has(entity.url.pathname)) {
+		data = respCache.read(entity.url.pathname);
 
 		respond(entity, 200, data);
 
@@ -186,7 +192,7 @@ function handle(entity) {
 		data = isStaticRequest ? processStaticFile(entity) : processDynamicFile(entity);
 		
 		// Set server-side cache
-		isStaticRequest && staticCache.write(entity.url.pathname, data);
+		isStaticRequest && respCache.write(entity.url.pathname, data);
 
 		respond(entity, 200, data);
 
