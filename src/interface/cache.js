@@ -1,8 +1,8 @@
-const cachingDuration = require("../support/is-dev-mode") ? null : require("../support/web-config").webConfig.cachingDuration.server;
+const configDuration = require("../support/is-dev-mode") ? null : require("../support/web-config").webConfig.cachingDuration.server;
 
 const storage = new Map();
 
-function checkEmpty(key, cachingDuration) {
+function isEmpty(key, cachingDuration) {
 	if(!cachingDuration) {
 		return true;
 	}
@@ -16,7 +16,7 @@ function checkEmpty(key, cachingDuration) {
 	return false;
 }
 
-function createCache() {
+function createCache(duration = configDuration) {
 	return {
 		/**
 		 * Check if the cache holds an entry for the requested URL (pathname as key).
@@ -29,7 +29,7 @@ function createCache() {
 				return false;
 			}
 			
-			return !checkEmpty(key, cachingDuration);
+			return !isEmpty(key, duration);
 		},
 
 		/**
@@ -38,7 +38,7 @@ function createCache() {
 		 * @returns {String|Buffer} Cached data associated with the given key (undefined if not in cache)
 		 */
 		read: key => {
-			checkEmpty(key, cachingDuration);
+			isEmpty(key, duration);
 			
 			if(!storage.has(key)) {
 				return undefined;
@@ -53,7 +53,7 @@ function createCache() {
 		 * @param {String|Buffer} data Data to write to cache
 		 */
 		write: (key, data) => {
-			if(!cachingDuration) {
+			if(!duration) {
 				return;
 			}
 

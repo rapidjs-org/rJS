@@ -91,6 +91,7 @@ module.exports = {
 			const p = cookie.split("=");
 			cookies[p.shift().trim()] = decodeURI(p.join("="));
 		});
+		console.log(cookies);
 
 		// Construct reduced request object to be passed to each response modifier handler
 		return {
