@@ -19,8 +19,8 @@ const response = require("./response");
 
 
 const requestHandler = {
-	GET: require("./get"),
-	POST: require("./post")
+	get: require("./get"),
+	post: require("./post")
 };
 
 
@@ -93,7 +93,7 @@ async function handleRequest(entity) {
 		return;
 	}
 	// Block request if method not allowed
-	if(!["get", "post"].includes(entity.req.method)) {
+	if(!requestHandler[entity.req.method]) {
 		response.respond(entity, 405);
 
 		return;
@@ -132,10 +132,8 @@ async function handleRequest(entity) {
 	case "get":
 		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
 		
-		requestHandler.GET(entity);
-		break;
-	case "post":
-		requestHandler.POST(entity);
 		break;
 	}
+
+	requestHandler[entity.req.method](entity);
 }
