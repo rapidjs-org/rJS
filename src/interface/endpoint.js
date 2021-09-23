@@ -3,6 +3,9 @@ const utils = require("../utils");
 const cache = require("./cache")();
 const {getNameByPath} = require("./plugin-management");
 
+const entityHook = require("../server/entity-hook");
+
+
 const routeHandlers = new Map();
 
 
@@ -19,7 +22,7 @@ module.exports =  {
 		if(routeHandlers.has(pathname)){
 			throw new ReferenceError(`Must not override already set up endpoint for plug-in with name '${pluginName}'`);
 		}
-
+		
 		routeHandlers.set(pathname, {
 			callback: callback,
 			useCache: useCache
@@ -30,7 +33,7 @@ module.exports =  {
 		return routeHandlers.has(pathname);
 	},
 
-	use: (pathname, body, reducedRequestObject) => {
+	use: (pathname, body) => {
 		const handler = routeHandlers.get(pathname);
 		if(handler.useCache && cache.has(pathname)) {
 			return cache.read(pathname);
@@ -40,6 +43,8 @@ module.exports =  {
 		console.log = message => {
 			process.stdout.write("Message from within endpoint:");
 		}; */
+
+		const reducedRequestObject = entityHook.reducedRequestObject();
 
 		const data = handler.callback.call(null, body, reducedRequestObject);
 		handler.useCache && (cache.write(pathname, data));
