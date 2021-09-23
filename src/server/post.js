@@ -23,7 +23,7 @@ function respond(status, message) {
 /**
  * Handle a POST request accordingly.
  */
-function handle(entity) {
+module.exports = entity => {
 	if(!endpoint.has(entity.url.pathname)) {
 	// No related POST handler defined
 		respond(404);
@@ -67,9 +67,8 @@ function handle(entity) {
 		
 		const internalPathname = entity.url.pathname;
 		try {
-			entity.url = locale.prepare({
-				pathname: body.meta.pathname
-			}, entity.req.headers["accept-language"]);
+			entity.url.pathname = body.meta.pathname;
+			locale.prepare(entity);
 			
 			utils.adaptUrl(entity);
 
@@ -87,7 +86,4 @@ function handle(entity) {
 	entity.req.on("error", _ => {
 		respond(500);
 	});
-}
-
-
-module.exports = handle;
+};

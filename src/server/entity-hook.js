@@ -80,6 +80,7 @@ function respond(status, message) {
     
     entity.res.end(isNaN(status) ? null : message);
 }
+
 /**
  * Perform a redirect to a given path.
  * @param {String} path - Path to redirect to

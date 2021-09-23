@@ -3,7 +3,7 @@
  */
 
  const config = {
-	defaultFileName: "index"
+	defaultPageName: "index"
 };	// TODO: Allow for default file name and extension / type to be changed via configuration file?
 
 
@@ -57,6 +57,10 @@ function respond(entity, status, message) {
 	}
 
 	entityHook.respond(status, message);
+}
+
+function redirect(newPathname, urlParts) {
+	entityHook.redirect(`${newPathname}${urlParts.search || ""}${urlParts.hash || ""}`);
 }
 
 /**
@@ -122,15 +126,15 @@ function processDynamicFile(entity, pathname) {
 /**
  * Handle a GET request accordingly.
  */
-function handle(entity) {
-	let data;
-
+module.exports = entity => {
 	// Extract or assume requested file extension
 	const urlParts = parseUrl(entity.req.url, true);
 
 	entity.url.extension = (extname(urlParts.pathname).length > 0)
 	? utils.normalizeExtension(extname(urlParts.pathname))
 	: "html";
+
+	let data;
 	
 	// Handle plug-in frontend module file requests individually and prioritized
 	if(pluginManagement.isFrontendRequest(entity.url.pathname)) {
@@ -139,18 +143,6 @@ function handle(entity) {
 		data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 		
 		respond(entity, data ? 200 : 404, data);
-
-		return;
-	}
-
-	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
-	let explicitBase;
-	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
-		&& explicitBase[0].length > 1) {
-		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
-                     + (urlParts.search || "");
-        
-					 entityHook.redirect(entity, newUrl);
 
 		return;
 	}
@@ -165,10 +157,20 @@ function handle(entity) {
 	}
 
 	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
+	
+	// Redirect requests explicitly stating the default page or extension name to a request with an extensionless URL
+	let explicitBase;
+	if(!isStaticRequest
+	&& (explicitBase = basename(urlParts.pathname).match(new RegExp(`(${config.defaultPageName})?(\\.html)?$`, "i")))
+	&& explicitBase[0].length > 1) {
+		redirect(urlParts.pathname.replace(explicitBase[0], ""), urlParts);
+		
+		return;
+	}
 
 	// Prepare request according to locale settings
-	const reqInfo = locale.getInfo(entity.url);
-	entity.url = locale.prepare(entity.url, entity.req.headers["accept-language"]);
+	const reqInfo = locale.getInfo(entity);
+	locale.prepare(entity);
 	if(!isStaticRequest) {
 		const newLocale = reqInfo.country
 			? entity.url.country
@@ -188,7 +190,7 @@ function handle(entity) {
 			);
 		
 		if(utils.isString(newLocale)) {
-			entityHook.redirect(`${newLocale}${entity.url.pathname}`);
+			redirect(`${newLocale}${entity.url.pathname}`, urlParts);
 			
 			return;
 		}
@@ -197,7 +199,8 @@ function handle(entity) {
 	}
 	
 	// Set client-side cache control for static files
-	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client) && (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
+	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client)
+	&& (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 
 	// Use cached data if is static file request (and not outdated)
 	const respCache = cache[isStaticRequest ? "static" : "dynamic"];
@@ -223,7 +226,4 @@ function handle(entity) {
 		
 		respondWithError(entity, err.status);
 	}
-}
-
-
-module.exports = handle;
+};
