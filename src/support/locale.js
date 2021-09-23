@@ -10,6 +10,7 @@ const config = {
 const {join, dirname} = require("path");
 const {existsSync} = require("fs");
 
+const isDevMode = require("../support/is-dev-mode");
 const webPath = require("../support/web-path");
 
 const langDirPath = join(dirname(require.main.filename), config.langDirName);
@@ -47,10 +48,10 @@ function getDefault(location) {
 	return supportedCountryCodes.get(location.toUpperCase());
 }
 
-function getInfo(entityUrl) {
+function getInfo(entity) {
 	const reference = webConfig.locale.useSubdomain
-		? (Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain[0] : (entityUrl.subdomain || ""))
-		: entityUrl.pathname.slice(1).slice(0, Math.max(entityUrl.pathname.slice(1).indexOf("/"), 0)).replace(/^\//, "");
+		? (Array.isArray(entity.url.subdomain) ? entity.url.subdomain[0] : (entity.url.subdomain || ""))
+		: entity.url.pathname.slice(1).slice(0, Math.max(entity.url.pathname.slice(1).indexOf("/"), 0)).replace(/^\//, "");
 	
 	let part = reference.match(/^(([a-z]{2})(-([a-z]{2}))?|([A-Z]{2}))/i);
 	part = part
@@ -66,41 +67,46 @@ function getInfo(entityUrl) {
 	};
 }
 
-function prepare(entityUrl, clientAcceptLocale) {
-	const info = getInfo(entityUrl);
-	
+function prepare(entity) {
+	if(isDevMode && webConfig.locale.useSubdomain) {
+		return;
+	}
+
+	let clientAcceptLocale = entity.req.headers["accept-language"];
 	clientAcceptLocale = clientAcceptLocale
 		? {
 			lang: (clientAcceptLocale.match(/^[a-z]{2}/) || [undefined])[0],
 			country: (clientAcceptLocale.match(/^-([A-Z]{2})/) || [undefined])[1]
 		}
 		: undefined;
+
+	const info = getInfo(entity);
 	
-	entityUrl.country = info.country || (clientAcceptLocale ? clientAcceptLocale.country : undefined);
-	entityUrl.country = (entityUrl.country && supportedCountryCodes.has(entityUrl.country))
-		? entityUrl.country
+	entity.url.country = info.country || (clientAcceptLocale ? clientAcceptLocale.country : undefined);
+	entity.url.country = (entity.url.country && supportedCountryCodes.has(entity.url.country))
+		? entity.url.country
 		: undefined;
 	
-	entityUrl.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
-	entityUrl.lang = info.lang
+	entity.url.lang = (info.lang && hasLangObj(info.lang)) ? info.lang : undefined;
+	entity.url.lang = info.lang
 		? info.lang
 		: (clientAcceptLocale && (clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang))
 			? clientAcceptLocale.lang
-			: (entityUrl.country ? supportedCountryCodes.get(entityUrl.country) : defaultLang));
+			: (entity.url.country ? supportedCountryCodes.get(entity.url.country) : defaultLang));
 	
 	if(webConfig.locale.useSubdomain) {
-		entityUrl.subdomain = info.lang
-			? Array.isArray(entityUrl.subdomain) ? entityUrl.subdomain.slice(1) : null
-			: entityUrl.subdomain;
+		entity.url.subdomain = info.lang
+			? Array.isArray(entity.url.subdomain) ? entity.url.subdomain.slice(1) : null
+			: entity.url.subdomain;
 
-		return entityUrl;
+		return;
 	}
 
-	entityUrl.pathname = entityUrl.pathname.slice(
+	entity.url.pathname = entity.url.pathname.slice(
 		(info.lang ? info.lang.length + 1 : 0)
 		+ (info.country ? info.country.length + 1 : 0));
-
-	return entityUrl;	// TODO: Optimize for static files (remove obsolote steps)
+	
+	// TODO: Optimize for static files (remove obsolote steps)
 
 	function hasLangObj(lang) {
 		const langFilePath = join(langDirPath, `${lang}.json`);
@@ -111,7 +117,7 @@ function prepare(entityUrl, clientAcceptLocale) {
 // TODO: Implement default lang depending on location
 
 function translate(data, reducedRequestObject) {
-	if(!reducedRequestObject) {
+	if(!reducedRequestObject.locale) {
 		return data;
 	}
 

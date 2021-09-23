@@ -1,10 +1,10 @@
 const config = {
-	compoundPageDirPrefix: "#",
+	compoundPageDirPrefix: ":",	// TODO: CHANGE! (#)
 	defaultFileName: "index"
 };
 
 
-const {join, dirname} = require("path");
+const {join} = require("path");
 const {existsSync} = require("fs");
 
 const webPath = require("./support/web-path");
@@ -19,8 +19,9 @@ function isFunction(value) {
 	return value && {}.toString.call(value) === "[object Function]";
 }
 
+
 module.exports = {
-	
+
 	isString,
 	isFunction,
 
@@ -83,43 +84,9 @@ module.exports = {
 			: hostData.replace(headTag.open[0], `${headTag.open[0]}${insertData}`);
 	},
 
-	createReducedRequestObject: entity => {
-		// Parse and transfer cookies to reduced request object
-		const cookies = {};
-		const cookieHeader = entity.req.headers.cookie;
-		cookieHeader && cookieHeader.split(";").forEach(cookie => {
-			const p = cookie.split("=");
-			cookies[p.shift().trim()] = decodeURI(p.join("="));
-		});
-		console.log(cookies);
-
-		// Construct reduced request object to be passed to each response modifier handler
-		return {
-			ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
-			subdomain: entity.url.subdomain,
-			pathname: entity.url.isCompound ? dirname(entity.url.pathname) : entity.url.pathname,
-			cookies: cookies,
-			isCompound: entity.url.isCompound,
-			... entity.url.isCompound
-				? {
-					compound: {
-						base: entity.url.base,
-						args: entity.url.args
-					}
-				}
-				: {},
-			locale: {
-				lang: entity.url.lang,
-				country: entity.url.country
-			}	
-		};
-
-		// TODO: Provide header values useful for session management?
-	},
-
-	getPathInfo: (entityUrl) => {
+	adaptUrl: entity => {
 		// Add default file name if none explicitly stated in request URL
-		const pathname = entityUrl.pathname
+		const pathname = entity.url.pathname
 			.replace(/\/$/, `/${config.defaultFileName}`)
 			.replace(/(\.html)?$/, ".html");
 
@@ -130,7 +97,7 @@ module.exports = {
 		}
 
 		// Use compound page path if respective directory exists
-		const pathParts = entityUrl.pathname.replace(/^\//, "").split(/\//g) || [entityUrl.pathname];
+		const pathParts = entity.url.pathname.replace(/^\//, "").split(/\//g) || [entity.url.pathname];
 		const args = [];
 		
 		while(pathParts.length > 0) {
@@ -158,12 +125,11 @@ module.exports = {
 		}, false);
 
 		function formEntity(obj, isCompound) {
-			return {
-				...entityUrl,
+			entity.url = {
+				...entity.url,
 				...obj,
-				... {
-					isCompound: isCompound
-				}
+
+				isCompound: isCompound
 			};
 		}
 	}

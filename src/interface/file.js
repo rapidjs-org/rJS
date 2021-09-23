@@ -9,8 +9,10 @@ const locale = require("../support/locale");
 const ClientError = require("../interface/ClientError");
 const templater = require("../interface/templater");
 
+const entityHook = require("../server/entity-hook");
 
-function read(pathname, reducedRequestObject) {
+
+function read(pathname) {
 	const localPath = join(webPath, pathname);
 	if(!existsSync(localPath)) {
 		throw new ClientError(404);
@@ -22,9 +24,7 @@ function read(pathname, reducedRequestObject) {
 		return data;
 	}
 
-	if(!reducedRequestObject) {	// TODO: Handle auto red req obj passing
-		return data;
-	}
+	const reducedRequestObject = entityHook.reducedRequestObject();
 
 	// TODO: Handle auto red req obj passing
 	// Markup modifications
