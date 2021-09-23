@@ -66,8 +66,8 @@ function normalizeExtensionArray(array) {
 	return (Array.isArray(array) && array.length > 0) ? array.map(extension => extension.replace(/^\./, "").toLowerCase()) : undefined;
 }
 
-// Read
 
+// Read
 const webPath = require("./web-path");
 
 const webConfig = readConfigFile(webPath, config.configFileName.default, [
@@ -79,6 +79,7 @@ webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitel
 webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList);
 
 const mimesConfig = readConfigFile(webPath, config.mimesFileName.default, config.mimesFileName.custom);
+
 
 module.exports = {
 	webConfig,
