@@ -1,6 +1,5 @@
 const utils = require("../utils");
 
-
 let templater;
 
 
@@ -18,7 +17,7 @@ module.exports = {
 		if(!templater) {
 			return data;
 		}
-
+		
 		data = templater(data, object, reducedRequestObject);
 
 		if(!utils.isString(data) && !Buffer.isBuffer(data)) {

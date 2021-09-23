@@ -2,9 +2,15 @@
  * GET handler: Approached upon asset request only.
  */
 
-const {join, dirname} = require("path");
+ const config = {
+	defaultFileName: "index"
+};	// TODO: Allow for default file name and extension / type to be changed via configuration file?
+
+
+const {basename, extname, join, dirname} = require("path");
 const {existsSync} = require("fs");
 const {gzipSync} = require("zlib");
+const {parse: parseUrl} = require("url");
 
 const utils = require("../utils");
 
@@ -16,16 +22,16 @@ const webConfig = require("../support/web-config").webConfig;
 const mimesConfig = require("../support/web-config").mimesConfig;
 
 const pluginManagement = require("../interface/plugin-management");
+const fileRead = require("../interface/file").read;
+
+const entityHook = require("./entity-hook");
+
 
 const cache = {
 	static: require("../interface/cache")(),
 	dynamic: require("../interface/cache")(1000)
 	// Very small caching duration for dynamic files (for saving ressources on load peaks)
 };
-
-const fileRead = require("../interface/file").read;
-
-const response = require("./response");
 
 
 function normalizeBaseUrl(data, host, pathname) {
@@ -50,7 +56,7 @@ function respond(entity, status, message) {
 		message = gzipSync(message);
 	}
 
-	response.respond(entity, status, message);
+	entityHook.respond(status, message);
 }
 
 /**
@@ -73,12 +79,8 @@ function respondWithError(entity, status = 500) {
 
 		const errorPagePath = join(errorPageDir, `${String(status)}.html`);
 		if(existsSync(join(webPath, errorPagePath))) {
-			entity.url = utils.getPathInfo({
-				...entity.url,
-				... {
-					pathname: errorPagePath
-				}
-			});
+			entity.url.pathname = errorPagePath;
+			utils.adaptUrl(entity);
 
 			let data = processDynamicFile(entity, errorPagePath);
 			
@@ -100,7 +102,7 @@ function processStaticFile(entity) {
 }
 
 function processDynamicFile(entity, pathname) {
-	const reducedRequestObject = utils.createReducedRequestObject(entity);
+	const reducedRequestObject = entity.reducedRequestObject;
 	
 	let data = fileRead(pathname || entity.url.pathname, reducedRequestObject);
 	
@@ -119,17 +121,36 @@ function processDynamicFile(entity, pathname) {
 
 /**
  * Handle a GET request accordingly.
- * @param {Object} entity Open connection entity
  */
 function handle(entity) {
 	let data;
 
+	// Extract or assume requested file extension
+	const urlParts = parseUrl(entity.req.url, true);
+
+	entity.url.extension = (extname(urlParts.pathname).length > 0)
+	? utils.normalizeExtension(extname(urlParts.pathname))
+	: "html";
+	
+	// Handle plug-in frontend module file requests individually and prioritized
 	if(pluginManagement.isFrontendRequest(entity.url.pathname)) {
 		entity.url.extension = "js";
 
 		data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 		
 		respond(entity, data ? 200 : 404, data);
+
+		return;
+	}
+
+	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
+	let explicitBase;
+	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
+		&& explicitBase[0].length > 1) {
+		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
+                     + (urlParts.search || "");
+        
+					 entityHook.redirect(entity, newUrl);
 
 		return;
 	}
@@ -167,12 +188,12 @@ function handle(entity) {
 			);
 		
 		if(utils.isString(newLocale)) {
-			response.redirect(entity, `${newLocale}${entity.url.pathname}`);
+			entityHook.redirect(`${newLocale}${entity.url.pathname}`);
 			
 			return;
 		}
 
-		entity.url = utils.getPathInfo(entity.url);
+		utils.adaptUrl(entity);
 	}
 	
 	// Set client-side cache control for static files

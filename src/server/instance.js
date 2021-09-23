@@ -1,21 +1,13 @@
-const config = {
-	defaultFileName: "index"
-};	// TODO: Allow for default file name and extension / type to be changed via configuration file?
-
-
 const {readFileSync} = require("fs");
-const {join, basename, extname} = require("path");
+const {join} = require("path");
 const {parse: parseUrl} = require("url");
 
-const utils = require("../utils");
-
 const webConfig = require("../support/web-config").webConfig;
-const webPath = require("../support/web-path");
 const isDevMode = require("../support/is-dev-mode");
 const rateLimiter = require("../support/rate-limiter");
 const output = require("../support/output");
 
-const response = require("./response");
+const entityHook = require("./entity-hook");
 
 
 const requestHandler = {
@@ -25,43 +17,43 @@ const requestHandler = {
 
 
 // Create web server instance
-
 const options = {};
-if(webConfig.ssl) {
+if(!isDevMode && webConfig.ssl) {
 	options.cert = webConfig.ssl.certFile ? readCertFile(webConfig.ssl.certFile) : null;
 	options.key = webConfig.ssl.keyFile ? readCertFile(webConfig.ssl.keyFile) : null;
 	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
+
+	function readCertFile(pathname) {
+		pathname = (pathname.charAt(0) == "/") ? pathname : join(require("../support/web-path"), pathname);
+		return readFileSync(pathname);
+	}
 }
 
-function readCertFile(pathname) {
-	pathname = (pathname.charAt(0) == "/") ? pathname : join(webPath, pathname);
-	return readFileSync(pathname);
-}
+const port = webConfig.port.https || webConfig.port.http;
 
 // Create main server depending on set ports
-const port = webConfig.port.https || webConfig.port.http;
-require(webConfig.port.https ? "https" : "http").createServer(options, (req, res) => {
-	// Connection entity combining request and response objects; adding url information object
-	const entity = {
-		req: req,
-		res: res,
-		url: {}
-	};
-	entity.req.method = entity.req.method.toLowerCase();
+require(webConfig.port.https ? "https" : "http")
+.createServer(options, (req, res) => {
+	req.method = req.method.toLowerCase();
 
-	handleRequest(entity)
-		.catch(err => {
-			output.error(err);
+	entityHook.create(req, res);
+	
+	handleRequest()
+	.catch(err => {
+		output.error(err);
 
-			res.end();
-		});
-}).listen(port, webConfig.hostname || null, webConfig.maxPending || null, _ => {
+		res.end();
+	});
+})
+.listen(port, webConfig.hostname || null, webConfig.maxPending || null,
+_ => {
 	output.log(`Server started listening on port ${port}`);
 	
 	if(isDevMode) {
 		output.log("Running DEV MODE");
 	}
 });
+
 // Create HTTP to HTTPS redirect server if both ports set up
 if(webConfig.port.https && webConfig.port.http) {
 	require("http").createServer((req, res) => {
@@ -76,49 +68,39 @@ if(webConfig.port.https && webConfig.port.http) {
 
 /**
  * Handle a single request.
- * @param {Object} entity Connection entity
  */
-async function handleRequest(entity) {
-	// Block request if maximum 
-	if(rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
-		entity.res.setHeader("Retry-After", 30000);
-		response.respond(entity, 429);
+async function handleRequest() {
+	const entity = entityHook.current();
+
+	webConfig.port.https
+	&& entity.res.setHeader("Strict-Transport-Security", `max-age=${webConfig.cachingDuration.client}; includeSubDomains`);
+
+	// Block request if method not allowed
+	if(!requestHandler[entity.req.method]) {
+		entityHook.respond(entity, 405);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(entity.req.url.length > webConfig.maxUrlLength) {
-		response.respond(entity, 414);
+		entityHook.respond(entity, 414);
 
 		return;
 	}
-	// Block request if method not allowed
-	if(!requestHandler[entity.req.method]) {
-		response.respond(entity, 405);
-
-		return;
-	}
-
-	// Redirect requests explicitly stating the default file or extension name to a request with an extensionless URL
-	const urlParts = parseUrl(entity.req.url, true);
-	let explicitBase;
-	if((explicitBase = basename(urlParts.pathname).match(new RegExp(`^(${config.defaultFileName})?(\\.html)?$`)))
-		&& explicitBase[0].length > 1) {
-		const newUrl = urlParts.pathname.replace(explicitBase[0], "")
-                     + (urlParts.search || "");
-        
-		response.redirect(entity, newUrl);
+	// Block request if individual request maximum reached
+	if(rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
+		entity.res.setHeader("Retry-After", 30000);
+		entityHook.respond(entity, 429);
 
 		return;
 	}
 
-	// Set basic response headers
-	webConfig.port.https && (entity.res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains"));
 	webConfig.allowFramedLoading && (entity.res.setHeader("X-Frame-Options", "SAMEORIGIN"));
 
 	entity.res.setHeader("X-XSS-Protection", "1");
 	entity.res.setHeader("X-Powered-By", null);
 
+	const urlParts = parseUrl(entity.req.url);
 	entity.url.pathname = urlParts.pathname;
 	entity.url.query = urlParts.query;
 
@@ -127,13 +109,6 @@ async function handleRequest(entity) {
 		.filter(sub => (sub.length > 0));
 	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
 	
-	// Apply the related handler
-	switch(entity.req.method) {
-	case "get":
-		entity.url.extension = (extname(urlParts.pathname).length > 0) ? utils.normalizeExtension(extname(urlParts.pathname)) : "html";
-		
-		break;
-	}
-
+	// Apply the related request handler
 	requestHandler[entity.req.method](entity);
 }

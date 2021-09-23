@@ -111,7 +111,7 @@ function prepare(entityUrl, clientAcceptLocale) {
 // TODO: Implement default lang depending on location
 
 function translate(data, reducedRequestObject) {
-	if(!reducedRequestObject) {
+	if(!reducedRequestObject.locale) {
 		return data;
 	}
 

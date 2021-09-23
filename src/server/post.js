@@ -10,24 +10,23 @@ const locale = require("../support/locale");
 
 const endpoint = require("../interface/endpoint");
 
-const response = require("./response");
+const entityHook = require("./entity-hook");
 
 
-function respond(entity, status, message) {
+function respond(status, message) {
 	message = JSON.stringify(Buffer.isBuffer(message) ? String(message) : message);
 	
-	response.respond(entity, status, message);
+	entityHook.respond(status, message);
 }
 
 
 /**
  * Handle a POST request accordingly.
- * @param {Object} entity Open connection entity
  */
 function handle(entity) {
 	if(!endpoint.has(entity.url.pathname)) {
 	// No related POST handler defined
-		respond(entity, 404);
+		respond(404);
 
 		return;
 	}
@@ -47,7 +46,7 @@ function handle(entity) {
 			// Request payload exceeds maximum size as put in web config
 			blockBodyProcessing = true;
 
-			respond(entity, 413);
+			respond(413);
 		}
 	});
 	entity.req.on("end", _ => {
@@ -72,21 +71,21 @@ function handle(entity) {
 				pathname: body.meta.pathname
 			}, entity.req.headers["accept-language"]);
 			
-			entity.url = utils.getPathInfo(entity.url);
+			utils.adaptUrl(entity);
 
-			const reducedRequestObject = utils.createReducedRequestObject(entity);
+			const reducedRequestObject = entity.reducedRequestObject;
 
 			const data = endpoint.use(internalPathname, body.body, reducedRequestObject);
 			
-			respond(entity, 200, data);
+			respond(200, data);
 		} catch(err) {
 			output.error(err);
 
-			respond(entity, err.status, err.message || null);
+			respond(err.status, err.message || null);
 		}
 	});
 	entity.req.on("error", _ => {
-		respond(entity, 500);
+		respond(500);
 	});
 }
 
