@@ -29,10 +29,14 @@ if(!isDevMode && webConfig.ssl) {
 	}
 }
 
-const port = webConfig.port.https || webConfig.port.http;
+const protocol = isDevMode
+? "http"
+: (webConfig.port.https
+	? "https"
+	: "http");
 
 // Create main server depending on set ports
-require(webConfig.port.https ? "https" : "http")
+require(protocol)
 .createServer(options, (req, res) => {
 	req.method = req.method.toLowerCase();
 
@@ -45,9 +49,11 @@ require(webConfig.port.https ? "https" : "http")
 		res.end();
 	});
 })
-.listen(port, webConfig.hostname || null, webConfig.maxPending || null,
+.listen(webConfig.port[protocol],
+!isDevMode ? webConfig.hostname : null,
+!isDevMode ? webConfig.maxPending : null,
 _ => {
-	output.log(`Server started listening on port ${port}`);
+	output.log(`Server started listening on port ${webConfig.port[protocol]}`);
 	
 	if(isDevMode) {
 		output.log("Running DEV MODE");
@@ -103,11 +109,36 @@ async function handleRequest() {
 	const urlParts = parseUrl(entity.req.url);
 	entity.url.pathname = urlParts.pathname;
 	entity.url.query = urlParts.query;
-
+	
 	const subdomains = (entity.req.headers.host.match(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+/i) || [""])[0]
 		.split(/\./g)
 		.filter(sub => (sub.length > 0));
 	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
+	
+	// Redirect requests according to the configured www strategy (if necessary)
+	if(!isDevMode && webConfig.www && entity.url.subdomain.length <= 1) {
+		let newHost;
+		switch((webConfig.www || "").trim()) {
+			case "yes":
+				if(entity.url.subdomain.length == 0) {
+					newHost = `www.${req.headers.host}`;
+				}
+
+				break;
+			case "no":
+				if((entity.url.subdomain || [""])[0] == "www") {
+					newHost = req.headers.host.replace(/^www\./i, "");
+				}
+				
+				break;
+		}
+
+		if(newHost) {
+			entityHook.redirect(`${protocol}${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
+
+			return;
+		}
+	}
 	
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);
