@@ -69,7 +69,7 @@ function redirect(newPathname, urlParts) {
  */
 function respondWithError(entity, status = 500) {
 	// Respond with error page contents if related file exists in the current or any parent directory (bottom-up search)
-	if(entity.url.extension != "html") {
+	if(!entity.pageRequest) {
 		respond(entity, status);
 
 		return;
@@ -127,13 +127,6 @@ function processDynamicFile(entity, pathname) {
  * Handle a GET request accordingly.
  */
 module.exports = entity => {
-	// Extract or assume requested file extension
-	const urlParts = parseUrl(entity.req.url, true);
-
-	entity.url.extension = (extname(urlParts.pathname).length > 0)
-	? utils.normalizeExtension(extname(urlParts.pathname))
-	: "html";
-
 	let data;
 	
 	// Handle plug-in frontend module file requests individually and prioritized
@@ -147,6 +140,13 @@ module.exports = entity => {
 		return;
 	}
 
+	// Extract or assume requested file extension
+	const urlParts = parseUrl(entity.req.url, true);
+
+	entity.url.extension = (extname(urlParts.pathname).length > 0)
+	? utils.normalizeExtension(extname(urlParts.pathname))
+	: "html";
+
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
 	if(webConfig.extensionWhitelist
@@ -156,11 +156,11 @@ module.exports = entity => {
 		return;
 	}
 
-	const isStaticRequest = entity.url.extension != "html";	// Whether a static file (non-page asset) has been requested
-	
+	(entity.url.extension == "html") && (entity.pageRequest = true);	// Whether a static file (non-page asset) has been requested
+
 	// Redirect requests explicitly stating the default page or extension name to a request with an extensionless URL
 	let explicitBase;
-	if(!isStaticRequest
+	if(entity.pageRequest
 	&& (explicitBase = basename(urlParts.pathname).match(new RegExp(`(${config.defaultPageName})?(\\.html)?$`, "i")))
 	&& explicitBase[0].length > 1) {
 		redirect(urlParts.pathname.replace(explicitBase[0], ""), urlParts);
@@ -171,7 +171,7 @@ module.exports = entity => {
 	// Prepare request according to locale settings
 	const reqInfo = locale.getInfo(entity);
 	locale.prepare(entity);
-	if(!isStaticRequest) {
+	if(entity.pageRequest) {
 		const newLocale = reqInfo.country
 			? entity.url.country
 				? (locale.getDefault(entity.url.country) == reqInfo.lang
@@ -199,11 +199,11 @@ module.exports = entity => {
 	}
 	
 	// Set client-side cache control for static files
-	(!isDevMode && isStaticRequest && webConfig.cachingDuration.client)
+	(!isDevMode && !entity.pageRequest && webConfig.cachingDuration.client)
 	&& (entity.res.setHeader("Cache-Control", `max-age=${webConfig.cachingDuration.client}`));
 
 	// Use cached data if is static file request (and not outdated)
-	const respCache = cache[isStaticRequest ? "static" : "dynamic"];
+	const respCache = cache[!entity.pageRequest ? "static" : "dynamic"];
 	if(respCache.has(entity.url.pathname)) {
 		data = respCache.read(entity.url.pathname);
 
@@ -213,10 +213,10 @@ module.exports = entity => {
 	}
 	
 	try {
-		data = isStaticRequest ? processStaticFile(entity) : processDynamicFile(entity);
+		data = !entity.pageRequest ? processStaticFile(entity) : processDynamicFile(entity);
 		
 		// Set server-side cache
-		isStaticRequest && respCache.write(entity.url.pathname, data);
+		!entity.pageRequest && respCache.write(entity.url.pathname, data);
 
 		respond(entity, 200, data);
 

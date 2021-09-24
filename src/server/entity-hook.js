@@ -1,6 +1,9 @@
 const {dirname} = require("path");
 const asyncHooks = require("async_hooks");
 
+const webConfig = require("../support/web-config");
+const isDevMode = require("../support/is-dev-mode");
+
 
 const requests = new Map();
 
@@ -18,10 +21,20 @@ asyncHook.enable();
 
 
 function create(req, res) {
+    // Parse and transfer cookies to reduced request object
+    const cookies = {};
+    const cookieHeader = req.headers.cookie;
+    cookieHeader && cookieHeader.split(";").forEach(cookie => {
+        const p = cookie.split("=");
+        cookies[p.shift().trim()] = decodeURI(p.join("="));
+    });
+
+    // Request associated object to be accessed from independent routines on the related async thread
     requests.set(asyncHooks.executionAsyncId(), {
         req,
         res,
 
+        cookies,
         url: {}
     });
 };
@@ -33,21 +46,11 @@ function current() {
 function reducedRequestObject() {
     const entity  = current();
 
-    // Parse and transfer cookies to reduced request object
-    const cookies = {};
-    const cookieHeader = entity.req.headers.cookie;
-    cookieHeader && cookieHeader.split(";").forEach(cookie => {
-        const p = cookie.split("=");
-        cookies[p.shift().trim()] = decodeURI(p.join("="));
-    });
-    console.log(cookies);
-
     // Construct reduced request object to be passed to each response modifier handler
     return {
         ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
         subdomain: entity.url.subdomain,
         pathname: entity.url.isCompound ? dirname(entity.url.pathname) : entity.url.pathname,
-        cookies: cookies,
         isCompound: entity.url.isCompound,
         ... entity.url.isCompound
             ? {
@@ -77,7 +80,17 @@ function respond(status, message) {
     message = Buffer.isBuffer(message) ? message : Buffer.from(message, "utf-8");
     
     entity.res.setHeader("Content-Length", Buffer.byteLength(message));
-    
+
+    if(entity.pageRequest || entity.req.method == "post") {
+        // Set (update) cookies
+        for(let cookie in entity.cookies) {
+            let expireDate;    // TODO: Implement
+            entity.res.setHeader("Set-Cookie",
+                `${cookie}=${entity.cookies[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : ""}`
+            );
+        }
+    }
+
     entity.res.end(isNaN(status) ? null : message);
 }
 
