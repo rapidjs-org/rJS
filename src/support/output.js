@@ -1,9 +1,10 @@
-const ClientError = require("../interface/ClientError");
-
-
 const config = {
 	appName: "rJS"
 };
+
+
+const ClientError = require("../interface/ClientError");
+
 
 function out(message, style) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
