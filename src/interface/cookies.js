@@ -4,12 +4,12 @@ const entityHook = require("../server/entity-hook");
 
 module.exports = {
 
-    set: (name, value) => {
-        entityHook.current().cookies[name] = value; // TODO: Store cookies
-    },
+	set: (name, value) => {
+		entityHook.current().cookies[name] = value; // TODO: Store cookies
+	},
 
-    get: name => {
-        return entityHook.current().cookies[name];
-    }
+	get: name => {
+		return entityHook.current().cookies[name];
+	}
 
 };

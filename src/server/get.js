@@ -2,7 +2,7 @@
  * GET handler: Approached upon asset request only.
  */
 
- const config = {
+const config = {
 	defaultPageName: "index"
 };	// TODO: Allow for default file name and extension / type to be changed via configuration file?
 
@@ -144,8 +144,8 @@ module.exports = entity => {
 	const urlParts = parseUrl(entity.req.url, true);
 
 	entity.url.extension = (extname(urlParts.pathname).length > 0)
-	? utils.normalizeExtension(extname(urlParts.pathname))
-	: "html";
+		? utils.normalizeExtension(extname(urlParts.pathname))
+		: "html";
 
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested

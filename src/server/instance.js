@@ -23,47 +23,47 @@ if(!isDevMode && webConfig.ssl) {
 	options.key = webConfig.ssl.keyFile ? readCertFile(webConfig.ssl.keyFile) : null;
 	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
 
-	function readCertFile(pathname) {
+	const readCertFile = pathname => {
 		pathname = (pathname.charAt(0) == "/") ? pathname : join(require("../support/web-path"), pathname);
 		return readFileSync(pathname);
-	}
+	};
 }
 
 const protocol = isDevMode
-? "http"
-: (webConfig.port.https
-	? "https"
-	: "http");
+	? "http"
+	: (webConfig.port.https
+		? "https"
+		: "http");
 
 // Create main server depending on set ports
 require(protocol)
-.createServer(options, (req, res) => {
-	req.method = req.method.toLowerCase();
+	.createServer(options, (req, res) => {
+		req.method = req.method.toLowerCase();
 
-	entityHook.create(req, res);
+		entityHook.create(req, res);
 	
-	handleRequest()
-	.catch(err => {
-		output.error(err);
+		handleRequest()
+			.catch(err => {
+				output.error(err);
 
-		res.end();
-	});
-})
-.listen(webConfig.port[protocol],
-!isDevMode ? webConfig.hostname : null,
-!isDevMode ? webConfig.maxPending : null,
-_ => {
-	output.log(`Server started listening on port ${webConfig.port[protocol]}`);
+				res.end();
+			});
+	})
+	.listen(webConfig.port[protocol],
+		!isDevMode ? webConfig.hostname : null,
+		!isDevMode ? webConfig.maxPending : null,
+		_ => {
+			output.log(`Server started listening on port ${webConfig.port[protocol]}`);
 	
-	if(isDevMode) {
-		output.log("Running DEV MODE");
-	}
-});
+			if(isDevMode) {
+				output.log("Running DEV MODE");
+			}
+		});
 
 // Create HTTP to HTTPS redirect server if both ports set up
 if(webConfig.port.https && webConfig.port.http) {
 	require("http").createServer((req, res) => {
-		response.redirect({
+		entityHook.redirect({
 			res: res
 		}, `https://${req.headers.host}${req.url}`);
 	}).listen(webConfig.port.http, webConfig.hostname || null, webConfig.maxPending || null, _ => {
@@ -119,18 +119,18 @@ async function handleRequest() {
 	if(!isDevMode && webConfig.www && entity.url.subdomain.length <= 1) {
 		let newHost;
 		switch((webConfig.www || "").trim()) {
-			case "yes":
-				if(entity.url.subdomain.length == 0) {
-					newHost = `www.${req.headers.host}`;
-				}
+		case "yes":
+			if(entity.url.subdomain.length == 0) {
+				newHost = `www.${entity.req.headers.host}`;
+			}
 
-				break;
-			case "no":
-				if((entity.url.subdomain || [""])[0] == "www") {
-					newHost = req.headers.host.replace(/^www\./i, "");
-				}
+			break;
+		case "no":
+			if((entity.url.subdomain || [""])[0] == "www") {
+				newHost = entity.req.headers.host.replace(/^www\./i, "");
+			}
 				
-				break;
+			break;
 		}
 
 		if(newHost) {
