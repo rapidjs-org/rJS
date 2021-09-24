@@ -17,7 +17,6 @@ const {existsSync, readFileSync} = require("fs");
 const webConfig = require("../support/web-config").webConfig;
 
 const utils = require("../utils");
-const createInterface = utils.createInterface;
 
 const Environment = require("./Environment");
 
