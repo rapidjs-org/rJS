@@ -3,7 +3,8 @@
  */
 
 const config = {
-	defaultPageName: "index"
+	defaultPageName: "index",
+	standaloneFilePrefix: "_"
 };	// TODO: Allow for default file name and extension / type to be changed via configuration file?
 
 
@@ -111,7 +112,7 @@ function processDynamicFile(entity, pathname) {
 	let data = fileRead(pathname || entity.url.pathname, reducedRequestObject);
 	
 	// Sequentially apply defined plug-in module modifiers
-	data = pluginManagement.buildEnvironment(data, entity.url.isCompound);
+	data = pluginManagement.integratePluginReference(data, entity.url.isCompound);
 
 	if(!entity.url.isCompound) {
 		return data;
@@ -149,8 +150,9 @@ module.exports = entity => {
 
 	// Block request if whitelist enabled but requested extension not stated
 	// or a non-standalone file has been requested
-	if(webConfig.extensionWhitelist
-		&& !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension)) {
+	if(basename(urlParts.pathname).charAt(0) == config.standaloneFilePrefix
+		|| (webConfig.extensionWhitelist
+		&& !webConfig.extensionWhitelist.concat(["html", "js"]).includes(entity.url.extension))) {
 		respondWithError(entity, 403);
 		
 		return;
