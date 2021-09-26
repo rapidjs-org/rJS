@@ -4,9 +4,11 @@ const config = {
 	frontendModuleAppName: "rapidJS",
 	frontendModuleReferenceName: {
 		config: "config",
-		external: "PUBLIC",
-		internal: "_rapid"
+		private: "rJS__PRIVATE",
+		public: "PUBLIC"
 	},
+	pluginNameRegex: /(@[a-z0-9_-]+\/)?[a-z0-9_-]+/i,
+	pluginNameSeparator: "+",
 	pluginRequestPrefix: "plug-in::"
 };
 
@@ -26,19 +28,22 @@ const registry = {
 	envs: {}
 };
 
-const pluginNameRegex = /^(@[a-z0-9_-]+\/)?[a-z0-9_-]+$/i;
-const urlPrefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
+
+const FULL_PLUGIN_NAME_REGEX = new RegExp(`^${config.pluginNameRegex.source}$`, "i");
+const URL_PREFIX_REGEX = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
 
 // Register core frontend module
 // TODO: Improve core frontend module integration
 registry.data.set(config.coreModuleIdentifier, {
-	frontend: null
+	frontend: `
+		var ${config.frontendModuleAppName} = {};
+		${config.frontendModuleAppName}.${config.coreModuleIdentifier} = (_ => {
+			${readFileSync(join(__dirname, "../frontend.js"))}
+		})();
+	`
 });
 registry.envs[Environment.ANY] = [config.coreModuleIdentifier];
-registerFrontendModule(join(__dirname, "../frontend.js"), config.coreModuleIdentifier, {
-	pluginRequestPrefix: config.pluginRequestPrefix
-});
 
 
 /**
@@ -110,7 +115,7 @@ function getNameByReference(reference) {
  */
 function plugin(reference, options = {}) {
 	// TODO: Page environment: what about compound focused plug-ins bound to default page envs?
-	if(options.alias && !pluginNameRegex.test(options.alias.trim())) {
+	if(options.alias && !FULL_PLUGIN_NAME_REGEX.test(options.alias.trim())) {
 		throw new SyntaxError(`Plug-in alias invalid; referenced by '${reference}'`);
 	}
 
@@ -124,7 +129,7 @@ function plugin(reference, options = {}) {
 		throw new ReferenceError(`Plug-in references '${registry.data.get(name).reference}' and '${reference}' illegally resolve to the equal name '${name}'`);
 	}
 	
-	const pluginPath = pluginNameRegex.test(reference)
+	const pluginPath = FULL_PLUGIN_NAME_REGEX.test(reference)
 		? module.constructor._resolveFilename(reference, module.parent)
 		: join(dirname(require.main.filename), reference);
 		
@@ -186,24 +191,38 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 			let value = pluginConfig;
 			attrs.forEach(attr => {
 				value = value[attr];
-			
+				
 				if(value === undefined) {
-					throw new ReferenceError(`Implemented property '${attrs}' not defined on given config object at '${frontendFilePath}'`);
+					throw new ReferenceError(`Implemented property '${attr}' not defined on given config object at '${frontendFilePath}'`);
 				}
 			});
 
-			value = utils.isString(value) ? `"${value}"` : value;	// Wrap strings in doublequotes
+			value = utils.isString(value || "") ? `"${value}"` : value;	// Wrap strings in doublequotes
+
 			return `${configAttr.charAt(0)}${value}`;
 		}));
 	
 	// TODO: Wrap with keeping line numbers
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
 	frontendModuleData = `
-		var ${config.frontendModuleAppName} = (${config.frontendModuleReferenceName.internal} => {var ${config.frontendModuleReferenceName.external} = {};${frontendModuleData};
-		${config.frontendModuleReferenceName.internal}${(pluginName != config.coreModuleIdentifier) ? `["${pluginName }"]` : ""} = ${config.frontendModuleReferenceName.external};
-		return ${config.frontendModuleReferenceName.internal};
-		})(${config.frontendModuleAppName} || {});
-	`;	// TODO: rapidJS.scope = ...(no access to entire scope from within)
+		${config.frontendModuleAppName} = {
+			... ${config.frontendModuleAppName},
+			... {
+				"${pluginName}": (${config.frontendModuleReferenceName.private} => {
+					const ${config.frontendModuleAppName} = {
+						useEndpoint: (body, progressHandler) => {
+							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+						}
+					};
+					const ${config.frontendModuleReferenceName.public} = {};
+					${frontendModuleData}${(frontendModuleData.slice(-1) != ";") ? ";" : ""}
+					return ${config.frontendModuleReferenceName.public};
+				})(${config.frontendModuleAppName}.${config.coreModuleIdentifier})
+			}
+		};
+	`;
+	
+	// TODO: Minify ?
 	
 	// Register frontend module in order to be integrated into pages upon request
 	registry.data.get(pluginName).frontend = frontendModuleData;
@@ -212,7 +231,10 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 // TODO: Implement option for plug-in to wait in frontend for another plug-ins intial run completion
 
 function isFrontendRequest(pathname) {
-	if(!(new RegExp(`${urlPrefixRegex.source}${pluginNameRegex.source.slice(1)}`, "i")).test(pathname)) {
+	const adjustedPluginNameRegex = config.pluginNameRegex.source;
+	if(!
+	(new RegExp(`${URL_PREFIX_REGEX.source}${adjustedPluginNameRegex}(\\${config.pluginNameSeparator}${adjustedPluginNameRegex})*`, "i"))
+	.test(pathname)) {
 		return false;
 	}
 
@@ -220,30 +242,37 @@ function isFrontendRequest(pathname) {
 }
 
 function retrieveFrontendModule(pathname) {
-	const name = pathname.replace(urlPrefixRegex, "");
-	if(!pluginNameRegex.test(name) || !registry.data.has(name)) {
-		return undefined;
-	}
-	
-	return registry.data.get(name).frontend;
+	const names = pathname.replace(URL_PREFIX_REGEX, "");
+
+	return names.split(new RegExp(`\\${config.pluginNameSeparator}`, "g"))
+	.filter(name => {
+		return (config.pluginNameRegex.test(name) && registry.data.has(name));
+	}).map(name => {
+		return registry.data.get(name).frontend;
+	})
+	.join("\n");
 }
 
 
-function buildEnvironment(data, isCompound) {
-	(registry.envs[Environment.ANY] || [])
+function integratePluginReference(data, isCompound) {
+	const srcLoad = (registry.envs[Environment.ANY] || [])
 		.filter(env => {
-			return (!isCompound ? !registry.data.get(env).compoundOnly : true)
+			return (isCompound || !registry.data.get(env).compoundOnly)
 				&& registry.data.get(env).frontend;
 		})
-		.reverse().forEach(name => {
-			// Do not inject script tag if hardcoded in head already (use case: ordering)
-			if((new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i")).test(data)) {
-				return;
-			}
-
-			data = utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${name}"></script>`);
-		});
-
+		.filter(name => {
+			// Ignore if has been hardcoded into head explcitly (use case: user defined ordering)
+			return !
+			(new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
+			.test(data);
+		})
+		.join(config.pluginNameSeparator);
+	
+	// Inject plug-in referencing script tag
+	data = (srcLoad.length > 0)
+	? utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${srcLoad}"></script>`)
+	: data;
+	
 	return data;
 }
 
@@ -252,8 +281,9 @@ module.exports = {
 	plugin,
 	isFrontendRequest,
 	retrieveFrontendModule,
-	buildEnvironment,
 	getNameByPath,
+
+	integratePluginReference,
 
 	initFrontendModule,
 	readConfig
@@ -262,3 +292,4 @@ module.exports = {
 
 // Plug-in specific core interface; accessible from referenced plug-in scopes
 let pluginInterface = require("../interface:plugin");
+const output = require("../support/output");
