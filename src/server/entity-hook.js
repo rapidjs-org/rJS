@@ -34,7 +34,10 @@ function create(req, res) {
 		req,
 		res,
 
-		cookies,
+		cookies: {
+			received: cookies,
+			send: {}
+		},
 		url: {}
 	});
 }
@@ -83,10 +86,10 @@ function respond(status, message) {
 
 	if(entity.pageRequest || entity.req.method == "post") {
 		// Set (update) cookies
-		for(let cookie in entity.cookies) {
+		for(let cookie in entity.cookies.send) {
 			let expireDate;    // TODO: Implement
 			entity.res.setHeader("Set-Cookie",
-				`${cookie}=${entity.cookies[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : ""}`
+				`${cookie}=${entity.cookies.send[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : ""}`
 			);
 		}
 	}
