@@ -26,11 +26,10 @@ function read(pathname) {
 
 	const reducedRequestObject = entityHook.reducedRequestObject();
 
-	// TODO: Handle auto red req obj passing
 	// Markup modifications
 	data = locale.translate(String(data), reducedRequestObject);
 	
-	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, reducedRequestObject.pathname, `${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
+	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, reducedRequestObject.pathname, `_${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
 	const localHandlerObj = (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {};
 	data = templater.apply(data, utils.isFunction(localHandlerObj) ? localHandlerObj(reducedRequestObject) : localHandlerObj, reducedRequestObject);
 	
