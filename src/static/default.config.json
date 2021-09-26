@@ -3,6 +3,7 @@
         "server": 86400,
         "client": 31536000
     },
+    "gzipCompressList": ["html", "js"],
     "locale": {
         "supportedCountryCodes": []
     },
