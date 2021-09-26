@@ -47,7 +47,7 @@ const readConfigFile = (webPath, defaultName, customNames) => {
 			if((customFile[subKey] || "").constructor.name !== "Object") {
 				return;
 			}
-
+			
 			customFile[subKey] = {
 				...defaultFile[subKey],
 				...customFile[subKey]
