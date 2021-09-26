@@ -34,7 +34,6 @@ const URL_PREFIX_REGEX = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
 
 // Register core frontend module
-// TODO: Improve core frontend module integration
 registry.data.set(config.coreModuleIdentifier, {
 	frontend: `
 		var ${config.frontendModuleAppName} = {};
@@ -221,8 +220,6 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 			}
 		};
 	`;
-	
-	// TODO: Minify ?
 	
 	// Register frontend module in order to be integrated into pages upon request
 	registry.data.get(pluginName).frontend = frontendModuleData;
