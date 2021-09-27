@@ -89,7 +89,7 @@ function respond(status, message) {
 		for(let cookie in entity.cookies.send) {
 			let expireDate;    // TODO: Implement
 			entity.res.setHeader("Set-Cookie",
-				`${cookie}=${entity.cookies.send[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : ""}`
+				`${cookie}=${entity.cookies.send[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : "SameSite=Lax"}`
 			);
 		}
 	}

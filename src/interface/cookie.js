@@ -1,17 +1,41 @@
 const entityHook = require("../server/entity-hook");
 
-//write
+const output = require("../support/output");
+
+
+function scopeError(entity) {
+	if(entity) {
+		return false;
+	}
+
+	output.error(new ReferenceError("Cookie manipulation is only available from a request specific context"));
+
+	return true;
+}
+
 
 module.exports = {
 
 	set: (name, value) => {
-		entityHook.current().cookies.send[name] = value; // TODO: Store cookies
+		const entity = entityHook.current();
+		
+		if(scopeError(entity)) {
+			return;
+		}
+
+		entity.cookies.send[name] = value; // TODO: Store cookies
 	},
 
 	get: name => {
+		const entity = entityHook.current();
+		
+		if(scopeError(entity)) {
+			return;
+		}
+		
 		return {
-			...entityHook.current().cookies.received,
-			...entityHook.current().cookies.send
+			...entity.cookies.received,
+			...entity.cookies.send
 		}[name];
 	}
 
