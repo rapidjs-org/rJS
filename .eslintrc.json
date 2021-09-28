@@ -10,7 +10,9 @@
     },
     "parserOptions": {
         "ecmaVersion": 12,
-        "sourceType": "module"
+        "ecmaFeatures": {
+            "globalReturn": true
+        }
     },
     "rules": {
         "indent": [
