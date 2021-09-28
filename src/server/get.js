@@ -52,7 +52,7 @@ function respond(entity, status, message) {
 	}
 	
 	// Check GZIP compression header if to to compress response data
-	if(/(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || "") && webConfig.gzipCompressList.includes(entity.url.extension)) {
+	if(message && /(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || entity.req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(entity.url.extension)) {
 		entity.res.setHeader("Content-Encoding", "gzip");
 		message = gzipSync(message);
 	}
@@ -133,7 +133,7 @@ module.exports = entity => {
 	// Handle plug-in frontend module file requests individually and prioritized
 	if(pluginManagement.isFrontendRequest(entity.url.pathname)) {
 		entity.url.extension = "js";
-
+		
 		data = pluginManagement.retrieveFrontendModule(entity.url.pathname);
 		
 		respond(entity, data ? 200 : 404, data);
