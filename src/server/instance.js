@@ -19,14 +19,14 @@ const requestHandler = {
 // Create web server instance
 const options = {};
 if(!isDevMode && webConfig.ssl) {
-	options.cert = webConfig.ssl.certFile ? readCertFile(webConfig.ssl.certFile) : null;
-	options.key = webConfig.ssl.keyFile ? readCertFile(webConfig.ssl.keyFile) : null;
-	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
-
 	const readCertFile = pathname => {
 		pathname = (pathname.charAt(0) == "/") ? pathname : join(require("../support/web-path"), pathname);
 		return readFileSync(pathname);
 	};
+
+	options.cert = webConfig.ssl.certFile ? readCertFile(webConfig.ssl.certFile) : null;
+	options.key = webConfig.ssl.keyFile ? readCertFile(webConfig.ssl.keyFile) : null;
+	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
 }
 
 const protocol = isDevMode

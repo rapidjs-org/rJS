@@ -1,5 +1,5 @@
-// eslint-disable-next-line no-unused-vars
-var rapidJS = {}.core = (_ => {
+var rapidJS = {};
+rapidJS.core = (_ => {
 		
 	const performRequest = (method, pathname, body) => {
 		return fetch(pathname, {
