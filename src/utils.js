@@ -1,5 +1,5 @@
 const config = {
-	compoundPageDirPrefix: ":",	// TODO: CHANGE! (#)
+	compoundPageDirPrefixes: [":", "#"],	// TODO: Deprecate colon in future
 	defaultFileName: "index"
 };
 
@@ -105,10 +105,14 @@ module.exports = {
 			const part = pathParts.pop();
 			const baseName = part || config.defaultFileName;
 
-			const localCompoundPath = join(pathParts.join("/"), `${config.compoundPageDirPrefix}${baseName}`, `${baseName}.html`);
-
-			// Return compound path if related file exists in file system
-			if(existsSync(join(webPath, localCompoundPath))) {
+			for(let i = 0; i < config.compoundPageDirPrefixes.length; i++) {	// TODO: Remove when deprecated colon for indication
+				let localCompoundPath = join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${baseName}`, `${baseName}.html`);
+				
+				// Return compound path if related file exists in file system
+				if(!existsSync(join(webPath, localCompoundPath))) {
+					continue;
+				}
+				
 				return formEntity({
 					pathname: `/${localCompoundPath}`,
 					base: `/${join(pathParts.join("/"), part)}`,
@@ -123,6 +127,7 @@ module.exports = {
 		return formEntity({
 			pathname: pathname
 		}, false);
+
 
 		function formEntity(obj, isCompound) {
 			entity.url = {
