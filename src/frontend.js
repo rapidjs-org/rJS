@@ -1,5 +1,3 @@
-/* global config */
-
 const performRequest = (method, pathname, body) => {
 	return fetch(pathname, {
 		method: method,

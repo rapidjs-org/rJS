@@ -231,7 +231,7 @@ function isFrontendRequest(pathname) {
 	const adjustedPluginNameRegex = config.pluginNameRegex.source;
 	if(!
 	(new RegExp(`${URL_PREFIX_REGEX.source}${adjustedPluginNameRegex}(\\${config.pluginNameSeparator}${adjustedPluginNameRegex})*`, "i"))
-	.test(pathname)) {
+		.test(pathname)) {
 		return false;
 	}
 
@@ -242,12 +242,12 @@ function retrieveFrontendModule(pathname) {
 	const names = pathname.replace(URL_PREFIX_REGEX, "");
 
 	return names.split(new RegExp(`\\${config.pluginNameSeparator}`, "g"))
-	.filter(name => {
-		return (config.pluginNameRegex.test(name) && registry.data.has(name));
-	}).map(name => {
-		return registry.data.get(name).frontend;
-	})
-	.join("\n");
+		.filter(name => {
+			return (config.pluginNameRegex.test(name) && registry.data.has(name));
+		}).map(name => {
+			return registry.data.get(name).frontend;
+		})
+		.join("\n");
 }
 
 
@@ -261,14 +261,14 @@ function integratePluginReference(data, isCompound) {
 			// Ignore if has been hardcoded into head explcitly (use case: user defined ordering)
 			return !
 			(new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
-			.test(data);
+				.test(data);
 		})
 		.join(config.pluginNameSeparator);
 	
 	// Inject plug-in referencing script tag
 	data = (srcLoad.length > 0)
-	? utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${srcLoad}"></script>`)
-	: data;
+		? utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${srcLoad}"></script>`)
+		: data;
 	
 	return data;
 }
@@ -289,4 +289,3 @@ module.exports = {
 
 // Plug-in specific core interface; accessible from referenced plug-in scopes
 let pluginInterface = require("../interface:plugin");
-const output = require("../support/output");
