@@ -86,10 +86,10 @@ function respond(status, message) {
 
 	if(entity.pageRequest || entity.req.method == "post") {
 		// Set (update) cookies
-		for(let cookie in entity.cookies.send) {
-			let expireDate;    // TODO: Implement
+		for(let name in entity.cookies.send) {
+			const cookie = entity.cookies.send[name];
 			entity.res.setHeader("Set-Cookie",
-				`${cookie}=${entity.cookies.send[cookie]};${expireDate ? `${expireDate};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : "SameSite=Lax"}`
+				`"${name}"=${cookie.value};${cookie.duration ? `Max-Age=${cookie.duration};` : ""}${(!isDevMode && webConfig.port.https) ? "Secure; HttpOnly" : "SameSite=Lax"}`
 			);
 		}
 	}

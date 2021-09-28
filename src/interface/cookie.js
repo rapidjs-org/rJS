@@ -16,16 +16,30 @@ function scopeError(entity) {
 
 module.exports = {
 
-	set: (name, value) => {
+	/**
+	 * Set a cookie.
+	 * @param {String} name Cookie name
+	 * @param {*} value Cookie value
+	 * @param {Number} duration Duration until cookie is supposed to expire (in seconds)
+	 */
+	set: (name, value, duration) => {
 		const entity = entityHook.current();
 		
 		if(scopeError(entity)) {
 			return;
 		}
 
-		entity.cookies.send[name] = value; // TODO: Store cookies
+		entity.cookies.send[name] = {
+			value: value,
+			duration: duration
+		};
 	},
 
+	/**
+	 * Get a cookie by name.
+	 * @param {String} name Cookie name
+	 * @returns {*} Cookie value
+	 */
 	get: name => {
 		const entity = entityHook.current();
 		

@@ -12,3 +12,4 @@ module.exports = require("./interface:app");
 
 // TODO: Implement change detection and auto refresh in DEV MODE?
 // TODO: Allow different config file formats?
+// TODO: Auto script, styles bundling?
