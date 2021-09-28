@@ -35,12 +35,7 @@ const URL_PREFIX_REGEX = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
 // Register core frontend module
 registry.data.set(config.coreModuleIdentifier, {
-	frontend: `
-		var ${config.frontendModuleAppName} = {};
-		${config.frontendModuleAppName}.${config.coreModuleIdentifier} = (_ => {
-			${readFileSync(join(__dirname, "../frontend.js"))}
-		})();
-	`
+	frontend: readFileSync(join(__dirname, "../frontend.js"))
 });
 registry.envs[Environment.ANY] = [config.coreModuleIdentifier];
 
