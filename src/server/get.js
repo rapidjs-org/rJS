@@ -52,7 +52,9 @@ function respond(entity, status, message) {
 	}
 	
 	// Check GZIP compression header if to to compress response data
-	if(message && /(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || entity.req.headers["accept-encoding"] || "") && webConfig.gzipCompressList.includes(entity.url.extension)) {
+	if(message
+	&& /(^|[, ])gzip($|[ ,])/.test(entity.req.headers["Accept-Encoding"] || entity.req.headers["accept-encoding"] || "")
+	&& webConfig.gzipCompressList.includes(entity.url.extension)) {
 		entity.res.setHeader("Content-Encoding", "gzip");
 		message = gzipSync(message);
 	}
@@ -165,7 +167,7 @@ module.exports = entity => {
 	if(entity.pageRequest
 	&& (explicitBase = basename(urlParts.pathname).match(new RegExp(`(${config.defaultPageName})?(\\.html)?$`, "i")))
 	&& explicitBase[0].length > 1) {
-		redirect(urlParts.pathname.replace(explicitBase[0], ""), urlParts);
+		redirect(urlParts.pathname.replace(explicitBase[0], ""));
 		
 		return;
 	}
@@ -196,7 +198,7 @@ module.exports = entity => {
 			
 			return;
 		}
-
+		
 		utils.adaptUrl(entity);
 	}
 	

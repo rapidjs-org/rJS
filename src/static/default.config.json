@@ -12,5 +12,6 @@
     "maxUrlLength": 100,
     "port": {
         "http": 80
-    }
+    },
+    "webDirectory": "web"
 }

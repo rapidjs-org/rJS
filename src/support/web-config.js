@@ -19,25 +19,21 @@ const {existsSync} = require("fs");
  * Read a custom configuration file and merge it (overriding) with the default configuration file.
  * @returns {Object} Resulting configuration object
  */
-const readConfigFile = (webPath, defaultName, customNames) => {
+const readConfigFile = (defaultName, customNames) => {
 	let defaultFile = require(`../static/${defaultName}`);
 
 	customNames = Array.isArray(customNames) ? customNames : [customNames];
 	const customFiles = customNames
-		.filter(customName => {
-			if(!customName) {
-				return false;
-			}
-
-			const customFilePath = join(dirname(webPath), customName);
-			if(existsSync(customFilePath)) {
-				return true;
-			}
-			return false;
-		}).map(customName => {
-			return require(join(dirname(webPath), customName));
+		.filter(customName => customName)
+		.map(customName => {
+			return join(dirname(require.main.filename), customName);
+		})
+		.filter(customFilePath => {
+			return existsSync(customFilePath);
+		}).map(customFilePath => {
+			return require(customFilePath);
 		});
-
+	
 	for(let subKey in defaultFile) {
 		if((defaultFile[subKey] || "").constructor.name !== "Object") {
 			continue;
@@ -68,9 +64,8 @@ function normalizeExtensionArray(array) {
 
 
 // Read
-const webPath = require("./web-path");
 
-const webConfig = readConfigFile(webPath, config.configFileName.default, [
+const webConfig = readConfigFile(config.configFileName.default, [
 	config.configFileName.custom,
 	require("./is-dev-mode") ? config.configFileName.dev : null
 ]);
@@ -78,7 +73,7 @@ const webConfig = readConfigFile(webPath, config.configFileName.default, [
 webConfig.extensionWhitelist = normalizeExtensionArray(webConfig.extensionWhitelist);
 webConfig.gzipCompressList = normalizeExtensionArray(webConfig.gzipCompressList);
 
-const mimesConfig = readConfigFile(webPath, config.mimesFileName.default, config.mimesFileName.custom);
+const mimesConfig = readConfigFile(config.mimesFileName.default, config.mimesFileName.custom);
 
 
 module.exports = {
