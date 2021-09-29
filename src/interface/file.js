@@ -38,7 +38,7 @@ function read(pathname) {
 
 function exists(pathname) {
 	const localPath = join(webPath, pathname);
-
+	
 	return existsSync(localPath);
 }
 
