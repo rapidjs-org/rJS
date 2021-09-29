@@ -62,7 +62,7 @@ require(protocol)
 
 // Create HTTP to HTTPS redirect server if both ports set up
 if(webConfig.port.https && webConfig.port.http) {
-	require("http").createServer((req, res) => {
+	require("http").createServer(req => {
 		entityHook.redirect(`https://${req.headers.host}${req.url}`);
 	}).listen(webConfig.port.http, webConfig.hostname || null, webConfig.maxPending || null, _ => {
 		output.log(`HTTP (:${webConfig.port.http}) to HTTPS (:${webConfig.port.https}) redirection enabled`);
@@ -132,7 +132,7 @@ async function handleRequest() {
 		}
 		
 		if(newHost) {
-			entityHook.redirect(`${protocol}${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
+			entityHook.redirect(`${protocol}.//${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
 
 			return;
 		}
