@@ -13,3 +13,5 @@ module.exports = require("./interface:app");
 // TODO: Implement change detection and auto refresh in DEV MODE?
 // TODO: Allow different config file formats?
 // TODO: Auto script, styles bundling?
+// TODO: Specific local plug-in directory?
+// TODO: DEV MODE specific web file directory? ()... or all to be defined individually? add later perhaps with defaults)

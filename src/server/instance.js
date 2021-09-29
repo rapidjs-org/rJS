@@ -41,7 +41,7 @@ require(protocol)
 		req.method = req.method.toLowerCase();
 
 		entityHook.create(req, res);
-	
+		
 		handleRequest()
 			.catch(err => {
 				output.error(err);
@@ -63,9 +63,7 @@ require(protocol)
 // Create HTTP to HTTPS redirect server if both ports set up
 if(webConfig.port.https && webConfig.port.http) {
 	require("http").createServer((req, res) => {
-		entityHook.redirect({
-			res: res
-		}, `https://${req.headers.host}${req.url}`);
+		entityHook.redirect(`https://${req.headers.host}${req.url}`);
 	}).listen(webConfig.port.http, webConfig.hostname || null, webConfig.maxPending || null, _ => {
 		output.log(`HTTP (:${webConfig.port.http}) to HTTPS (:${webConfig.port.https}) redirection enabled`);
 	});
@@ -102,7 +100,7 @@ async function handleRequest() {
 	}
 
 	webConfig.allowFramedLoading && (entity.res.setHeader("X-Frame-Options", "SAMEORIGIN"));
-
+	
 	entity.res.setHeader("X-XSS-Protection", "1");
 	entity.res.setHeader("X-Powered-By", null);
 
@@ -116,7 +114,7 @@ async function handleRequest() {
 	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
 	
 	// Redirect requests according to the configured www strategy (if necessary)
-	if(!isDevMode && webConfig.www && entity.url.subdomain.length <= 1) {
+	if(!isDevMode && webConfig.www && entity.url.subdomain.length <= 1) {	// TODO: Get working
 		let newHost;
 		switch((webConfig.www || "").trim()) {
 		case "yes":
@@ -132,7 +130,7 @@ async function handleRequest() {
 				
 			break;
 		}
-
+		
 		if(newHost) {
 			entityHook.redirect(`${protocol}${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
 
