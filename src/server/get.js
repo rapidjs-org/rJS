@@ -134,12 +134,12 @@ module.exports = entity => {
 	if(!isDevMode && webConfig.www) {
 		const hasWWWSubdomain = (entity.url.subdomain[entity.url.subdomain.length - 1] || "") == "www";
 		
-		wwwConfig = (webConfig.www).trim();
+		const wwwConfig = (webConfig.www).trim();
 		const performRedirect = (!hasWWWSubdomain && wwwConfig == "yes")
-		? entity.url.subdomain.push("www")
-		: ((hasWWWSubdomain && wwwConfig == "no")
-			? entity.url.subdomain.pop()
-			: undefined);
+			? entity.url.subdomain.push("www")
+			: ((hasWWWSubdomain && wwwConfig == "no")
+				? entity.url.subdomain.pop()
+				: undefined);
 		
 		if(performRedirect) {
 			entityHook.redirect(`http${webConfig.port.https ? "s" : ""}://${(entity.url.subdomain.length > 0) ? `${entity.url.subdomain.join(".")}.` : ""}${entity.url.host}${entity.req.url}`);
