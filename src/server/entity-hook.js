@@ -105,7 +105,7 @@ function redirect(path) {
 	const entity  = current();
 	
 	entity.res.setHeader("Location", path);
-
+	
 	respond(301);
 }
 

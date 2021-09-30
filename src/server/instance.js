@@ -114,15 +114,14 @@ async function handleRequest() {
 	entity.url.pathname = urlParts.pathname;
 	entity.url.query = urlParts.query;
 	
-	// Extract subdomain(s)
+	// Extract and store subdomain(s)
 	const hostParts = (entity.req.headers.host.match(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+/i) || [""])[0]
-		.split(/\./g);
-	const subdomain = hostParts.filter(sub => (sub.length > 0));
-		/* .pop() */;	// TODO: Also handle dot separated domain suffixes, e.g. co.nz; or single (localhost)
-	const host = `${/* (hostParts.length > 0) ? `${hostParts.slice(-1).join(".")}.`:  */""}${entity.req.headers.host.match(/[^.]+$/)[0]}`;
-
-	entity.url.subdomain = subdomain;
-	entity.url.host = host;
+		.split(/\./g)
+		.slice(0, -1);
+	entity.url.subdomain = (entity.req.headers.host.match(/localhost(:[0-9]+)?$/i))
+	? hostParts
+	: hostParts.slice(0, -1);	// TODO: Adapt for accordance with second level TLDs (e.g. co.nz); includes domain name at the moment for such cases
+	entity.url.host = entity.req.headers.host.match(new RegExp(`([a-z0-9]([a-z0-9-]*[a-z0-9])?\.){${hostParts.length - entity.url.subdomain.length}}[^.]+$`))[0];
 	
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);
