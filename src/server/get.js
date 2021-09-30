@@ -130,6 +130,25 @@ function processDynamicFile(entity, pathname) {
  * Handle a GET request accordingly.
  */
 module.exports = entity => {
+	/* // Redirect requests according to the configured www strategy (if expected and necessary)
+	if(isDevMode && webConfig.www) {	// TODO: Get working
+		const hasWWWSubdomain = (Array.from(entity.url.subdomain || "")[entity.url.subdomain.length - 1] || "") == "www";
+		console.log(hasWWWSubdomain)
+		
+		wwwConfig = (webConfig.www).trim();
+		const newHost = (!hasWWWSubdomain && wwwConfig == "yes")
+		? `${(entity.url.subdomain.length > 0) ? `entity.url.subdomain.join(".").` : ""}www.${entity.req.headers.host}`
+		: ((hasWWWSubdomain && wwwConfig == "no")
+			? entity.req.headers.host.replace(/^www\./i, "")
+			: undefined);
+		console.log(newHost)
+		if(newHost) {
+			entityHook.redirect(`${protocol}.//${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
+
+			return;
+		}
+	} */
+
 	let data;
 	
 	// Handle plug-in frontend module file requests individually and prioritized
@@ -167,7 +186,7 @@ module.exports = entity => {
 	if(entity.pageRequest
 	&& (explicitBase = basename(urlParts.pathname).match(new RegExp(`(${config.defaultPageName})?(\\.html)?$`, "i")))
 	&& explicitBase[0].length > 1) {
-		redirect(urlParts.pathname.replace(explicitBase[0], ""));
+		redirect(urlParts.pathname.replace(explicitBase[0], ""), urlParts);
 		
 		return;
 	}

@@ -113,31 +113,6 @@ async function handleRequest() {
 		.filter(sub => (sub.length > 0));
 	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
 	
-	// Redirect requests according to the configured www strategy (if necessary)
-	if(!isDevMode && webConfig.www && entity.url.subdomain.length <= 1) {	// TODO: Get working
-		let newHost;
-		switch((webConfig.www || "").trim()) {
-		case "yes":
-			if(entity.url.subdomain.length == 0) {
-				newHost = `www.${entity.req.headers.host}`;
-			}
-
-			break;
-		case "no":
-			if((entity.url.subdomain || [""])[0] == "www") {
-				newHost = entity.req.headers.host.replace(/^www\./i, "");
-			}
-				
-			break;
-		}
-		
-		if(newHost) {
-			entityHook.redirect(`${protocol}.//${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
-
-			return;
-		}
-	}
-	
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);
 }
