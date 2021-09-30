@@ -14,5 +14,3 @@ module.exports = require("./interface:app");
 // TODO: Allow different config file formats?
 // TODO: Implement defer option for plug-in frontend module loading
 // TODO: Auto script, styles bundling?
-// TODO: Specific local plug-in directory?
-// TODO: DEV MODE specific web file directory? ()... or all to be defined individually? add later perhaps with defaults)

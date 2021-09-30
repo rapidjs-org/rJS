@@ -204,18 +204,20 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 			... {
 				"${pluginName}": (${config.frontendModuleReferenceName.private} => {
 					const ${config.frontendModuleAppName} = {
+						...${config.frontendModuleReferenceName.private},
 						useEndpoint: (body, progressHandler) => {
 							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
 						}
 					};
+					delete ${config.frontendModuleAppName}.endpoint;
 					const ${config.frontendModuleReferenceName.public} = {};
 					${frontendModuleData}${(frontendModuleData.slice(-1) != ";") ? ";" : ""}
 					return ${config.frontendModuleReferenceName.public};
 				})(${config.frontendModuleAppName}.${config.coreModuleIdentifier})
 			}
 		};
-	`;
-	
+	`;	// TODO: Beautify (minfiy, obfuscate, ... ?)
+
 	// Register frontend module in order to be integrated into pages upon request
 	registry.data.get(pluginName).frontend = frontendModuleData;
 	registry.data.get(pluginName).compoundOnly = compoundOnly;

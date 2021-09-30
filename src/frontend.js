@@ -71,12 +71,15 @@ rapidJS.core = (_ => {
 		},
 
 		/**
-		 * Redirect to the next related error page.
-		 * @param {Number} status Status code
+		 * Redirect to the next related client error page (if deployed, to receive generic response otherwise).
+		 * @param {Number} status Client error status code (4**)
 		 */
-		redirectError: status => {
-			console.log(status);
-			// TODO: Implement (on hold)
+		redirectStatus: status => {
+			if(!((status % 400) < 99)) {
+				throw new RangeError(`Given status code ${status} not located within the client error value range (4**)`);
+			}
+
+			document.location.pathname = document.location.pathname.replace(/[^\/]*$/i, `/${String(status)}`);
 		}
 
 	};
