@@ -130,24 +130,23 @@ function processDynamicFile(entity, pathname) {
  * Handle a GET request accordingly.
  */
 module.exports = entity => {
-	/* // Redirect requests according to the configured www strategy (if expected and necessary)
-	if(isDevMode && webConfig.www) {	// TODO: Get working
-		const hasWWWSubdomain = (Array.from(entity.url.subdomain || "")[entity.url.subdomain.length - 1] || "") == "www";
-		console.log(hasWWWSubdomain)
+	// Redirect requests according to the configured www strategy (if expected and necessary)
+	if(!isDevMode && webConfig.www) {
+		const hasWWWSubdomain = (entity.url.subdomain[entity.url.subdomain.length - 1] || "") == "www";
 		
 		wwwConfig = (webConfig.www).trim();
-		const newHost = (!hasWWWSubdomain && wwwConfig == "yes")
-		? `${(entity.url.subdomain.length > 0) ? `entity.url.subdomain.join(".").` : ""}www.${entity.req.headers.host}`
+		const performRedirect = (!hasWWWSubdomain && wwwConfig == "yes")
+		? entity.url.subdomain.push("www")
 		: ((hasWWWSubdomain && wwwConfig == "no")
-			? entity.req.headers.host.replace(/^www\./i, "")
+			? entity.url.subdomain.pop()
 			: undefined);
-		console.log(newHost)
-		if(newHost) {
-			entityHook.redirect(`${protocol}.//${newHost || entity.req.headers.host}${entity.req.originalUrl}`);
-
+		
+		if(performRedirect) {
+			entityHook.redirect(`http${webConfig.port.https ? "s" : ""}://${(entity.url.subdomain.length > 0) ? `${entity.url.subdomain.join(".")}.` : ""}${entity.url.host}${entity.req.url}`);
+			
 			return;
 		}
-	} */
+	}	// TODO: Deploy checkRedirect() helper for general redirection check ups in order to prevent multiple redirects for one request?
 
 	let data;
 	
