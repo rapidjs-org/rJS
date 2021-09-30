@@ -2,7 +2,7 @@ const config = {
 	configFileName: {
 		custom: "rapid.config.json",
 		default: "default.config.json",
-		dev: "rapid.config:dev.json"
+		dev: "rapid.config.dev.json"
 	},
 	mimesFileName: {
 		custom: "rapid.mimes.json",
@@ -67,6 +67,7 @@ function normalizeExtensionArray(array) {
 
 const webConfig = readConfigFile(config.configFileName.default, [
 	config.configFileName.custom,
+	require("./is-dev-mode") ? "rapid.config:dev" : null,	// TODO: Deprecate in future
 	require("./is-dev-mode") ? config.configFileName.dev : null
 ]);
 
