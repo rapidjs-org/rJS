@@ -29,6 +29,12 @@ if(!isDevMode && webConfig.ssl) {
 	options.dhparam = webConfig.ssl.dhParam ? readCertFile(webConfig.ssl.dhParam) : null;
 }
 
+const checkPort = (port, method) => {
+	isNaN(port) && output.error(new TypeError(`Configured ${method} port must be of type Number, given ${typeof(port)} instead.`), true);
+}
+checkPort(webConfig.port.http, "HTTP");
+checkPort(webConfig.port.https, "HTTPS");
+
 const protocol = isDevMode
 	? "http"
 	: (webConfig.port.https
@@ -108,10 +114,15 @@ async function handleRequest() {
 	entity.url.pathname = urlParts.pathname;
 	entity.url.query = urlParts.query;
 	
-	const subdomains = (entity.req.headers.host.match(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+/i) || [""])[0]
-		.split(/\./g)
-		.filter(sub => (sub.length > 0));
-	entity.url.subdomain = subdomains ? ((subdomains.length > 1) ? subdomains : subdomains[0]) : undefined;
+	// Extract subdomain(s)
+	const hostParts = (entity.req.headers.host.match(/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+/i) || [""])[0]
+		.split(/\./g);
+	const subdomain = hostParts.filter(sub => (sub.length > 0));
+		/* .pop() */;	// TODO: Also handle dot separated domain suffixes, e.g. co.nz; or single (localhost)
+	const host = `${/* (hostParts.length > 0) ? `${hostParts.slice(-1).join(".")}.`:  */""}${entity.req.headers.host.match(/[^.]+$/)[0]}`;
+
+	entity.url.subdomain = subdomain;
+	entity.url.host = host;
 	
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);
