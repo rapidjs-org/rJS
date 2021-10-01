@@ -87,20 +87,20 @@ async function handleRequest() {
 
 	// Block request if method not allowed
 	if(!requestHandler[entity.req.method]) {
-		entityHook.respond(entity, 405);
+		entityHook.respond(405);
 
 		return;
 	}
 	// Block request if URL is exceeding the maximum length
 	if(entity.req.url.length > webConfig.maxUrlLength) {
-		entityHook.respond(entity, 414);
+		entityHook.respond(414);
 
 		return;
 	}
 	// Block request if individual request maximum reached
 	if(rateLimiter.mustBlock(entity.req.connection.remoteAddress)) {
 		entity.res.setHeader("Retry-After", 30000);
-		entityHook.respond(entity, 429);
+		entityHook.respond(429);
 
 		return;
 	}
