@@ -10,6 +10,7 @@ const ClientError = require("../interface/ClientError");
 const templater = require("../interface/templater");
 
 const entityHook = require("../server/entity-hook");
+const output = require("../support/output");
 
 
 function read(pathname) {
@@ -30,9 +31,14 @@ function read(pathname) {
 	data = locale.translate(String(data), reducedRequestObject);
 	
 	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, reducedRequestObject.pathname, `_${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
-	const localHandlerObj = (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {};
-	data = templater.apply(data, utils.isFunction(localHandlerObj) ? localHandlerObj(reducedRequestObject) : localHandlerObj, reducedRequestObject);
-	
+	try {
+		const localHandlerObj = (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {};
+		data = templater.apply(data, utils.isFunction(localHandlerObj) ? localHandlerObj(reducedRequestObject) : localHandlerObj, reducedRequestObject);
+	} catch(err) {
+		output.log(`An error occured evaluating the tempating handler module at '${localHandlerPath}':`);
+		output.error(err);
+	}
+
 	return data;
 }
 
