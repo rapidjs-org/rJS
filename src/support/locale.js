@@ -6,6 +6,7 @@ const config = {
 	}
 };
 
+// TODO: Fix!!!
 
 const {join, dirname} = require("path");
 const {existsSync} = require("fs");
