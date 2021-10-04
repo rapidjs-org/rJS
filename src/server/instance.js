@@ -33,7 +33,7 @@ const checkPort = (port, method) => {
 	isNaN(port) && output.error(new TypeError(`Configured ${method} port must be of type Number, given ${typeof(port)} instead.`), true);
 };
 checkPort(webConfig.port.http, "HTTP");
-checkPort(webConfig.port.https, "HTTPS");
+webConfig.port.https && checkPort(webConfig.port.https, "HTTPS");
 
 const protocol = isDevMode
 	? "http"
@@ -123,7 +123,9 @@ async function handleRequest() {
 	entity.url.subdomain = (entity.req.headers.host.match(/localhost(:[0-9]+)?$/i))
 		? hostParts
 		: hostParts.slice(0, -1);	// TODO: Adapt for accordance with second level TLDs (e.g. co.nz); includes domain name at the moment for such cases
-	entity.url.host = entity.req.headers.host.match(new RegExp(`([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.){${hostParts.length - entity.url.subdomain.length}}[^.]+$`))[0];
+	entity.url.host = (entity.req.headers.host
+		.match(new RegExp(`([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.){${hostParts.length - entity.url.subdomain.length}}[^.]+$`))
+		|| [entity.req.headers.host])[0];
 
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);

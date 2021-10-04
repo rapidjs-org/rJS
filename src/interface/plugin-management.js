@@ -267,6 +267,8 @@ function integratePluginReference(data, isCompound) {
 		? utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${srcLoad}"></script>`)
 		: data;
 	
+	// TODO: Do not reference core either if no other plug-in is or ist to be integrated
+	
 	return data;
 }
 
