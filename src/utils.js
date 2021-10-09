@@ -97,7 +97,8 @@ module.exports = {
 		}
 
 		// Use compound page path if respective directory exists
-		const pathParts = entity.url.pathname.replace(/^\//, "").split(/\//g) || [entity.url.pathname];
+		const pathParts = [config.defaultFileName]
+		.concat(entity.url.pathname.replace(/^\//, "").split(/\//g) || [entity.url.pathname]);
 		const args = [];
 		
 		while(pathParts.length > 0) {
