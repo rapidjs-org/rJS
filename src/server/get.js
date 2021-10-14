@@ -191,8 +191,8 @@ module.exports = entity => {
 	}
 
 	// Prepare request according to locale settings
-	const reqInfo = locale.getInfo(entity);
 	locale.prepare(entity);
+	const reqInfo = locale.getInfo(entity);
 	if(entity.pageRequest) {
 		const newLocale = reqInfo.country
 			? entity.url.country
