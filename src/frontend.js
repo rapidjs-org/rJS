@@ -22,10 +22,11 @@ rapidJS.core = (_ => {
 		 * Perform request ro plug-in related endpoint (id set up).
 		 * @param {String} pluginName Internal name of plug-in to be addressed
 		 * @param {Object} [body] Body object to send along being passed to the endpoint callback
+		 * @param {String} [name] Endpoint name if given
 		 * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
 		 * @returns {Promise} Request promise eventualy resolving to response message
 		 */
-		endpoint: (pluginName, body, progressHandler) => {
+		endpoint: (pluginName, body, progressHandler, name) => {
 			const pathname = `/${pluginName}`;
 			
 			return new Promise((resolve, reject) => {
@@ -33,7 +34,8 @@ rapidJS.core = (_ => {
 					meta: {
 						pathname: document.location.pathname
 					},
-					body: body
+					body: body,
+					name: name || null
 				}).then(async res => {
 					// Explicitly download body to handle progress
 					const contentLength = res.headers.get("Content-Length");
@@ -56,12 +58,12 @@ rapidJS.core = (_ => {
 						chunksAll.set(chunk, position);
 						position += chunk.length;
 					}
-
-					const message = JSON.parse(new TextDecoder("utf-8").decode(chunksAll));
-
-					((res.status % 200) < 99) ? resolve(message) : reject(message);
-				}).catch(_ => {
-					reject(new Error("Could not connect to endpoint"));
+					
+					const message = new TextDecoder("utf-8").decode(chunksAll);
+					
+					((res.status - 200) < 99) ? resolve(JSON.parse(message)) : reject(message);
+				}).catch(err => {
+					reject(new Error(`Could not connect to endpoint: ${err.message || err}`));
 				});
 			});
 

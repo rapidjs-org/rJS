@@ -4,8 +4,9 @@
   "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "dist/app.js",
   "scripts": {
-    "test": "node ./test/server.js",
-    "test:dev": "node ./test/server.js -dev",
+    "test": "npm run lint",
+    "test-app": "node ./test-app/server.js",
+    "test-app:dev": "node ./test-app/server.js -dev",
     "lint": "./node_modules/.bin/eslint --fix src/",
     "build": "npm run lint && node ../../finalize-js/build.js",
     "release": "npm run build && np"

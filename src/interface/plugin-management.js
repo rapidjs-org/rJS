@@ -207,6 +207,9 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 						...${config.frontendModuleReferenceName.private},
 						useEndpoint: (body, progressHandler) => {
 							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+						},
+						useNamedEndpoint: (name, body, progressHandler) => {
+							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
 						}
 					};
 					delete ${config.frontendModuleAppName}.endpoint;

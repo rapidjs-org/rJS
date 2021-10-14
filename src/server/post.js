@@ -41,7 +41,7 @@ module.exports = entity => {
 
 		body.push(chunk);
 
-		const bodyByteSize = (JSON.stringify(JSON.parse(body)).length * 8);
+		const bodyByteSize = body.length * 8;
 		if(bodyByteSize > webConfig.maxPayloadSize) {
 			// Request payload exceeds maximum size as put in web config
 			blockBodyProcessing = true;
@@ -71,10 +71,9 @@ module.exports = entity => {
 			locale.prepare(entity);
 			
 			utils.adaptUrl(entity);
-
-			const reducedRequestObject = entity.reducedRequestObject;
-
-			const data = endpoint.use(internalPathname, body.body, reducedRequestObject);
+			
+			let data = endpoint.use(internalPathname, body.body, body.name);
+			data = (data === undefined) ? null : data;
 			
 			respond(200, data);
 		} catch(err) {
