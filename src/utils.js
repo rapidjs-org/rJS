@@ -11,6 +11,9 @@ const webPath = require("./support/web-path");
 const output = require("./support/output");
 
 
+const gatheredUrlInfo = new Map();
+
+
 function isString(value) {
 	return typeof value === "string" || value instanceof String;
 }
@@ -90,6 +93,12 @@ module.exports = {
 			.replace(/\/$/, `/${config.defaultFileName}`)
 			.replace(/(\.html)?$/, ".html");
 
+		if(gatheredUrlInfo.has(pathname)) {
+			entity.url = gatheredUrlInfo.get(pathname);
+			
+			return;
+		}
+		
 		if(existsSync(join(webPath, pathname))) {
 			return formEntity({
 				pathname: pathname
@@ -142,7 +151,6 @@ module.exports = {
 
 			args.push(part);
 		}
-		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
 		// TODO: Improve mechanism
 		
 		return formEntity({
@@ -151,12 +159,18 @@ module.exports = {
 
 
 		function formEntity(obj, isCompound) {
-			entity.url = {
+			const urlEntity = {
 				...entity.url,
 				...obj,
 
 				isCompound: isCompound
 			};
+
+			// Store gathered URL info for future use
+			gatheredUrlInfo.set(pathname, urlEntity);
+
+			// Store to current entity obj
+			entity.url = urlEntity;
 		}
 	}
 
