@@ -123,10 +123,12 @@ function plugin(reference, options = {}) {
 		throw new ReferenceError(`Plug-in references '${registry.data.get(name).reference}' and '${reference}' illegally resolve to the equal name '${name}'`);
 	}
 	
+	const appModule = module.parent.parent.parent.parent;	// TODO: Bubble up with file name check up
+
 	const pluginPath = FULL_PLUGIN_NAME_REGEX.test(reference)
-		? module.constructor._resolveFilename(reference, module.parent)
+		? module.constructor._resolveFilename(reference, appModule)
 		: join(dirname(require.main.filename), reference);
-		
+	
 	registry.data.set(name, {
 		reference: reference,
 		path: pluginPath,
@@ -139,7 +141,7 @@ function plugin(reference, options = {}) {
 
 	let pluginModule;
 	try {
-		pluginModule = module.parent.require(pluginPath);
+		pluginModule = appModule.require(pluginPath);
 	} catch(err) {
 		err.message += `\n>> This error occured inside of the plug-in module; referenced by '${reference}'`;
 		throw err;
