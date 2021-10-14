@@ -68,10 +68,11 @@ module.exports = entity => {
 		const internalPathname = entity.url.pathname;
 		try {
 			entity.url.pathname = body.meta.pathname;
+			
 			locale.prepare(entity);
 			
 			utils.adaptUrl(entity);
-			
+
 			let data = endpoint.use(internalPathname, body.body, body.name);
 			data = (data === undefined) ? null : data;
 			

@@ -54,7 +54,8 @@ function getInfo(entity) {
 		? (Array.isArray(entity.url.subdomain) ? entity.url.subdomain[0] : (entity.url.subdomain || ""))
 		: entity.url.pathname.slice(1).slice(0, Math.max(entity.url.pathname.slice(1).indexOf("/"), 0)).replace(/^\//, "");
 	
-	let part = reference.match(/^(([a-z]{2})(-([a-z]{2}))?|([A-Z]{2}))/i);
+	let part = reference.match(/^(([a-z]{2})(-([a-zA-Z]{2}))?|([A-Z]{2}))/);
+	
 	part = part
 		? {
 			lang: (part[2] || "").toLowerCase(),
@@ -82,7 +83,7 @@ function prepare(entity) {
 		: undefined;
 
 	const info = getInfo(entity);
-	
+
 	entity.url.country = info.country || (clientAcceptLocale ? clientAcceptLocale.country : undefined);
 	entity.url.country = (entity.url.country && supportedCountryCodes.has(entity.url.country))
 		? entity.url.country
@@ -94,7 +95,7 @@ function prepare(entity) {
 		: (clientAcceptLocale && (clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang))
 			? clientAcceptLocale.lang
 			: (entity.url.country ? supportedCountryCodes.get(entity.url.country) : defaultLang));
-	
+
 	if(webConfig.locale.useSubdomain) {
 		entity.url.subdomain = info.lang
 			? Array.isArray(entity.url.subdomain) ? entity.url.subdomain.slice(1) : null
@@ -164,7 +165,7 @@ function translate(data, reducedRequestObject) {
 			}
 		}
 
-		const globalLangFilePath = join(LANG_DIR_PATH, langFileName);	// TODO: Cache?
+		const globalLangFilePath = join(LANG_DIR_PATH, langFileName);
 		return existsSync(globalLangFilePath)
 			? require(globalLangFilePath)
 			: undefined;
