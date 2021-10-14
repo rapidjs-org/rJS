@@ -97,8 +97,10 @@ module.exports = {
 		}
 
 		// Use compound page path if respective directory exists
-		const pathParts = [config.defaultFileName]
-		.concat(entity.url.pathname.replace(/^\//, "").split(/\//g) || [entity.url.pathname]);
+		const pathParts = [""]
+		.concat(entity.url.pathname
+			.replace(/^\//, "")
+			.split(/\//g) || [entity.url.pathname]);
 		const args = [];
 		
 		while(pathParts.length > 0) {
@@ -107,15 +109,32 @@ module.exports = {
 			const baseName = part || config.defaultFileName;
 
 			for(let i = 0; i < config.compoundPageDirPrefixes.length; i++) {	// TODO: Remove when deprecated colon for indication
-				let localCompoundPath = join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${baseName}`, `${baseName}.html`);
+				const localConventionalPath = join(pathParts.join("/"), `${baseName}.html`);
+				if(existsSync(join(webPath, localConventionalPath))) {
+					return formEntity({
+						pathname: localConventionalPath
+					}, false);
+				}
 				
-				// Return compound path if related file exists in file system
-				if(!existsSync(join(webPath, localCompoundPath))) {
+				const localCompoundPath = {
+					index: join(pathParts.join("/"), baseName, `${config.compoundPageDirPrefixes[i]}${config.defaultFileName}`, `${config.defaultFileName}.html`),
+					specific: join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${baseName}`, `${baseName}.html`)
+				};
+				
+				let activeLocalCompoundPath;
+				existsSync(join(webPath, localCompoundPath.index))
+				&& (activeLocalCompoundPath = localCompoundPath.index);
+
+				(!activeLocalCompoundPath && existsSync(join(webPath, localCompoundPath.specific)))
+				&& (activeLocalCompoundPath = localCompoundPath.specific);
+				
+				if(!activeLocalCompoundPath) {
 					continue;
 				}
 				
+				// Return compound path if related file exists in file system
 				return formEntity({
-					pathname: `/${localCompoundPath}`,
+					pathname: `/${activeLocalCompoundPath}`,
 					base: `/${join(pathParts.join("/"), part)}`,
 					args: args.filter(arg => arg.length > 0).reverse()
 				}, true);
@@ -124,6 +143,7 @@ module.exports = {
 			args.push(part);
 		}
 		// TODO: Store already obtained compound page paths mapped to request pathnames in order to reduce computing compexity (cache?)?
+		// TODO: Improve mechanism
 		
 		return formEntity({
 			pathname: pathname
