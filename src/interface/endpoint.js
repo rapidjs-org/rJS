@@ -25,8 +25,8 @@ function set(callback, useCache, name) {
 	const pathname = `/${pluginName}`;
 
 	const respectiveMap = routeHandlers.has(pathname)
-	? routeHandlers.get(pathname)
-	: new Map();
+		? routeHandlers.get(pathname)
+		: new Map();
 
 	if(respectiveMap.has(pathname)){
 		throw new ReferenceError(`Must not override already set up endpoint for plug-in with name '${pluginName}'`);
