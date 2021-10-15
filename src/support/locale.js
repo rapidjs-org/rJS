@@ -41,6 +41,12 @@ const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig
 	: undefined;
 
 
+function hasLangObj(lang) {
+	const langFilePath = join(LANG_DIR_PATH, `${lang}.json`);
+	return existsSync(langFilePath);
+}
+
+
 function getDefault(location) {
 	if(!location) {
 		return defaultLang;
@@ -64,7 +70,7 @@ function getInfo(entity) {
 		: {};
 	
 	return {
-		lang: iso.lang.includes(part.lang) ? part.lang : undefined,
+		lang: (iso.lang.includes(part.lang) && hasLangObj(part.lang)) ? part.lang : undefined,
 		country: iso.country.includes(part.country) ? part.country : undefined
 	};
 }
@@ -109,11 +115,6 @@ function prepare(entity) {
 		+ (info.country ? info.country.length + 1 : 0));
 	
 	// TODO: Optimize for static files (remove obsolote steps)
-
-	function hasLangObj(lang) {
-		const langFilePath = join(LANG_DIR_PATH, `${lang}.json`);
-		return existsSync(langFilePath);
-	}
 }
 
 // TODO: Implement default lang depending on location

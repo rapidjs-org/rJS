@@ -124,12 +124,12 @@ async function handleRequest() {
 		? ((entity.req.headers.host.match(/localhost(:[0-9]+)?$/i))
 			? hostParts
 			: hostParts.slice(0, -1))	// TODO: Adapt for accordance with second level TLDs (e.g. co.nz); includes domain name at the moment for such cases
-		: null;
+		: undefined;
 	
 	entity.url.host = (!isDevMode && webConfig.hostname)
 		? webConfig.hostname
 		: (entity.req.headers.host
-			.match(new RegExp(`([a-z]([a-z0-9-]*[a-z0-9])?\\.){${hostParts.length - entity.url.subdomain.length}}[^.]+$`))
+			.match(new RegExp(`([a-z]([a-z0-9-]*[a-z0-9])?\\.){${hostParts.length - (entity.url.subdomain || []).length}}[^.]+$`))
 		|| [entity.req.headers.host])[0];
 	
 	// Apply the related request handler

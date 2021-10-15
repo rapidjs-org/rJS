@@ -219,7 +219,13 @@ module.exports = entity => {
 			return;
 		}
 
-		utils.adaptUrl(entity);
+		try {
+			utils.adaptUrl(entity);
+		} catch(_) {
+			respondWithError(entity, 404);
+			
+			return;
+		}
 	}
 	
 	// Set client-side cache control for static files

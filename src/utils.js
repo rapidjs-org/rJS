@@ -91,44 +91,37 @@ module.exports = {
 		// Add default file name if none explicitly stated in request URL
 		const pathname = entity.url.pathname
 			.replace(/\/$/, `/${config.defaultFileName}`)
-			.replace(/(\.html)?$/, ".html");
-
+			.replace(/^\//, "");
+		
 		if(gatheredUrlInfo.has(pathname)) {
 			entity.url = gatheredUrlInfo.get(pathname);
 			
 			return;
 		}
 		
-		if(existsSync(join(webPath, pathname))) {
+		const localConventionalPath = pathname.replace(/(\.html)?$/, ".html");
+		if(existsSync(join(webPath, localConventionalPath))) {
 			return formEntity({
-				pathname: pathname
+				pathname: `/${localConventionalPath}`
 			}, false);
 		}
 
 		// Use compound page path if respective directory exists
-		const pathParts = [""]
-			.concat(entity.url.pathname
-				.replace(/^\//, "")
-				.split(/\//g) || [entity.url.pathname]);
+		const pathParts = [""].concat(pathname.split(/\//g)
+				|| [pathname]);
+		
 		const args = [];
 		
 		while(pathParts.length > 0) {
 			// Construct possible compound path information to check for existence
 			const part = pathParts.pop();
-			const baseName = part || config.defaultFileName;
 
 			for(let i = 0; i < config.compoundPageDirPrefixes.length; i++) {	// TODO: Remove when deprecated colon for indication
-				const localConventionalPath = join(pathParts.join("/"), `${baseName}.html`);
-				if(existsSync(join(webPath, localConventionalPath))) {
-					return formEntity({
-						pathname: localConventionalPath
-					}, false);
-				}
-				
 				const localCompoundPath = {
-					index: join(pathParts.join("/"), baseName, `${config.compoundPageDirPrefixes[i]}${config.defaultFileName}`, `${config.defaultFileName}.html`),
-					specific: join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${baseName}`, `${baseName}.html`)
+					index: join(pathParts.join("/"), part, `${config.compoundPageDirPrefixes[i]}${config.defaultFileName}`, `${config.defaultFileName}.html`),
+					specific: join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${part}`, `${part}.html`)
 				};
+				console.log(localCompoundPath)
 				
 				let activeLocalCompoundPath;
 				existsSync(join(webPath, localCompoundPath.index))
@@ -140,7 +133,7 @@ module.exports = {
 				if(!activeLocalCompoundPath) {
 					continue;
 				}
-				
+
 				// Return compound path if related file exists in file system
 				return formEntity({
 					pathname: `/${activeLocalCompoundPath}`,
@@ -151,11 +144,8 @@ module.exports = {
 
 			args.push(part);
 		}
-		// TODO: Improve mechanism
 		
-		return formEntity({
-			pathname: pathname
-		}, false);
+		throw new ReferenceError(`Requested file not found '${pathname}'`);
 
 
 		function formEntity(obj, isCompound) {
