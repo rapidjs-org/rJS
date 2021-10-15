@@ -71,7 +71,11 @@ module.exports = entity => {
 			
 			locale.prepare(entity);
 			
-			utils.adaptUrl(entity);
+			try {
+				utils.adaptUrl(entity);
+			} catch(_) {
+				// ...
+			}
 
 			let data = endpoint.use(internalPathname, body.body, body.name);
 			data = (data === undefined) ? null : data;
