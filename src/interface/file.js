@@ -30,15 +30,27 @@ function read(pathname) {
 	// Markup modifications
 	data = locale.translate(String(data), reducedRequestObject);
 	
-	const localHandlerPath = reducedRequestObject.isCompound ? join(webPath, reducedRequestObject.pathname, `_${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`) : null;
+	const localHandlerPath = reducedRequestObject.isCompound
+	? join(webPath, reducedRequestObject.pathname, `_${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`)
+	: null;
+	
+	let localHandlerObj;
+	
 	try {
-		const localHandlerObj = (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {};
-		data = templater.apply(data, utils.isFunction(localHandlerObj) ? localHandlerObj(reducedRequestObject) : localHandlerObj, reducedRequestObject);
+		localHandlerObj = (localHandlerPath && existsSync(localHandlerPath)) ? require(localHandlerPath) : {};
+		localHandlerObj = utils.isFunction(localHandlerObj) ? localHandlerObj(reducedRequestObject) : localHandlerObj
 	} catch(err) {
-		output.log(`An error occured evaluating the tempating handler module at '${localHandlerPath}':`);
+		output.log(`An error occured evaluating the tempating handler object at '${localHandlerPath}':`);
 		output.error(err);
 	}
-
+	
+	try {
+		data = templater.apply(data, localHandlerObj, reducedRequestObject);
+	} catch(err) {
+		!(err instanceof ClientError) && output.log(`An error occured applying the tempating handler to '${reducedRequestObject.pathname}':`);
+		output.error(err);
+	}
+		
 	return data;
 }
 
