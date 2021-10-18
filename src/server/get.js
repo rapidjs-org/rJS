@@ -29,7 +29,12 @@ const entityHook = require("./entity-hook");
 
 
 // Activate live functionality if in DEV MODE
-const live = isDevMode ? require("../live/server") : null;
+let liveServer;
+if(isDevMode) {
+	liveServer = require("../live/server");
+
+	require("../live/detect");
+}
 
 
 const cache = {
@@ -121,7 +126,7 @@ function processDynamicFile(entity, pathname) {
 	data = pluginManagement.integratePluginReference(data, entity.url.isCompound);
 
 	// Reference live frontend script into page
-	data = live ? live.integrateLiveReference(data) : data;
+	data = liveServer ? liveServer.integrateLiveReference(data) : data;
 	
 	return data;
 }

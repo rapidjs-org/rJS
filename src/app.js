@@ -11,6 +11,5 @@ require("./server/instance.js");
 module.exports = require("./interface:app");
 
 // TODO: Wildcard templating?
-// TODO: Implement change detection and auto refresh in DEV MODE?
 // TODO: Implement defer option for plug-in frontend module loading
 // TODO: Auto script, styles bundling?

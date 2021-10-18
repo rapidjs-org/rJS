@@ -17,10 +17,14 @@ const {join, dirname, basename, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 
 const webConfig = require("../support/web-config").webConfig;
+const isDevMode = require("../support/is-dev-mode");
 
 const utils = require("../utils");
 
 const Environment = require("./Environment");
+
+
+const liveDetect = isDevMode ? require("../live/detect") : null;
 
 
 const registry = {
@@ -32,12 +36,14 @@ const registry = {
 const FULL_PLUGIN_NAME_REGEX = new RegExp(`^${config.pluginNameRegex.source}$`, "i");
 const URL_PREFIX_REGEX = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
+const APP_MODULE = module.parent.parent.parent.parent;	// TODO: Bubble up with file name check up
+
 
 // Register core frontend module
 registry.data.set(config.coreModuleIdentifier, {
 	frontend: readFileSync(join(__dirname, "../frontend.js"))
 });
-registry.envs[Environment.ANY] = [config.coreModuleIdentifier];
+registry.envs[Environment.ANY] = new Set([config.coreModuleIdentifier]);
 
 
 /**
@@ -55,7 +61,7 @@ function readConfig(key) {
 
 
 function getNameByPath(path) {
-	path = path.replace(/\.js/, "");
+	path = path.trim().replace(/\.js$/, "");
 
 	try {
 		registry.data.forEach((data, name) => {
@@ -123,10 +129,8 @@ function plugin(reference, options = {}) {
 		throw new ReferenceError(`Plug-in references '${registry.data.get(name).reference}' and '${reference}' illegally resolve to the equal name '${name}'`);
 	}
 	
-	const appModule = module.parent.parent.parent.parent;	// TODO: Bubble up with file name check up
-
 	const pluginPath = FULL_PLUGIN_NAME_REGEX.test(reference)
-		? module.constructor._resolveFilename(reference, appModule)
+		? module.constructor._resolveFilename(reference, APP_MODULE)
 		: join(dirname(require.main.filename), reference);
 	
 	registry.data.set(name, {
@@ -136,22 +140,42 @@ function plugin(reference, options = {}) {
 	});
 	
 	const pageEnvironment = options.environment ? options.environment : Environment.ANY;
-	!registry.envs[pageEnvironment] && (registry.envs[pageEnvironment] = []);
-	registry.envs[pageEnvironment].push(name);
+	!registry.envs[pageEnvironment] && (registry.envs[pageEnvironment] = new Set());
+	registry.envs[pageEnvironment].add(name);
+	
+	loadPlugin(pluginPath);
 
+	// Register plug-in path for change detection if in DEV
+	liveDetect && liveDetect.registerPluginPath(pluginPath);
+}
+
+function loadPlugin(path) {
 	let pluginModule;
 	try {
-		pluginModule = appModule.require(pluginPath);
+		pluginModule = APP_MODULE.require(path);
 	} catch(err) {
-		err.message += `\n>> This error occured inside of the plug-in module; referenced by '${reference}'`;
+		err.message += `\n>> This error occured inside of the plug-in module; referenced by '${path}'`;
 		throw err;
 	}
-	
+
 	if(!utils.isFunction(pluginModule)) {
-		throw new SyntaxError(`Plug-in main module does not export interface function; referenced by '${reference}'`);
+		throw new SyntaxError(`Plug-in main module does not export interface function; referenced by '${path}'`);
 	}
+	
 	pluginModule(pluginInterface);	// Passing plug-in specific core interface object to each plug-in
 }
+
+function reloadPlugin(path) {
+	try {
+		const extPath = path.replace(/(\.js)?$/i, ".js");
+		delete require.cache[extPath];
+	} catch(_) {
+		// ...
+	}
+
+	loadPlugin(path);
+}
+
 
 /**
  * Initialize the frontend module of a plug-in.
@@ -200,29 +224,46 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 	
 	// TODO: Wrap with keeping line numbers
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
-	frontendModuleData = `
-		${config.frontendModuleAppName} = {
-			... ${config.frontendModuleAppName},
-			... {
-				"${pluginName}": (${config.frontendModuleReferenceName.private} => {
-					const ${config.frontendModuleAppName} = {
-						...${config.frontendModuleReferenceName.private},
-						useEndpoint: (body, progressHandler) => {
-							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
-						},
-						useNamedEndpoint: (name, body, progressHandler) => {
-							return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
-						}
-					};
-					delete ${config.frontendModuleAppName}.endpoint;
-					const ${config.frontendModuleReferenceName.public} = {};
-					${frontendModuleData}${(frontendModuleData.slice(-1) != ";") ? ";" : ""}
-					return ${config.frontendModuleReferenceName.public};
-				})(${config.frontendModuleAppName}.${config.coreModuleIdentifier})
+	frontendModuleWrapper = {
+		top: `
+			${config.frontendModuleAppName} = {
+				... ${config.frontendModuleAppName},
+				... {
+					"${pluginName}": (${config.frontendModuleReferenceName.private} => {
+						const ${config.frontendModuleAppName} = {
+							...${config.frontendModuleReferenceName.private},
+							useEndpoint: (body, progressHandler) => {
+								return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+							},
+							useNamedEndpoint: (name, body, progressHandler) => {
+								return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
+							}
+						};
+						delete ${config.frontendModuleAppName}.endpoint;
+						const ${config.frontendModuleReferenceName.public} = {};`,
+		bottom: `
+						return ${config.frontendModuleReferenceName.public};
+					})(${config.frontendModuleAppName}.${config.coreModuleIdentifier})
+				}
 			}
-		};
-	`;	// TODO: Beautify (minfiy, obfuscate, ... ?)
+		`
+	};
+	
+	// Basic minification
+	if(!isDevMode) {
+		for(let key in frontendModuleWrapper) {
+			frontendModuleWrapper[key] = frontendModuleWrapper[key].replace(/([{;,])\s+/g, "$1");
+			frontendModuleWrapper[key] = frontendModuleWrapper[key].replace(/\s+(})/g, "$1");
+		}
+	}
 
+	// Construct full script
+	frontendModuleData = `
+		${frontendModuleWrapper.top}
+			${frontendModuleData}${(frontendModuleData.slice(-1) != ";") ? ";" : ""}
+		${frontendModuleWrapper.bottom}
+	`;
+	
 	// Register frontend module in order to be integrated into pages upon request
 	registry.data.get(pluginName).frontend = frontendModuleData;
 	registry.data.get(pluginName).compoundOnly = compoundOnly;
@@ -254,7 +295,7 @@ function retrieveFrontendModule(pathname) {
 
 
 function integratePluginReference(data, isCompound) {
-	const srcLoad = (registry.envs[Environment.ANY] || [])
+	const srcLoad = (Array.from(registry.envs[Environment.ANY]) || [])
 		.filter(env => {
 			return (isCompound || !registry.data.get(env).compoundOnly)
 				&& registry.data.get(env).frontend;
@@ -287,7 +328,9 @@ module.exports = {
 	integratePluginReference,
 
 	initFrontendModule,
-	readConfig
+	readConfig,
+
+	reloadPlugin
 };
 
 
