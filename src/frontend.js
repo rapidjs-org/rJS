@@ -59,9 +59,14 @@ rapidJS.core = (_ => {
 						position += chunk.length;
 					}
 					
-					const message = new TextDecoder("utf-8").decode(chunksAll);
+					let message = new TextDecoder("utf-8").decode(chunksAll);
+					try {
+						message = JSON.parse(message);
+					} catch(_) {
+						// ...
+					}
 					
-					((res.status - 200) < 99) ? resolve(JSON.parse(message)) : reject(message);
+					((res.status - 200) < 99) ? resolve(message) : reject(message);
 				}).catch(err => {
 					reject(new Error(`Could not connect to endpoint: ${err.message || err}`));
 				});

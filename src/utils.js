@@ -121,8 +121,7 @@ module.exports = {
 					index: join(pathParts.join("/"), part, `${config.compoundPageDirPrefixes[i]}${config.defaultFileName}`, `${config.defaultFileName}.html`),
 					specific: join(pathParts.join("/"), `${config.compoundPageDirPrefixes[i]}${part}`, `${part}.html`)
 				};
-				console.log(localCompoundPath)
-				
+								
 				let activeLocalCompoundPath;
 				existsSync(join(webPath, localCompoundPath.index))
 				&& (activeLocalCompoundPath = localCompoundPath.index);
