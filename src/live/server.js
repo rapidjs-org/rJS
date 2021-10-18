@@ -20,11 +20,11 @@ const wsServer = new WebSocketServer({
 wsServer.on("request", handleRequest);
 
 
-let connection;
+let connections = [];
 
 
 function handleRequest(req) {
-    connection = req.accept(null, req.origin);
+    connections.push(req.accept(null, req.origin));
 }
 
 
@@ -37,14 +37,13 @@ function integrateLiveReference(data) {
 }
 
 function proposeRefresh() {
-    connection && connection.sendUTF("");
+    (connections || []).forEach(connection => {
+        connection.sendUTF("1");
+    });
 }
 
 
-// Activate change detection module
-require("./detect")(proposeRefresh);
-
-
 module.exports = {
-    integrateLiveReference
+    integrateLiveReference,
+    proposeRefresh
 };

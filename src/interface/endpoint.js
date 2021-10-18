@@ -8,6 +8,8 @@ const utils = require("../utils");
 const cache = require("./cache")();
 const {getNameByPath} = require("./plugin-management");
 
+const isDevMode = require("../support/is-dev-mode");
+
 const entityHook = require("../server/entity-hook");
 
 
@@ -28,10 +30,10 @@ function set(callback, useCache, name) {
 		? routeHandlers.get(pathname)
 		: new Map();
 
-	if(respectiveMap.has(pathname)){
+	if(!isDevMode && respectiveMap.has(pathname)){
 		throw new ReferenceError(`Must not override already set up endpoint for plug-in with name '${pluginName}'`);
 	}
-
+	
 	respectiveMap.set(name || config.defaultEndpointName, {
 		callback: callback,
 		useCache: useCache
@@ -88,7 +90,7 @@ module.exports =  {
 		}; */
 
 		const reducedRequestObject = entityHook.reducedRequestObject();
-
+		
 		const data = handler.callback.call(null, body, reducedRequestObject);
 		handler.useCache && (cache.write(cacheKey, data));
 				
