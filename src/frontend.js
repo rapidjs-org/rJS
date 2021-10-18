@@ -85,8 +85,9 @@ rapidJS.core = (_ => {
 			if(!((status % 400) < 99)) {
 				throw new RangeError(`Given status code ${status} not located within the client error value range (4**)`);
 			}
-
-			document.location.pathname = document.location.pathname.replace(/\/[^/]*$/i, `/${String(status)}`);
+			
+			const basePath = (document.head.querySelector("base") || {}).href || String(document.location);
+			document.location = basePath.replace(/\/[^/]*$/i, `/${String(status)}`);
 		}
 
 	};
