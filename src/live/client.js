@@ -7,7 +7,7 @@
 	
 	let logCloseMessage = _ => {
 		log("Server has been %cshut down", "color: #FF4747; font-style: italic;");
-		log(`Perform manual reload to resubscribe when server has been restarted`);
+		log("Perform manual reload to resubscribe when server has been restarted");
 	};
 
 
@@ -24,7 +24,7 @@
 		
 		ws.onclose = _ => {
 			setTimeout(logCloseMessage || (_ => {}), 500);
-		}
+		};
 	};
 
 	document.addEventListener("beforeunload", _ => {

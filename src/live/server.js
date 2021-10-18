@@ -10,11 +10,11 @@ const client = readFileSync(join(__dirname, "./client.js"));
 
 
 const webServer = http
-.createServer()
-.listen(9393);
+	.createServer()
+	.listen(9393);
 
 const wsServer = new WebSocketServer({
-    httpServer: webServer
+	httpServer: webServer
 });
 
 wsServer.on("request", handleRequest);
@@ -24,12 +24,12 @@ let connections = [];
 
 
 function handleRequest(req) {
-    connections.push(req.accept(null, req.origin));
+	connections.push(req.accept(null, req.origin));
 }
 
 
 function integrateLiveReference(data) {
-    return utils.injectIntoHead(data, `
+	return utils.injectIntoHead(data, `
         <script>
             ${client}
         </script>
@@ -37,13 +37,13 @@ function integrateLiveReference(data) {
 }
 
 function proposeRefresh() {
-    (connections || []).forEach(connection => {
-        connection.sendUTF("1");
-    });
+	(connections || []).forEach(connection => {
+		connection.sendUTF("1");
+	});
 }
 
 
 module.exports = {
-    integrateLiveReference,
-    proposeRefresh
+	integrateLiveReference,
+	proposeRefresh
 };

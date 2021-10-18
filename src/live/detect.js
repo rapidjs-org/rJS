@@ -1,5 +1,5 @@
 const config = {
-    detectionFrequency: 1000
+	detectionFrequency: 1000
 };
 
 
@@ -13,49 +13,49 @@ const liveServer = require("./server");
 
 
 async function scanDir(path, callback) {
-    readdir(path, {
-        withFileTypes: true
-    }, (_, dirents) => {
-        dirents.forEach(dirent => {
-            const recPath = join(path, dirent.name);
+	readdir(path, {
+		withFileTypes: true
+	}, (_, dirents) => {
+		dirents.forEach(dirent => {
+			const recPath = join(path, dirent.name);
 
-            if(dirent.isDirectory()) {
-                if(dirent.name == "node_modules") {
-                    return;
-                }
+			if(dirent.isDirectory()) {
+				if(dirent.name == "node_modules") {
+					return;
+				}
 
-                scanDir(recPath);
+				scanDir(recPath);
                 
-                return;
-            }
+				return;
+			}
             
-            stat(recPath, (_, stats) => {
-                if(hasChanged(stats.birthtime)
+			stat(recPath, (_, stats) => {
+				if(hasChanged(stats.birthtime)
                 || hasChanged(stats.mtimeMs)) {
-                    callback && callback();
+					callback && callback();
 
-                    liveServer.proposeRefresh();
-                }
+					liveServer.proposeRefresh();
+				}
                 
-                function hasChanged(time) {
-                    return (Math.abs(time - Date.now()) < config.detectionFrequency);
-                }
-            });
-        });
-    });
+				function hasChanged(time) {
+					return (Math.abs(time - Date.now()) < config.detectionFrequency);
+				}
+			});
+		});
+	});
 }
 
 setInterval(_ => {
 
-    // Web files directory (recursively)
-    scanDir(webPath);
+	// Web files directory (recursively)
+	scanDir(webPath);
 
-    // Plug-in directories
-    pluginPaths.forEach(path => {
-        scanDir(dirname(path), _ => {
-            require("../interface/plugin-management").reloadPlugin(path);
-        });
-    });
+	// Plug-in directories
+	pluginPaths.forEach(path => {
+		scanDir(dirname(path), _ => {
+			require("../interface/plugin-management").reloadPlugin(path);
+		});
+	});
 
 }, config.detectionFrequency);
 
@@ -63,10 +63,10 @@ setInterval(_ => {
 const pluginPaths = [];
 
 function registerPluginPath(path) {
-    pluginPaths.push(path);
+	pluginPaths.push(path);
 }
 
 
 module.exports = {
-    registerPluginPath    
+	registerPluginPath    
 };
