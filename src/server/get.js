@@ -251,8 +251,8 @@ module.exports = entity => {
 	try {
 		data = !entity.pageRequest ? processStaticFile(entity) : processDynamicFile(entity);
 		data = (!entity.url.isCompound || !entity.pageRequest)
-		? data
-		: normalizeBaseUrl(data, entity.req.headers["host"], entity.url.base);
+			? data
+			: normalizeBaseUrl(data, entity.req.headers["host"], entity.url.base);
 
 		// Set server-side cache
 		!entity.pageRequest && respCache.write(entity.url.pathname, data);
