@@ -224,7 +224,7 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 	
 	// TODO: Wrap with keeping line numbers
 	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
-	frontendModuleWrapper = {
+	let frontendModuleWrapper = {
 		top: `
 			${config.frontendModuleAppName} = {
 				... ${config.frontendModuleAppName},
