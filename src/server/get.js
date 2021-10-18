@@ -28,6 +28,10 @@ const fileRead = require("../interface/file").read;
 const entityHook = require("./entity-hook");
 
 
+// Activate live functionality if in DEV MODE
+const live = isDevMode ? require("../live/server") : null;
+
+
 const cache = {
 	static: require("../interface/cache")(),
 	dynamic: require("../interface/cache")(1000)
@@ -116,12 +120,9 @@ function processDynamicFile(entity, pathname) {
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.integratePluginReference(data, entity.url.isCompound);
 
-	if(!entity.url.isCompound) {
-		return data;
-	}
-
-	data = normalizeBaseUrl(data, entity.req.headers["host"], entity.url.base);
-
+	// Reference live frontend script into page
+	data = live ? live.integrateLiveReference(data) : data;
+	
 	return data;
 }
 
@@ -244,7 +245,10 @@ module.exports = entity => {
 	
 	try {
 		data = !entity.pageRequest ? processStaticFile(entity) : processDynamicFile(entity);
-		
+		data = (!entity.url.isCompound || !entity.pageRequest)
+		? data
+		: normalizeBaseUrl(data, entity.req.headers["host"], entity.url.base);
+
 		// Set server-side cache
 		!entity.pageRequest && respCache.write(entity.url.pathname, data);
 
