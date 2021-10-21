@@ -9,6 +9,7 @@ const {existsSync} = require("fs");
 
 const webPath = require("./support/web-path");
 const output = require("./support/output");
+const isDevMode = require("./support/is-dev-mode");
 
 
 const gatheredUrlInfo = new Map();
@@ -156,7 +157,7 @@ module.exports = {
 			};
 
 			// Store gathered URL info for future use
-			gatheredUrlInfo.set(pathname, urlEntity);
+			!isDevMode && gatheredUrlInfo.set(pathname, urlEntity);
 
 			// Store to current entity obj
 			entity.url = urlEntity;
