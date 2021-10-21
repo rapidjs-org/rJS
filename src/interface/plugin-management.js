@@ -295,7 +295,7 @@ function retrieveFrontendModule(pathname) {
 
 
 function integratePluginReference(data, isCompound) {
-	const srcLoad = (Array.from(registry.envs[Environment.ANY]) || [])
+	const hrefValue = (Array.from(registry.envs[Environment.ANY]) || [])
 		.filter(env => {
 			return (isCompound || !registry.data.get(env).compoundOnly)
 				&& registry.data.get(env).frontend;
@@ -305,15 +305,22 @@ function integratePluginReference(data, isCompound) {
 			return !
 			(new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
 				.test(data);
-		})
-		.join(config.pluginNameSeparator);
+		});
 	
-	// Inject plug-in referencing script tag
-	data = (srcLoad.length > 0)
-		? utils.injectIntoHead(data, `<script src="/${config.pluginRequestPrefix}${srcLoad}"></script>`)
+	// No plug-in to be referenced (ignore core either if no actual plug-in relevant)
+	if(hrefValue.length <= 1) {
+		return data;
+	}
+
+	const href = `/${config.pluginRequestPrefix}${hrefValue.join(config.pluginNameSeparator)}`;
+	
+	// Inject plug-in referencing preload link and script tag
+	data = (hrefValue.length > 0)
+		? utils.injectIntoHead(data, `
+			<link rel="preload" href="${href}" as="script">
+			<script src="${href}"></script>
+		`)
 		: data;
-	
-	// TODO: Do not reference core either if no other plug-in is or ist to be integrated
 	
 	return data;
 }
