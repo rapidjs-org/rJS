@@ -1,8 +1,8 @@
 const config = {
 	configFilePluginScopeName: "plug-in",
 	coreModuleIdentifier: "core",
-	frontendModuleAppName: "rapidJS",
-	frontendModuleReferenceName: {
+	clientModuleAppName: "rapidJS",
+	clientModuleReferenceName: {
 		config: "config",
 		private: "rJS__PRIVATE",
 		public: "PUBLIC"
@@ -39,9 +39,9 @@ const URL_PREFIX_REGEX = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 const APP_MODULE = module.parent.parent.parent.parent;	// TODO: Bubble up with file name check up
 
 
-// Register core frontend module
+// Register core client module
 registry.data.set(config.coreModuleIdentifier, {
-	frontend: readFileSync(join(__dirname, "../frontend.js"))
+	client: readFileSync(join(__dirname, "../client.js"))
 });
 registry.envs[Environment.ANY] = new Set([config.coreModuleIdentifier]);
 
@@ -110,7 +110,7 @@ function getNameByReference(reference) {
  * Connect a plug-in to the core environment.
  * @param {String} reference Reference to the plug-in
  * @param {Object} [options] Options to be set; to the extent of the following supported attributes:
- * - environment: Page environment to integrate the frontend module into (Environment.ANY (default) or EnvironmentSPECIFIC)
+ * - environment: Page environment to integrate the client module into (Environment.ANY (default) or EnvironmentSPECIFIC)
  * - alias: Internal name to use (instead of having it be derived automatically (default))
  */
 function plugin(reference, options = {}) {
@@ -136,7 +136,7 @@ function plugin(reference, options = {}) {
 	registry.data.set(name, {
 		reference: reference,
 		path: pluginPath,
-		frontend: null
+		client: null
 	});
 	
 	const pageEnvironment = options.environment ? options.environment : Environment.ANY;
@@ -178,31 +178,31 @@ function reloadPlugin(path) {
 
 
 /**
- * Initialize the frontend module of a plug-in.
- * @param {String} path Path to frontend module script file
+ * Initialize the client module of a plug-in.
+ * @param {String} path Path to client module script file
  * @param {Object} [pluginConfig] Plug-in local config object providing static naming information
- * @param {Boolean} [compoundOnly=false] Whether to integrate the frontend module into compound page environments only
+ * @param {Boolean} [compoundOnly=false] Whether to integrate the client module into compound page environments only
  */
 function initFrontendModule(path, pluginConfig, compoundOnly) {
 	const pluginDirPath = dirname(utils.getCallerPath(__filename));
-	const frontendFilePath = join(pluginDirPath, path);
+	const clientFilePath = join(pluginDirPath, path);
 	const pluginName = getNameByPath(pluginDirPath);
 
-	registerFrontendModule(frontendFilePath, pluginName, pluginConfig, compoundOnly);
+	registerFrontendModule(clientFilePath, pluginName, pluginConfig, compoundOnly);
 }
 
-function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, compoundOnly = false) {
-	// Read frontend module file
-	(extname(frontendFilePath).length == 0) && (frontendFilePath = `${frontendFilePath}.js`);
+function registerFrontendModule(clientFilePath, pluginName, pluginConfig, compoundOnly = false) {
+	// Read client module file
+	(extname(clientFilePath).length == 0) && (clientFilePath = `${clientFilePath}.js`);
 	
-	if(!existsSync(frontendFilePath)) {
-		throw new ReferenceError(`Frontend module file for plug-in '${pluginName}' could not be located at given path '${frontendFilePath}'`);
+	if(!existsSync(clientFilePath)) {
+		throw new ReferenceError(`Frontend module file for plug-in '${pluginName}' could not be located at given path '${clientFilePath}'`);
 	}
 
-	let frontendModuleData = String(readFileSync(frontendFilePath));
-	// Substitute config attribute usages in frontend module to be able to use the same config object between back- and frontend
-	pluginConfig && (frontendModuleData = frontendModuleData
-		.replace(new RegExp(`[^a-zA-Z0-9_.]${config.frontendModuleReferenceName.config}\\s*(\\.\\s*[a-zA-Z0-9_]+)+`, "g"), configAttr => {
+	let clientModuleData = String(readFileSync(clientFilePath));
+	// Substitute config attribute usages in client module to be able to use the same config object between back- and client
+	pluginConfig && (clientModuleData = clientModuleData
+		.replace(new RegExp(`[^a-zA-Z0-9_.]${config.clientModuleReferenceName.config}\\s*(\\.\\s*[a-zA-Z0-9_]+)+`, "g"), configAttr => {
 			const attrs = configAttr.match(/\.\s*[a-zA-Z0-9_]+/g)
 				.map(attr => {
 					return attr.slice(1).trim();
@@ -210,11 +210,11 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 
 			let value = pluginConfig;
 			attrs.forEach(attr => {
-				value = value[attr];
-				
-				if(value === undefined) {
-					throw new ReferenceError(`Implemented property '${attr}' not defined on given config object at '${frontendFilePath}'`);
+				if(!value) {
+					return;
 				}
+
+				value = value[attr];
 			});
 
 			value = utils.isString(value || "") ? `"${value}"` : value;	// Wrap strings in doublequotes
@@ -223,27 +223,27 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 		}));
 	
 	// TODO: Wrap with keeping line numbers
-	// Wrap in module construct in order to work extensibly in frontend and reduce script complexity
-	let frontendModuleWrapper = {
+	// Wrap in module construct in order to work extensibly in client and reduce script complexity
+	let clientModuleWrapper = {
 		top: `
-			${config.frontendModuleAppName} = {
-				... ${config.frontendModuleAppName},
+			${config.clientModuleAppName} = {
+				... ${config.clientModuleAppName},
 				... {
-					"${pluginName}": (${config.frontendModuleReferenceName.private} => {
-						const ${config.frontendModuleAppName} = {
-							...${config.frontendModuleReferenceName.private},
+					"${pluginName}": (${config.clientModuleReferenceName.private} => {
+						const ${config.clientModuleAppName} = {
+							...${config.clientModuleReferenceName.private},
 							useEndpoint: (body, progressHandler) => {
-								return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+								return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
 							},
 							useNamedEndpoint: (name, body, progressHandler) => {
-								return ${config.frontendModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
+								return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
 							}
 						};
-						delete ${config.frontendModuleAppName}.endpoint;
-						const ${config.frontendModuleReferenceName.public} = {};`,
+						delete ${config.clientModuleAppName}.endpoint;
+						const ${config.clientModuleReferenceName.public} = {};`,
 		bottom: `
-						return ${config.frontendModuleReferenceName.public};
-					})(${config.frontendModuleAppName}.${config.coreModuleIdentifier})
+						return ${config.clientModuleReferenceName.public};
+					})(${config.clientModuleAppName}.${config.coreModuleIdentifier})
 				}
 			}
 		`
@@ -251,24 +251,24 @@ function registerFrontendModule(frontendFilePath, pluginName, pluginConfig, comp
 	
 	// Basic minification
 	if(!isDevMode) {
-		for(let key in frontendModuleWrapper) {
-			frontendModuleWrapper[key] = frontendModuleWrapper[key].replace(/([{;,])\s+/g, "$1");
-			frontendModuleWrapper[key] = frontendModuleWrapper[key].replace(/\s+(})/g, "$1");
+		for(let key in clientModuleWrapper) {
+			clientModuleWrapper[key] = clientModuleWrapper[key].replace(/([{;,])\s+/g, "$1");
+			clientModuleWrapper[key] = clientModuleWrapper[key].replace(/\s+(})/g, "$1");
 		}
 	}
 
 	// Construct full script
-	frontendModuleData = `
-		${frontendModuleWrapper.top}
-			${frontendModuleData}${(frontendModuleData.slice(-1) != ";") ? ";" : ""}
-		${frontendModuleWrapper.bottom}
+	clientModuleData = `
+		${clientModuleWrapper.top}
+			${clientModuleData}${(clientModuleData.slice(-1) != ";") ? ";" : ""}
+		${clientModuleWrapper.bottom}
 	`;
 	
-	// Register frontend module in order to be integrated into pages upon request
-	registry.data.get(pluginName).frontend = frontendModuleData;
+	// Register client module in order to be integrated into pages upon request
+	registry.data.get(pluginName).client = clientModuleData;
 	registry.data.get(pluginName).compoundOnly = compoundOnly;
 }
-// TODO: Implement option for plug-in to wait in frontend for another plug-ins intial run completion
+// TODO: Implement option for plug-in to wait in client for another plug-ins intial run completion
 
 function isFrontendRequest(pathname) {
 	const adjustedPluginNameRegex = config.pluginNameRegex.source;
@@ -288,7 +288,7 @@ function retrieveFrontendModule(pathname) {
 		.filter(name => {
 			return (config.pluginNameRegex.test(name) && registry.data.has(name));
 		}).map(name => {
-			return registry.data.get(name).frontend;
+			return registry.data.get(name).client;
 		})
 		.join("\n");
 }
@@ -298,7 +298,7 @@ function integratePluginReference(data, isCompound) {
 	const hrefValue = (Array.from(registry.envs[Environment.ANY]) || [])
 		.filter(env => {
 			return (isCompound || !registry.data.get(env).compoundOnly)
-				&& registry.data.get(env).frontend;
+				&& registry.data.get(env).client;
 		})
 		.filter(name => {
 			// Ignore if has been hardcoded into head explcitly (use case: user defined ordering)

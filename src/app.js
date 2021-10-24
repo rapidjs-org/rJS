@@ -11,5 +11,5 @@ require("./server/instance.js");
 module.exports = require("./interface:app");
 
 // TODO: Wildcard templating?
-// TODO: Implement defer option for plug-in frontend module loading
+// TODO: Implement defer option for plug-in client module loading
 // TODO: Auto script, styles bundling?
