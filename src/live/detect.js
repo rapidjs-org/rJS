@@ -8,10 +8,12 @@ const {join, dirname} = require("path");
 
 
 const webPath = require("../support/web-path");
+const langPath = require("../support/lang-path");
 
 const liveServer = require("./server");
 
 
+// Recursively
 async function scanDir(path, callback) {
 	readdir(path, {
 		withFileTypes: true
@@ -47,8 +49,10 @@ async function scanDir(path, callback) {
 
 setInterval(_ => {
 
-	// Web files directory (recursively)
+	// Web files directory
 	scanDir(webPath);
+	// Locale (lang) files directory
+	scanDir(langPath);
 
 	// Plug-in directories
 	pluginPaths.forEach(path => {

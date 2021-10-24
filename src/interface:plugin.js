@@ -8,7 +8,7 @@ module.exports = {
 	
 	setEndpoint:  createInterface(require("./interface/endpoint").setUnnamed, "creating an endpoint", true),
 	setNamedEndpoint:  createInterface(require("./interface/endpoint").setNamed, "creating a named endpoint", true),
-	initFrontendModule: createInterface(require("./interface/plugin-management").initFrontendModule, "initializing a frontend module", true),
+	initFrontendModule: createInterface(require("./interface/plugin-management").initFrontendModule, "initializing a client module", true),
 	
 	readConfig: require("./interface/plugin-management").readConfig
 };

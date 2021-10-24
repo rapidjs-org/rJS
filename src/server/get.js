@@ -125,7 +125,7 @@ function processDynamicFile(entity, pathname) {
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.integratePluginReference(data, entity.url.isCompound);
 
-	// Reference live frontend script into page
+	// Reference live client script into page
 	data = liveServer ? liveServer.integrateLiveReference(data) : data;
 	
 	return data;
@@ -156,7 +156,7 @@ module.exports = entity => {
 
 	let data;
 	
-	// Handle plug-in frontend module file requests individually and prioritized
+	// Handle plug-in client module file requests individually and prioritized
 	if(pluginManagement.isFrontendRequest(entity.url.pathname)) {
 		entity.url.extension = "js";
 		

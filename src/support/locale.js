@@ -13,8 +13,7 @@ const {existsSync} = require("fs");
 
 const isDevMode = require("../support/is-dev-mode");
 const webPath = require("../support/web-path");
-
-const LANG_DIR_PATH = join(dirname(require.main.filename), config.langDirName);
+const langPath = require("../support/lang-path");
 
 const iso = {
 	lang: require("../static/lang.json"),
@@ -42,7 +41,7 @@ const defaultLang = (webConfig.locale.defaultLang && iso.lang.includes(webConfig
 
 
 function hasLangObj(lang) {
-	const langFilePath = join(LANG_DIR_PATH, `${lang}.json`);
+	const langFilePath = join(langPath, `${lang}.json`);
 	return existsSync(langFilePath);
 }
 
@@ -166,7 +165,7 @@ function translate(data, reducedRequestObject) {
 			}
 		}
 
-		const globalLangFilePath = join(LANG_DIR_PATH, langFileName);
+		const globalLangFilePath = join(langPath, langFileName);
 		return existsSync(globalLangFilePath)
 			? require(globalLangFilePath)
 			: undefined;
