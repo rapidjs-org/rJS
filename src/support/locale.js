@@ -6,9 +6,7 @@ const config = {
 	}
 };
 
-// TODO: Fix!!!
-
-const {join, dirname} = require("path");
+const {join} = require("path");
 const {existsSync} = require("fs");
 
 const isDevMode = require("../support/is-dev-mode");
@@ -86,9 +84,9 @@ function prepare(entity) {
 			country: (clientAcceptLocale.match(/^-([A-Z]{2})/) || [undefined])[1]
 		}
 		: undefined;
-
+	
 	const info = getInfo(entity);
-
+	
 	entity.url.country = info.country || (clientAcceptLocale ? clientAcceptLocale.country : undefined);
 	entity.url.country = (entity.url.country && supportedCountryCodes.has(entity.url.country))
 		? entity.url.country
@@ -100,7 +98,7 @@ function prepare(entity) {
 		: (clientAcceptLocale && (clientAcceptLocale.lang && hasLangObj(clientAcceptLocale.lang))
 			? clientAcceptLocale.lang
 			: (entity.url.country ? supportedCountryCodes.get(entity.url.country) : defaultLang));
-
+	// TODO: Use for client accept header fot redirect!!!
 	if(webConfig.locale.useSubdomain) {
 		entity.url.subdomain = info.lang
 			? Array.isArray(entity.url.subdomain) ? entity.url.subdomain.slice(1) : null
@@ -108,7 +106,7 @@ function prepare(entity) {
 
 		return;
 	}
-
+	
 	entity.url.pathname = entity.url.pathname.slice(
 		(info.lang ? info.lang.length + 1 : 0)
 		+ (info.country ? info.country.length + 1 : 0));
@@ -122,7 +120,7 @@ function translate(data, reducedRequestObject) {
 	if(!reducedRequestObject.locale) {
 		return data;
 	}
-
+	
 	const langObj = getLangObj(reducedRequestObject.locale.lang);
 	if(!langObj) {
 		return data;
@@ -150,8 +148,30 @@ function translate(data, reducedRequestObject) {
 		return String(value);
 	});
 
-	// TODO: Add respective html lang attribute?
+	// Add (or replace) lang attribute in html tag
+	const langAttr = data.match(/\slang=("|')[a-z]+\1/i);
+	if(langAttr) {
+		const pre = data.split(langAttr[0])[0];
+		const opening = getLastIndex(/<\s*html/) || 0;
+		const closing = getLastIndex(/>/) || 1;
 
+		if(opening > closing) {
+			data = data.replace(langAttr[0], "");
+		}
+
+		function getLastIndex(regex) {
+			const last = pre.match(regex);
+
+			if(!last) {
+				return null;
+			}
+
+			return data.lastIndexOf(last.pop());
+		}
+	}
+	
+	data = data.replace(/(<\s*html)/, `$1 lang="${reducedRequestObject.locale.lang}"`);
+	
 	return data;
 
 	function getLangObj(lang) {

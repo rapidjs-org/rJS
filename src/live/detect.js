@@ -3,7 +3,7 @@ const config = {
 };
 
 
-const {readdir, stat} = require("fs");
+const {readdir, stat, existsSync} = require("fs");
 const {join, dirname} = require("path");
 
 
@@ -15,6 +15,10 @@ const liveServer = require("./server");
 
 // Recursively
 async function scanDir(path, callback) {
+	if(!existsSync(path)) {
+		return;
+	}
+	
 	readdir(path, {
 		withFileTypes: true
 	}, (_, dirents) => {
