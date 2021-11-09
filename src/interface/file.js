@@ -19,16 +19,21 @@ function read(pathname) {
 		throw new ClientError(404);
 	}
 	
-	let data = readFileSync(localPath);
+	let data = String(readFileSync(localPath));
 	
 	if(utils.normalizeExtension(extname(pathname)) != "html") {
 		return data;
 	}
 
-	const reducedRequestObject = entityHook.reducedRequestObject();
+	let reducedRequestObject;
+	try {
+		reducedRequestObject = entityHook.reducedRequestObject();
+	} catch(_) {
+		return data;
+	}
 
 	// Markup modifications
-	data = locale.translate(String(data), reducedRequestObject);
+	data = locale.translate(data, reducedRequestObject);
 	
 	const localHandlerPath = reducedRequestObject.isCompound
 		? join(webPath, reducedRequestObject.pathname, `_${basename(reducedRequestObject.compound.base).replace(/\.[a-z0-9]+$/i, "")}.js`)

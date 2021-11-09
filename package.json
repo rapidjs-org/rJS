@@ -29,13 +29,13 @@
     "url": "https://github.com/rapidjs-org/core/issues"
   },
   "homepage": "https://rapidjs.org",
+  "dependencies": {
+    "websocket": "^1.0.34"
+  },
   "devDependencies": {
     "eslint": "^7.26.0"
   },
   "publishConfig": {
     "access": "public"
-  },
-  "dependencies": {
-    "websocket": "^1.0.34"
   }
 }
