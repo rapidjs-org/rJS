@@ -52,7 +52,6 @@ async function scanDir(path, callback) {
 }
 
 setInterval(_ => {
-
 	// Web files directory
 	scanDir(webPath);
 	// Locale (lang) files directory
@@ -64,6 +63,8 @@ setInterval(_ => {
 			require("../interface/plugin-management").reloadPlugin(path);
 		});
 	});
+
+	// TODO: Templating files
 
 }, config.detectionFrequency);
 
