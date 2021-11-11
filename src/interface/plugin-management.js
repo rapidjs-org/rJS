@@ -13,6 +13,8 @@ const config = {
 };
 
 
+// TODO: Keep meta tags in head at top
+
 const {join, dirname, basename, extname} = require("path");
 const {existsSync, readFileSync} = require("fs");
 

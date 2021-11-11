@@ -49,6 +49,10 @@ function current() {
 function reducedRequestObject() {
 	const entity  = current();
 
+	if(!entity) {
+		return undefined;
+	}
+
 	// Construct reduced request object to be passed to each response modifier handler
 	return {
 		ip: entity.req.headers["x-forwarded-for"] || entity.req.connection.remoteAddress,
@@ -66,7 +70,7 @@ function reducedRequestObject() {
 		locale: {
 			lang: entity.url.lang,
 			country: entity.url.country
-		}	
+		}
 	};
 	// TODO: Provide header values useful for session management?
 }

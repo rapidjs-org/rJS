@@ -12,8 +12,9 @@ const templater = require("../interface/templater");
 const entityHook = require("../server/entity-hook");
 const output = require("../support/output");
 
+// TODO: Communicate which file has been read to templating module???
 
-function read(pathname) {
+function read(pathname, isImplicitRequest = false) {
 	const localPath = join(webPath, pathname);
 	if(!existsSync(localPath)) {
 		throw new ClientError(404);
@@ -25,10 +26,8 @@ function read(pathname) {
 		return data;
 	}
 
-	let reducedRequestObject;
-	try {
-		reducedRequestObject = entityHook.reducedRequestObject();
-	} catch(_) {
+	const reducedRequestObject = entityHook.reducedRequestObject();
+	if(!reducedRequestObject) {
 		return data;
 	}
 
@@ -50,7 +49,7 @@ function read(pathname) {
 	}
 	
 	try {
-		data = templater.apply(data, localHandlerObj, reducedRequestObject);
+		data = templater.apply(data, localHandlerObj, reducedRequestObject, isImplicitRequest);
 	} catch(err) {
 		!(err instanceof ClientError) && output.log(`An error occured applying the tempating handler to '${reducedRequestObject.pathname}':`);
 		output.error(err);
