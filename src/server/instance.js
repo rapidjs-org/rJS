@@ -131,6 +131,7 @@ async function handleRequest() {
 		: (entity.req.headers.host
 			.match(new RegExp(`([a-z]([a-z0-9-]*[a-z0-9])?\\.){${hostParts.length - (entity.url.subdomain || []).length}}[^.]+$`))
 		|| [entity.req.headers.host])[0];
+	console.log(entity.url)
 	
 	// Apply the related request handler
 	requestHandler[entity.req.method](entity);

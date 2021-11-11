@@ -118,9 +118,7 @@ function processStaticFile(entity) {
 }
 
 function processDynamicFile(entity, pathname) {
-	const reducedRequestObject = entity.reducedRequestObject;
-	
-	let data = fileRead(pathname || entity.url.pathname, reducedRequestObject);
+	let data = fileRead(pathname || entity.url.pathname, true);
 	
 	// Sequentially apply defined plug-in module modifiers
 	data = pluginManagement.integratePluginReference(data, entity.url.isCompound);

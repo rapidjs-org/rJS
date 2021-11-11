@@ -25,7 +25,7 @@ function respond(status, message) {
  */
 module.exports = entity => {
 	if(!endpoint.has(entity.url.pathname)) {
-	// No related POST handler defined
+		// No related POST handler defined
 		respond(404);
 
 		return;
