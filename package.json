@@ -4,11 +4,11 @@
   "description": "rapidJS is a framework for developing lightweight asset focused server environments for scalable web applications. Furthermore it provides a simple, yet powerful interface for individualization of any complexity.",
   "main": "dist/app.js",
   "scripts": {
-    "test": "npm run lint",
     "test-app": "node ./test-app/server.js",
     "test-app:dev": "node ./test-app/server.js -dev",
-    "lint": "./node_modules/.bin/eslint --fix src/",
-    "build": "npm run lint && node ../../finalize-js/build.js",
+    "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src/",
+    "compile": "tsc",
+    "build": "npm run lint && npm run compile && node ./scripts/build.js",
     "release": "npm run build && np"
   },
   "files": [
@@ -16,7 +16,6 @@
   ],
   "keywords": [
     "rapidjs",
-    "core",
     "rapidjs.org"
   ],
   "repository": {
@@ -29,11 +28,15 @@
     "url": "https://github.com/rapidjs-org/core/issues"
   },
   "homepage": "https://rapidjs.org",
-  "dependencies": {
-    "websocket": "^1.0.34"
-  },
   "devDependencies": {
-    "eslint": "^7.26.0"
+    "@types/node": "^16.11.10",
+    "@typescript-eslint/parser": "^5.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "eslint": "^7.26.0",
+    "eslint-plugin-typescript": "^0.14.0",
+    "typescript": "^4.5.2",
+    "uglify-js": "^3.14.3",
+    "websocket": "^1.0.34"
   },
   "publishConfig": {
     "access": "public"

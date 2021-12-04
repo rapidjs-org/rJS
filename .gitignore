@@ -5,6 +5,6 @@
 package-lock.json
 
 node_modules/
-dist/
 
+src-legacy/
 test-app/
