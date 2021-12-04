@@ -24,6 +24,7 @@ function getCallerPath(fileName: string): string {
 	};
 
 	while(err.stack.length) {
+		// @ts-ignore
 		const callerFile = err.stack.shift().getFileName();
         
 		if(callerFile !== (fileName || null) && callerFile !== __filename) {
