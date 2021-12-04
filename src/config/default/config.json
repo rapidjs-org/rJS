@@ -1,0 +1,14 @@
+{
+    "cachingDuration": {
+        "client": 31536000,
+        "server": 86400
+    },
+    "gzipCompressList": ["html", "js"],
+    "maxPayloadSize": 1000,
+    "maxRequestsPerMin": 100,
+    "maxUrlLength": 100,
+    "port": {
+        "http": 80
+    },
+    "webDirectory": "web"
+}
