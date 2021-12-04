@@ -1,7 +1,21 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Templating engine binding interface.
  */
-"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.bind=void 0;const bindings_1=require("./bindings");function bind(i,n=!1){bindings_1.templatingEngines.push({callback:i,implicitReadingOnly:n})}exports.bind=bind;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.bind = void 0;
+const bindings_1 = require("./bindings");
+/**
+ * Bind optional templating handler.
+ * @param {Function} callback Templating handler function being applied to any dynamic file data
+ * @param {boolean} [implicitReadingOnly] Whether to render templating only if is a server implicit reading process (GET)
+ * The callback is passed the response data string to be modified, the templating handler module export
+ * object and the request object.
+ */
+function bind(callback, implicitReadingOnly = false) {
+    bindings_1.templatingEngines.push({
+        callback,
+        implicitReadingOnly
+    });
+}
+exports.bind = bind;

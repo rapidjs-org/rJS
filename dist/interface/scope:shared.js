@@ -1,7 +1,4 @@
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Scope universal interface object.
  */
-module.exports=Object.assign(Object.assign(Object.assign({},require("./ClientError")),require("./file")),require("./cache"));
+module.exports = Object.assign(Object.assign(Object.assign({}, require("./ClientError")), require("./file")), require("./cache"));
