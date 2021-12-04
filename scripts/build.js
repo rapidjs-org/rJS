@@ -2,9 +2,15 @@ const {readdirSync, readFileSync, writeFileSync} = require("fs");
 const {join, extname} = require("path");
 const UglifyJS = require("uglify-js");
 
-const relevantFileTypes = ["js", "json"];
 
-minify(require("./dist-path"));
+const relevantFileTypes = ["js", "json"];
+const signature = String(readFileSync(join(__dirname, "code-signature")));
+
+let totalFiles = 0;
+
+minify(join(__dirname, "../dist"));
+
+console.log(`> Build complete (${totalFiles} files affected)`);
 
 
 function minify(path) {
@@ -24,25 +30,26 @@ function minify(path) {
         }
 
         let code = String(readFileSync(curPath));
-        console.log(join(SOURCE_PATH, path, dirent.name));
+        
         switch(fileType) {
             case "js":
                 code = UglifyJS.minify(code).code.replace(/\s+/g, " ");
 
                 // Insert signature at top of each code file
-                code =
-`/**
- * Test signature.
- */
-${code}`;
+                code = `${signature}\n${code}`;
 
                 break;
+            
             case "json":
-                code = code.replace(/([{:,])\s+(["'}])/, "$1$2");
+                code = code
+                .replace(/([{:,])\s+(["'}])/, "$1$2")
+                .replace(/\s*\\}/, "}");
 
                 break;
         }
 
         writeFileSync(curPath, code);
+
+        totalFiles++;
     });
 }
