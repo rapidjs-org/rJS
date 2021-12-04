@@ -1,0 +1,7 @@
+/**
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
+ */
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.use=exports.has=exports.setNamedEndpoint=exports.setDefaultEndpoint=void 0;const config={defaultEndpointName:"::default"},ArbitraryCache_1=require("../../server/support/cache/ArbitraryCache"),hook_1=require("../../server/hook"),naming_1=require("./naming"),cache=new ArbitraryCache_1.ArbitraryCache,endpointRouter=new Map;function set(e,t=!1,n=config.defaultEndpointName){var o=(0,naming_1.getNameByCall)(__filename);endpointRouter.has(o)||endpointRouter.set(o,new Map),endpointRouter.get(o).set(n,{callback:e,useCache:t})}function setDefaultEndpoint(e,t=!1){set(e,t)}function setNamedEndpoint(e,t,n=!1){set(t,n,e)}function has(e,t){return endpointRouter.has(e)&&endpointRouter.get(e).has(t||config.defaultEndpointName)}function use(e,t,n){if(!has(e,n))throw new ReferenceError(`Endpoint${n?` '${n}'`:""} for plug-in '${e}' does not exist.`);const o=endpointRouter.get(e).get(n||config.defaultEndpointName);n=e+"/"+n;if(o.useCache&&cache.exists(n))return cache.read(n);t=o.callback.call(null,t,(0,hook_1.currentRequestInfo)()),t=Buffer.isBuffer(t)?t:Buffer.from(t,"utf-8");return o.useCache&&cache.write(n,t),t}exports.setDefaultEndpoint=setDefaultEndpoint,exports.setNamedEndpoint=setNamedEndpoint,exports.has=has,exports.use=use;

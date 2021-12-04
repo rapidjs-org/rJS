@@ -1,0 +1,7 @@
+/**
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
+ */
+"use strict";var __awaiter=this&&this.__awaiter||function(e,a,f,s){return new(f=f||Promise)(function(i,t){function r(e){try{o(s.next(e))}catch(e){t(e)}}function n(e){try{o(s.throw(e))}catch(e){t(e)}}function o(e){var t;e.done?i(e.value):((t=e.value)instanceof f?t:new f(function(e){e(t)})).then(r,n)}o((s=s.apply(e,a||[])).next())})},__importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0});const config={detectionFrequency:1e3},fs_1=require("fs"),path_1=require("path"),web_path_1=__importDefault(require("../utilities/web-path")),server_1=require("./server");function fileModified(e){return Math.abs(e-Date.now())<config.detectionFrequency}function scanDir(i,r){return __awaiter(this,void 0,void 0,function*(){(0,fs_1.existsSync)(i)&&(0,fs_1.readdir)(i,{withFileTypes:!0},(e,t)=>{t.forEach(e=>{var t=(0,path_1.join)(i,e.name);if(e.isDirectory())return scanDir(t);(0,fs_1.stat)(t,(e,t)=>{if(fileModified(t.birthtime)||fileModified(t.mtimeMs))return r&&r(),(0,server_1.proposeRefresh)()})})})})}setInterval(e=>{scanDir(web_path_1.default)},config.detectionFrequency);
