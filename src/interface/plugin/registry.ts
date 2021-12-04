@@ -57,43 +57,17 @@ registerClientModule("core", String(readFileSync("../../client/core.js")));
 /**
  * Register a plug-in's client / frontend module.
  * @param {string} pluginName Plug-in name
- * @param {string} bareClientScript Unwrapped / non-modularized client script
+ * @param {string} modularClientScript Wrapped / Modularized client script
  * @param {boolean} compoundOnly Whether to only have the plug-in integrated into compound pages
  */
-function registerClientModule(pluginName: string, bareClientScript: string, compoundOnly = false) {
+function registerClientModule(pluginName: string, modularClientScript: string, compoundOnly = false) {
 	// TODO: Wrap in a way, line numbers keep position (for error output)?
 	// TODO: Wrapper minification?
-	
-	// Construct individual script module
-	const moduleClientScript = `
-		${config.clientModuleAppName} = {
-			... ${config.clientModuleAppName},
-			... {
-				"${pluginName}": (${config.clientModuleReferenceName.private} => {
-					const ${config.clientModuleAppName} = {
-						...${config.clientModuleReferenceName.private},
-						useEndpoint: (body, progressHandler) => {
-							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
-						},
-						useNamedEndpoint: (name, body, progressHandler) => {
-							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
-						}
-					};
-					delete ${config.clientModuleAppName}.endpoint;
-					const ${config.clientModuleReferenceName.public} = {};
-
-					${bareClientScript}${(bareClientScript.slice(-1) != ";") ? ";" : ""}
-					
-					return ${config.clientModuleReferenceName.public};
-				})(${config.clientModuleAppName}.${config.coreModuleIdentifier})
-			}
-		}
-	`;
 
 	// Write module and compound directive to registry
 	const registryEntry = pluginRegistry.get(pluginName);
 
-	registryEntry.clientScript = Buffer.from(moduleClientScript, "utf-8");
+	registryEntry.clientScript = Buffer.from(modularClientScript, "utf-8");
 	registryEntry.compoundOnly = compoundOnly;
 }
 
@@ -266,7 +240,7 @@ export function initFrontendModule(relativePath: string, pluginConfig?: unknown,
 	if(!existsSync(clientFilePath)) {
 		throw new ReferenceError(`Client module file for plug-in '${pluginName}' not found at given path '${clientFilePath}'`);
 	}
-	
+
 	let bareClientScript = String(readFileSync(clientFilePath));
 
 	// Substitute config attribute usages in client module to be able to use the same config object between back- and client
@@ -293,8 +267,34 @@ export function initFrontendModule(relativePath: string, pluginConfig?: unknown,
 			})
 		: bareClientScript;
 	
+	// Construct individual script module
+	const modularClientScript = `
+		${config.clientModuleAppName} = {
+			... ${config.clientModuleAppName},
+			... {
+				"${pluginName}": (${config.clientModuleReferenceName.private} => {
+					const ${config.clientModuleAppName} = {
+						...${config.clientModuleReferenceName.private},
+						useEndpoint: (body, progressHandler) => {
+							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+						},
+						useNamedEndpoint: (name, body, progressHandler) => {
+							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
+						}
+					};
+					delete ${config.clientModuleAppName}.endpoint;
+					const ${config.clientModuleReferenceName.public} = {};
+
+					${bareClientScript}${(bareClientScript.slice(-1) != ";") ? ";" : ""}
+					
+					return ${config.clientModuleReferenceName.public};
+				})(${config.clientModuleAppName}.${config.coreModuleIdentifier})
+			}
+		}
+	`;
+	
 	// Register client module in order to be integrated into pages upon request
-	registerClientModule(pluginName, bareClientScript, compoundOnly);
+	registerClientModule(pluginName, modularClientScript, compoundOnly);
 }
 // TODO: Implement option for plug-in to wait for another plug-in to have loaded (in client)
 // TODO: Implement async/defer option for plug-in (via options object on bind)
