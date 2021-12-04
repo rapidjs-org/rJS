@@ -1,0 +1,7 @@
+/**
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
+ */
+"use strict";var __importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0}),exports.Entity=void 0;const http_1=require("http"),url_1=require("url"),path_1=require("path"),web_path_1=__importDefault(require("../../utilities/web-path")),config_server_1=__importDefault(require("../../config/config.server"));class Entity{constructor(e,t){this.req=e,this.res=t,this.url=new url_1.URL(e.url)}localPath(){return(0,path_1.join)(web_path_1.default,this.url.pathname)}getHeader(e){return String(this.req.headers[e]||this.req.headers[e.toLowerCase()])}setHeader(e,t){this.res.setHeader(e,t)}respond(e,t){this.setHeader("Server","rapidJS"),this.setHeader("X-XSS-Protection","1"),this.setHeader("X-Powered-By",null),this.setHeader("Content-Length",Buffer.byteLength(t,"utf-8")),config_server_1.default.port.https&&this.setHeader("Strict-Transport-Security",`max-age=${config_server_1.default.cachingDuration.client}; includeSubDomains`),this.res.statusCode=isNaN(e)?500:e,this.res.end(t||http_1.STATUS_CODES[this.res.statusCode])}redirect(e){this.res.setHeader("Location",e),this.res.statusCode=301,this.res.end()}getReducedRequestInfo(){return{ip:this.getHeader("X-Forwarded-For")||this.req.connection.remoteAddress,pathname:this.url.pathname}}}exports.Entity=Entity;
