@@ -8,7 +8,8 @@
     "test-app:dev": "node ./test-app/server.js -dev",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src/",
     "compile": "tsc",
-    "build": "npm run lint && npm run compile && node ./scripts/build.js",
+    "test": "node ./scripts/test.js",
+    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
     "release": "npm run build && np"
   },
   "files": [
@@ -30,8 +31,8 @@
   "homepage": "https://rapidjs.org",
   "devDependencies": {
     "@types/node": "^16.11.10",
-    "@typescript-eslint/parser": "^5.4.0",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
     "eslint": "^7.26.0",
     "eslint-plugin-typescript": "^0.14.0",
     "typescript": "^4.5.2",
