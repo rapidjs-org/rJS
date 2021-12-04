@@ -8,11 +8,16 @@ const signature = String(readFileSync(join(__dirname, "code-signature")));
 
 let totalFiles = 0;
 
+// Minify /dist directory
 minify(join(__dirname, "../dist"));
 
 console.log(`> Build complete (${totalFiles} files affected)`);
 
-
+/**
+ * Minify script files (recursively).
+ * Maintain identifiers and file system structure.
+ * @param {String} path Directory to apply minification on
+ */
 function minify(path) {
     readdirSync(path, {
         withFileTypes: true

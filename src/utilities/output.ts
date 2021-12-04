@@ -10,6 +10,7 @@ const config = {
 /**
  * Log a application referenced message to the console (with prefix).
  * @param {string} message Message
+ * @param {string} [style] Message styling in console code representation
  */
 export function log(message: string, style?: string) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
