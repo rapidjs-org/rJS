@@ -1,27 +1,7 @@
-"use strict";
-// TODO: Multiple insertion points (at top)?
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.injectIntoHead = void 0;
 /**
- * Inject a markup sequence into a original markup's head tag (only if head tag exists).
- * @param {string} origData Markup to inject a given sequence into
- * @param {string} insertData Injection sequence
- * @param {boolean} [atBottom=false] Whether to insert sequence at bottom of head (at top otherwise)
- * @returns {string} Injected host data
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-function injectIntoHead(origData, insertData, atBottom = false) {
-    // Match head tags
-    const headTag = {
-        open: origData.match(/<\s*head((?!>)(\s|.))*>/),
-        close: origData.match(/<\s*\/head((?!>)(\s|.))*>/)
-    };
-    if (!headTag.open || !headTag.close) {
-        // No head tag
-        return origData;
-    }
-    // Insert sequence
-    return atBottom
-        ? origData.replace(headTag.close[0], `${insertData}${headTag.close[0]}`)
-        : origData.replace(headTag.open[0], `${headTag.open[0]}${insertData}`);
-}
-exports.injectIntoHead = injectIntoHead;
+"use strict";function injectIntoHead(e,o,t=!1){var n={open:e.match(/<\s*head((?!>)(\s|.))*>/),close:e.match(/<\s*\/head((?!>)(\s|.))*>/)};return n.open&&n.close?t?e.replace(n.close[0],""+o+n.close[0]):e.replace(n.open[0],""+n.open[0]+o):e}Object.defineProperty(exports,"__esModule",{value:!0}),exports.injectIntoHead=void 0,exports.injectIntoHead=injectIntoHead;

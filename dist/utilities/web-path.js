@@ -1,40 +1,7 @@
-"use strict";
 /**
- * Retrieve web file (public) directory path on local disc.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const path_1 = require("path");
-const fs_1 = require("fs");
-const config_server_1 = __importDefault(require("../config/config.server"));
-const output = __importStar(require("./output"));
-const webDirName = config_server_1.default.webDirectory;
-if (webDirName.match(/[<>:"/\\|?*]/)) {
-    output.error(new SyntaxError(`'${webDirName}' is not a valid directory name. Contains disallowed characters from {<, >, :, ", /, \\, ,|, ?, *}.`), true);
-}
-const webDirPath = (0, path_1.join)((0, path_1.dirname)(require.main.filename), webDirName);
-if (!(0, fs_1.existsSync)(webDirPath)) {
-    output.error(new ReferenceError(`Web file directory does not exist at '${webDirPath}'`), true);
-}
-exports.default = webDirPath;
+"use strict";var __createBinding=this&&this.__createBinding||(Object.create?function(e,t,r,i){void 0===i&&(i=r),Object.defineProperty(e,i,{enumerable:!0,get:function(){return t[r]}})}:function(e,t,r,i){e[i=void 0===i?r:i]=t[r]}),__setModuleDefault=this&&this.__setModuleDefault||(Object.create?function(e,t){Object.defineProperty(e,"default",{enumerable:!0,value:t})}:function(e,t){e.default=t}),__importStar=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)"default"!==r&&Object.prototype.hasOwnProperty.call(e,r)&&__createBinding(t,e,r);return __setModuleDefault(t,e),t},__importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0});const path_1=require("path"),fs_1=require("fs"),config_server_1=__importDefault(require("../config/config.server")),output=__importStar(require("./output")),webDirName=config_server_1.default.webDirectory;webDirName.match(/[<>:"/\\|?*]/)&&output.error(new SyntaxError(`'${webDirName}' is not a valid directory name. Contains disallowed characters from {<, >, :, ", /, \\, ,|, ?, *}.`),!0);const webDirPath=(0,path_1.join)((0,path_1.dirname)(require.main.filename),webDirName);(0,fs_1.existsSync)(webDirPath)||output.error(new ReferenceError(`Web file directory does not exist at '${webDirPath}'`),!0),exports.default=webDirPath;

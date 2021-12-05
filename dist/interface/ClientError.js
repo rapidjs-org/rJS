@@ -1,21 +1,7 @@
-"use strict";
 /**
- * Class representing an individual client error.
- * Instance to be thrown for a respective response.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ClientError = void 0;
-class ClientError {
-    /**
-     * @param {number} status Status code (within client error code range (4**))
-     */
-    constructor(status) {
-        if (!Number.isInteger(status)
-            || status < 400
-            || status > 499) {
-            throw new RangeError(`Invalid client error status code ${status} given`);
-        }
-        this.status = status;
-    }
-}
-exports.ClientError = ClientError;
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.ClientError=void 0;class ClientError{constructor(r){if(!Number.isInteger(r)||r<400||499<r)throw new RangeError(`Invalid client error status code ${r} given`);this.status=r}}exports.ClientError=ClientError;

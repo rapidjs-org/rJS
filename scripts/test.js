@@ -6,7 +6,7 @@
 
 
 const {readdirSync} = require("fs");
-const {join, extname} = require("path");
+const {join} = require("path");
 
 
 /**
@@ -82,7 +82,7 @@ readdirSync(testsDirPath, {
     withFileTypes: true
 })
 .filter(dirent => {
-    return extname(dirent.name).toLowerCase() === ".js";
+    return /.*\.test\.js/.test(dirent.name.toLowerCase());
 })
 .forEach(dirent => {
     const curPath = join(testsDirPath, dirent.name);
@@ -91,7 +91,7 @@ readdirSync(testsDirPath, {
 });
 
 // Log overall success message if all tests completed successfully
-log(`\n${Test.counter.success}/${Test.counter.success + Test.counter.failed} tests successful.`);
+log(`\n${Test.counter.success}/${Test.counter.success + Test.counter.failed} unit tests passed.`);
 
 // Exit with error code if test cases were not fulfilled with overall success
 // Keeps chained scripts from continuing evaluation if tests suite failed
