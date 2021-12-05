@@ -1,57 +1,7 @@
-"use strict";
 /**
- * Rate limiting to be utilized upon each request.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.rateExceeded = void 0;
-// Parameter
-const config_server_1 = __importDefault(require("../../config/config.server"));
-const periodLength = 60000;
-// Object
-const limiter = {
-    windowStart: 0,
-    previous: null,
-    current: null
-};
-// TODO: Enhance strategy (reduce throughput)?
-/**
- * Update limiter window.
- * @returns {number} Current window weight
- */
-function updateWindow() {
-    const now = Date.now();
-    let timeIn = Math.abs(limiter.windowStart - now);
-    if (timeIn >= periodLength) {
-        limiter.previous = (timeIn >= (2 * periodLength)) ? {} : (limiter.current || {});
-        limiter.current = {};
-        timeIn = timeIn % periodLength;
-        limiter.windowStart = now - timeIn;
-    }
-    return (timeIn / periodLength);
-}
-/**
- * Check whether to block the request by the rate limiter.
- * @param {string} ip - IP address of request's remote connection
- * @return {boolean} - Whether the request must be blocked due to 429 (Too many requests)
- */
-function rateExceeded(ip) {
-    if (!config_server_1.default.maxRequestsPerMin) {
-        return false;
-    }
-    const curWindowWeight = updateWindow();
-    const slideSum = Math.floor((curWindowWeight * (limiter.current[ip] || 0))
-        + ((1 - curWindowWeight) * (limiter.previous[ip] || 0)));
-    if (slideSum >= config_server_1.default.maxRequestsPerMin) {
-        // Deny request
-        return true;
-    }
-    limiter.current[ip] = isNaN(limiter.current[ip])
-        ? 0
-        : ++limiter.current[ip];
-    // Allow request
-    return false;
-}
-exports.rateExceeded = rateExceeded;
+"use strict";var __importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0}),exports.rateExceeded=void 0;const config_server_1=__importDefault(require("../../config/config.server")),periodLength=6e4,limiter={windowStart:0,previous:null,current:null};function updateWindow(){var e=Date.now();let r=Math.abs(limiter.windowStart-e);return r>=periodLength&&(limiter.previous=!(r>=2*periodLength)&&limiter.current||{},limiter.current={},r%=periodLength,limiter.windowStart=e-r),r/periodLength}function rateExceeded(e){if(!config_server_1.default.maxRequestsPerMin)return!1;var r=updateWindow();return Math.floor(r*(limiter.current[e]||0)+(1-r)*(limiter.previous[e]||0))>=config_server_1.default.maxRequestsPerMin||(limiter.current[e]=isNaN(limiter.current[e])?0:++limiter.current[e],!1)}exports.rateExceeded=rateExceeded;
