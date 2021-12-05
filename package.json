@@ -9,7 +9,7 @@
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src/",
     "compile": "tsc",
     "test": "node ./scripts/test.js",
-    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
+    "build": "npm run lint && rm -r ./dist && npm run compile && npm run test && node ./scripts/build.js",
     "release": "npm run build && np"
   },
   "files": [

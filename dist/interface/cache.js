@@ -1,19 +1,7 @@
-"use strict";
 /**
- * Cache creation interface.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createCache = void 0;
-const ArbitraryCache_1 = require("../server/support/cache/ArbitraryCache");
-const wrapper_1 = require("./wrapper");
-/**
- * Create a dedicated cache instance.
- * @param {number} [duration] Caching duration in ms (as set in server config by default)
- * @returns {Function} Cache instanciation wrapper function
- */
-function createCache(duration) {
-    return (0, wrapper_1.wrapInterface)(() => {
-        return new ArbitraryCache_1.ArbitraryCache(duration);
-    }, "creating a dedicated cache");
-}
-exports.createCache = createCache;
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.createCache=void 0;const ArbitraryCache_1=require("../server/support/cache/ArbitraryCache"),wrapper_1=require("./wrapper");function createCache(e){return(0,wrapper_1.wrapInterface)(()=>new ArbitraryCache_1.ArbitraryCache(e),"creating a dedicated cache")}exports.createCache=createCache;

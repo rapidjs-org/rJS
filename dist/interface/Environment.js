@@ -1,11 +1,7 @@
-"use strict";
 /**
- * Page environments for respective addressing.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Environment = void 0;
-var Environment;
-(function (Environment) {
-    Environment[Environment["ANY"] = 0] = "ANY";
-    Environment[Environment["SPECIFIC"] = 1] = "SPECIFIC";
-})(Environment = exports.Environment || (exports.Environment = {}));
+"use strict";var Environment;Object.defineProperty(exports,"__esModule",{value:!0}),exports.Environment=void 0,function(n){n[n.ANY=0]="ANY",n[n.SPECIFIC=1]="SPECIFIC"}(Environment=exports.Environment||(exports.Environment={}));

@@ -1,7 +1,7 @@
-"use strict";
 /**
- * Configuration file for explicit MIME type declarations.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-const reader_1 = require("./reader");
-exports.default = (0, reader_1.read)("mimes");
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0});const reader_1=require("./reader");exports.default=(0,reader_1.read)("mimes");
