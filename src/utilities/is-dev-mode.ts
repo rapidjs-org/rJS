@@ -3,11 +3,9 @@
  */
 
 
-const config = {
-	argument: "-dev",
-};
+import {argument} from "../args";
 
 
-export default ((process.argv.length > 2) && (process.argv.slice(2).includes(config.argument)))
-	? true
-	: false;
+export default argument("dev")
+? true
+: false;
