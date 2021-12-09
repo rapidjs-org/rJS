@@ -3,12 +3,13 @@
  */
 
 
-import {join, dirname} from "path";
+import {join} from "path";
 import {existsSync} from "fs";
 
 import serverConfig from "../config/config.server";
 
 import * as output from "./output";
+import projectDirPath from "./project-path";
 
 
 const webDirName = serverConfig.webDirectory;
@@ -18,7 +19,7 @@ if(webDirName.match(/[<>:"/\\|?*]/)) {
 		true);
 }
 
-const webDirPath = join(dirname(require.main.filename), webDirName);
+const webDirPath = join(projectDirPath, webDirName);
 if(!existsSync(webDirPath)) {
 	output.error(
 		new ReferenceError(`Web file directory does not exist at '${webDirPath}'`),

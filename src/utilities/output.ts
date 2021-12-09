@@ -26,10 +26,9 @@ export function error(err: Error, terminate = false) {
 	
 	log(message, "\x1b[31m");
 	
-	//console.group();
-	console.error(Array.from(err.stack).map(cs => `at ${String(cs)}`).join("\n"));
-	//console.groupEnd();
-	
-	
+	console.error(Array.isArray(err.stack)
+	? err.stack.map(cs => `at ${String(cs)}`).join("\n")
+	: err.stack);
+		
 	terminate && process.exit();
 }

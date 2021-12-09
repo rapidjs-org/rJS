@@ -15,3 +15,13 @@ export function normalizeExtension(extension: string): string {
 		.replace(/^\./, "")
 		.toLowerCase();
 }
+
+/**
+ * Remove module related extension for given path or file name.
+ * .{js, ts, javascript, typescript}
+ * @param {string} name Name to truncate
+ * @returns {string} Truncated name
+ */
+export function truncateModuleExtension(name: string): string {
+	return name.replace(/\.(j(ava)?|t(ype)?)s(cript)?$/i, "");
+}
