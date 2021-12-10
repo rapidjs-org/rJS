@@ -48,7 +48,7 @@ function minify(path) {
             case "json":
                 code = code
                 .replace(/([{:,])\s+(["'}])/, "$1$2")
-                .replace(/\s*\\}/, "}");
+                .replace(/\s*\}$/, "}");
 
                 break;
         }
