@@ -1,69 +1,68 @@
 const {join} = require("path");
-const {fork} = require("child_process");
-const {readdir, stat} = require("fs");
+const {exec, fork} = require("child_process");
+const {existsSync, mkdirSync, readdirSync, copyFileSync} = require("fs");
 
 
-const detectionFrequency = 2500;
+const clientDirPath = {
+	src: join(__dirname, "../src/client"),
+	dest: join(__dirname, "../debug/client")
+};
+
 let debugApp;
 
-/**
- * (Re)start debug application.
- */
-function startDebugApp() {
-    // Stop currently running app (if not initial)
-    debugApp && debugApp.kill("SIGTERM");
 
-    // (Re)start app
-    debugApp = fork(join(__dirname, "../debug:app/server"), [
-        "-D",
-        "-P",
-        "../debug:app/"
-    ]);
+// Run watching typescript compiler on source files directory
+const compiler = exec("tsc -w --outDir ./debug", {
+	cwd: join(__dirname, "../")
+});
+compiler.stdout.on("data", data => {
+    process.stdout.write(data);
+	process.stdout.write("\r\x1b[K");
 
-    debugApp.on("message", message => {
-        console.log(message);
-    });
-}
+	// Primitive error / no compile exit guard
+	if(!data.match(/\s0\serrors\./)) {
+		return;
+	}
 
-/**
- * Recursively scan debug (development compilation) directory for changes.
- * Modification to be effective if a file has been chnaged within latest
- * detection period.
- * @param {String} [path] Detection path (debug root by default; initial call)
- */
-function scanDebugDir(path = join(__dirname, "../debug")) {
-    // Check whether a specific file has been modified within the past period
-    const fileModified = time => {
-        return (Math.abs(time - Date.now()) < detectionFrequency);
-    };
-
-	// Read current directory
-	readdir(path, {
-		withFileTypes: true
-	}, (_, dirents) => {
-		dirents.forEach(dirent => {
-			const curPath = join(path, dirent.name);
-
-			if(dirent.isDirectory()) {
-				// Scan sub directory
-				return scanDebugDir(curPath);
-			}
-            
-			// Read file stats to check for modification status
-			stat(curPath, (_, stats) => {
-				if(fileModified(stats.birthtime)
-                || fileModified(stats.mtimeMs)) {
-					// Change detected
-					startDebugApp();
-				}
-			});
+	try {
+		// Copy client .js files manually (ignored by compiler)
+		!existsSync(clientDirPath.dest) && mkdirSync(clientDirPath.dest);
+		
+		readdirSync(clientDirPath.src, {
+			withFileTypes: true
+		})
+		.forEach(dirent => {
+			copyFileSync(join(clientDirPath.src, dirent.name), join(clientDirPath.dest, dirent.name));
 		});
-	});
+
+		// Stop currently running debug application (if is running)
+		if(debugApp) {
+			debugApp.kill("SIGTERM");
+		}
+
+		// (Re)start debug application
+		console.log("\n• DEBUG APPLICATION:\n")
+		debugApp = fork(join(__dirname, "../debug:app/server"), [
+			"-D",
+			"-P",
+			"../debug:app/"
+		]);
+
+		debugApp.on("message", stdout => {
+			console.log(stdout);
+
+			blockPeriod = false;
+		});
+	} catch {}	// No error log
+});
+
+
+function exitHandler() {
+	compiler.kill("SIGTERM");
 }
 
-
-// Initially start debug application
-startDebugApp();
-
-// Initialize detection interval (for app restart on changes)
-setInterval(scanDebugDir, detectionFrequency);
+process.on("exit", exitHandler);
+process.on("SIGINT", exitHandler);
+process.on("SIGUSR1", exitHandler);
+process.on("SIGUSR2", exitHandler);
+process.on("uncaughtException", exitHandler);
