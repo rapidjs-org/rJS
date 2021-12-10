@@ -82,7 +82,7 @@ readdirSync(testsDirPath, {
     withFileTypes: true
 })
 .filter(dirent => {
-    return /.*\.test\.js/.test(dirent.name.toLowerCase());
+    return /^.*\.test\.js$/.test(dirent.name.toLowerCase());
 })
 .forEach(dirent => {
     const curPath = join(testsDirPath, dirent.name);
