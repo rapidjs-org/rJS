@@ -8,6 +8,8 @@ import {join, dirname, basename} from "path";
 
 import pluginConfig from "../../config/config.plugins";
 
+import {truncateModuleExtension} from "../../utilities/normalize";
+
 import {pluginRegistry} from "../bindings";
 
 
@@ -25,18 +27,14 @@ function getCallerPath(fileName: string): string {
 
 	while(err.stack.length) {
 		// @ts-ignore
-		const callerFile = err.stack.shift().getFileName();
-        
-		if(callerFile !== (fileName || null) && callerFile !== __filename) {
-			return callerFile;
+		if(![fileName || "", __filename].includes(err.stack.shift().getFileName())) {
+			// @ts-ignore
+			return err.stack.shift().getFileName();
 		}
 	}
     
 	throw new ReferenceError("Failed to retrieve path to plug-in caller module");
 }
-
-// TODO: !!! Enable plug-in functionality on given generic basis
-// =============================================================
 
 /**
  * Get a plug-in directory path by respective module motivated call.
@@ -53,13 +51,23 @@ export function getPathByCall(fileName: string): string {
  * @returns {string} Plug-in name
  */
 export function getNameByCall(fileName: string): string {
-	let path = getCallerPath(fileName);
-	path = path.trim().replace(/\.ts$/, "");
+	const path = truncateModuleExtension(getCallerPath(fileName));
 
-	for(const name in Array.from(pluginRegistry.keys())) {
-		if(pluginRegistry[name].reference === path) {
-			return name;
+	// Iterate plug-in registry for matching plug-in and caller path to retrieve related name
+	try {
+		pluginRegistry.forEach((_, name: string) => {
+			if(pluginRegistry.get(name).path === path) {
+				throw name;
+			}
+		});
+	} catch(thrown: unknown) {
+		// Use thrown string as for callback loop break
+		if(typeof thrown === "string") {
+			return String(thrown);	// TODO: Store in map?
 		}
+
+		// Pass possible actual error
+		throw thrown;
 	}
 
 	return undefined;
@@ -93,7 +101,7 @@ export function getNameByReference(reference: string): string {
 	}
 
 	// Local plug-in without (named) package (use file name (without extension))
-	return basename(reference).replace(/\.[a-z]+$/, "");
+	return truncateModuleExtension(basename(reference));
 }
 
 /**

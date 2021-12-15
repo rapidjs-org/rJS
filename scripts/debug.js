@@ -18,7 +18,7 @@ const compiler = exec("tsc -w --outDir ./debug", {
 compiler.stdout.on("data", data => {
     process.stdout.write(data);
 	process.stdout.write("\r\x1b[K");
-
+	
 	// Primitive error / no compile exit guard
 	if(!data.match(/\s0\serrors\./)) {
 		return;

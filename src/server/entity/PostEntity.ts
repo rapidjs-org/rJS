@@ -11,9 +11,8 @@ import * as output from "../../utilities/output";
 
 import serverConfig from "../../config/config.server";
 
+import {ClientError} from "../../interface/ClientError";
 import {has as endpointHas, use as endpointUse} from "../../interface/plugin/endpoint";
-
-import {IReducedRequestInfo} from "../IReducedRequestInfo";
 
 import {Entity} from "./Entity";
 
@@ -22,7 +21,7 @@ interface IPostBody {
 	meta: Record<string, string>;
 	name: string;
 
-	body?: Record<string, string|number|boolean>;
+	body?: unknown;
 }
 
 
@@ -99,9 +98,17 @@ export class PostEntity extends Entity {
 				// Adapt representing URL to the individual plug-in origin respective document URL
 				this.url.pathname = bodyObj.meta.pathname;
 
-				const data: Buffer = endpointUse(pluginName, bodyObj.body, bodyObj.name);
+				try {
+					const data: Buffer = endpointUse(pluginName, bodyObj.body, bodyObj.name);
 
-				this.respond(200, data);
+					this.respond(200, data);
+				} catch(err) {
+					if(err instanceof ClientError) {
+						return this.respond(err.status);
+					}
+
+					throw err;
+				}
 			} catch(err) {
 				output.error(err);
 
@@ -113,7 +120,6 @@ export class PostEntity extends Entity {
 			throw err;
 		});
 	}
-
 
 	public getReducedRequestInfo(): IReducedRequestInfo {
 		const obj = super.getReducedRequestInfo();

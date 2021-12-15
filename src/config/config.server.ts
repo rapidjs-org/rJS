@@ -5,6 +5,8 @@
 
 import {normalizeExtension} from "../utilities/normalize";
 
+import defaultConfig from "./default/config.json";
+
 import {read} from "./reader";
 
 
@@ -54,7 +56,7 @@ function normalizeExtensionArray(array: string[]) {
 	});
 }
 
-const config = read("config") as IServerConfig;
+const config = read("config", defaultConfig) as IServerConfig;
 
 // Normalize extension arrays for future uniform usage behavior
 config.extensionWhitelist = normalizeExtensionArray(config.extensionWhitelist);

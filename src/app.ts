@@ -32,7 +32,7 @@ import "./server/instance.js";
 import * as appInterface from "./interface/scope:app";
 
 // Initialize live functionality (websocket server and file modification detection)
-// if enviornment is in DEV MODE
+// (Only if environment is in DEV MODE)
 import isDevMode from "./utilities/is-dev-mode";
 if(isDevMode) {
 	require("./live/server");
@@ -42,4 +42,4 @@ if(isDevMode) {
 
 // Application scoped interface.
 // Accessible from within individual application scope.
-export default appInterface;
+module.exports = appInterface;

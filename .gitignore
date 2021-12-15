@@ -6,6 +6,7 @@ package-lock.json
 
 node_modules/
 
-dist/
+debug/
+debug:app/
+
 src-legacy/
-test-app/
