@@ -6,8 +6,6 @@
 import config from "../config.json";
 
 
-import * as http from "http";
-import * as https from "https";
 import {readFileSync} from "fs";
 import {join, dirname, extname} from "path";
 
@@ -18,6 +16,8 @@ import {normalizeExtension} from "../utilities/normalize";
 import serverConfig from "../config/config.server";
 
 import {rateExceeded} from "./support/rate-limiter";
+
+import {isClientModuleRequest} from "../interface/plugin/registry";
 
 import {Entity} from "./entity/Entity";
 import {StaticGetEntity} from "./entity/StaticGetEntity";
@@ -37,7 +37,7 @@ const entityConstructor = {
 
 // Retrieve server optional server parameter
 const options: Record<string, Buffer> = {};
-if(serverConfig.ssl) {
+if(serverConfig.ssl) {	// TODO: How to treat for DEV MODE?
 	const readCertFile = (pathname: string): Buffer => {
 		// Construct application relative path if not given in absolute format
 		pathname = (pathname.charAt(0) == "/") ? pathname : join(dirname(require.main.filename), pathname);
@@ -52,14 +52,21 @@ if(serverConfig.ssl) {
 
 
 // Create effective web server instance (for HTTPS if defined, HTTP otherwise)
-const protocol = serverConfig.port.https
+const protocol: string = serverConfig.port.https
 	? "https"
 	: "http";
 
-(serverConfig.port.https
-	? https
-	: http)
-	.createServer(options, handleRequest)
+require(protocol)
+	.createServer(options, (req, res) => {
+		try {
+			handleRequest(req, res);	// Asynchronous request handler
+		} catch(err) {
+			// Catch bubbling up unhandled errors for display and generic server error response
+			output.error(err);
+
+			(new entityConstructor.BASIC(null, res)).respond(500);
+		}
+	})
 	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.maxPending,
 		() => {
 			output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
@@ -68,9 +75,9 @@ const protocol = serverConfig.port.https
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
 (serverConfig.port.https) && 
-http
+require("http")
 	.createServer((req, res) => {
-		(new entityConstructor.BASIC(req, res)).redirect(`https://${req.headers.host}${req.url}`);
+		(new entityConstructor.BASIC(null, res)).redirect(req.url);
 	})
 	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.maxPending,
 		() => {
@@ -78,7 +85,7 @@ http
 			output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
 		});
 
-
+	
 /**
  * Handle a single request asynchronously.
  * @async
@@ -86,6 +93,8 @@ http
  * @param {ServerResponse} res Response object
  */
 async function handleRequest(req, res) {
+	// TODO: Enhance client module request processing?
+	
 	// Retrieve entity type first (or close response if can not be mapped accordingly)
 	let entity;
 	switch(req.method.toUpperCase()) {
@@ -94,13 +103,12 @@ async function handleRequest(req, res) {
 		const extension = extname(req.url);
 		const normalizedExtension = extension ? normalizeExtension(extension) : config.dynamicFileExtension;
 
-		entity = new entityConstructor.GET[(normalizedExtension == config.dynamicFileExtension) ? "DYNAMIC" : "STATIC"](req, res);
-
-		if(entity instanceof entityConstructor.GET.DYNAMIC
-				&& extension.length == 0) {
-			// Redirect dynamic request with extension explicitly stated in URL to implicit equivalent
-			return entity.redirect(req.url.replace(new RegExp(`\\.${config.dynamicFileExtension}($|\\?)`), "$1"));
-		}
+		entity = new entityConstructor.GET[
+			(normalizedExtension == config.dynamicFileExtension
+			&& !isClientModuleRequest(req.url))
+			? "DYNAMIC"
+			: "STATIC"
+		](req, res);
 
 		break;
 	}
@@ -112,7 +120,7 @@ async function handleRequest(req, res) {
 	}
 	default: {
 		// Block request as HTTP method is not supported
-		return (new entityConstructor.BASIC(req, res)).respond(405);
+		return (new entityConstructor.BASIC(null, res)).respond(405);
 	}
 	}
 
@@ -126,20 +134,13 @@ async function handleRequest(req, res) {
 
 	// Block request if individual request maximum reached (rate limiting)
 	if(rateExceeded(req.connection.remoteAddress)) {
-		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period time
+		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
         
 		return entity.respond(429);
 	}
-
+	
 	// TODO: Implement subdomain processing
     
 	// Call entity specific request processor method
-	try {
-		entity.process();
-	} catch(err) {
-		// Catch bubbling up unhandled errors for display and generic server error response
-		output.error(err);
-
-		entity.respond(500);
-	}
+	entity.process();
 }

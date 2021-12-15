@@ -9,7 +9,7 @@
 
 
 import {existsSync, readFileSync} from "fs";
-import {gzipSync} from "gzip";
+import {gzipSync} from "zlib";
 
 import serverConfig from "../../config/config.server";
 import mimesConfig from "../../config/config.mimes";
@@ -76,7 +76,7 @@ export abstract class GetEntity extends Entity {
     		// Compress
     		message = gzipSync(message);
     	}
-
+		
     	// Perform definite response
     	super.respond(status, message);
     }

@@ -10,7 +10,6 @@ const config = {
 
 import {ArbitraryCache} from "../../server/support/cache/ArbitraryCache";
 
-import {IReducedRequestInfo} from "../../server/IReducedRequestInfo";
 import {currentRequestInfo} from "../../server/hook";
 
 import {getNameByCall} from "./naming";

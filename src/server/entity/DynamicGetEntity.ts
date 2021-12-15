@@ -5,10 +5,12 @@
  */
 
 
+import globalConfig from "../../config.json";
 const config = {
-	...require("../config.json"),
+	...globalConfig,
 
-	dynamicCachingDuration: 1000    // TODO: Make configurable? Or use same as for static (mods apply separately)?
+	compoundPageDirPrefix: "#",
+	dynamicFileDefaultName: "index"
 };
 
 
@@ -24,8 +26,6 @@ import {renderModifiers} from "../../mods/modifiers";
 import {integratePluginReferences} from "../../interface/plugin/registry";
 
 import {integrateLiveReference} from "../../live/server";
-
-import {IReducedRequestInfo} from "../IReducedRequestInfo";
 
 import {GetEntity} from "./GetEntity";
 
@@ -45,6 +45,14 @@ export class DynamicGetEntity extends GetEntity {
 
 		this.extension = config.dynamicFileExtension;
 	}
+
+    /**
+     * Construct local disc path to asset ressource.
+     * @returns {String} Local ressource path
+     */
+    protected localPath(): string {
+    	return `${super.localPath()}.${this.extension}`;
+    }
 
 	/**
      * Read the dynamic asset (file) implicitly linked to the request.
@@ -76,13 +84,20 @@ export class DynamicGetEntity extends GetEntity {
         && this.setHeader("X-Frame-Options", "SAMEORIGIN");
 
 		// Find related error file if response is meant to be unsuccessful
-		// TODO: Improve routine / flow
-		if(status.toString().charAt(0) != "2") {
-			do {
-				this.url.pathname = join(dirname(this.url.pathname), `${status}.${config.dynamicFileExtension}`);
-			} while(!existsSync(this.localPath()) && this.url.pathname.length > 0);
+		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
+			this.url.pathname = join(dirname(this.url.pathname), String(status));
+
+			while(!existsSync(this.localPath())
+			&& dirname(this.url.pathname).length > 1) {
+				this.url.pathname = join(dirname(dirname(this.url.pathname)), String(status));
+			}
+			if(!existsSync(this.localPath())) {
+				// No custom error page file found (bubbling up from initial request location)
+				// Use generic error message
+				return super.respond(status);
+			}
 		}
-		
+
 		// Perform definite response
 		try {
 			super.respond(status, this.read());
@@ -97,20 +112,30 @@ export class DynamicGetEntity extends GetEntity {
 	}
 
 	public process() {
+		// TODO: index name?
+		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
+			// Redirect URL explicit dynamic request (states dynamic file extension) to implicit equivalent (no file extension)
+			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), "$1"));
+		}
+		
+		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);	// Append with default file name if none explicitly given
+
 		// Respond with file located at exactly requested path if exists
 		if(existsSync(this.localPath())) {
         	return this.respond(200);
 		}
 
 		// Find conventional file at path or respective compound page otherwise
+		const fallbackPath = this.url.pathname;
 		this.url.pathname = join(dirname(this.url.pathname),
-			basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, ""),
+			`${config.compoundPageDirPrefix}${basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, "")}`,
 			basename(this.url.pathname));
 		if(existsSync(this.localPath())) {
 			this.isCompound = true;
-
+			
         	return this.respond(200);
 		}
+		this.url.pathname = fallbackPath;
 
 		// No suitable file found
 		this.respond(404);
@@ -124,7 +149,7 @@ export class DynamicGetEntity extends GetEntity {
 		return {
 			...obj,
 			
-			pathname: this.isCompound ? dirname(this.url.pathname) : this.url.pathname,
+			pathname: this.req.url.slice(0, Math.max(this.req.url.indexOf("?", 0))),
     		isCompound: this.isCompound
 		};
 	}

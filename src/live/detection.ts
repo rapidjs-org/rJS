@@ -11,6 +11,7 @@ import {readdir, stat, existsSync, Dirent} from "fs";
 import {join} from "path";
 
 import webPath from "../utilities/web-path";
+import * as output from "../utilities/output";
 
 import {proposeRefresh} from "./server";
 
@@ -29,7 +30,7 @@ function fileModified(time) {
  * Recursively scan a given directory for moification.
  * Modification to be effective if a file has been chnaged within
  * latest detection period.
- * @param {string} path Detection root path
+ * @param {string} path Detection path (starting from root)
  * @param {Function} [callback] Function to call if modification has been detected
  */
 async function scanDir(path: string, callback?: () => void) {
@@ -67,10 +68,15 @@ async function scanDir(path: string, callback?: () => void) {
 
 // Initialize detection interval
 setInterval(_ => {
-	// Scan web files directory
-	scanDir(webPath);
+	try {
+		// Scan web files directory
+		scanDir(webPath);
 
-	// TODO: Plug-in files
-	// TODO: Templating files
+		// TODO: Plug-in files
+		// TODO: Templating files
+	} catch(err) {
+		output.log("An error occurred scanning project files for modification in live mode");
+		output.error(err);
+	}
 
 }, config.detectionFrequency);

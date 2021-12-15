@@ -20,14 +20,12 @@ const config = {
 import {join, dirname, extname} from "path";
 import {existsSync, readFileSync} from "fs";
 
-import {Environment} from "../Environment";
 import {pluginRegistry} from "../bindings";
 
-// Plug-in scoped interface
-// Accessible from within the scope of each referenced plug-in
-import * as pluginInterface from "../scope:plugin";
-
 import {injectIntoHead} from "../../utilities/markup";
+import {truncateModuleExtension} from "../../utilities/normalize";
+
+import {Environment} from "../Environment";
 
 import {getNameByCall, getNameByReference, getPathByCall} from "./naming";
 
@@ -51,7 +49,11 @@ interface IOptions {
 
 
 // REGISTER CLIENT CORE SUPPORT MODULE
-registerClientModule("core", String(readFileSync("../../client/core.js")));
+pluginRegistry.set("core", {
+	path: null,
+	environment: Environment.ANY,
+	clientScript: readFileSync(join(__dirname, "../../client/core.js")),
+});
 
 
 /**
@@ -119,18 +121,18 @@ export function bind(reference: string, options: IOptions = {}) {
 
 	// Check if plug-in with the same internal name has already been registered
 	if(pluginRegistry.has(name)) {
-		throw new ReferenceError(`Plug-in references '${pluginRegistry.get(name).reference}' and '${reference}' illegally resolve to the same name: '${name}'`);
+		throw new ReferenceError(`Multiple plug-in references illegally resolve to the same name '${name}'`);
 	}
 	
 	const pluginPath: string = pluginNameRegex.test(reference)
-		? reference	//module.constructor._resolveFilename(reference, require.main)
-		: join(dirname(require.main.filename), reference);
+		? (module.constructor as IModuleConstructor)._resolveFilename(reference, require.main)
+		: truncateModuleExtension(join(dirname(require.main.filename), reference));
 	
 	// Write plug-in data object to registry map
 	pluginRegistry.set(name, {
-		reference: pluginPath,
+		path: pluginPath,
 		environment: options.environment ? options.environment : Environment.ANY
-	});
+	} as IPlugin);
 	
 	// Load pluginModule
 	loadPlugin(pluginPath);
@@ -150,7 +152,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 			const pluginObj = pluginRegistry.get(name);
 
 			return pluginObj.clientScript
-		&& (isCompound || pluginObj.compoundOnly);
+			&& (isCompound || !pluginObj.compoundOnly);
 		})
 	// Filter for not yet (hard)coded plug-ins
 	// Hard coding use case: user defined ordering
@@ -183,7 +185,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
  */
 export function isClientModuleRequest(pathname: string): boolean {
 	if(!
-	(new RegExp(`${urlPrefixRegex}${config.pluginNameRegex.source}(\\${config.pluginNameSeparator}${config.pluginNameRegex.source})*`, "i"))
+	(new RegExp(`^${urlPrefixRegex.source}${config.pluginNameRegex.source}(\\${config.pluginNameSeparator}${config.pluginNameRegex.source})*`, "i"))
 		.test(pathname)) {
 		return false;
 	}
@@ -222,15 +224,15 @@ export function retrieveClientModules(pathname: string): Buffer {
  * @param {Boolean} [compoundOnly=false] Whether to integrate the client module into compound page environments only
  */
 export function initFrontendModule(relativePath: string, pluginConfig?: unknown, compoundOnly?: boolean) {
-	const pluginName = getNameByCall(__filename);
+	const pluginName: string = getNameByCall(__filename);
 
 	if(/^\//.test(relativePath)) {
 		throw new SyntaxError(`Expecting relative path to plug-in client module upon initialization, given absolute path '${relativePath}' for '${pluginName}'`);
 	}
 
 	// Construct path to plug-in client script file
-	const pluginDirPath = getPathByCall(__filename);
-	let clientFilePath = join(pluginDirPath, relativePath);
+	const pluginDirPath: string = getPathByCall(__filename);
+	let clientFilePath: string = join(pluginDirPath, relativePath);
 	clientFilePath = (extname(clientFilePath).length == 0)
 		? `${clientFilePath}.js`
 		: clientFilePath;
@@ -241,7 +243,7 @@ export function initFrontendModule(relativePath: string, pluginConfig?: unknown,
 		throw new ReferenceError(`Client module file for plug-in '${pluginName}' not found at given path '${clientFilePath}'`);
 	}
 
-	let bareClientScript = String(readFileSync(clientFilePath));
+	let bareClientScript: string = String(readFileSync(clientFilePath));
 
 	// Substitute config attribute usages in client module to be able to use the same config object between back- and client
 	bareClientScript = pluginConfig
@@ -298,3 +300,8 @@ export function initFrontendModule(relativePath: string, pluginConfig?: unknown,
 }
 // TODO: Implement option for plug-in to wait for another plug-in to have loaded (in client)
 // TODO: Implement async/defer option for plug-in (via options object on bind)
+
+
+// Plug-in scoped interface
+// Accessible from within the scope of each referenced plug-in
+const pluginInterface = require("../scope:plugin");

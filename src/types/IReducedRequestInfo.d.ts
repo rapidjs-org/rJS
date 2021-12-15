@@ -1,10 +1,4 @@
-interface IRequestInfoCompound {
-	base: string;
-	args: string;
-}
-
-
-export interface IReducedRequestInfo {
+declare interface IReducedRequestInfo {
 	ip: string;
 	//subdomain: string;
 	pathname: string;
@@ -15,4 +9,9 @@ export interface IReducedRequestInfo {
 		lang: entity.url.lang,
 		country: entity.url.country
 	} */
+}
+
+interface IRequestInfoCompound {
+	base: string;
+	args: string;
 }
