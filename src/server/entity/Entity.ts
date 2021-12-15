@@ -14,14 +14,12 @@ import webPath from "../../utilities/web-path";
 
 import serverConfig from "../../config/config.server";
 
-import {IReducedRequestInfo} from "../IReducedRequestInfo";
-
 
 export class Entity {
     protected readonly req: IncomingMessage;
     protected readonly res: ServerResponse;
     
-    protected url: URL;
+    public url: URL;
 
     /**
      * Create entity object based on web server induced request/response objects.
@@ -32,8 +30,8 @@ export class Entity {
     	// Identically store original request/response objects
     	this.req = req;
     	this.res = res;
-
-    	this.url = new URL(req.url);
+        
+    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
     }
 
     /**
@@ -41,7 +39,7 @@ export class Entity {
      * @returns {String} Local ressource path
      */
     protected localPath(): string {
-    	return join(webPath, this.url.pathname);
+    	return decodeURIComponent(join(webPath, this.url.pathname));
     }
 
     /**
@@ -68,6 +66,9 @@ export class Entity {
      * @param {Buffer} [message] Message data
      */
     public respond(status: number, message?: Buffer) {
+        // Use generic message if none explicitly given / retrieved processing
+        message = message || Buffer.from(statusMessages[String(status)], "utf-8");
+
     	// Set headers
     	this.setHeader("Server", "rapidJS");    // Keep?
     	this.setHeader("X-XSS-Protection", "1");
@@ -80,7 +81,7 @@ export class Entity {
     	this.res.statusCode = isNaN(status) ? 500 : status;
         
     	// End request with message
-    	this.res.end(message || statusMessages[this.res.statusCode]);
+    	this.res.end(message);
     }
 
     /**
@@ -88,8 +89,10 @@ export class Entity {
      * @param {string} path - Path to redirect to
      */
     public redirect(pathname: string) {
-    	this.res.setHeader("Location", pathname);
-
+        this.url.pathname = pathname;
+        
+    	this.res.setHeader("Location", this.url.toString());
+        
     	this.res.statusCode = 301;
         
     	this.res.end();

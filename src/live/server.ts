@@ -13,7 +13,7 @@ import {injectIntoHead} from "../utilities/markup";
 
 
 // Read client script
-const clientScript = String(readFileSync(join(__dirname, "client.js")));
+const clientScript = String(readFileSync(join(__dirname, "../client/live.js")));
 
 
 // Create substantial HTTP server

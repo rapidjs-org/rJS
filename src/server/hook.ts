@@ -10,8 +10,6 @@ import asyncHooks from "async_hooks";
 
 import {Entity} from "./entity/Entity";
 
-import {IReducedRequestInfo} from "./IReducedRequestInfo";
-
 
 const requests = new Map();
 

@@ -3,14 +3,19 @@
  */
 
 
-import {dirname} from "path";
+import {dirname, join} from "path";
 
 import {argument} from "../args";
 
 
+const callDirPath: string = dirname(require.main.filename);
 const projectDirPath: string|boolean = argument("path");
 
-
-export default projectDirPath
-? projectDirPath
-: dirname(require.main.filename);
+// Use directory at given path (argument)
+// or call point directory otherwise
+export default (typeof(projectDirPath) == "string")
+// Construct absolute path from call point if relative path given
+? (/[^/]/.test(projectDirPath)
+	? join(callDirPath, projectDirPath)
+	: projectDirPath)
+: callDirPath;
