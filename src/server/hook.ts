@@ -8,7 +8,9 @@
 // Create and enable asynchronous hook
 import asyncHooks from "async_hooks";
 
+
 import {Entity} from "./entity/Entity";
+import {DynamicGetEntity} from "./entity/DynamicGetEntity";
 
 
 const requests = new Map();
@@ -36,8 +38,13 @@ export function createHook(entity: Entity) {
 
 /**
  * Get currently effective request info object (based on asynchronous thread).
+ * Returns undefined if is not related to a request processing routine.
  * @returns {IReducedRequestInfo} Reduced request info object
  */
 export function currentRequestInfo(): IReducedRequestInfo {
-	return requests.get(asyncHooks.executionAsyncId()).getReducedRequestInfo();
+	const currentEntity = requests.get(asyncHooks.executionAsyncId());
+
+	return (currentEntity instanceof DynamicGetEntity)
+	? currentEntity.getReducedRequestInfo()
+	: undefined;
 }

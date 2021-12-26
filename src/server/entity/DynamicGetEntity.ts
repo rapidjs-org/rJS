@@ -19,10 +19,9 @@ import {join, basename, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
 
-import {ClientError} from "../../interface/ClientError";
-
 import {renderModifiers} from "../../mods/modifiers";
 
+import {ClientError} from "../../interface/ClientError";
 import {integratePluginReferences} from "../../interface/plugin/registry";
 
 import {integrateLiveReference} from "../../live/server";
@@ -44,6 +43,32 @@ export class DynamicGetEntity extends GetEntity {
 		super(req, res);
 
 		this.extension = config.dynamicFileExtension;
+	}
+
+	/**
+	 * Convert the current (conventional page) URL pathname to the compound equivalent
+	 * Applies sideffect to URL pathname property.
+	 * Compound path (internal) to use requested file name as directory prefixed with
+	 * the designated indicator. Actual file to be appended then.
+	 * @returns {string} Converted pathname representation
+	 */
+	private pathnameToCompound(): string {
+		return join(dirname(this.url.pathname),
+		`${config.compoundPageDirPrefix}${basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, "")}`,
+		basename(this.url.pathname));
+	}
+
+	/**
+	 * Convert the current (compound page) URL pathname to the conventional equivalent
+	 * Inverse of pathnameToCompound().
+	 * @returns {string} Converted pathname representation
+	 */
+	private pathnameToConventional(): string {
+		const compoundPrefixIndex: number = this.url.pathname.lastIndexOf(config.compoundPageDirPrefix);
+
+		return (`${this.url.pathname
+		.slice(0, compoundPrefixIndex)}${this.url.pathname
+		.slice(compoundPrefixIndex + 1)}`).replace(/\/[^/]+$/i, "");
 	}
 
     /**
@@ -114,43 +139,49 @@ export class DynamicGetEntity extends GetEntity {
 	public process() {
 		// TODO: index name?
 		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
-			// Redirect URL explicit dynamic request (states dynamic file extension) to implicit equivalent (no file extension)
+			// Redirect URL extension explicit dynamic request to implicit equivalent
 			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), "$1"));
 		}
 		
-		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);	// Append with default file name if none explicitly given
+		// Append pathname with default file name if none explicitly given
+		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
 
 		// Respond with file located at exactly requested path if exists
 		if(existsSync(this.localPath())) {
         	return this.respond(200);
 		}
-
+		
 		// Find conventional file at path or respective compound page otherwise
-		const fallbackPath = this.url.pathname;
-		this.url.pathname = join(dirname(this.url.pathname),
-			`${config.compoundPageDirPrefix}${basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, "")}`,
-			basename(this.url.pathname));
+		const conventionalPathname = this.url.pathname;
+
+		this.url.pathname = this.pathnameToCompound();
 		if(existsSync(this.localPath())) {
-			this.isCompound = true;
+			this.isCompound = true;// args!!!!!!!
 			
         	return this.respond(200);
 		}
-		this.url.pathname = fallbackPath;
+
+		this.url.pathname = conventionalPathname;
 
 		// No suitable file found
 		this.respond(404);
 
 		// TODO: Store resolve mapping in order to reduce redunandant processing costs
 	}
-	
-	public getReducedRequestInfo(): IReducedRequestInfo {
-		const obj = super.getReducedRequestInfo();
 
+	public getReducedRequestInfo(): IReducedRequestInfo {
 		return {
-			...obj,
-			
-			pathname: this.req.url.slice(0, Math.max(this.req.url.indexOf("?", 0))),
-    		isCompound: this.isCompound
+			...super.getReducedRequestInfo(),
+
+    		pathname: decodeURIComponent(this.url.pathname),
+    		isCompound: this.isCompound,
+
+			// Compound page specific information
+			...(this.isCompound
+			? {
+				base: this.pathnameToConventional()
+			}
+			: {})
 		};
 	}
 }

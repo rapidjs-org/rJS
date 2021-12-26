@@ -139,8 +139,6 @@ async function handleRequest(req, res) {
 		return entity.respond(429);
 	}
 	
-	// TODO: Implement subdomain processing
-    
 	// Call entity specific request processor method
 	entity.process();
 }
