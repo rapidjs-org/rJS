@@ -1,8 +1,8 @@
 declare interface IReducedRequestInfo {
 	ip: string;
-	//subdomain: string;
-	pathname: string;
+	subdomain: string[];
 
+	pathname?: string;
 	isCompound?: boolean;
 	compound?: IRequestInfoCompound
 	/* locale: {

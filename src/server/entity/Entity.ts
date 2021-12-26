@@ -18,6 +18,7 @@ import serverConfig from "../../config/config.server";
 export class Entity {
     protected readonly req: IncomingMessage;
     protected readonly res: ServerResponse;
+    protected readonly subdomain: string[];
     
     public url: URL;
 
@@ -32,6 +33,9 @@ export class Entity {
     	this.res = res;
         
     	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
+
+        // TODO: Implement subdomain processing
+        this.subdomain = [];
     }
 
     /**
@@ -98,16 +102,16 @@ export class Entity {
     	this.res.end();
     }
 
+
     /**
      * Get entity related reduced request info object.
      * Enables client request individual behavior (multi interface scope).
-     * @returns {IReducedRequestInfo} Reduced request info object
+     * @returns {IReducedRequestInfo} Common reduced request info object (to be defined in accordance with sub entity behavior)
      */
-    public getReducedRequestInfo(): IReducedRequestInfo {
-    	return {
+	public getReducedRequestInfo(): IReducedRequestInfo {
+		return {
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
-    		//subdomain: entity.url.subdomain,
-    		pathname: this.url.pathname
-    	};
+    		subdomain: this.subdomain,
+        }
     }
 }

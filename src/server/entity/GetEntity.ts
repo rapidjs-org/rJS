@@ -18,6 +18,8 @@ import {UrlCache} from "../support/cache/UrlCache";
 
 import {Entity} from "./Entity";
 
+// TODO: 403 on private web files
+
 
 export abstract class GetEntity extends Entity {
     private static readonly cache: UrlCache<Buffer> = new UrlCache();
@@ -50,7 +52,7 @@ export abstract class GetEntity extends Entity {
 		
     	// Write contents to cache
     	GetEntity.cache.write(this.localPath(), contents);
-		
+				
     	return contents;
     }
 
@@ -66,7 +68,7 @@ export abstract class GetEntity extends Entity {
     		this.setHeader("Content-Type", message ? mime : "text/plain");
     		this.setHeader("X-Content-Type-Options", "nosniff");
     	}
-
+		
     	// Apply GZIP compression and set related header if accepted by the client
     	if(message
 		&& /(^|[, ])gzip($|[ ,])/.test(this.getHeader("Accept-Endcoding") || "")
@@ -76,7 +78,7 @@ export abstract class GetEntity extends Entity {
     		// Compress
     		message = gzipSync(message);
     	}
-		
+
     	// Perform definite response
     	super.respond(status, message);
     }

@@ -15,8 +15,10 @@ import {createHash} from "crypto";
 import {isClientModuleRequest, retrieveClientModules} from "../../interface/plugin/registry";
 
 import {normalizeExtension} from "../../utilities/normalize";
+import isDevMode from "../../utilities/is-dev-mode";
 
 import {GetEntity} from "./GetEntity";
+import { threadId } from "worker_threads";
 
 
 export class StaticGetEntity extends GetEntity {
@@ -38,7 +40,7 @@ export class StaticGetEntity extends GetEntity {
      */
 	public respond(status: number, message?: Buffer) {
 		// Set cache control headers
-	    serverConfig.cachingDuration.client
+	   	(!isDevMode && serverConfig.cachingDuration.client)
         && this.setHeader("Cache-Control", `public, max-age=${serverConfig.cachingDuration.client}, must-revalidate`);
 		
 		// Perform definite response
@@ -46,6 +48,7 @@ export class StaticGetEntity extends GetEntity {
 	}
 
 	public process() {
+		// Custom plufg-in client module file request handling
 		if(isClientModuleRequest(this.url.pathname)) {
 			this.extension = "js";
 
@@ -55,6 +58,11 @@ export class StaticGetEntity extends GetEntity {
 		if(!existsSync(this.localPath())) {
 			// No respective file found
 			return this.respond(404);
+		}
+
+		if(isDevMode) {
+			// No ETag in DEV MODE (always reload)
+			return this.respond(200, super.read());
 		}
 
 		// Generate and set ETag (header)

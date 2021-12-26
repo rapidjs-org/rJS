@@ -4,6 +4,7 @@
 
 import {templatingEngines} from "./bindings";
 
+let engineCounter = 0;
 
 /**
  * Bind optional templating handler.
@@ -12,8 +13,10 @@ import {templatingEngines} from "./bindings";
  * The callback is passed the response data string to be modified, the templating handler module export
  * object and the request object.
  */
-export function bind(callback, implicitReadingOnly = false) {
+export function bind(callback, implicitReadingOnly = false) {	// TODO: Page specific? Compound only?
 	templatingEngines.push({
+		index: engineCounter++,
+		
 		callback,
 		implicitReadingOnly
 	});
