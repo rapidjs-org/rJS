@@ -4,4 +4,4 @@ declare interface IPlugin {
 
     compoundOnly?: boolean;
     clientScript?: Buffer;
-}   // TODO: To types?
+}

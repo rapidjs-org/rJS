@@ -95,7 +95,7 @@ export class PostEntity extends Entity {
 			}
 			
 			try {
-				// Adapt representing URL to the individual plug-in origin respective document URL
+				// Adapt representative URL to the individual plug-in origin respective document URL
 				this.url.pathname = bodyObj.meta.pathname;
 
 				try {
@@ -122,10 +122,8 @@ export class PostEntity extends Entity {
 	}
 
 	public getReducedRequestInfo(): IReducedRequestInfo {
-		const obj = super.getReducedRequestInfo();
-
 		return {
-			...obj,
+			...super.getReducedRequestInfo(),
 
 			isCompound: false
 		};
