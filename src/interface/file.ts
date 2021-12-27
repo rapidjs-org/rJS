@@ -8,7 +8,8 @@ import config from "../config.json";
 import {existsSync, readFileSync} from "fs";
 import {join, extname} from "path";
 
-import webPath from "../utilities/web-path";
+import serverConfig from "../config/config.server";
+
 import {normalizeExtension} from "../utilities/normalize";
 
 import {renderModifiers} from "../mods/modifiers";
@@ -24,7 +25,7 @@ import {ClientError} from "./ClientError";
  */
 export function read(pathname: string): Buffer {
 	// Construct absolute path on local disc
-	const localPath: string = join(webPath, pathname);
+	const localPath: string = join(serverConfig.webDirectory, pathname);
 	
 	if(!existsSync(localPath)) {
 		// File not found
@@ -47,5 +48,5 @@ export function read(pathname: string): Buffer {
  * @returns {boolean} Whether file exists
  */
 export function exists(pathname: string) {
-	return existsSync(join(webPath, pathname)) ? true : false;
+	return existsSync(join(serverConfig.webDirectory, pathname)) ? true : false;
 }

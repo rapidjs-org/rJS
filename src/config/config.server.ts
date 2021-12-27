@@ -3,10 +3,14 @@
  */
 
 
+import {dirname, join} from "path";
+import {existsSync} from "fs";
+
+import {argument} from "../args";
+
 import {normalizeExtension} from "../utilities/normalize";
 
 import defaultConfig from "./default/config.json";
-
 import {read} from "./reader";
 
 
@@ -30,6 +34,7 @@ interface ISSL {
 export interface IServerConfig {
     cachingDuration: ICachingDuration;
     gzipCompressList: string[];
+    logDirectory: string;
     maxPayloadSize: number;
     maxRequestsPerMin: number;
     maxUrlLength: number;
@@ -43,6 +48,33 @@ export interface IServerConfig {
     ssl?: ISSL;
 }
 
+// Retrieve web file (public) directory path on local disc.
+const callDirPath: string = dirname(require.main.filename);
+const argsDirPath: string|boolean = argument("path");
+// Use directory at given path (argument)
+// or call point directory otherwise
+const projectDirPath = (typeof(argsDirPath) == "string")
+// Construct absolute path from call point if relative path given
+? (/[^/]/.test(argsDirPath)
+    ? join(callDirPath, argsDirPath)
+    : argsDirPath)
+: callDirPath;
+
+
+/**
+ * Normalize directory to project local path.
+ */
+function normalizePath(caption: string, name: string): string {
+    const path = (name.charAt(0) != "/")
+    ? join(projectDirPath, name)
+    : name;
+
+    if(!existsSync(path)) {
+        throw new ReferenceError(`${caption} directory does not exist '${path}'`);
+    }
+
+    return join(projectDirPath, name);
+}
 
 /**
  * Normalize array of extension names as given to several server configuration parameters.
@@ -50,13 +82,18 @@ export interface IServerConfig {
  * @param {string[]} array Extension name array
  * @returns Normalized extensions array
  */
-function normalizeExtensionArray(array: string[]) {
+ function normalizeExtensionArray(array: string[]) {
 	return (array || []).map(extension => {
 		return normalizeExtension(extension);
 	});
 }
 
+
 const config = read("config", defaultConfig) as IServerConfig;
+
+// Normalize extension arrays for future uniform usage behavior
+config.logDirectory && (config.logDirectory = normalizePath("Log", config.logDirectory));
+config.webDirectory = normalizePath("Web", config.webDirectory);
 
 // Normalize extension arrays for future uniform usage behavior
 config.extensionWhitelist = normalizeExtensionArray(config.extensionWhitelist);

@@ -9,8 +9,8 @@ import config from "../config.json";
 import {readFileSync} from "fs";
 import {join, dirname, extname} from "path";
 
-import isDevMode from "../utilities/is-dev-mode";
 import * as output from "../utilities/output";
+import isDevMode from "../utilities/is-dev-mode";
 import {normalizeExtension} from "../utilities/normalize";
 
 import serverConfig from "../config/config.server";
