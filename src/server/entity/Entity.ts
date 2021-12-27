@@ -10,8 +10,6 @@ import {IncomingMessage, ServerResponse, STATUS_CODES as statusMessages} from "h
 import {URL} from "url";
 import {join} from "path";
 
-import webPath from "../../utilities/web-path";
-
 import serverConfig from "../../config/config.server";
 
 
@@ -43,7 +41,7 @@ export class Entity {
      * @returns {String} Local ressource path
      */
     protected localPath(): string {
-    	return decodeURIComponent(join(webPath, this.url.pathname));
+    	return decodeURIComponent(join(serverConfig.webDirectory, this.url.pathname));
     }
 
     /**

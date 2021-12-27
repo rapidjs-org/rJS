@@ -5,4 +5,4 @@
 export enum Environment {
     ANY,
     SPECIFIC
-}   // TODO: Pass type declaration read?
+}

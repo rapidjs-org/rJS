@@ -8,8 +8,9 @@ import config from "../config.json";
 import {join} from "path";
 import {existsSync} from "fs";
 
+import serverConfig from "../config/config.server";
+
 import * as output from "../utilities/output";
-import webPath from "../utilities/web-path";
 
 import {templatingEngines} from "../interface/bindings";
 
@@ -22,7 +23,7 @@ import {templatingEngines} from "../interface/bindings";
  */
 export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
 	// Retrieve templating object if respective handler module exists (compound only)
-	const templatingModulePath: string = join(webPath, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
+	const templatingModulePath: string = join(serverConfig.webDirectory, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
 	
 	let templatingObj = (reducedRequestInfo.isCompound && existsSync(templatingModulePath))
 	? require(templatingModulePath)
@@ -31,8 +32,6 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo,
 	? templatingObj(reducedRequestInfo)	// Pass request info object to templating module if is exporting a function
 	: templatingObj;	// Stateless templating otherwise (regarding the individual request)
 	
-	console.log(templatingModulePath)
-	console.log(templatingObj)
 	templatingEngines
 	// Filter for request adepuate engines
 		.filter(engine => {
