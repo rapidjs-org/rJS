@@ -10,7 +10,8 @@ const config = {
 import {readdir, stat, existsSync, Dirent} from "fs";
 import {join} from "path";
 
-import webPath from "../utilities/web-path";
+import serverConfig from "../config/config.server";
+
 import * as output from "../utilities/output";
 
 import {proposeRefresh} from "./server";
@@ -70,7 +71,7 @@ async function scanDir(path: string, callback?: () => void) {
 setInterval(_ => {
 	try {
 		// Scan web files directory
-		scanDir(webPath);
+		scanDir(serverConfig.webDirectory);
 
 		// TODO: Plug-in files
 		// TODO: Templating files

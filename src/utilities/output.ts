@@ -7,6 +7,31 @@ const config = {
 };
 
 
+import {appendFile} from "fs";
+import {join} from "path";
+
+import serverConfig from "../config/config.server";
+
+import isDevMode from "../utilities/is-dev-mode";
+
+
+/**
+ * Write logged message to log file if 
+ * @param {string} message Message
+ */
+function writeToFile(message) {
+	const date: Date = new Date();
+	const day: string = date.toISOString().split("T")[0];
+	const time: string = date.toLocaleTimeString();
+
+	appendFile(join(serverConfig.logDirectory, `${day}.log`),
+	`[${time}]: ${message}\n`,
+	err => {
+		if(err) {}	// TODO: Handle?
+	});
+}
+
+
 /**
  * Log a application referenced message to the console (with prefix).
  * @param {string} message Message
@@ -14,6 +39,10 @@ const config = {
  */
 export function log(message: string, style?: string) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
+
+	// Also log message to file if configured and in productive environment
+	isDevMode && serverConfig.logDirectory
+	&& writeToFile(message);
 }   // TODO: Implement color/style code enum?
 
 /**
