@@ -46,6 +46,7 @@ export interface IServerConfig {
     hostname?: string;
     maxPending?: number;
     ssl?: ISSL;
+    www?: string;
 }
 
 // Retrieve web file (public) directory path on local disc.

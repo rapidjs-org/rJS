@@ -12,6 +12,10 @@ import {join} from "path";
 
 import serverConfig from "../../config/config.server";
 
+import tlds from "../support/static/tlds.json";
+import languageCodes from "../support/static/languages.json";
+import countryCodes from "../support/static/countries.json";
+
 
 export class Entity {
     protected readonly req: IncomingMessage;
@@ -32,8 +36,30 @@ export class Entity {
         
     	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
 
-        // TODO: Implement subdomain processing
-        this.subdomain = [];
+        // Retrieve subdomain(s) and store in array (partwise)
+        let subdomain: string;
+        // Trim TLD suffix from hostname
+        const specialNameRegex: RegExp = /([0-9]+(\.[0-9]+)*|(\.)?localhost)$/;
+        if(specialNameRegex.test(this.url.hostname)) {
+            // Local or numerical hostname
+            subdomain = this.url.hostname
+            .replace(specialNameRegex, "");
+        } else {
+            // Retrieve TLD (second level if given, first level otherwise)
+            const suffix: string[] = this.url.hostname.match(/(\.[^.]+)?(\.[^.]+)$/);
+            if(!tlds.includes(suffix[0].slice(1))
+            && suffix[1]) {
+                suffix[0] = suffix[2];
+            }
+            subdomain = this.url.hostname.slice(0, -suffix[0].length);
+        }
+        // Partwise array representation
+        this.subdomain = subdomain
+        .split(/\./g)
+        .filter(part => (part.length > 0));
+
+        // Retrieve locale information
+        // TODO: Implement
     }
 
     /**
@@ -88,10 +114,12 @@ export class Entity {
 
     /**
      * Close entity by performing a redirect to a given pathname.
-     * @param {string} path - Path to redirect to
+     * @param {string} pathn<mw - Path to redirect to
+     * @param {string} [hostname] - Host to redirect to
      */
-    public redirect(pathname: string) {
+    public redirect(pathname: string, hostname?: string) {
         this.url.pathname = pathname;
+        hostname && (this.url.hostname = hostname);
         
     	this.res.setHeader("Location", this.url.toString());
         

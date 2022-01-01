@@ -5,11 +5,14 @@
 
 import {wrapInterface} from "./wrapper";
 
+const initClientModule: Function = wrapInterface(require("./plugin/registry").initClientModule, "initializing a client module", true);
+
 
 module.exports = {
 	...require("./scope:shared"),
 	
-	initFrontendModule: wrapInterface(require("./plugin/registry").initFrontendModule, "initializing a client module", true),
+	initClientModule: initClientModule,
+	initFrontendModule: initClientModule,	// For backwards compatibility (deprecate mid-term)
 	setEndpoint:  wrapInterface(require("./plugin/endpoint").setDefaultEndpoint, "creating a plug-in endpoint", true),
 	setNamedEndpoint:  wrapInterface(require("./plugin/endpoint").setNamedEndpoint, "creating a named plug-in endpoint", true),
 	
