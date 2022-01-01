@@ -41,6 +41,8 @@ export class PostEntity extends Entity {
       * @param {Buffer} [message] Message data
       */
 	public respond(status: number, message?: Buffer) {
+		// TODO: Cache1
+
 		// Perform definite response
 		super.respond(status, message);
 	}
@@ -125,7 +127,7 @@ export class PostEntity extends Entity {
 		return {
 			...super.getReducedRequestInfo(),
 
-			isCompound: false
+			isCompound: false 	// TODO: Set
 		};
 	}
 }

@@ -22,6 +22,8 @@ import {existsSync, readFileSync} from "fs";
 
 import {pluginRegistry} from "../bindings";
 
+import {registerDetectionDir} from "../../live/detection";
+
 import {injectIntoHead} from "../../utilities/markup";
 import {truncateModuleExtension} from "../../utilities/normalize";
 
@@ -136,6 +138,9 @@ export function bind(reference: string, options: IOptions = {}) {
 	
 	// Load pluginModule
 	loadPlugin(pluginPath);
+
+	// Register 
+	registerDetectionDir(pluginPath);
 }
 
 
@@ -223,7 +228,7 @@ export function retrieveClientModules(pathname: string): Buffer {
  * @param {Object} [pluginConfig] Plug-in local config object providing static naming information
  * @param {Boolean} [compoundOnly=false] Whether to integrate the client module into compound page environments only
  */
-export function initFrontendModule(relativePath: string, pluginConfig?: unknown, compoundOnly?: boolean) {
+export function initClientModule(relativePath: string, pluginConfig?: unknown, compoundOnly?: boolean) {
 	const pluginName: string = getNameByCall(__filename);
 
 	if(/^\//.test(relativePath)) {
@@ -253,7 +258,7 @@ export function initFrontendModule(relativePath: string, pluginConfig?: unknown,
 					.map(attr => {
 						return attr.slice(1).trim();
 					});
-
+				
 				let value = pluginConfig;
 				attrs.forEach(attr => {
 					if(!value) {

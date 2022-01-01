@@ -38,6 +38,7 @@ function minify(path) {
         
         switch(fileType) {
             case "js":
+                // TODO: Keep signatue comments?
                 code = UglifyJS.minify(code).code.replace(/\s+/g, " ");
 
                 // Insert signature at top of each code file

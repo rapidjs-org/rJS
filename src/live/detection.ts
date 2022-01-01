@@ -17,6 +17,14 @@ import * as output from "../utilities/output";
 import {proposeRefresh} from "./server";
 
 
+// Array of detection directories
+const detectionDirs: string[] = [];
+
+
+// Watch web file directory
+registerDetectionDir(serverConfig.webDirectory);
+
+
 /**
  * Check whether a file has been modified within the last detection period
  * based on a given modification reference timestamp.
@@ -67,11 +75,22 @@ async function scanDir(path: string, callback?: () => void) {
 }
 
 
+/**
+ * Register a directory for modification detection.
+ * @param {string} directory Absolute path to directory
+ */
+export function registerDetectionDir(directory: string) {
+	detectionDirs.push(directory);
+}
+
+
 // Initialize detection interval
 setInterval(_ => {
 	try {
-		// Scan web files directory
-		scanDir(serverConfig.webDirectory);
+		// Scan directories registered for change detection
+		detectionDirs.forEach(dir => {
+			scanDir(dir);
+		});
 
 		// TODO: Plug-in files
 		// TODO: Templating files
@@ -79,5 +98,4 @@ setInterval(_ => {
 		output.log("An error occurred scanning project files for modification in live mode");
 		output.error(err);
 	}
-
 }, config.detectionFrequency);
