@@ -27,6 +27,7 @@ import {integratePluginReferences} from "../../interface/plugin/registry";
 import {integrateLiveReference} from "../../live/server";
 
 import {GetEntity} from "./GetEntity";
+import { injectIntoHead } from "../../utilities/markup";
 
 
 // TODO: 404 fs map
@@ -64,11 +65,8 @@ export class DynamicGetEntity extends GetEntity {
 	 * @returns {string} Converted pathname representation
 	 */
 	private pathnameToConventional(): string {
-		const compoundPrefixIndex: number = this.url.pathname.lastIndexOf(config.compoundPageDirPrefix);
-
-		return (`${this.url.pathname
-		.slice(0, compoundPrefixIndex)}${this.url.pathname
-		.slice(compoundPrefixIndex + 1)}`).replace(/\/[^/]+$/i, "");
+		return decodeURIComponent(this.url.pathname)
+		.replace(new RegExp(`/${config.compoundPageDirPrefix}([^/]+)/\\1$`), "/$1");
 	}
 
     /**
@@ -92,7 +90,11 @@ export class DynamicGetEntity extends GetEntity {
 
 		// Integrate plug-in references into head element
 		contents = integratePluginReferences(contents, this.isCompound);
-		
+
+		// TODO: Base tag in compound
+		this.isCompound
+		&& (contents = injectIntoHead(contents, `<base href="${this.url.origin}${this.pathnameToConventional()}">`));
+
 		// Integrate live functionality client script if envioronment is running in DEV MODE
 		contents = integrateLiveReference(contents);
 		
