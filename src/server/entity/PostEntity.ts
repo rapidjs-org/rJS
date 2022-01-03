@@ -41,13 +41,15 @@ export class PostEntity extends Entity {
       * @param {Buffer} [message] Message data
       */
 	public respond(status: number, message?: Buffer) {
-		// TODO: Cache1
+		// TODO: Cache!
 
 		// Perform definite response
 		super.respond(status, message);
 	}
 
 	public process() {
+		super.process();
+		
 		const pluginName: string = this.url.pathname.replace(/^\//, "");	// Preserve actually requested pathname
 
 		if(!endpointHas(pluginName)) {

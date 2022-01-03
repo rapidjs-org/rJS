@@ -19,6 +19,19 @@ interface ICachingDuration {
     server: number;
 }
 
+interface IDirectory {
+    lang: string;
+    log: string;
+    web: string;
+}
+
+interface ILocale {
+    implicitDefaults: boolean;
+
+    defaultLang?: string;
+    defaultCountry?: string;
+}
+
 interface IPort {
     http: number;
     
@@ -33,17 +46,17 @@ interface ISSL {
 
 export interface IServerConfig {
     cachingDuration: ICachingDuration;
+    directory: IDirectory;
     gzipCompressList: string[];
-    logDirectory: string;
     maxPayloadSize: number;
     maxRequestsPerMin: number;
     maxUrlLength: number;
     port: IPort
-    webDirectory: string;
 
     allowFramedLoading?: boolean;
     extensionWhitelist?: string[];
     hostname?: string;
+    locale?: ILocale;
     maxPending?: number;
     ssl?: ISSL;
     www?: string;
@@ -93,8 +106,9 @@ function normalizePath(caption: string, name: string): string {
 const config = read("config", defaultConfig) as IServerConfig;
 
 // Normalize extension arrays for future uniform usage behavior
-config.logDirectory && (config.logDirectory = normalizePath("Log", config.logDirectory));
-config.webDirectory = normalizePath("Web", config.webDirectory);
+config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
+config.directory.lang = normalizePath("Lang", config.directory.lang);
+config.directory.web = normalizePath("Web", config.directory.web);
 
 // Normalize extension arrays for future uniform usage behavior
 config.extensionWhitelist = normalizeExtensionArray(config.extensionWhitelist);

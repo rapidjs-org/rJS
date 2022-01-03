@@ -17,10 +17,18 @@ import languageCodes from "../support/static/languages.json";
 import countryCodes from "../support/static/countries.json";
 
 
+interface ILocale {
+    lang?: string;
+    country?: string;
+}
+
+// TODO: Locale fs map
+
 export class Entity {
     protected readonly req: IncomingMessage;
     protected readonly res: ServerResponse;
     protected readonly subdomain: string[];
+    protected locale: ILocale;
     
     public url: URL;
 
@@ -34,10 +42,14 @@ export class Entity {
     	this.req = req;
     	this.res = res;
         
+        // Construct URL object for request
     	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
 
-        // Retrieve subdomain(s) and store in array (partwise)
+        /*
+         * Retrieve subdomain(s) and store in array (partwise)
+         */
         let subdomain: string;
+
         // Trim TLD suffix from hostname
         const specialNameRegex: RegExp = /([0-9]+(\.[0-9]+)*|(\.)?localhost)$/;
         if(specialNameRegex.test(this.url.hostname)) {
@@ -53,13 +65,11 @@ export class Entity {
             }
             subdomain = this.url.hostname.slice(0, -suffix[0].length);
         }
+
         // Partwise array representation
         this.subdomain = subdomain
         .split(/\./g)
         .filter(part => (part.length > 0));
-
-        // Retrieve locale information
-        // TODO: Implement
     }
 
     /**
@@ -67,7 +77,7 @@ export class Entity {
      * @returns {String} Local ressource path
      */
     protected localPath(): string {
-    	return decodeURIComponent(join(serverConfig.webDirectory, this.url.pathname));
+    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
     }
 
     /**
@@ -128,6 +138,36 @@ export class Entity {
     	this.res.end();
     }
 
+    public process() {
+        /*
+         * Retrieve locale information and store in locale object
+         */
+        if(!serverConfig.locale.defaultLang
+        && !serverConfig.locale.defaultCountry) {
+            return;
+        }
+                
+        this.locale = {};
+        
+        const code = this.url.pathname.match(/^\/([a-z]{2})?(-)?([A-Z]{2})?\//);
+        if(!code) {
+            return;
+        }
+
+        if((code[1] && !languageCodes.includes(code[1]))    // Language code
+        || (code[3] && !countryCodes.includes(code[3]))     // Country code
+        || (code[2] && (!code[1] || !code[3]))) {           // Has dash, requires both codes
+            // Invalid locale prefix
+            return;
+        }
+
+        // Remove leading locale part from internal pathname
+        // (as must not effect fs)
+        this.url.pathname = this.url.pathname.slice(code[0].length);
+        
+        this.locale.lang = code[1];
+        this.locale.country = code[3];
+    }
 
     /**
      * Get entity related reduced request info object.
@@ -138,6 +178,7 @@ export class Entity {
 		return {
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		subdomain: this.subdomain,
+            locale: this.locale
         }
     }
 }
