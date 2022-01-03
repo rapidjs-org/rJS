@@ -9,18 +9,32 @@
  */
 export function injectIntoHead(origData: string, insertData: string, atBottom = false) {
 	// Match head tags
-	const headTag: Record<string, string[]> = {
+	const headTagMatch: Record<string, string[]> = {
 		open: origData.match(/<\s*head((?!>)(\s|.))*>/),
 		close: origData.match(/<\s*\/head((?!>)(\s|.))*>/)
 	};
 
-	if(!headTag.open || !headTag.close) {
+	if(!headTagMatch.open || !headTagMatch.close) {
 		// No head tag
 		return origData;
 	}
-    
+
+	const headTagIndex: Record<string, number> = {
+		open: origData.indexOf(headTagMatch.open[0]) + headTagMatch.open[0].length,
+		close: origData.indexOf(headTagMatch.close[0])
+	};
+
+	// Retrieve top index offset (before first hardcoded script tag)
+	// So tags located on top of head are placed before (could be important e.g. for meta tags)
+	headTagIndex.open += Math.max(origData
+	.slice(headTagIndex.open, headTagIndex.close)
+	.search(/<\s*script(\s|>)/), 0);
+	
 	// Insert sequence
-	return atBottom
-		? origData.replace(headTag.close[0], `${insertData}${headTag.close[0]}`)
-		: origData.replace(headTag.open[0], `${headTag.open[0]}${insertData}`);
+	const pivot: number = atBottom
+	? headTagIndex.close
+	: headTagIndex.open;	// Insert index
+	insertData = `\n${insertData}\n`;
+	
+	return `${origData.slice(0, pivot)}${insertData}${origData.slice(pivot)}`;
 }
