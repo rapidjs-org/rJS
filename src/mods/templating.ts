@@ -1,5 +1,5 @@
 /**
- * Templating engine binding interface.
+ * Rendering engine for templating (SSR).
  */
 
 import config from "../config.json";
@@ -23,7 +23,7 @@ import {templatingEngines} from "../interface/bindings";
  */
 export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
 	// Retrieve templating object if respective handler module exists (compound only)
-	const templatingModulePath: string = join(serverConfig.webDirectory, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
+	const templatingModulePath: string = join(serverConfig.directory.web, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
 	
 	let templatingObj = (reducedRequestInfo.isCompound && existsSync(templatingModulePath))
 	? require(templatingModulePath)

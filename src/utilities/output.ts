@@ -24,7 +24,7 @@ function writeToFile(message) {
 	const day: string = date.toISOString().split("T")[0];
 	const time: string = date.toLocaleTimeString();
 
-	appendFile(join(serverConfig.logDirectory, `${day}.log`),
+	appendFile(join(serverConfig.directory.log, `${day}.log`),
 	`[${time}]: ${message}\n`,
 	err => {
 		if(err) {}	// TODO: Handle?
@@ -41,7 +41,7 @@ export function log(message: string, style?: string) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
 
 	// Also log message to file if configured and in productive environment
-	isDevMode && serverConfig.logDirectory
+	isDevMode && serverConfig.directory.log
 	&& writeToFile(message);
 }   // TODO: Implement color/style code enum?
 

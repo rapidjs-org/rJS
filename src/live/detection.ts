@@ -22,7 +22,7 @@ const detectionDirs: string[] = [];
 
 
 // Watch web file directory
-registerDetectionDir(serverConfig.webDirectory);
+registerDetectionDir(serverConfig.directory.web);
 
 
 /**

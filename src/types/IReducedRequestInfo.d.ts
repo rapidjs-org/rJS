@@ -5,10 +5,10 @@ declare interface IReducedRequestInfo {
 	pathname?: string;
 	isCompound?: boolean;
 	compound?: IRequestInfoCompound
-	/* locale: {
-		lang: entity.url.lang,
-		country: entity.url.country
-	} */
+	locale: {
+		lang?: string,
+		country?: string
+	};
 }
 
 interface IRequestInfoCompound {

@@ -18,7 +18,6 @@ import {normalizeExtension} from "../../utilities/normalize";
 import isDevMode from "../../utilities/is-dev-mode";
 
 import {GetEntity} from "./GetEntity";
-import { threadId } from "worker_threads";
 
 
 export class StaticGetEntity extends GetEntity {
@@ -48,6 +47,8 @@ export class StaticGetEntity extends GetEntity {
 	}
 
 	public process() {
+		super.process();
+		
 		// Custom plufg-in client module file request handling
 		if(isClientModuleRequest(this.url.pathname)) {
 			this.extension = "js";

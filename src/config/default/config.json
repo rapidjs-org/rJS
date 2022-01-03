@@ -3,12 +3,19 @@
         "client": 31536000,
         "server": 86400
     },
+    "directory": {
+        "web": "web",
+        "lang": "lang"
+    },
     "gzipCompressList": ["html", "js"],
+    "locale": {
+        "implicitDefaults": true
+    },
     "maxPayloadSize": 1000,
     "maxRequestsPerMin": 100,
     "maxUrlLength": 100,
     "port": {
         "http": 80
     },
-    "webDirectory": "web"
+    "directory.web": "web"
 }
