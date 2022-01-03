@@ -33,7 +33,7 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo,
 	: templatingObj;	// Stateless templating otherwise (regarding the individual request)
 	
 	templatingEngines
-	// Filter for request adepuate engines
+	// Filter for request adequate engines
 		.filter(engine => {
 			if(!isImplicitRequest) {
 				return !engine.implicitReadingOnly;

@@ -1,7 +1,8 @@
 var rapidJS = {};
 rapidJS.core = (_ => {
-	const performRequest = (method, pathname, body) => {
-		return fetch(pathname, {
+	const performRequest = (method, body) => {
+		return fetch(document.location.pathname, {
+			// Perform request to same path to keep document environment (e.g. for cookies)
 			method: method,
 			mode: "same-origin",
 			credentials: "same-origin",
@@ -24,16 +25,12 @@ rapidJS.core = (_ => {
 	 * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
 	 * @returns {Promise} Request promise eventualy resolving to response message
 	 */
-	PUBLIC.endpoint = (pluginName, body, progressHandler, name) => {
-		const pathname = `/${pluginName}`;
-		
+	PUBLIC.endpoint = (pluginName, body, progressHandler, endpointName) => {
 		return new Promise((resolve, reject) => {
-			performRequest("POST", pathname, {
-				meta: {
-					pathname: document.location.pathname
-				},
+			performRequest("POST", {
 				body: body,
-				name: name || null
+				pluginName: pluginName,
+				endpointName: endpointName || null
 			}).then(async res => {
 				// Explicitly download body to handle progress
 				const contentLength = res.headers.get("Content-Length");

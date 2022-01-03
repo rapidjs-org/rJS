@@ -138,18 +138,6 @@ async function handleRequest(req, res) {
         
 		return entity.respond(429);
 	}
-
-	// Enforce configured www strategy
-	// TODO: Ignore on localhost (/ numerical)?
-	if(serverConfig.www === "yes") {
-		if(!entity.subdomain[0] || entity.subdomain[0] !== "www") {
-			return entity.redirect(entity.url.pathname, `www.${entity.url.hostname}`);
-		}
-	} else if(serverConfig.www === "no") {
-		if(entity.subdomain[0] && entity.subdomain[0] === "www") {
-			return entity.redirect(entity.url.pathname, entity.url.hostname.replace(/^www\./, ""));
-		}
-	}
 	
 	// Call entity specific request processor method
 	entity.process();
