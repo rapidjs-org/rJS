@@ -6,7 +6,7 @@
 import config from "../config.json";
 
 
-import {readFileSync} from "fs";
+import {readFileSync, stat} from "fs";
 import {join, dirname, extname} from "path";
 
 import * as output from "../utilities/output";
@@ -74,8 +74,8 @@ require(protocol)
 		});
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
-(serverConfig.port.https) && 
-require("http")
+serverConfig.port.https
+&& require("http")
 	.createServer((req, res) => {
 		(new entityConstructor.BASIC(null, res)).redirect(req.url);
 	})
@@ -150,9 +150,6 @@ async function handleRequest(req, res) {
 			return entity.redirect(entity.url.pathname, entity.url.hostname.replace(/^www\./, ""));
 		}
 	}
-
-    // Handle locale
-	// TODO: Implement
 	
 	// Call entity specific request processor method
 	entity.process();

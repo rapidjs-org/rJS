@@ -14,7 +14,7 @@ const config = {
 };
 
 
-import {existsSync} from "fs";
+import {existsSync, stat} from "fs";
 import {join, basename, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
@@ -139,12 +139,34 @@ export class DynamicGetEntity extends GetEntity {
 	}
 
 	public process() {
+		super.process();
+
 		// TODO: index name?
 		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
 			// Redirect URL extension explicit dynamic request to implicit equivalent
 			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), "$1"));
 		}
-		
+
+		// Enforce configured default locale strategy
+		// Redirect only needed for dynamic files (web pages)
+		// as static files can work with explicit request URLs too (reduces redirection overhead)
+		if(this.locale && serverConfig.locale.implicitDefaults) {
+			// Check if default locale is hardcoded (possibly partwise)
+			const stated: Record<string, boolean> = {
+				lang: this.locale.lang && this.locale.lang == serverConfig.locale.defaultLang,
+				country: this.locale.country && this.locale.country == serverConfig.locale.defaultCountry
+			};
+
+			// Redirect default URL explicit request to URL implicit variant if given (possibly partwise)
+			if(stated.lang || stated.country) {
+				return this.redirect(`${(stated.lang === false) ? `${this.locale.lang}` : ""}${(stated.country === false) ? `${this.locale.country}` : ""}${this.url.pathname}`);
+			}
+
+			// Code default locale for implicit processing if was given implicitly by URL
+			this.locale.lang = this.locale.lang || serverConfig.locale.defaultLang;
+			this.locale.country = this.locale.country || serverConfig.locale.defaultCountry;
+		}
+
 		// Append pathname with default file name if none explicitly given
 		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
 

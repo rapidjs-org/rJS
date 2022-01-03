@@ -25,7 +25,7 @@ import {ClientError} from "./ClientError";
  */
 export function read(pathname: string): Buffer {
 	// Construct absolute path on local disc
-	const localPath: string = join(serverConfig.webDirectory, pathname);
+	const localPath: string = join(serverConfig.directory.web, pathname);
 	
 	if(!existsSync(localPath)) {
 		// File not found
@@ -48,5 +48,5 @@ export function read(pathname: string): Buffer {
  * @returns {boolean} Whether file exists
  */
 export function exists(pathname: string) {
-	return existsSync(join(serverConfig.webDirectory, pathname)) ? true : false;
+	return existsSync(join(serverConfig.directory.web, pathname)) ? true : false;
 }
