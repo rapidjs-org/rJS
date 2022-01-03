@@ -48,7 +48,6 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo)
 		// Retrieve mark substitute value
 		let substitute = "";	// Empty translation if no value will be found
 		for(let i = 0; i < langFilePaths.length; i++) {
-			console.log(langFilePaths[i])
 			let langObj;
 			try {
 				langObj = require(langFilePaths[i]);

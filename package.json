@@ -11,6 +11,7 @@
     "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
     "release": "npm run build && np"
   },
+  "typings": "types/index.d.ts",
   "files": [
     "dist"
   ],

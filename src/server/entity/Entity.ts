@@ -17,19 +17,26 @@ import languageCodes from "../support/static/languages.json";
 import countryCodes from "../support/static/countries.json";
 
 
-interface ILocale {
-    lang?: string;
-    country?: string;
-}
-
 // TODO: Locale fs map
 
 export class Entity {
+    private readonly originalPathname: string;
+    private cookies: {
+        received: Record<string, string|number|boolean>;
+        set: Record<string, {
+            value: string|number|boolean;
+            maxAge?: number
+        }>;
+    };
+
     protected readonly req: IncomingMessage;
     protected readonly res: ServerResponse;
-    protected readonly subdomain: string[];
-    protected locale: ILocale;
-    
+    protected subdomain: string[];
+    protected locale: {
+        lang?: string;
+        country?: string;
+    };
+
     public url: URL;
 
     /**
@@ -45,8 +52,110 @@ export class Entity {
         // Construct URL object for request
     	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
 
+        this.originalPathname = this.url.pathname;
+    }
+
+    /**
+     * Construct local disc path to asset ressource.
+     * @returns {String} Local ressource path
+     */
+    protected localPath(): string {
+    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
+    }
+
+    /**
+     * Get header information from entity (request).
+     * @param {string} key Header key
+     * @returns {string} value Header value
+     */
+    protected getHeader(key: string): string {
+        const header = this.req.headers[key] || this.req.headers[key.toLowerCase()]
+    	return header
+        ? String(header)
+        : undefined;
+    }
+
+    /**
+     * Set header information for entity (response).
+     * @param {string} key Header key
+     * @param {string|number} value Header value
+     */
+    protected setHeader(key: string, value: string|number) {
+    	this.res.setHeader(key, value);
+    }
+
+    /**
+     * Close entity by performing a response with an individual message.
+     * @param {number} status Status code
+     * @param {Buffer} [message] Message data
+     */
+    public respond(status: number, message?: Buffer) {
+        // Use generic message if none explicitly given / retrieved processing
+        message = message || Buffer.from(statusMessages[String(status)], "utf-8");
+
+        // Whether server uses a secure connection
+        const isSecure: boolean = serverConfig.port.https ? true : false;
+
+    	/*
+         * Set specific headers.
+         */
+    	this.setHeader("Server", "rapidJS");    // Keep?
+    	this.setHeader("X-XSS-Protection", "1");
+    	this.setHeader("X-Powered-By", null);
+    	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
+    	isSecure        
+        && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
+        // Write set cookies to respective header
+        const setCookieArray: string[] = [];
+        for(const cookie in this.cookies.set) {
+            // TODO: Keep attributes if was received
+            setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.originalPathname}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? `; SameSite=Strict; Secure; HttpOnly` : ""}`);
+        }
+        this.res.setHeader("Set-Cookie", setCookieArray);
+        
+    	// Set status code
+    	this.res.statusCode = isNaN(status) ? 500 : status;
+        
+    	// End request with message
+    	this.res.end(message);
+    }
+
+    /**
+     * Close entity by performing a redirect to a given pathname.
+     * @param {string} pathnanme - Path to redirect to
+     * @param {string} [hostname] - Host to redirect to
+     */
+    public redirect(pathname: string, hostname?: string) {
+        this.url.pathname = pathname;
+        hostname && (this.url.hostname = hostname);
+        
+    	this.res.setHeader("Location", this.url.toString());
+        
+    	this.res.statusCode = 301;
+        
+    	this.res.end();
+    }
+
+    public process() {
         /*
-         * Retrieve subdomain(s) and store in array (partwise)
+         * Parse request cookies.
+         */
+        this.cookies = {
+            received: {},
+            set: {}
+        };
+
+        const cookieStr =  this.getHeader("Cookie");
+        cookieStr && cookieStr
+        .split(";")
+        .filter(cookie => (cookie.length > 0))
+        .forEach(cookie => {
+            const parts = cookie.split("=");
+            this.cookies.received[parts.shift().trim()] = decodeURI(parts.join("="));
+        });
+
+        /*
+         * Retrieve subdomain(s) and store in array (partwise).
          */
         let subdomain: string;
 
@@ -70,77 +179,9 @@ export class Entity {
         this.subdomain = subdomain
         .split(/\./g)
         .filter(part => (part.length > 0));
-    }
 
-    /**
-     * Construct local disc path to asset ressource.
-     * @returns {String} Local ressource path
-     */
-    protected localPath(): string {
-    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
-    }
-
-    /**
-     * Retrieve header information from entity (request).
-     * @param {string} key Header key
-     * @returns {string} value Header value
-     */
-    protected getHeader(key: string): string {
-    	return String(this.req.headers[key] || this.req.headers[key.toLowerCase()]);
-    }
-
-    /**
-     * Set header information for entity (response).
-     * @param {string} key Header key
-     * @param {string|number} value Header value
-     */
-    protected setHeader(key: string, value: string|number) {
-    	this.res.setHeader(key, value);
-    }
-
-    /**
-     * Close entity by performing a response with an individual message.
-     * @param {number} status Status code
-     * @param {Buffer} [message] Message data
-     */
-    public respond(status: number, message?: Buffer) {
-        // Use generic message if none explicitly given / retrieved processing
-        message = message || Buffer.from(statusMessages[String(status)], "utf-8");
-
-    	// Set headers
-    	this.setHeader("Server", "rapidJS");    // Keep?
-    	this.setHeader("X-XSS-Protection", "1");
-    	this.setHeader("X-Powered-By", null);
-    	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
-    	serverConfig.port.https
-        && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
-        
-    	// Set status code
-    	this.res.statusCode = isNaN(status) ? 500 : status;
-        
-    	// End request with message
-    	this.res.end(message);
-    }
-
-    /**
-     * Close entity by performing a redirect to a given pathname.
-     * @param {string} pathn<mw - Path to redirect to
-     * @param {string} [hostname] - Host to redirect to
-     */
-    public redirect(pathname: string, hostname?: string) {
-        this.url.pathname = pathname;
-        hostname && (this.url.hostname = hostname);
-        
-    	this.res.setHeader("Location", this.url.toString());
-        
-    	this.res.statusCode = 301;
-        
-    	this.res.end();
-    }
-
-    public process() {
         /*
-         * Retrieve locale information and store in locale object
+         * Retrieve locale information and store in locale object.
          */
         if(!serverConfig.locale.defaultLang
         && !serverConfig.locale.defaultCountry) {
@@ -178,7 +219,33 @@ export class Entity {
 		return {
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		subdomain: this.subdomain,
-            locale: this.locale
+            locale: this.locale,
+
+            // Cookies manipulation interface
+            cookies: {
+                /**
+                 * Get a request cookie by name.
+                 * @param {string} name Cookie name
+                 * @returns {string|number|boolean} Cookie value (if defined)
+                 */
+                get: (name: string): string|number|boolean => {
+                    return this.cookies.set[name]
+                    ? this.cookies.set[name].value
+                    : this.cookies.received[name];
+                },
+                /**
+                 * Set a response cookie.
+                 * @param {string} name Cookie name
+                 * @param {string|number|boolean} Cookie value to set
+                 * @param {number} [maxAge] Cookie life time in seconds (considered a session cookie if is undefined)
+                 */
+                set: (name: string, value: string|number|boolean, maxAge?: number) => {
+                    this.cookies.set[name] = {
+                        value: value,
+                        maxAge: maxAge
+                    };
+                }
+            }
         }
     }
 }
