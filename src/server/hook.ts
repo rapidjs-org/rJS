@@ -10,7 +10,6 @@ import asyncHooks from "async_hooks";
 
 
 import {Entity} from "./entity/Entity";
-import {DynamicGetEntity} from "./entity/DynamicGetEntity";
 
 
 const requests = new Map();
@@ -29,12 +28,20 @@ asyncHook.enable();
 
 
 /**
- * Create entity object based on web server induced request/response objects.
+ * Create async thread hooked entity object.
  * @param {Entity} entity Request/response entity
  */
 export function createHook(entity: Entity) {
 	requests.set(asyncHooks.executionAsyncId(), entity);
 }
+
+/**
+ * Retrieve async thread hooked entity object.
+ * @returns {Entity} Reduced request info object
+ */
+/* export function currentHook(): Entity {
+	return requests.get(asyncHooks.executionAsyncId());
+} */
 
 /**
  * Get currently effective request info object (based on asynchronous thread).
@@ -43,8 +50,7 @@ export function createHook(entity: Entity) {
  */
 export function currentRequestInfo(): IReducedRequestInfo {
 	const currentEntity = requests.get(asyncHooks.executionAsyncId());
-
-	return (currentEntity instanceof DynamicGetEntity)
+	return currentEntity
 	? currentEntity.getReducedRequestInfo()
 	: undefined;
 }

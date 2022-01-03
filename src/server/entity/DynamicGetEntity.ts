@@ -140,11 +140,23 @@ export class DynamicGetEntity extends GetEntity {
 
 	public process() {
 		super.process();
-
+		
 		// TODO: index name?
 		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
 			// Redirect URL extension explicit dynamic request to implicit equivalent
 			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), "$1"));
+		}
+
+		// Enforce configured www strategy
+		// TODO: Ignore on localhost (/ numerical)?
+		if(serverConfig.www === "yes") {
+			if(!this.subdomain[0] ||this.subdomain[0] !== "www") {
+				return this.redirect(this.url.pathname, `www.${this.url.hostname}`);
+			}
+		} else if(serverConfig.www === "no") {
+			if(this.subdomain[0] && this.subdomain[0] === "www") {
+				return this.redirect(this.url.pathname, this.url.hostname.replace(/^www\./, ""));
+			}
 		}
 
 		// Enforce configured default locale strategy

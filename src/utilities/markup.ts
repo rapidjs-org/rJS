@@ -26,14 +26,14 @@ export function injectIntoHead(origData: string, insertData: string, atBottom = 
 
 	// Retrieve top index offset (before first hardcoded script tag)
 	// So tags located on top of head are placed before (could be important e.g. for meta tags)
-	headTagIndex.open += Math.max(origData
+	const openOffset = origData
 	.slice(headTagIndex.open, headTagIndex.close)
-	.search(/<\s*script(\s|>)/), 0);
-	
+	.search(/<\s*script(\s|>)/);
+
 	// Insert sequence
-	const pivot: number = atBottom
-	? headTagIndex.close
-	: headTagIndex.open;	// Insert index
+	const pivot: number = (!atBottom && openOffset >= 0)
+	? headTagIndex.open + openOffset
+	: headTagIndex.close;	// Insert index
 	insertData = `\n${insertData}\n`;
 	
 	return `${origData.slice(0, pivot)}${insertData}${origData.slice(pivot)}`;

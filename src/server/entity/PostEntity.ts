@@ -18,9 +18,9 @@ import {Entity} from "./Entity";
 
 
 interface IPostBody {
-	meta: Record<string, string>;
-	name: string;
+	pluginName: string;
 
+	endpointName?: string;
 	body?: unknown;
 }
 
@@ -42,24 +42,15 @@ export class PostEntity extends Entity {
       */
 	public respond(status: number, message?: Buffer) {
 		// TODO: Cache!
-
+		
 		// Perform definite response
 		super.respond(status, message);
 	}
 
 	public process() {
-		super.process();
-		
-		const pluginName: string = this.url.pathname.replace(/^\//, "");	// Preserve actually requested pathname
-
-		if(!endpointHas(pluginName)) {
-			// No related POST handler defined
-			return this.respond(404);
-		}
-
-		let blockBodyProcessing = false;
+		let blockBodyProcessing: boolean = false;
 		const body = [];
-
+		
 		this.req.on("data", chunk => {
 			if(blockBodyProcessing) {
 				// Ignore further processing as maximum payload has been exceeded
@@ -84,26 +75,26 @@ export class PostEntity extends Entity {
 			if(blockBodyProcessing) {
 				// Ignore further processing as maximum payload has been exceeded
 			}
-			
+
 			// Parse payload
-			let bodyObj: IPostBody;
+			let payload: IPostBody;
 			try {
-				bodyObj = (body.length > 0) ? JSON.parse(body.toString()) : null;
+				payload = (body.length > 0) ? JSON.parse(body.toString()) : null;
 			} catch(err) {
 				throw new SyntaxError(`Error parsing endpoint request body '${this.url.pathname}'`);
 			}
-			
-			if(!endpointHas(pluginName, bodyObj.name)) {
-				// No related POST handler defined
+
+			if(!endpointHas(payload.pluginName)
+			|| !endpointHas(payload.pluginName, payload.endpointName)) {
+				// No related endpoint found
 				return this.respond(404);
 			}
+
+			super.process();
 			
 			try {
-				// Adapt representative URL to the individual plug-in origin respective document URL
-				this.url.pathname = bodyObj.meta.pathname;
-
 				try {
-					const data: Buffer = endpointUse(pluginName, bodyObj.body, bodyObj.name);
+					const data: Buffer = endpointUse(payload.pluginName, payload.body, payload.endpointName);
 
 					this.respond(200, data);
 				} catch(err) {

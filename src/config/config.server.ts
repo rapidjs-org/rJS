@@ -14,51 +14,41 @@ import defaultConfig from "./default/config.json";
 import {read} from "./reader";
 
 
-interface ICachingDuration {
-    client: number;
-    server: number;
-}
-
-interface IDirectory {
-    lang: string;
-    log: string;
-    web: string;
-}
-
-interface ILocale {
-    implicitDefaults: boolean;
-
-    defaultLang?: string;
-    defaultCountry?: string;
-}
-
-interface IPort {
-    http: number;
-    
-    https?: number;
-}
-
-interface ISSL {
-    certFile?: string,
-    dhParam?: string,
-    keyFile?: string
-}
-
 export interface IServerConfig {
-    cachingDuration: ICachingDuration;
-    directory: IDirectory;
+    cachingDuration: {
+        client: number;
+        server: number;
+    };
+    directory: {
+        lang: string;
+        log: string;
+        web: string;
+    };
     gzipCompressList: string[];
     maxPayloadSize: number;
     maxRequestsPerMin: number;
     maxUrlLength: number;
-    port: IPort
+    port: {
+        http: number;
+        
+        https?: number;
+    }
 
     allowFramedLoading?: boolean;
     extensionWhitelist?: string[];
     hostname?: string;
-    locale?: ILocale;
+    locale?: {
+        implicitDefaults: boolean;
+    
+        defaultLang?: string;
+        defaultCountry?: string;
+    };
     maxPending?: number;
-    ssl?: ISSL;
+    ssl?: {
+        certFile?: string,
+        dhParam?: string,
+        keyFile?: string
+    };
     www?: string;
 }
 
