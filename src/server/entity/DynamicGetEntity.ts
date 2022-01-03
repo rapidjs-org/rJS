@@ -161,10 +161,12 @@ export class DynamicGetEntity extends GetEntity {
 			if(stated.lang || stated.country) {
 				return this.redirect(`${(stated.lang === false) ? `${this.locale.lang}` : ""}${(stated.country === false) ? `${this.locale.country}` : ""}${this.url.pathname}`);
 			}
-
+			
 			// Code default locale for implicit processing if was given implicitly by URL
 			this.locale.lang = this.locale.lang || serverConfig.locale.defaultLang;
 			this.locale.country = this.locale.country || serverConfig.locale.defaultCountry;
+
+			// TODO: Unsupported locale behavior (404?)
 		}
 
 		// Append pathname with default file name if none explicitly given
