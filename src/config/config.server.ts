@@ -93,7 +93,7 @@ function normalizePath(caption: string, name: string): string {
 }
 
 
-const config = read("config", defaultConfig) as IServerConfig;
+const config = (read("config", defaultConfig) || read("server", defaultConfig)) as IServerConfig;
 
 // Normalize extension arrays for future uniform usage behavior
 config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
