@@ -5,6 +5,8 @@
 
 import {wrapInterface} from "./wrapper";
 
+const bindSSR: Function = wrapInterface(require("./templating").bind, "binding a templating handler", true);
+
 
 module.exports = {
 	...require("./scope:shared"),
@@ -14,5 +16,6 @@ module.exports = {
 	isDevMode: require("../utilities/is-dev-mode"),
 	
 	plugin: wrapInterface(require("./plugin/registry").bind, "connecting a plug-in", true),
-	bindTemplating: wrapInterface(require("./templating").bind, "binding a templating handler", true)
+	bindSSR: bindSSR,
+	bindTemplating: bindSSR
 };
