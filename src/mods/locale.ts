@@ -11,6 +11,8 @@ import serverConfig from "../config/config.server";
 import * as output from "../utilities/output";
 
 
+// TODO: What about accept language header?
+
 export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
 	if(!reducedRequestInfo.locale.lang) {
 		// Language processing disabled
