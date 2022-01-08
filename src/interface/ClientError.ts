@@ -5,11 +5,12 @@
 
 export class ClientError {
     public status: number;
+    public message: string;
     
     /**
 	 * @param {number} status Status code (within client error code range (4**))
 	 */
-    constructor(status: number) {
+    constructor(status: number, message?: string) {
     	if(!Number.isInteger(status)
            || status < 400
            || status > 499) {
@@ -17,5 +18,6 @@ export class ClientError {
     	}
 
     	this.status = status;
+        this.message = message;
     }
 }
