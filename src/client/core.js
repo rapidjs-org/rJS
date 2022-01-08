@@ -1,5 +1,7 @@
 var rapidJS = {};
 rapidJS.core = (_ => {
+	// TODO: Fix anchor links base for compound pages
+
 	const performRequest = (method, body) => {
 		return fetch(document.location.pathname, {
 			// Perform request to same path to keep document environment (e.g. for cookies)

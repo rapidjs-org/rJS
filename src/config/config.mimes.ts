@@ -15,7 +15,7 @@ const config = read("mimes", defaultConfig) as Record<string, string>;
 // Normalize extension keys
 const normalizedConfig: Record<string, string> = {};
 for(const extension in config) {
-    normalizedConfig[normalizeExtension(extension)] = config[extension]);
+    normalizedConfig[normalizeExtension(extension)] = config[extension];
 }
 
 
