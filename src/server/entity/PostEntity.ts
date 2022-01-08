@@ -99,7 +99,7 @@ export class PostEntity extends Entity {
 					this.respond(200, data);
 				} catch(err) {
 					if(err instanceof ClientError) {
-						return this.respond(err.status);
+						return this.respond(err.status, Buffer.from(err.message, "utf-8"));
 					}
 
 					throw err;

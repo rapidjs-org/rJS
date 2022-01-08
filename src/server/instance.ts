@@ -58,14 +58,13 @@ const protocol: string = serverConfig.port.https
 
 require(protocol)
 	.createServer(options, (req, res) => {
-		try {
-			handleRequest(req, res);	// Asynchronous request handler
-		} catch(err) {
+		// Asynchronous request handler
+		handleRequest(req, res).catch(err => {
 			// Catch bubbling up unhandled errors for display and generic server error response
 			output.error(err);
 
 			(new entityConstructor.BASIC(null, res)).respond(500);
-		}
+		});
 	})
 	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.maxPending,
 		() => {
@@ -103,6 +102,7 @@ async function handleRequest(req, res) {
 		const extension = extname(req.url);
 		const normalizedExtension = extension ? normalizeExtension(extension) : config.dynamicFileExtension;
 
+		// TODO: Static file external asset server redirect (permanent, for DYNAMIC exclusive servers), per option?
 		entity = new entityConstructor.GET[
 			(normalizedExtension == config.dynamicFileExtension
 			&& !isClientModuleRequest(req.url))
@@ -142,3 +142,5 @@ async function handleRequest(req, res) {
 	// Call entity specific request processor method
 	entity.process();
 }
+
+// TODO: Implement option for hiding status codes (reducing the set to {200, 404} for strategy security)

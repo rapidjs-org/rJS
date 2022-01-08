@@ -20,6 +20,7 @@ import countryCodes from "../support/static/countries.json";
 // TODO: Locale fs map
 
 export class Entity {
+    private readonly timestamp: number; // For duration calculation
     private readonly originalPathname: string;
     private cookies: {
         received: Record<string, string|number|boolean>;
@@ -48,9 +49,9 @@ export class Entity {
     	// Identically store original request/response objects
     	this.req = req;
     	this.res = res;
-        
+
         // Construct URL object for request
-    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers.host}${req.url}`);
+    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${this.getHeader("host")}${req.url}`);
 
         this.originalPathname = this.url.pathname;
     }
@@ -118,6 +119,8 @@ export class Entity {
         
     	// End request with message
     	this.res.end(message);
+
+        console.log(`[${this.req.url}] Duration: ${Date.now() - this.timestamp}ms`)
     }
 
     /**
@@ -216,6 +219,7 @@ export class Entity {
      * @returns {IReducedRequestInfo} Common reduced request info object (to be defined in accordance with sub entity behavior)
      */
 	public getReducedRequestInfo(): IReducedRequestInfo {
+        // TODO: Relevant headers (auth)?
 		return {
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		subdomain: this.subdomain,

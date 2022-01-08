@@ -8,5 +8,6 @@ node_modules/
 
 debug/
 debug:app/
+performance/
 
 src-legacy/

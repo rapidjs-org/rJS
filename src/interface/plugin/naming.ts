@@ -6,6 +6,7 @@
 import {existsSync} from "fs";
 import {join, dirname, basename} from "path";
 
+import serverConfig from "../../config/config.server";
 import pluginConfig from "../../config/config.plugins";
 
 import {truncateModuleExtension} from "../../utilities/normalize";
@@ -113,7 +114,15 @@ export function getNameByReference(reference: string): string {
 export function readPluginConfig(key: string): string|number|boolean {
 	const pluginKey: string = getNameByCall(__filename);
 
-	const subObj = pluginConfig[pluginKey];
+	let subObj = pluginConfig[pluginKey];
+
+	if(subObj) {
+		return subObj ? subObj[key] : undefined;
+	}
+
+	// Look in server config plug-in section (old paradigm)
+	// TODO: Deprecate (mid-term)
+	subObj = serverConfig[pluginKey];
 	
 	return subObj ? subObj[key] : undefined;
 }
