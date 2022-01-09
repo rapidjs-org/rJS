@@ -35,18 +35,6 @@ export class PostEntity extends Entity {
 		super(req, res);
 	}
 
-	/**
-      * Close entity by performing a response with an individual message.
-      * @param {number} status Status code
-      * @param {Buffer} [message] Message data
-      */
-	public respond(status: number, message?: Buffer) {
-		// TODO: Cache!
-		
-		// Perform definite response
-		super.respond(status, message);
-	}
-
 	public process() {
 		let blockBodyProcessing: boolean = false;
 		const body = [];
@@ -124,5 +112,3 @@ export class PostEntity extends Entity {
 		};
 	}
 }
-
-// TODO: Client error handling (throw approach)

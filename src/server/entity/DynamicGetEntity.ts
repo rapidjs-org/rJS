@@ -113,7 +113,7 @@ export class DynamicGetEntity extends GetEntity {
 		!serverConfig.allowFramedLoading
         && this.setHeader("X-Frame-Options", "SAMEORIGIN");
 
-		// FSearch for related error page file if response is meant to be unsuccessful
+		// Search for related error page file if response is meant to be unsuccessful
 		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
 			// Traverse web file system for closest error page
 			let curPathname: string = join(dirname(this.url.pathname), String(status));
@@ -128,7 +128,7 @@ export class DynamicGetEntity extends GetEntity {
 				this.url.pathname = this.pathnameToCompound();
 				if(existsSync(this.localPath())) {
 					this.isCompound = true;
-					this.compoundArgs = [];	// No arguments as is to be generic
+					this.compoundArgs = [];	// No arguments as is to be generic (multi location re-routed)
 
 					break;
 				};
@@ -232,7 +232,7 @@ export class DynamicGetEntity extends GetEntity {
 				this.isCompound = true;
 				this.compoundArgs = compoundArgs.reverse();	// Reverse (stacked) array to obtain URL order
 				
-				this.respond(200);
+				return this.respond(200);
 			}
 
 			// Construct next iteration
