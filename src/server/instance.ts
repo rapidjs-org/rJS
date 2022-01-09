@@ -56,6 +56,7 @@ const protocol: string = serverConfig.port.https
 	? "https"
 	: "http";
 
+// Create main server
 require(protocol)
 	.createServer(options, (req, res) => {
 		// Asynchronous request handler
@@ -66,7 +67,7 @@ require(protocol)
 			(new entityConstructor.BASIC(null, res)).respond(500);
 		});
 	})
-	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.maxPending,
+	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
 		() => {
 			output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
 			isDevMode && output.log("Running DEV MODE");
@@ -74,17 +75,16 @@ require(protocol)
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
 serverConfig.port.https
-&& require("http")
+&& (require("http")
 	.createServer((req, res) => {
 		(new entityConstructor.BASIC(null, res)).redirect(req.url);
 	})
-	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.maxPending,
+	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
 		() => {
 			// Use set up HTTP port for redirection (80 by default (recommended))
 			output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
-		});
+		}));
 
-	
 /**
  * Handle a single request asynchronously.
  * @async
@@ -128,7 +128,8 @@ async function handleRequest(req, res) {
 	createHook(entity);
     
 	// Block request if URL is exceeding the maximum length
-	if(req.url.length > serverConfig.maxUrlLength) {
+	if(serverConfig.limit.urlLength > 0
+	&& req.url.length > serverConfig.limit.urlLength) {
 		return entity.respond(414);
 	}
 

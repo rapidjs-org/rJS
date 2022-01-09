@@ -9,6 +9,7 @@
 
 
 import {existsSync, readFileSync} from "fs";
+import {join} from "path";
 import {gzipSync} from "zlib";
 
 import serverConfig from "../../config/config.server";
@@ -36,13 +37,22 @@ export abstract class GetEntity extends Entity {
     }
 
     /**
+     * Construct local disc path to asset ressource.
+     * @returns {String} Local ressource path
+     */
+    protected localPath(): string {
+		// TODO: With arg for sideeffect-less use
+    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
+    }
+
+    /**
      * Read the asset (file) implicitly linked to the request.
      * Use the cached value if a respecitvely valid entry exists.
      * @returns {Buffer|null} Asset (file) contents marking the foundation of the response message (idnetically if static)
      */
     protected read(): Buffer {
     	const localPath: string = this.localPath();
-
+		
     	if(GetEntity.cache.exists(localPath)) {
     		return GetEntity.cache.read(localPath) as Buffer;
     	}
