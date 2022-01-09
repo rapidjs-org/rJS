@@ -19,22 +19,25 @@ import {join, basename, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
 
+import {injectIntoHead} from "../../utilities/markup";
+
 import {renderModifiers} from "../../mods/modifiers";
 
-import {ClientError} from "../../interface/ClientError";
+import {ResponseError} from "../../interface/ResponseError/ResponseError";
 import {integratePluginReferences} from "../../interface/plugin/registry";
 
 import {integrateLiveReference} from "../../live/server";
 
 import {GetEntity} from "./GetEntity";
-import { injectIntoHead } from "../../utilities/markup";
 
 
-// TODO: 404 fs map
+// TODO: 404 fs structure map
+// TODO: compound page structure map
 
 export class DynamicGetEntity extends GetEntity {
 	private isCompound = false;
-
+	private compoundArgs: string[];
+	
 	/**
      * Create entity object based on web server induced request/response objects.
      * @param {IncomingMessage} req Request object
@@ -91,7 +94,7 @@ export class DynamicGetEntity extends GetEntity {
 		// Integrate plug-in references into head element
 		contents = integratePluginReferences(contents, this.isCompound);
 
-		// TODO: Base tag in compound
+		// Inject suited base tag into head if is compound page
 		this.isCompound
 		&& (contents = injectIntoHead(contents, `<base href="${this.url.origin}${this.pathnameToConventional()}">`));
 
@@ -110,27 +113,40 @@ export class DynamicGetEntity extends GetEntity {
 		!serverConfig.allowFramedLoading
         && this.setHeader("X-Frame-Options", "SAMEORIGIN");
 
-		// Find related error file if response is meant to be unsuccessful
+		// FSearch for related error page file if response is meant to be unsuccessful
 		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
-			this.url.pathname = join(dirname(this.url.pathname), String(status));
+			// Traverse web file system for closest error page
+			let curPathname: string = join(dirname(this.url.pathname), String(status));
+			while(curPathname !== "/") {
+				// Look for conventional error page
+				this.url.pathname = curPathname;
+				if(existsSync(this.localPath())) {
+					break;
+				}
 
-			while(!existsSync(this.localPath())
-			&& dirname(this.url.pathname).length > 1) {
-				this.url.pathname = join(dirname(dirname(this.url.pathname)), String(status));
+				// Look for compound error page otherwise
+				this.url.pathname = this.pathnameToCompound();
+				if(existsSync(this.localPath())) {
+					this.isCompound = true;
+					this.compoundArgs = [];	// No arguments as is to be generic
+
+					break;
+				};
+
+				// Continue search in parent directory
+				curPathname = join(dirname(dirname(curPathname)), String(status));
 			}
-			if(!existsSync(this.localPath())) {
-				// No custom error page file found (bubbling up from initial request location)
-				// Use generic error message
-				return super.respond(status);
-			}
+
+			// Respond with error code (uses constructed error page pathname or generic message if not found)
+			// Do not handle custom ResponseErrors for error pages due to endless recursion (generic 500)
+			return super.respond(status, this.read());
 		}
 
 		// Perform definite response
 		try {
 			super.respond(status, this.read());
 		} catch(err) {
-			// TODO: Implement endless recursion handling (500, log)?
-			if(err instanceof ClientError) {
+			if(err instanceof ResponseError) {
 				return this.respond(err.status);
 			}
 			
@@ -159,7 +175,7 @@ export class DynamicGetEntity extends GetEntity {
 			}
 		}
 
-		// Enforce configured default locale strategy
+		// Enforce configured (default) locale strategy
 		// Redirect only needed for dynamic files (web pages)
 		// as static files can work with explicit request URLs too (reduces redirection overhead)
 		if(this.locale && serverConfig.locale.implicitDefaults) {
@@ -183,23 +199,56 @@ export class DynamicGetEntity extends GetEntity {
 
 		// Append pathname with default file name if none explicitly given
 		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
+		
+		/*
+		 * Response strategy:
+		 * • Use conventional page on exact request location if exists.
+		 * • Use compound page (high-low nesting, bottom-up traversal, use (developing) appendix as args)
+		 * • Use error (will use next error page if exists)
+		 */
+
+		// TODO: Implement sideeffect-less local path construction
 
 		// Respond with file located at exactly requested path if exists
 		if(existsSync(this.localPath())) {
         	return this.respond(200);
 		}
 		
-		// Find conventional file at path or respective compound page otherwise
-		const conventionalPathname = this.url.pathname;
+		// Respond with closest related compound page if exists (bottom-up traversal)
+		// Traverse a pathname to retrieve parameters of the closest compound page in the web file system
+		const originalPathname: string = this.url.pathname;	// Backup as of processing sideeffects
 
-		this.url.pathname = this.pathnameToCompound();
-		if(existsSync(this.localPath())) {
-			this.isCompound = true;// args!!!!!!!
-			
-        	return this.respond(200);
+		// Traversal iteration limit (for preventing too deep nestings or endless traversal
+		const traversalLimit: number = 100;
+		// Traversal iterations counter
+		let traversalCount: number = 0;
+
+		// Intermediate compound arguments array
+		const compoundArgs: string[] = [];
+		// Traversal loop
+		while(this.url.pathname !== "/") {
+			this.url.pathname = this.pathnameToCompound();
+			if(existsSync(this.localPath())) {
+				this.isCompound = true;
+				this.compoundArgs = compoundArgs.reverse();	// Reverse (stacked) array to obtain URL order
+				
+				this.respond(200);
+			}
+
+			// Construct next iteration
+			compoundArgs.push(basename(this.url.pathname));
+			this.url.pathname = dirname(dirname(this.url.pathname));
+
+			traversalCount++;
+
+			// Throw error upon reached iteration limit
+			if(traversalCount >= traversalLimit) {
+				// Close request due to processing timeout if traversal iteration limit reached
+				return this.respond(408);
+			}
 		}
 
-		this.url.pathname = conventionalPathname;
+		this.url.pathname = originalPathname;	// Use original pathname (strategy adjusted)
 
 		// No suitable file found
 		this.respond(404);
@@ -217,7 +266,8 @@ export class DynamicGetEntity extends GetEntity {
 			// Compound page specific information
 			...(this.isCompound
 			? {
-				base: this.pathnameToConventional()
+				base: this.pathnameToConventional(),
+				args: this.compoundArgs
 			}
 			: {})
 		};

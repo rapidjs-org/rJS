@@ -8,12 +8,15 @@
         "lang": "lang"
     },
     "gzipCompressList": ["html", "js"],
+    "limit": {
+        "payloadSize": 1000,
+        "requestsPending": 511,
+        "requestsPerMin": 100,
+        "urlLength": 100
+    },
     "locale": {
         "implicitDefaults": true
     },
-    "maxPayloadSize": 1000,
-    "maxRequestsPerMin": 100,
-    "maxUrlLength": 100,
     "port": {
         "http": 80
     },

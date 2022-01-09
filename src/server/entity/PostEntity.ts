@@ -11,7 +11,7 @@ import * as output from "../../utilities/output";
 
 import serverConfig from "../../config/config.server";
 
-import {ClientError} from "../../interface/ClientError";
+import {ResponseError} from "../../interface/ResponseError/ResponseError";
 import {has as endpointHas, use as endpointUse} from "../../interface/plugin/endpoint";
 
 import {Entity} from "./Entity";
@@ -59,7 +59,7 @@ export class PostEntity extends Entity {
 
 			body.push(chunk);
 
-			if((body.length * 8) <= serverConfig.maxPayloadSize) {
+			if((body.length * 8) <= serverConfig.limit.payloadSize) {
 				// Continue on body stream as payload limit not yet reached
 				return;
 			}
@@ -98,7 +98,7 @@ export class PostEntity extends Entity {
 
 					this.respond(200, data);
 				} catch(err) {
-					if(err instanceof ClientError) {
+					if(err instanceof ResponseError) {
 						return this.respond(err.status, Buffer.from(err.message, "utf-8"));
 					}
 

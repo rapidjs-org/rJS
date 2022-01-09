@@ -25,9 +25,13 @@ export interface IServerConfig {
         web: string;
     };
     gzipCompressList: string[];
-    maxPayloadSize: number;
-    maxRequestsPerMin: number;
-    maxUrlLength: number;
+    limit: {
+        payloadSize: number;
+        requestsPerMin: number;
+        urlLength: number;
+        
+        requestsPending?: number;
+    }
     port: {
         http: number;
         
@@ -43,7 +47,6 @@ export interface IServerConfig {
         defaultLang?: string;
         defaultCountry?: string;
     };
-    maxPending?: number;
     ssl?: {
         certFile?: string,
         dhParam?: string,

@@ -45,14 +45,14 @@ function updateWindow() {
  * @return {boolean} - Whether the request must be blocked due to 429 (Too many requests)
  */
 export function rateExceeded(ip: string) {
-	if(!serverConfig.maxRequestsPerMin) {
+	if(!serverConfig.limit.requestsPerMin) {
 		return false;
 	}
 
 	const curWindowWeight = updateWindow();
 	const slideSum = Math.floor((curWindowWeight * (limiter.current[ip] || 0))
 					+ ((1 - curWindowWeight) * (limiter.previous[ip] || 0)));
-	if(slideSum >= serverConfig.maxRequestsPerMin) {
+	if(slideSum >= serverConfig.limit.requestsPerMin) {
 		// Deny request
 		return true;
 	}

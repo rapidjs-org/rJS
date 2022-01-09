@@ -8,7 +8,6 @@
 
 import {IncomingMessage, ServerResponse, STATUS_CODES as statusMessages} from "http";
 import {URL} from "url";
-import {join} from "path";
 
 import serverConfig from "../../config/config.server";
 
@@ -54,14 +53,6 @@ export class Entity {
     	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${this.getHeader("host")}${req.url}`);
 
         this.originalPathname = this.url.pathname;
-    }
-
-    /**
-     * Construct local disc path to asset ressource.
-     * @returns {String} Local ressource path
-     */
-    protected localPath(): string {
-    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
     }
 
     /**
@@ -119,8 +110,6 @@ export class Entity {
         
     	// End request with message
     	this.res.end(message);
-
-        console.log(`[${this.req.url}] Duration: ${Date.now() - this.timestamp}ms`)
     }
 
     /**

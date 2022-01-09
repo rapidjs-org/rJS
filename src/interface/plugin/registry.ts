@@ -275,19 +275,26 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 		: bareClientScript;
 	
 	// Construct individual script module
+	// TODO: Deperecated explicit identifers from client core interface (mid-term, "use_")
 	const modularClientScript = `
 		${config.clientModuleAppName} = {
 			... ${config.clientModuleAppName},
 			... {
 				"${pluginName}": (${config.clientModuleReferenceName.private} => {
-					const ${config.clientModuleAppName} = {
-						...${config.clientModuleReferenceName.private},
-						useEndpoint: (body, progressHandler) => {
+					const endpoint = {
+						use: (body, progressHandler) => {
 							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
 						},
-						useNamedEndpoint: (name, body, progressHandler) => {
+						useNamed: (name, body, progressHandler) => {
 							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
 						}
+					};
+					const ${config.clientModuleAppName} = {
+						...${config.clientModuleReferenceName.private},
+						endpoint: endpoint.use,
+						useEndpoint: endpoint.use,
+						namedEndpoint: endpoint.useNamed,
+						useNamedEndpoint: endpoint.useNamed,
 					};
 					delete ${config.clientModuleAppName}.endpoint;
 					const ${config.clientModuleReferenceName.public} = {};

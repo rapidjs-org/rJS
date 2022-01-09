@@ -14,7 +14,9 @@ import {normalizeExtension} from "../utilities/normalize";
 
 import {renderModifiers} from "../mods/modifiers";
 
-import {ClientError} from "./ClientError";
+import {ClientError} from "./ResponseError/ClientError";
+
+// TODO: Bind file reader interface?
 
 
 /**
@@ -26,11 +28,6 @@ import {ClientError} from "./ClientError";
 export function read(pathname: string): Buffer {
 	// Construct absolute path on local disc
 	const localPath: string = join(serverConfig.directory.web, pathname);
-	
-	if(!existsSync(localPath)) {
-		// File not found
-		throw new ClientError(404);
-	}
 
 	let contents = String(readFileSync(localPath));
 
