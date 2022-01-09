@@ -1,7 +1,34 @@
 var rapidJS = {};
 rapidJS.core = (_ => {
-	// TODO: Fix anchor links base for compound pages
+	let isCompound;
 
+	document.addEventListener("DOMContentLoaded", _ => {
+		// Fix anchor links' base for compound pages
+		isCompound = document.head.querySelector("base")
+		? true	// Most likely (if base tag hasn't been provided manually, causes hidden overhead only)
+		: false;	// TODO: Enhance compound page detection (without providing an identifier)
+		
+		if(!isCompound) {
+			return;
+		}
+
+		// Listen for possible actions and update href once anchor link is used before resolves
+		const adaptAnchor = target => {
+			const href = target.getAttribute("href");
+			if(target.tagName.toLowerCase() !== "a"
+			|| !/^#/.test(href)) {
+				return;
+			}
+
+			target.setAttribute("href", `${document.location.pathname}${href}`);
+			// Inherently isolated from being worked again
+		};
+
+		document.body.addEventListener("mousedown", e => { adaptAnchor(e.target); });
+		document.body.addEventListener("keydown", _ => { adaptAnchor(document.activeElement); });
+	});
+	
+	
 	const performRequest = (method, body) => {
 		return fetch(document.location.pathname, {
 			// Perform request to same path to keep document environment (e.g. for cookies)
