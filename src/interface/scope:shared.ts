@@ -4,7 +4,8 @@
 
 
 module.exports = {
-	...require("./ClientError"),
+	...require("./ResponseError/ClientError"),
+	...require("./ResponseError/ServerError"),
     
 	...require("./file"),
 	...require("./cache")
