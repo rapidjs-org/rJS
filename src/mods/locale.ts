@@ -73,3 +73,5 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo)
 
 	return markup;
 }
+
+// TODO: lang attr (HTML)
