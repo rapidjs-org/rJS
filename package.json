@@ -6,9 +6,10 @@
   "scripts": {
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src/",
     "compile": "rm -rf ./dist && tsc --outDir ./dist && cp -r ./src/client/ ./dist/client/",
+    "compile:dev": "tsc -w --outDir ./debug",
     "debug": "rm -rf ./debug && node ./scripts/debug.js",
     "test": "node ./scripts/test.js",
-    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
+    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js && cp -r ./types ./dist/types",
     "release": "npm run build && np"
   },
   "typings": "types/index.d.ts",

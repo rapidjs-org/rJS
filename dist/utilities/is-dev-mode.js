@@ -1,7 +1,9 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Retrieve whether the environment has been started in DEV MODE.
  */
-"use strict";Object.defineProperty(exports,"__esModule",{value:!0});const config={argument:"-dev"};exports.default=!!(2<process.argv.length&&process.argv.slice(2).includes(config.argument));
+Object.defineProperty(exports, "__esModule", { value: true });
+const args_1 = require("../args");
+exports.default = (0, args_1.argument)("dev")
+    ? true
+    : false;

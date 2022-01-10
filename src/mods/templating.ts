@@ -44,7 +44,7 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo,
 	// Apply each engine in order of registration
 		.forEach(engine => {
 			try {
-				markup = engine.callback(markup, templatingObj);
+				markup = engine.callback(markup, templatingObj, reducedRequestInfo);
 			} catch(err) {
 				output.log(`An error occurred applying the rendering engine with index ${engine.index}:`);
 				output.error(err);

@@ -16,7 +16,7 @@ export class ArbitraryCache<T> extends Cache<T> {
 	constructor(duration?: number) {
 		super(duration);
 	}
-
+	
 	/**
      * Set up optional entry key normalization callback.
      * @param {Function} callback Normalization callback getting passed an entry key to be normalized/unified.

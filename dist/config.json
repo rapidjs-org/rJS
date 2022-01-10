@@ -1,2 +1,4 @@
-{"dynamicFileExtension": "html"
+{
+    "dynamicFileExtension": "html",
+    "privateWebFilePrefix": "_"
 }

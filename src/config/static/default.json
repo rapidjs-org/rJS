@@ -15,7 +15,12 @@
         "urlLength": 100
     },
     "locale": {
-        "implicitDefaults": true
+        "languages": {},
+        "countries": {}
+    },
+    "mimes": {
+        "html": "text/html",
+        "js": "text/javascript"
     },
     "port": {
         "http": 80

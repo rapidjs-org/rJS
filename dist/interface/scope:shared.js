@@ -1,7 +1,13 @@
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Scope universal interface object.
  */
-module.exports=Object.assign(Object.assign(Object.assign({},require("./ClientError")),require("./file")),require("./cache"));
+module.exports = {
+    // TODO: Deprecate remove (mid-term)
+    createCache: () => {
+        return new (require("../server/support/cache/ArbitraryCache")).ArbitraryCache();
+    },
+    ClientError: require("./ResponseError/ClientError").ClientError,
+    ServerError: require("./ResponseError/ServerError").ServerError,
+    Cache: require("../server/support/cache/ArbitraryCache").ArbitraryCache,
+    file: require("./file")
+};

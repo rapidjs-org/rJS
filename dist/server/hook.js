@@ -1,7 +1,51 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Request/response entity management using the asynchronous hook API
+ * in order to identify entites across different modules based on the
+ * currently active asynchronous thread.
  */
-"use strict";var __importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0}),exports.currentRequestInfo=exports.createHook=void 0;const async_hooks_1=__importDefault(require("async_hooks")),requests=new Map,asyncHook=async_hooks_1.default.createHook({init:(e,t,s)=>{requests.has(s)&&requests.set(e,requests.get(s))},destroy:e=>{requests.has(e)&&requests.delete(e)}});function createHook(e){requests.set(async_hooks_1.default.executionAsyncId(),e)}function currentRequestInfo(){return requests.get(async_hooks_1.default.executionAsyncId()).getReducedRequestInfo()}asyncHook.enable(),exports.createHook=createHook,exports.currentRequestInfo=currentRequestInfo;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.currentRequestInfo = exports.createHook = void 0;
+// Create and enable asynchronous hook
+const async_hooks_1 = __importDefault(require("async_hooks"));
+const requests = new Map();
+const asyncHook = async_hooks_1.default.createHook({
+    init: (asyncId, _, triggerAsyncId) => {
+        requests.has(triggerAsyncId)
+            && requests.set(asyncId, requests.get(triggerAsyncId));
+    },
+    destroy: asyncId => {
+        requests.has(asyncId) && requests.delete(asyncId);
+    }
+});
+asyncHook.enable();
+/**
+ * Create async thread hooked entity object.
+ * @param {Entity} entity Request/response entity
+ */
+function createHook(entity) {
+    requests.set(async_hooks_1.default.executionAsyncId(), entity);
+}
+exports.createHook = createHook;
+/**
+ * Retrieve async thread hooked entity object.
+ * @returns {Entity} Reduced request info object
+ */
+/* export function currentHook(): Entity {
+    return requests.get(asyncHooks.executionAsyncId());
+} */
+/**
+ * Get currently effective request info object (based on asynchronous thread).
+ * Returns undefined if is not related to a request processing routine.
+ * @returns {IReducedRequestInfo} Reduced request info object
+ */
+function currentRequestInfo() {
+    const currentEntity = requests.get(async_hooks_1.default.executionAsyncId());
+    return currentEntity
+        ? currentEntity.getReducedRequestInfo()
+        : undefined;
+}
+exports.currentRequestInfo = currentRequestInfo;

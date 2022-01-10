@@ -122,7 +122,7 @@ export function readPluginConfig(key: string): string|number|boolean {
 
 	// Look in server config plug-in section (old paradigm)
 	// TODO: Deprecate (mid-term)
-	subObj = serverConfig[pluginKey];
+	subObj = serverConfig["plug-in"][pluginKey];
 	
 	return subObj ? subObj[key] : undefined;
 }
