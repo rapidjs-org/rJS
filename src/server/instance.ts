@@ -6,8 +6,8 @@
 import config from "../config.json";
 
 
-import {readFileSync, stat} from "fs";
-import {join, dirname, extname} from "path";
+import {readFileSync} from "fs";
+import {join, dirname, extname, basename} from "path";
 
 import * as output from "../utilities/output";
 import isDevMode from "../utilities/is-dev-mode";
@@ -127,17 +127,22 @@ async function handleRequest(req, res) {
 	// Store hook to entity
 	createHook(entity);
     
+	// Block request if individual request maximum reached (rate limiting)
+	if(rateExceeded(req.connection.remoteAddress)) {
+		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
+        
+		return entity.respond(429);
+	}
+
 	// Block request if URL is exceeding the maximum length
 	if(serverConfig.limit.urlLength > 0
 	&& req.url.length > serverConfig.limit.urlLength) {
 		return entity.respond(414);
 	}
 
-	// Block request if individual request maximum reached (rate limiting)
-	if(rateExceeded(req.connection.remoteAddress)) {
-		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
-        
-		return entity.respond(429);
+	// Block request if requesting a private (hidden file)
+	if((new RegExp(`^${config.privateWebFilePrefix}`)).test(basename(req.url))) {
+		return entity.respond(403);
 	}
 	
 	// Call entity specific request processor method
