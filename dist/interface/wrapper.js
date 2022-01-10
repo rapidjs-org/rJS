@@ -1,7 +1,45 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Wrapper for interface .
  */
-"use strict";var __createBinding=this&&this.__createBinding||(Object.create?function(e,t,r,u){void 0===u&&(u=r),Object.defineProperty(e,u,{enumerable:!0,get:function(){return t[r]}})}:function(e,t,r,u){e[u=void 0===u?r:u]=t[r]}),__setModuleDefault=this&&this.__setModuleDefault||(Object.create?function(e,t){Object.defineProperty(e,"default",{enumerable:!0,value:t})}:function(e,t){e.default=t}),__importStar=this&&this.__importStar||function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)"default"!==r&&Object.prototype.hasOwnProperty.call(e,r)&&__createBinding(t,e,r);return __setModuleDefault(t,e),t};Object.defineProperty(exports,"__esModule",{value:!0}),exports.wrapInterface=void 0;const output=__importStar(require("../utilities/output"));function wrapInterface(t,r,u=!1){return(...e)=>{try{return t(...e)}catch(e){output.log(`An error occurred${r?" "+r:""}:`),output.error(e,u)}}}exports.wrapInterface=wrapInterface;
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.wrapInterface = void 0;
+const output = __importStar(require("../utilities/output"));
+/**
+ *
+ * @param {Function} method Interface method
+ * @param {string} scopeDefinition Information to print along occuring errors in order to
+ * @param {boolean} [terminateOnError] Whether to terminate application on error
+ * @returns {any} Possible method return value
+ */
+function wrapInterface(method, scopeDefinition, terminateOnError = false) {
+    return (...args) => {
+        try {
+            return method(...args);
+        }
+        catch (err) {
+            output.log(`An error occurred${scopeDefinition ? ` ${scopeDefinition}` : ""}:`);
+            output.error(err, terminateOnError);
+        }
+    };
+}
+exports.wrapInterface = wrapInterface;

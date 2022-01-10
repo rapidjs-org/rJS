@@ -1,7 +1,20 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Handler or data binding storage.
+ * To be defined using a respective interface.
+ * Read by a processing function unit.
  */
-"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.pluginRegistry=exports.templatingEngines=void 0,exports.templatingEngines=[],exports.pluginRegistry=new Map;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pluginRegistry = exports.templatingEngines = void 0;
+/**
+ * List (array) of templating engines to be applied in order of registration.
+ * Represented by callbacks getting passed the response data string to be modified,
+ * the evaluated related handler module export object and the current (reduced) request object.
+ */
+exports.templatingEngines = [];
+/**
+ * List (array) of registered plug-in related data.
+ * Integrated into the environment upon registration.
+ * Binding storage to be utilized for organizational management.
+ */
+exports.pluginRegistry = new Map();

@@ -81,6 +81,11 @@ export abstract class Cache<T> {
     	return !this.isEmpty(key);
     }
 
+    // TODO: Deprecate (mid-term)
+    public has(key: string): boolean {
+        return this.exists(key);
+    }
+
     /**
      * Read data sequence associated with the given key from cache.
      * @param {string} key Entry key

@@ -118,7 +118,7 @@ export function use(pluginName: string, body: unknown, endpointName?: string) {
 
 	// Apply handler to retrieve response data
 	const result: string|Buffer = handler.callback.call(null, body, currentRequestInfo());
-	const data: Buffer = !Buffer.isBuffer(result) ? Buffer.from(result, "utf-8") : result;
+	const data: Buffer = !Buffer.isBuffer(result) ? Buffer.from(JSON.stringify(result), "utf-8") : result;
 
 	// Write data to cache if enabled
 	handler.useCache && (cache.write(cacheKey, data));
