@@ -14,7 +14,8 @@ import * as output from "../utilities/output";
 // TODO: What about accept language header?
 
 export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
-	if(!reducedRequestInfo.locale.lang) {
+	if(!reducedRequestInfo.locale
+	|| !reducedRequestInfo.locale.lang) {
 		// Language processing disabled
 		return markup;
 	}

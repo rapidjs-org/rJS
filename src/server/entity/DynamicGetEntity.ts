@@ -14,7 +14,7 @@ const config = {
 };
 
 
-import {existsSync, stat} from "fs";
+import {existsSync} from "fs";
 import {join, basename, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
@@ -115,6 +115,11 @@ export class DynamicGetEntity extends GetEntity {
 
 		// Search for related error page file if response is meant to be unsuccessful
 		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
+			// Conceal status (always use 404) if enabled
+			status = (serverConfig.concealing404 === true)
+			? 404
+			: status;
+
 			// Traverse web file system for closest error page
 			let curPathname: string = join(dirname(this.url.pathname), String(status));
 			while(curPathname !== "/") {
@@ -157,10 +162,9 @@ export class DynamicGetEntity extends GetEntity {
 	public process() {
 		super.process();
 		
-		// TODO: index name?
+		// Redirect URL default or extension explicit dynamic request to implicit equivalent
 		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
-			// Redirect URL extension explicit dynamic request to implicit equivalent
-			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), "$1"));
+			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), ""));
 		}
 
 		// Enforce configured www strategy
@@ -178,21 +182,21 @@ export class DynamicGetEntity extends GetEntity {
 		// Enforce configured (default) locale strategy
 		// Redirect only needed for dynamic files (web pages)
 		// as static files can work with explicit request URLs too (reduces redirection overhead)
-		if(this.locale && serverConfig.locale.implicitDefaults) {
-			// Check if default locale is hardcoded (possibly partwise)
-			const stated: Record<string, boolean> = {
-				lang: this.locale.lang && this.locale.lang == serverConfig.locale.defaultLang,
-				country: this.locale.country && this.locale.country == serverConfig.locale.defaultCountry
+		if(this.locale) {
+			// Redirect default URL implicit request to URL explicit variant if given (possibly partwise)
+			const redirectPart: Record<string, string> = {
+				language: (!this.locale.lang ? serverConfig.locale.languages.default : null),
+				country: (!this.locale.country ? serverConfig.locale.countries.default : null)
 			};
-
-			// Redirect default URL explicit request to URL implicit variant if given (possibly partwise)
-			if(stated.lang || stated.country) {
-				return this.redirect(`${(stated.lang === false) ? `${this.locale.lang}` : ""}${(stated.country === false) ? `${this.locale.country}` : ""}${this.url.pathname}`);
+			if(redirectPart.language
+			|| redirectPart.country) {
+				// Consider locale accept header if resquesting locale implicitly
+				return this.redirect(`/${redirectPart.language || this.locale.lang}${(redirectPart.language && redirectPart.country) ? "-" : ""}${!this.locale.country ? `${redirectPart.country || this.locale.country}` : ""}${this.url.pathname}`);
 			}
 			
 			// Code default locale for implicit processing if was given implicitly by URL
-			this.locale.lang = this.locale.lang || serverConfig.locale.defaultLang;
-			this.locale.country = this.locale.country || serverConfig.locale.defaultCountry;
+			this.locale.lang = this.locale.lang || serverConfig.locale.languages.default;
+			this.locale.country = this.locale.country || serverConfig.locale.countries.default;
 
 			// TODO: Unsupported locale behavior (404?)
 		}
@@ -260,7 +264,6 @@ export class DynamicGetEntity extends GetEntity {
 		return {
 			...super.getReducedRequestInfo(),
 
-    		pathname: decodeURIComponent(this.url.pathname),
     		isCompound: this.isCompound,
 
 			// Compound page specific information

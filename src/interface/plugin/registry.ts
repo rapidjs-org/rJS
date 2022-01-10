@@ -156,18 +156,19 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 		.filter((name: string) => {
 			const pluginObj = pluginRegistry.get(name);
 
-			return pluginObj.clientScript
+			return (pluginObj.environment == Environment.ANY)
+			&& pluginObj.clientScript
 			&& (isCompound || !pluginObj.compoundOnly);
 		})
-	// Filter for not yet (hard)coded plug-ins
-	// Hard coding use case: user defined ordering
 		.filter((name: string) => {
-		// TODO: Enhance detection
+			// Filter for not yet (hard)coded plug-ins
+			// Hard coding use case: user defined ordering
+			// TODO: Enhance detection (bundled!)
 			return !
-			(new RegExp(`<\\s*script\\s+src=("|')\\s*\\/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
+			(new RegExp(`<\\s*script\\s+src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
 				.test(markup);
 		});
-	 
+	
 	// No plug-in to be referenced (ignore supporting core module either if no individual plug-in is effective)
 	if(effectivePlugins.length <= 1) {
 		return markup;
@@ -268,7 +269,9 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 					value = value[attr];
 				});
 
-				value = (value instanceof String) ? `"${value}"` : value;	// Wrap string values in doublequotes
+				value = (typeof(value) === "string" || value instanceof String)
+				? `"${value}"`
+				: value;	// Wrap string values in doublequotes
 
 				return `${configAttr.charAt(0)}${value}`;
 			})
@@ -296,7 +299,7 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 						namedEndpoint: endpoint.useNamed,
 						useNamedEndpoint: endpoint.useNamed,
 					};
-					delete ${config.clientModuleAppName}.endpoint;
+					//delete ${config.clientModuleAppName}.endpoint;
 					const ${config.clientModuleReferenceName.public} = {};
 
 					${bareClientScript}${(bareClientScript.slice(-1) != ";") ? ";" : ""}

@@ -1,7 +1,29 @@
+"use strict";
 /**
- * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
- *          function modules, un-opinionated templating. 
- * 
- * Copyright (c) Thassilo Martin Schiepanski
+ * Normalization helper functions.
  */
-"use strict";function normalizeExtension(e){return e.trim().replace(/^\./,"").toLowerCase()}Object.defineProperty(exports,"__esModule",{value:!0}),exports.normalizeExtension=void 0,exports.normalizeExtension=normalizeExtension;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.truncateModuleExtension = exports.normalizeExtension = void 0;
+/**
+ * Normalize file extension.
+ * Remove possibly given leading dot and convert to all lowercase representation.
+ * @param {string} extension Raw extension sequence
+ * @returns {string} Normalized extension
+ */
+function normalizeExtension(extension) {
+    return extension
+        .trim()
+        .replace(/^\./, "")
+        .toLowerCase();
+}
+exports.normalizeExtension = normalizeExtension;
+/**
+ * Remove module related extension for given path or file name.
+ * .{js, ts, javascript, typescript}
+ * @param {string} name Name to truncate
+ * @returns {string} Truncated name
+ */
+function truncateModuleExtension(name) {
+    return name.replace(/\.(j(ava)?|t(ype)?)s(cript)?$/i, "");
+}
+exports.truncateModuleExtension = truncateModuleExtension;

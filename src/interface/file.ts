@@ -22,10 +22,10 @@ import {ClientError} from "./ResponseError/ClientError";
 /**
  * Read a file from the web directory file system.
  * @param {string} pathname Path to file (relative to web directory root)
- * @returns {Buffer} File contents
+ * @returns {string} File contents
  * @throws ClientError (404) if file does not exist
  */
-export function read(pathname: string): Buffer {
+export function read(pathname: string): string {
 	// Construct absolute path on local disc
 	const localPath: string = join(serverConfig.directory.web, pathname);
 
@@ -36,7 +36,7 @@ export function read(pathname: string): Buffer {
 		? renderModifiers(contents)
 		: contents;
 
-	return Buffer.from(contents, "utf-8");
+	return contents;
 }
 
 /**

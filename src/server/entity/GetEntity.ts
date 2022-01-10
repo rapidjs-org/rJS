@@ -13,7 +13,6 @@ import {join} from "path";
 import {gzipSync} from "zlib";
 
 import serverConfig from "../../config/config.server";
-import mimesConfig from "../../config/config.mimes";
 
 import {UrlCache} from "../support/cache/UrlCache";
 
@@ -75,7 +74,7 @@ export abstract class GetEntity extends Entity {
 		super.process();
 		
     	// Set MIME type header accordingly
-    	const mime: string = mimesConfig[this.extension];
+    	const mime: string = serverConfig.mimes[this.extension];
     	if(mime) {
     		this.setHeader("Content-Type", message ? mime : "text/plain");
     		this.setHeader("X-Content-Type-Options", "nosniff");

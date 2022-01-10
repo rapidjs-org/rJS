@@ -11,22 +11,37 @@ import {URL} from "url";
 
 import serverConfig from "../../config/config.server";
 
-import tlds from "../support/static/tlds.json";
-import languageCodes from "../support/static/languages.json";
-import countryCodes from "../support/static/countries.json";
+import tlds from "../support/tlds.json";
 
+// Initially construct locale matching regex based on configured (supported) languages
+const localeMode = {
+    full: serverConfig.locale.languages.supported && serverConfig.locale.countries.supported,
+    partial: (serverConfig.locale.languages.supported || serverConfig.locale.countries.supported)
+};
+
+const joinLocale = localeArray => {
+    return localeArray
+    ? localeArray.join("|")
+    : "";
+};
+
+const localeMatchRegex: RegExp = localeMode.partial
+? new RegExp(`^/(${joinLocale(serverConfig.locale.languages.supported)})?(${localeMode.full ? "-" : ""})?(${joinLocale(serverConfig.locale.countries.supported)})?/`)
+: null;
 
 // TODO: Locale fs map
 
 export class Entity {
-    private readonly timestamp: number; // For duration calculation
     private readonly originalPathname: string;
-    private cookies: {
+    private readonly cookies: {
         received: Record<string, string|number|boolean>;
         set: Record<string, {
             value: string|number|boolean;
             maxAge?: number
         }>;
+    } = {
+        received: {},
+        set: {}
     };
 
     protected readonly req: IncomingMessage;
@@ -132,12 +147,7 @@ export class Entity {
         /*
          * Parse request cookies.
          */
-        this.cookies = {
-            received: {},
-            set: {}
-        };
-
-        const cookieStr =  this.getHeader("Cookie");
+        const cookieStr = this.getHeader("Cookie");
         cookieStr && cookieStr
         .split(";")
         .filter(cookie => (cookie.length > 0))
@@ -175,25 +185,20 @@ export class Entity {
         /*
          * Retrieve locale information and store in locale object.
          */
-        if(!serverConfig.locale.defaultLang
-        && !serverConfig.locale.defaultCountry) {
+        if(!localeMatchRegex) {
+            // Locale processing not enabled
             return;
         }
                 
         this.locale = {};
+
+        const code = this.url.pathname.match(localeMatchRegex);
+        if(!code
+        || code[1] && code[3] && !code[2]) {
+            // Invalid locale prefix provided
+            return;
+        }
         
-        const code = this.url.pathname.match(/^\/([a-z]{2})?(-)?([A-Z]{2})?\//);
-        if(!code) {
-            return;
-        }
-
-        if((code[1] && !languageCodes.includes(code[1]))    // Language code
-        || (code[3] && !countryCodes.includes(code[3]))     // Country code
-        || (code[2] && (!code[1] || !code[3]))) {           // Has dash, requires both codes
-            // Invalid locale prefix
-            return;
-        }
-
         // Remove leading locale part from internal pathname
         // (as must not effect fs)
         this.url.pathname = this.url.pathname.slice(code[0].length);
@@ -211,9 +216,10 @@ export class Entity {
         // TODO: Relevant headers (auth)?
 		return {
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
-    		subdomain: this.subdomain,
             locale: this.locale,
-
+    		pathname: decodeURIComponent(this.url.pathname),
+    		subdomain: this.subdomain,
+            
             // Cookies manipulation interface
             cookies: {
                 /**

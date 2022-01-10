@@ -38,6 +38,13 @@ export class StaticGetEntity extends GetEntity {
      * @param {Buffer} [message] Response message
      */
 	public respond(status: number, message?: Buffer) {
+		// Conceal status (always use 404) if enabled
+		if(status.toString().charAt(0) != "2"
+			&& status !== 404
+			&& serverConfig.concealing404 === true) {
+			return this.respond(404);
+		}
+		
 		// Set cache control headers
 	   	(!isDevMode && serverConfig.cachingDuration.client)
         && this.setHeader("Cache-Control", `public, max-age=${serverConfig.cachingDuration.client}, must-revalidate`);

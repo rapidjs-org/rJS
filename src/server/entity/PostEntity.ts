@@ -71,7 +71,7 @@ export class PostEntity extends Entity {
 			} catch(err) {
 				throw new SyntaxError(`Error parsing endpoint request body '${this.url.pathname}'`);
 			}
-
+			
 			if(!endpointHas(payload.pluginName)
 			|| !endpointHas(payload.pluginName, payload.endpointName)) {
 				// No related endpoint found
@@ -83,7 +83,7 @@ export class PostEntity extends Entity {
 			try {
 				try {
 					const data: Buffer = endpointUse(payload.pluginName, payload.body, payload.endpointName);
-
+					
 					this.respond(200, data);
 				} catch(err) {
 					if(err instanceof ResponseError) {
