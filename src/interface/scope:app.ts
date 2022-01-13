@@ -5,17 +5,16 @@
 
 import {wrapInterface} from "./wrapper";
 
-const bindSSR: Function = wrapInterface(require("./templating").bind, "binding a templating handler", true);
+const bindSSR = wrapInterface(require("./templating").bind, "binding an SSR handler", true);
 
 
 module.exports = {
-	...require("./scope:shared"),
+	...require("./scope:common"),
 
-	...require("./Environment"),
-	
-	isDevMode: require("../utilities/is-dev-mode"),
+	Environment: require("./EEnvironment"),
 	
 	plugin: wrapInterface(require("./plugin/registry").bind, "connecting a plug-in", true),
 	bindSSR: bindSSR,
-	bindTemplating: bindSSR
+	bindTemplating: bindSSR,
+	bindLocale: wrapInterface(require("./locale").bind, "binding the locale handler", true)
 };

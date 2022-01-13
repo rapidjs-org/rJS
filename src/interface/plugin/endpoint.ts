@@ -115,7 +115,7 @@ export function use(pluginName: string, body: unknown, endpointName?: string) {
 	console.log = message => {
 		process.stdout.write("Message from within endpoint:");
 	}; */
-
+	
 	// Apply handler to retrieve response data
 	const result: string|Buffer = handler.callback.call(null, body, currentRequestInfo());
 	const data: Buffer = !Buffer.isBuffer(result) ? Buffer.from(JSON.stringify(result), "utf-8") : result;

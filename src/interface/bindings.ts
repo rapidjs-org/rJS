@@ -11,6 +11,13 @@
  */
 export const templatingEngines: ITemplatingEngine[] = [];
 
+/**
+ * List (array) of templating engines to be applied in order of registration.
+ * Represented by callbacks getting passed the response data string to be modified,
+ * the evaluated related handler module export object and the current (reduced) request object.
+ */
+export const localeEngine: ILocaleEngine = {};
+
 
 /**
  * List (array) of registered plug-in related data.

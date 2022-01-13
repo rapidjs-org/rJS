@@ -12,9 +12,7 @@ import serverConfig from "../config/config.server";
 
 import {normalizeExtension} from "../utilities/normalize";
 
-import {renderModifiers} from "../mods/modifiers";
-
-import {ClientError} from "./ResponseError/ClientError";
+import {renderModifiers} from "../rendering/render";
 
 // TODO: Bind file reader interface?
 

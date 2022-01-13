@@ -10,9 +10,7 @@ import {argument} from "../args";
 
 import {normalizeExtension} from "../utilities/normalize";
 
-import defaultConfig from "./static/default.json";
-import languageCodes from "./static/languages.json";
-import countryCodes from "./static/countries.json";
+import defaultConfig from "./default.config.json";
 
 import {read} from "./reader";
 
@@ -34,17 +32,11 @@ export interface IServerConfig {
         urlLength: number;
         
         requestsPending?: number;
-    }
-    locale: {
-        languages: {
-            default?: string;
-            supported?: string[];
-        },
-        countries: {
-            default?: string;
-            supported?: string[];
-        }
     };
+    locale: (string|{
+        language: string;
+        countries?: string[];
+    })[];
     mimes: Record<string, string>,
     port: {
         http: number;
@@ -71,10 +63,10 @@ const argsDirPath: string|boolean = argument("path");
 // or call point directory otherwise
 const projectDirPath = (typeof(argsDirPath) == "string")
 // Construct absolute path from call point if relative path given
-? (/[^/]/.test(argsDirPath)
-    ? join(callDirPath, argsDirPath)
-    : argsDirPath)
-: callDirPath;
+	? (/[^/]/.test(argsDirPath)
+		? join(callDirPath, argsDirPath)
+		: argsDirPath)
+	: callDirPath;
 
 
 /**
@@ -84,15 +76,15 @@ const projectDirPath = (typeof(argsDirPath) == "string")
  * @returns {string} Normalized pathname
  */
 function normalizePath(caption: string, name: string): string {
-    const path = (name.charAt(0) != "/")
-    ? join(projectDirPath, name)
-    : name;
+	const path = (name.charAt(0) != "/")
+		? join(projectDirPath, name)
+		: name;
     
-    if(!existsSync(path)) {
-        throw new ReferenceError(`${caption} directory given in server configuration file does not exist '${path}'`);
-    }
+	if(!existsSync(path)) {
+		throw new ReferenceError(`${caption} directory given in server configuration file does not exist '${path}'`);
+	}
 
-    return join(projectDirPath, name);
+	return join(projectDirPath, name);
 }
 
 /**
@@ -107,40 +99,13 @@ function normalizeExtensionArray(array: string[]) {
 	});
 }
 
-/**
- * Check whether a locale sub object (languages or countries, equivalent) has invalid codes given.
- * @param {string} caption Error section caption
- * @param {Object} localeObj Configuration locale sub object
- * @returns {string[]} Modified locale sub object with default code added to supported array (for disjunctive representation)
- * @throws {SyntaxError} if invalid code given (terminates app)
- * @throws {SyntaxError} if invalid code given (terminates app)
- */
-function checkLocaleCode(caption: string, localeObj, referenceArray: string[]) {
-    if(!localeObj.supported) {
-        return;
-    }
 
-    // Add default code  supported array (removing duplicate entries)
-    localeObj.supported = Array.from(new Set(localeObj.supported.concat(localeObj.default ? [localeObj.default] : [])));
-    
-    localeObj.supported
-    .forEach((code: string) => {
-        if(!referenceArray.includes(code)) {
-            throw new SyntaxError(`Invalid ISO-2-digit ${caption} code given in server configuration file '${code}'`);
-        }
-    });
-}
+const config = (read("config", defaultConfig) || read("server", defaultConfig)) as unknown as IServerConfig;
 
 
-const config = (read("config", defaultConfig) || read("server", defaultConfig)) as IServerConfig;
-
-
-// Check locale information for correct coding
-checkLocaleCode("language", config.locale.languages, languageCodes);
-checkLocaleCode("country", config.locale.countries, countryCodes);
-
-// Normalize extension arrays for future uniform usage behavior
-existsSync(config.directory.lang) && (config.directory.lang = normalizePath("Lang", config.directory.lang));
+// Normalize directory links (possibly given in relative representation) to local disc absolute
+(config.locale.length > 0)
+&& (config.directory.lang = normalizePath("Lang", config.directory.lang));
 config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
 config.directory.web = normalizePath("Web", config.directory.web);
 
@@ -151,9 +116,11 @@ config.gzipCompressList = normalizeExtensionArray(config.gzipCompressList);
 // Normalize MIMES map object keys (representing file extensions)
 const normalizedMimesMap: Record<string, string> = {};
 for(const extension in config.mimes) {
-    normalizedMimesMap[normalizeExtension(extension)] = config.mimes[extension];
+	normalizedMimesMap[normalizeExtension(extension)] = config.mimes[extension];
 }
 config.mimes = normalizedMimesMap;
 
+
+// TODO: Type check
 
 export default config;

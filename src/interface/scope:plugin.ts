@@ -5,13 +5,13 @@
 
 import {wrapInterface} from "./wrapper";
 
-const clientModule: Function = wrapInterface(require("./plugin/registry").initClientModule, "initializing a client module", true);
-const endpoint: Function = wrapInterface(require("./plugin/endpoint").setDefaultEndpoint, "creating a plug-in endpoint", true);
-const namedEndpoint: Function = wrapInterface(require("./plugin/endpoint").setNamedEndpoint, "creating a named plug-in endpoint", true);
+const clientModule = wrapInterface(require("./plugin/registry").initClientModule, "initializing a client module", true);
+const endpoint = wrapInterface(require("./plugin/endpoint").setDefaultEndpoint, "creating a plug-in endpoint", true);
+const namedEndpoint = wrapInterface(require("./plugin/endpoint").setNamedEndpoint, "creating a named plug-in endpoint", true);
 
 
 module.exports = {
-	...require("./scope:shared"),
+	...require("./scope:common"),
 	
 	// New identifiers
 	clientModule: clientModule,

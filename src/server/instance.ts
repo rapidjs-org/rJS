@@ -106,8 +106,8 @@ async function handleRequest(req, res) {
 		entity = new entityConstructor.GET[
 			(normalizedExtension == config.dynamicFileExtension
 			&& !isClientModuleRequest(req.url))
-			? "DYNAMIC"
-			: "STATIC"
+				? "DYNAMIC"
+				: "STATIC"
 		](req, res);
 
 		break;
@@ -139,9 +139,9 @@ async function handleRequest(req, res) {
 	&& req.url.length > serverConfig.limit.urlLength) {
 		return entity.respond(414);
 	}
-
+	
 	// Block request if requesting a private (hidden file)
-	if((new RegExp(`^${config.privateWebFilePrefix}`)).test(basename(req.url))) {
+	if((new RegExp(`/${config.privateWebFilePrefix}`)).test(basename(req.url))) {
 		return entity.respond(403);
 	}
 	

@@ -25,6 +25,8 @@
  * SOFTWARE.
  */
 
+// TODO: "Wait for plug-in" feature
+// TODO: "Symlink" files feature?
 
 // Start web server instance
 import "./server/instance.js";

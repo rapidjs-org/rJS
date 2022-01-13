@@ -52,7 +52,7 @@ async function scanDir(path: string, callback?: () => void) {
 	readdir(path, {
 		withFileTypes: true
 	}, (_, dirents: Dirent[]) => {
-		dirents.forEach(dirent => {
+		(dirents || []).forEach(dirent => {
 			const curPath: string = join(path, dirent.name);
 
 			if(dirent.isDirectory()) {

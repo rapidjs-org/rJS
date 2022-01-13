@@ -14,10 +14,7 @@
         "requestsPerMin": 100,
         "urlLength": 100
     },
-    "locale": {
-        "languages": {},
-        "countries": {}
-    },
+    "locale": [],
     "mimes": {
         "html": "text/html",
         "js": "text/javascript"

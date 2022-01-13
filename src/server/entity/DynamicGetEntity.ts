@@ -4,24 +4,18 @@
  * To be served without being affected by custom 
  */
 
-
-import globalConfig from "../../config.json";
-const config = {
-	...globalConfig,
-
-	compoundPageDirPrefix: "#",
-	dynamicFileDefaultName: "index"
-};
+import config from "../../config.json";
 
 
 import {existsSync} from "fs";
-import {join, basename, dirname} from "path";
+import {join, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
 
 import {injectIntoHead} from "../../utilities/markup";
 
-import {renderModifiers} from "../../mods/modifiers";
+import {renderModifiers} from "../../rendering/render";
+import {defaultLang} from "../../rendering/locale/locale";
 
 import {ResponseError} from "../../interface/ResponseError/ResponseError";
 import {integratePluginReferences} from "../../interface/plugin/registry";
@@ -35,9 +29,6 @@ import {GetEntity} from "./GetEntity";
 // TODO: compound page structure map
 
 export class DynamicGetEntity extends GetEntity {
-	private isCompound = false;
-	private compoundArgs: string[];
-	
 	/**
      * Create entity object based on web server induced request/response objects.
      * @param {IncomingMessage} req Request object
@@ -50,35 +41,12 @@ export class DynamicGetEntity extends GetEntity {
 	}
 
 	/**
-	 * Convert the current (conventional page) URL pathname to the compound equivalent
-	 * Applies sideffect to URL pathname property.
-	 * Compound path (internal) to use requested file name as directory prefixed with
-	 * the designated indicator. Actual file to be appended then.
-	 * @returns {string} Converted pathname representation
-	 */
-	private pathnameToCompound(): string {
-		return join(dirname(this.url.pathname),
-		`${config.compoundPageDirPrefix}${basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, "")}`,
-		basename(this.url.pathname));
-	}
-
-	/**
-	 * Convert the current (compound page) URL pathname to the conventional equivalent
-	 * Inverse of pathnameToCompound().
-	 * @returns {string} Converted pathname representation
-	 */
-	private pathnameToConventional(): string {
-		return decodeURIComponent(this.url.pathname)
-		.replace(new RegExp(`/${config.compoundPageDirPrefix}([^/]+)/\\1$`), "/$1");
-	}
-
-    /**
      * Construct local disc path to asset ressource.
      * @returns {String} Local ressource path
      */
-    protected localPath(): string {
+	protected localPath(): string {
     	return `${super.localPath()}.${this.extension}`;
-    }
+	}
 
 	/**
      * Read the dynamic asset (file) implicitly linked to the request.
@@ -94,7 +62,7 @@ export class DynamicGetEntity extends GetEntity {
 		// Integrate plug-in references into head element
 		contents = integratePluginReferences(contents, this.isCompound);
 
-		// Inject suited base tag into head if is compound page
+		// Inject  base tag into head for argument neglecting base if is compound
 		this.isCompound
 		&& (contents = injectIntoHead(contents, `<base href="${this.url.origin}${this.pathnameToConventional()}">`));
 
@@ -117,36 +85,43 @@ export class DynamicGetEntity extends GetEntity {
 		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
 			// Conceal status (always use 404) if enabled
 			status = (serverConfig.concealing404 === true)
-			? 404
-			: status;
+				? 404
+				: status;
 
 			// Traverse web file system for closest error page
-			let curPathname: string = join(dirname(this.url.pathname), String(status));
-			while(curPathname !== "/") {
+			let errorPageFound = false;
+			let curPathname: string = this.url.pathname;
+			do {
+				curPathname = join(dirname(dirname(curPathname)), String(status));
+
 				// Look for conventional error page
 				this.url.pathname = curPathname;
 				if(existsSync(this.localPath())) {
+					errorPageFound = true;
+
 					break;
 				}
 
 				// Look for compound error page otherwise
 				this.url.pathname = this.pathnameToCompound();
 				if(existsSync(this.localPath())) {
+					errorPageFound = true;
+
 					this.isCompound = true;
 					this.compoundArgs = [];	// No arguments as is to be generic (multi location re-routed)
 
 					break;
-				};
+				}
 
 				// Continue search in parent directory
-				curPathname = join(dirname(dirname(curPathname)), String(status));
-			}
+				curPathname = join(dirname(dirname(curPathname)));
+			} while(curPathname !== "/");
 
 			// Respond with error code (uses constructed error page pathname or generic message if not found)
 			// Do not handle custom ResponseErrors for error pages due to endless recursion (generic 500)
-			return super.respond(status, this.read());
+			return super.respond(status, errorPageFound ? this.read() : null);
 		}
-
+		
 		// Perform definite response
 		try {
 			super.respond(status, this.read());
@@ -183,22 +158,16 @@ export class DynamicGetEntity extends GetEntity {
 		// Redirect only needed for dynamic files (web pages)
 		// as static files can work with explicit request URLs too (reduces redirection overhead)
 		if(this.locale) {
-			// Redirect default URL implicit request to URL explicit variant if given (possibly partwise)
-			const redirectPart: Record<string, string> = {
-				language: (!this.locale.lang ? serverConfig.locale.languages.default : null),
-				country: (!this.locale.country ? serverConfig.locale.countries.default : null)
-			};
-			if(redirectPart.language
-			|| redirectPart.country) {
+			// TODO: Register used languages (within certain time period) to redirect accordingly (if mis referenced)? But what about intentional routings?
+			// Redirect default locale explicit URL to implicit representation
+			if(this.locale.language == defaultLang) {
 				// Consider locale accept header if resquesting locale implicitly
-				return this.redirect(`/${redirectPart.language || this.locale.lang}${(redirectPart.language && redirectPart.country) ? "-" : ""}${!this.locale.country ? `${redirectPart.country || this.locale.country}` : ""}${this.url.pathname}`);
+				return this.redirect(`${this.locale.country ? `${this.locale.country}/` : ""}${this.url.pathname}`);
 			}
 			
 			// Code default locale for implicit processing if was given implicitly by URL
-			this.locale.lang = this.locale.lang || serverConfig.locale.languages.default;
-			this.locale.country = this.locale.country || serverConfig.locale.countries.default;
-
-			// TODO: Unsupported locale behavior (404?)
+			this.locale.language = this.locale.language || defaultLang;
+			// TODO: Add default country (normalize configuration)
 		}
 
 		// Append pathname with default file name if none explicitly given
@@ -212,67 +181,8 @@ export class DynamicGetEntity extends GetEntity {
 		 */
 
 		// TODO: Implement sideeffect-less local path construction
-
-		// Respond with file located at exactly requested path if exists
-		if(existsSync(this.localPath())) {
-        	return this.respond(200);
-		}
-		
-		// Respond with closest related compound page if exists (bottom-up traversal)
-		// Traverse a pathname to retrieve parameters of the closest compound page in the web file system
-		const originalPathname: string = this.url.pathname;	// Backup as of processing sideeffects
-
-		// Traversal iteration limit (for preventing too deep nestings or endless traversal
-		const traversalLimit: number = 100;
-		// Traversal iterations counter
-		let traversalCount: number = 0;
-
-		// Intermediate compound arguments array
-		const compoundArgs: string[] = [];
-		// Traversal loop
-		while(this.url.pathname !== "/") {
-			this.url.pathname = this.pathnameToCompound();
-			if(existsSync(this.localPath())) {
-				this.isCompound = true;
-				this.compoundArgs = compoundArgs.reverse();	// Reverse (stacked) array to obtain URL order
-				
-				return this.respond(200);
-			}
-
-			// Construct next iteration
-			compoundArgs.push(basename(this.url.pathname));
-			this.url.pathname = dirname(dirname(this.url.pathname));
-
-			traversalCount++;
-
-			// Throw error upon reached iteration limit
-			if(traversalCount >= traversalLimit) {
-				// Close request due to processing timeout if traversal iteration limit reached
-				return this.respond(408);
-			}
-		}
-
-		this.url.pathname = originalPathname;	// Use original pathname (strategy adjusted)
-
-		// No suitable file found
-		this.respond(404);
+		this.respond(this.processPagePath());
 
 		// TODO: Store resolve mapping in order to reduce redunandant processing costs
-	}
-
-	public getReducedRequestInfo(): IReducedRequestInfo {
-		return {
-			...super.getReducedRequestInfo(),
-
-    		isCompound: this.isCompound,
-
-			// Compound page specific information
-			...(this.isCompound
-			? {
-				base: this.pathnameToConventional(),
-				args: this.compoundArgs
-			}
-			: {})
-		};
 	}
 }

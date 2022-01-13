@@ -4,9 +4,8 @@
 
 
 import {existsSync} from "fs";
-import {join, dirname, basename} from "path";
+import {join, dirname} from "path";
 
-import serverConfig from "../../config/config.server";
 import pluginConfig from "../../config/config.plugins";
 
 import {truncateModuleExtension} from "../../utilities/normalize";
@@ -102,7 +101,7 @@ export function getNameByReference(reference: string): string {
 	}
 
 	// Local plug-in without (named) package (use file name (without extension))
-	return truncateModuleExtension(basename(reference));
+	return truncateModuleExtension(reference.match(/([^/]+\/)?[^/]+$/)[0]);
 }
 
 /**
@@ -122,7 +121,7 @@ export function readPluginConfig(key: string): string|number|boolean {
 
 	// Look in server config plug-in section (old paradigm)
 	// TODO: Deprecate (mid-term)
-	subObj = serverConfig["plug-in"][pluginKey];
+	subObj = require("../../config/config.server")["plug-in"][pluginKey];
 	
 	return subObj ? subObj[key] : undefined;
 }
