@@ -15,6 +15,9 @@ import serverConfig from "../config/config.server";
 import isDevMode from "../utilities/is-dev-mode";
 
 
+// Display log write errors only once
+let logWriteErr = false;
+
 /**
  * Write logged message to log file if 
  * @param {string} message Message
@@ -25,10 +28,18 @@ function writeToFile(message) {
 	const time: string = date.toLocaleTimeString();
 
 	appendFile(join(serverConfig.directory.log, `${day}.log`),
-	`[${time}]: ${message}\n`,
-	err => {
-		if(err) {}	// TODO: Handle?
-	});
+		`[${time}]: ${message}\n`,
+		err => {
+			if(err) {
+				if(logWriteErr) {
+					return;
+				}
+
+				logWriteErr = true;
+
+				error(err);
+			}	// TODO: Handle?
+		});
 }
 
 
@@ -39,7 +50,7 @@ function writeToFile(message) {
  */
 export function log(message: string, style?: string) {
 	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
-
+	
 	// Also log message to file if configured and in productive environment
 	isDevMode && serverConfig.directory.log
 	&& writeToFile(message);
@@ -56,8 +67,8 @@ export function error(err: Error, terminate = false) {
 	log(message, "\x1b[31m");
 	
 	console.error(Array.isArray(err.stack)
-	? err.stack.map(cs => `at ${String(cs)}`).join("\n")
-	: err.stack);
+		? err.stack.map(cs => `at ${String(cs)}`).join("\n")
+		: err.stack);
 		
 	terminate && process.exit();
 }

@@ -83,7 +83,7 @@ export abstract class Cache<T> {
 
     // TODO: Deprecate (mid-term)
     public has(key: string): boolean {
-        return this.exists(key);
+    	return this.exists(key);
     }
 
     /**

@@ -9,7 +9,6 @@
 
 
 import {existsSync, readFileSync} from "fs";
-import {join} from "path";
 import {gzipSync} from "zlib";
 
 import serverConfig from "../../config/config.server";
@@ -24,8 +23,6 @@ import {Entity} from "./Entity";
 export abstract class GetEntity extends Entity {
     private static readonly cache: UrlCache<Buffer> = new UrlCache();
 
-    protected extension: string;
-
     /**
      * Create entity object based on web server induced request/response objects.
      * @param {IncomingMessage} req Request object
@@ -34,16 +31,7 @@ export abstract class GetEntity extends Entity {
     constructor(req, res) {
     	super(req, res);
     }
-
-    /**
-     * Construct local disc path to asset ressource.
-     * @returns {String} Local ressource path
-     */
-    protected localPath(): string {
-		// TODO: With arg for sideeffect-less use
-    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
-    }
-
+	
     /**
      * Read the asset (file) implicitly linked to the request.
      * Use the cached value if a respecitvely valid entry exists.
@@ -71,7 +59,7 @@ export abstract class GetEntity extends Entity {
      * @param {Buffer} [message] Response message
      */
     public respond(status: number, message?: Buffer) {
-		super.process();
+    	super.process();
 		
     	// Set MIME type header accordingly
     	const mime: string = serverConfig.mimes[this.extension];
@@ -82,8 +70,8 @@ export abstract class GetEntity extends Entity {
 		
     	// Apply GZIP compression and set related header if accepted by the client
     	if(message
-		&& /(^|[, ])gzip($|[ ,])/.test(this.getHeader("Accept-Endcoding") || "")
-        && serverConfig.gzipCompressList.includes(this.extension)) {
+		&& /(^|[, ])gzip($|[ ,])/.test(this.getHeader("Accept-Encoding") || "")
+		&& serverConfig.gzipCompressList.includes(this.extension)) {
     		// Set header
     		this.setHeader("Content-Encoding", "gzip");
     		// Compress

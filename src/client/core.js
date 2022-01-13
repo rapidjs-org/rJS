@@ -27,8 +27,8 @@ rapidJS.core = (_ => {
 		document.body.addEventListener("mousedown", e => { adaptAnchor(e.target); });
 		document.body.addEventListener("keydown", _ => { adaptAnchor(document.activeElement); });
 	});
-	
-	
+
+
 	const performRequest = (method, body) => {
 		return fetch(document.location.pathname, {
 			// Perform request to same path to keep document environment (e.g. for cookies)
@@ -50,11 +50,11 @@ rapidJS.core = (_ => {
 	 * Perform request ro plug-in related endpoint (id set up).
 	 * @param {String} pluginName Internal name of plug-in to be addressed
 	 * @param {Object} [body] Body object to send along being passed to the endpoint callback
-	 * @param {String} [name] Endpoint name if given
 	 * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
+	 * @param {String} [endpointName] Endpoint name if given
 	 * @returns {Promise} Request promise eventualy resolving to response message
 	 */
-	PUBLIC.endpoint = (pluginName, body, progressHandler, endpointName) => {
+	PUBLIC.toEndpoint = (pluginName, body, progressHandler, endpointName) => {
 		return new Promise((resolve, reject) => {
 			performRequest("POST", {
 				body: body,
@@ -101,18 +101,35 @@ rapidJS.core = (_ => {
 		}
 	};
 
-	/**
-	 * Redirect to the next related client error page (if deployed, to receive generic response otherwise).
-	 * @param {Number} status Client error status code (4**)
-	 */
-	/* PUBLIC.redirectStatus = status => {
-		if(!((status % 400) < 99)) {
-			throw new RangeError(`Given status code ${status} not located within the client error value range (4**)`);
-		}
-		
-		const basePath = (document.head.querySelector("base") || {}).href || String(document.location);
-		document.location = basePath.replace(/\/[^/]*$/i, `/${String(status)}`);
+
+	/* window.onunhandledrejection = e => {
+		console.warn(e.reason);	// How to determine source?
 	}; */
+	
+	window.onerror = function(_, __, ___, ____, error) {
+		console.warn(error);
+	};
+
+	/**
+	 * Class representing an individual client error.
+	 * Instance to be thrown (uncaught) for a respective redirection.
+	 * Augments server-side equivalent.
+	 * TODO: Implement correctly
+	 */
+	PUBLIC.ClientError = class {
+		/**
+		 * @param {number} status Status code (within client error code range (4**))
+	 	 * @param {string} message Optional description message
+		 */
+		constructor(status, message) {
+			this.status = status;
+			this.message = message;
+		}
+	};
+
+
+	// TODO: Emit event once for each plug-in upon has loaded
+
 
 	return PUBLIC;
 })();

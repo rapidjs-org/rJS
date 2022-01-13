@@ -4,15 +4,17 @@
  */
 
 
-export abstract class ResponseError {
+export abstract class ResponseError extends Error {
     public status: number;
-    public message: string;
-    
+
     /**
 	 * @param {number} status Status code (within client error code range (4**))
+	 * @param {string} message Optional description message
 	 */
     constructor(leadingDigit: number, status: number, message?: string) {
-        const offset: number = leadingDigit * 100;
+    	super(message);
+
+    	const offset: number = leadingDigit * 100;
 
     	if(!Number.isInteger(status)
            || status < offset
@@ -21,6 +23,5 @@ export abstract class ResponseError {
     	}
 
     	this.status = status;
-        this.message = message;
     }
 }

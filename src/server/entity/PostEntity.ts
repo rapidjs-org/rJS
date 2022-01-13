@@ -5,11 +5,12 @@
  * 
  */
 
-
-import * as output from "../../utilities/output";
+import config from "../../config.json";
 
 
 import serverConfig from "../../config/config.server";
+
+import * as output from "../../utilities/output";
 
 import {ResponseError} from "../../interface/ResponseError/ResponseError";
 import {has as endpointHas, use as endpointUse} from "../../interface/plugin/endpoint";
@@ -35,8 +36,16 @@ export class PostEntity extends Entity {
 		super(req, res);
 	}
 
+	/**
+     * Construct local disc path to asset ressource.
+     * @returns {String} Local ressource path
+     */
+	 protected localPath(): string {
+    	return `${super.localPath()}.${config.dynamicFileExtension}`;
+	}
+
 	public process() {
-		let blockBodyProcessing: boolean = false;
+		let blockBodyProcessing = false;
 		const body = [];
 		
 		this.req.on("data", chunk => {
@@ -71,13 +80,14 @@ export class PostEntity extends Entity {
 			} catch(err) {
 				throw new SyntaxError(`Error parsing endpoint request body '${this.url.pathname}'`);
 			}
-			
 			if(!endpointHas(payload.pluginName)
-			|| !endpointHas(payload.pluginName, payload.endpointName)) {
+			&& !endpointHas(payload.pluginName, payload.endpointName)) {
 				// No related endpoint found
 				return this.respond(404);
 			}
-
+			
+			this.processPagePath();	// TODO: Async?
+			
 			super.process();
 			
 			try {
@@ -87,7 +97,7 @@ export class PostEntity extends Entity {
 					this.respond(200, data);
 				} catch(err) {
 					if(err instanceof ResponseError) {
-						return this.respond(err.status, Buffer.from(err.message, "utf-8"));
+						return this.respond(err.status, Buffer.from(JSON.stringify(err.message), "utf-8"));
 					}
 
 					throw err;
@@ -102,13 +112,5 @@ export class PostEntity extends Entity {
 		this.req.on("error", err => {
 			throw err;
 		});
-	}
-
-	public getReducedRequestInfo(): IReducedRequestInfo {
-		return {
-			...super.getReducedRequestInfo(),
-
-			isCompound: false 	// TODO: Set
-		};
 	}
 }

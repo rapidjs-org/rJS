@@ -7,7 +7,7 @@
 import {currentRequestInfo} from "../server/hook";
 
 import {render as renderTemplating} from "./templating";
-import {render as renderLocale} from "./locale";
+import {render as renderLocale} from "./locale/locale";
 
 
 declare type renderer = (message: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest?: boolean) => string;
