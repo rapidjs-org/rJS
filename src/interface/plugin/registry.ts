@@ -7,11 +7,11 @@ const config = {
 	coreModuleIdentifier: "core",
 	clientModuleAppName: "rapidJS",
 	clientModuleReferenceName: {
-		config: "config",
+		config: "this\\.config",
 		private: "rJS__PRIVATE",
 		public: "PUBLIC"
 	},
-	pluginNameRegex: /(@[a-z0-9_-]+\/)?[a-z0-9_-]+/i,
+	pluginNameRegex: /(@[a-z0-9+-][*a-z0-9._-]*\/)?[a-z0-9+-][a-z0-9._-]*/,
 	pluginNameSeparator: "+",
 	pluginRequestPrefix: "plug-in::"
 };
@@ -24,13 +24,17 @@ import {pluginRegistry} from "../bindings";
 
 import {registerDetectionDir} from "../../live/detection";
 
+import isDevMode from "../../utilities/is-dev-mode";
+import * as output from "../../utilities/output";
 import {injectIntoHead} from "../../utilities/markup";
 import {truncateModuleExtension} from "../../utilities/normalize";
 
-import {Environment} from "../Environment";
+import {EEnvironment} from "../EEnvironment";
 
 import {getNameByCall, getNameByReference, getPathByCall} from "./naming";
 
+
+// Automatic client module location detection and integration?
 
 /**
  * Plug-in name regex.
@@ -41,19 +45,11 @@ const pluginNameRegex = new RegExp(`^${config.pluginNameRegex.source}$`, "i");
  */
 const urlPrefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
-/**
- * Plug-in options object interface.
- */
-interface IOptions {
-	alias?: string;
-	environment?: Environment;
-}
-
 
 // REGISTER CLIENT CORE SUPPORT MODULE
 pluginRegistry.set("core", {
 	path: null,
-	environment: Environment.ANY,
+	environment: EEnvironment.ANY,
 	clientScript: readFileSync(join(__dirname, "../../client/core.js")),
 });
 
@@ -89,12 +85,13 @@ function loadPlugin(path: string) {
 	try {
 		pluginModule = require.main.require(path);
 	} catch(err) {
-		err.message += `\n>> This error occured inside of the plug-in module; referenced by '${path}'`;
+		err.message += `\n- ${path}`;
+
 		throw err;
 	}
 
 	if(!(pluginModule instanceof Function)) {
-		throw new SyntaxError(`Plug-in main module does not export interface function; referenced by '${path}'`);
+		throw new SyntaxError(`Plug-in main module referenced by '${path}' does not export interface function`);
 	}
 	
 	// Evaluate plug-in module
@@ -106,9 +103,12 @@ function loadPlugin(path: string) {
 /**
  * Bind (or "connect") a plug-in to the environment.
  * @param {string} reference Plug-in reference (dependency name or path to main file)
- * @param {IOptions} options Plug-in options object
+ * @param {Object} options Plug-in options object
  */
-export function bind(reference: string, options: IOptions = {}) {
+export function bind(reference: string, options: {
+	alias?: string;
+	environment?: EEnvironment;
+} = {}) {
 	// TODO: Page environment: what about compound focused plug-ins bound to default page envs?
 	if(options.alias && !pluginNameRegex.test(options.alias.trim())) { 
 		throw new SyntaxError(`Invalid plug-in alias given '', '${reference}'`);
@@ -123,17 +123,17 @@ export function bind(reference: string, options: IOptions = {}) {
 
 	// Check if plug-in with the same internal name has already been registered
 	if(pluginRegistry.has(name)) {
-		throw new ReferenceError(`Multiple plug-in references illegally resolve to the same name '${name}'`);
+		throw new ReferenceError(`More than one plug-in reference resolves to the name '${name}'`);
 	}
 	
 	const pluginPath: string = pluginNameRegex.test(reference)
 		? (module.constructor as IModuleConstructor)._resolveFilename(reference, require.main)
-		: truncateModuleExtension(join(dirname(require.main.filename), reference));
+		: join(dirname(require.main.filename), reference);
 	
 	// Write plug-in data object to registry map
 	pluginRegistry.set(name, {
-		path: pluginPath,
-		environment: options.environment ? options.environment : Environment.ANY
+		path: truncateModuleExtension(pluginPath),
+		environment: options.environment ? options.environment : EEnvironment.ANY
 	} as IPlugin);
 	
 	// Load pluginModule
@@ -141,6 +141,8 @@ export function bind(reference: string, options: IOptions = {}) {
 
 	// Register 
 	registerDetectionDir(pluginPath);
+
+	isDevMode && output.log(`>> Plug-in: '${name}'`);	// TODO: Formatted output
 }
 
 
@@ -156,7 +158,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 		.filter((name: string) => {
 			const pluginObj = pluginRegistry.get(name);
 
-			return (pluginObj.environment == Environment.ANY)
+			return (pluginObj.environment == EEnvironment.ANY)
 			&& pluginObj.clientScript
 			&& (isCompound || !pluginObj.compoundOnly);
 		})
@@ -230,7 +232,7 @@ export function retrieveClientModules(pathname: string): Buffer {
  * @param {Boolean} [compoundOnly=false] Whether to integrate the client module into compound page environments only
  */
 export function initClientModule(relativePath: string, pluginConfig?: unknown, compoundOnly?: boolean) {
-	const pluginName: string = getNameByCall(__filename);
+	const pluginName: string = getNameByCall(__filename);	// TODO: Wont work with main file implicit local referencing (filas path comparison); Fix!
 
 	if(/^\//.test(relativePath)) {
 		throw new SyntaxError(`Expecting relative path to plug-in client module upon initialization, given absolute path '${relativePath}' for '${pluginName}'`);
@@ -249,7 +251,7 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 		throw new ReferenceError(`Client module file for plug-in '${pluginName}' not found at given path '${clientFilePath}'`);
 	}
 
-	let bareClientScript: string = String(readFileSync(clientFilePath));
+	let bareClientScript = String(readFileSync(clientFilePath));
 
 	// Substitute config attribute usages in client module to be able to use the same config object between back- and client
 	bareClientScript = pluginConfig
@@ -270,8 +272,8 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 				});
 
 				value = (typeof(value) === "string" || value instanceof String)
-				? `"${value}"`
-				: value;	// Wrap string values in doublequotes
+					? `"${value}"`
+					: value;	// Wrap string values in doublequotes
 
 				return `${configAttr.charAt(0)}${value}`;
 			})
@@ -279,6 +281,8 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 	
 	// Construct individual script module
 	// TODO: Deperecated explicit identifers from client core interface (mid-term, "use_")
+	// TODO: Minify?
+	// TODO: this
 	const modularClientScript = `
 		${config.clientModuleAppName} = {
 			... ${config.clientModuleAppName},
@@ -286,10 +290,10 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 				"${pluginName}": (${config.clientModuleReferenceName.private} => {
 					const endpoint = {
 						use: (body, progressHandler) => {
-							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler);
+							return ${config.clientModuleReferenceName.private}.toEndpoint("${pluginName}", body, progressHandler);
 						},
 						useNamed: (name, body, progressHandler) => {
-							return ${config.clientModuleReferenceName.private}.endpoint("${pluginName}", body, progressHandler, name);
+							return ${config.clientModuleReferenceName.private}.toEndpoint("${pluginName}", body, progressHandler, name);
 						}
 					};
 					const ${config.clientModuleAppName} = {
@@ -299,7 +303,7 @@ export function initClientModule(relativePath: string, pluginConfig?: unknown, c
 						namedEndpoint: endpoint.useNamed,
 						useNamedEndpoint: endpoint.useNamed,
 					};
-					//delete ${config.clientModuleAppName}.endpoint;
+					delete ${config.clientModuleAppName}.toEndpoint;
 					const ${config.clientModuleReferenceName.public} = {};
 
 					${bareClientScript}${(bareClientScript.slice(-1) != ";") ? ";" : ""}

@@ -5,8 +5,8 @@
 
 // Input sequence (by words)
 const input: string[] = (process.argv.length > 2)
-? process.argv.slice(2)
-: [];
+	? process.argv.slice(2)
+	: [];
 
 
 /**
@@ -18,26 +18,26 @@ const input: string[] = (process.argv.length > 2)
  * @param {string} [shorthand] Argument shorthand (processed all uppercase)
  */
 function parse(name: string, shorthand?: string) {
-    name = name.toLowerCase();
+	name = name.toLowerCase();
 
-    // Retrieve index in input array
-    const index: number = Math.max(input.indexOf(`--${name}`), shorthand
-    ? input.indexOf(`-${shorthand.toUpperCase()}`)
-    : -1);
+	// Retrieve index in input array
+	const index: number = Math.max(input.indexOf(`--${name}`), shorthand
+		? input.indexOf(`-${shorthand.toUpperCase()}`)
+		: -1);
 
-    if(index == -1) {
-        // Abort if argument not passed (no record entry)
-        return;
-    }
+	if(index == -1) {
+		// Abort if argument not passed (no record entry)
+		return;
+	}
 
-    // Read optionally given value (next word in input sequence)
-    // Check if consequitve word exists and is not an argument itself
-    const consequtiveWord: string = input[index + 1];
-    const value: string|boolean = /^[^-]/.test(consequtiveWord || "")
-    ? consequtiveWord
-    : true; // Simply mark as given (unary, exists)
+	// Read optionally given value (next word in input sequence)
+	// Check if consequitve word exists and is not an argument itself
+	const consequtiveWord: string = input[index + 1];
+	const value: string|boolean = /^[^-]/.test(consequtiveWord || "")
+		? consequtiveWord
+		: true; // Simply mark as given (unary, exists)
 
-    args[name] = value;
+	args[name] = value;
 }
 
 
@@ -56,5 +56,5 @@ parse("path", "P");     // Explicit project path (instead of using referencing m
  * @returns {string|boolean} Argument value (or boolean state if none given)
  */
 export function argument(name: string): string|boolean {
-    return args[name] || false;
-};
+	return args[name] || false;
+}

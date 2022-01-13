@@ -9,6 +9,8 @@ module.exports = {
 		return new (require("../server/support/cache/ArbitraryCache")).ArbitraryCache();
 	},
 
+	isDevMode: require("../utilities/is-dev-mode"),
+	
 	ClientError: require("./ResponseError/ClientError").ClientError,
 	ServerError: require("./ResponseError/ServerError").ServerError,
 	Cache: require("../server/support/cache/ArbitraryCache").ArbitraryCache,

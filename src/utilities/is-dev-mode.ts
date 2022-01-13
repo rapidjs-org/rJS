@@ -7,5 +7,5 @@ import {argument} from "../args";
 
 
 export default argument("dev")
-? true
-: false;
+	? true
+	: false;

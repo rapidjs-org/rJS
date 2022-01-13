@@ -2,7 +2,7 @@
  * Page environments for respective addressing.
  */
 
-export enum Environment {
+export enum EEnvironment {
     ANY,
     SPECIFIC
 }

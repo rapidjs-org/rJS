@@ -51,6 +51,6 @@ export function createHook(entity: Entity) {
 export function currentRequestInfo(): IReducedRequestInfo {
 	const currentEntity = requests.get(asyncHooks.executionAsyncId());
 	return currentEntity
-	? currentEntity.getReducedRequestInfo()
-	: undefined;
+		? currentEntity.getReducedRequestInfo()
+		: undefined;
 }

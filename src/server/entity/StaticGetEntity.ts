@@ -79,7 +79,7 @@ export class StaticGetEntity extends GetEntity {
 		const {ino, size, mtimeMs} = fstatSync(fileDescriptor);
 		let eTag = `${ino}-${size}-${mtimeMs}`;
 		eTag = createHash("md5").update(eTag).digest("hex");
-
+		
 		this.setHeader("ETag", eTag);
 		
 		// Respond with cache activation status (ressource not modified)

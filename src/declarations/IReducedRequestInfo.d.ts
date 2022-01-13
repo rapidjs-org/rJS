@@ -1,7 +1,7 @@
 declare interface IReducedRequestInfo {
 	ip: string;
 	locale: {
-		lang?: string,
+		language?: string,
 		country?: string
 	};
 	subdomain: string[];
@@ -14,6 +14,6 @@ declare interface IReducedRequestInfo {
 	isCompound?: boolean;
 	compound?: {
 		base: string;
-		args: string;
+		args: string[];
 	}
 }
