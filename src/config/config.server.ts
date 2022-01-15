@@ -57,7 +57,7 @@ export interface IServerConfig {
 }
 
 // Retrieve web file (public) directory path on local disc
-const callDirPath: string = dirname(require.main.filename);
+const callDirPath: string = dirname(process.argv[1]);
 const argsDirPath: string|boolean = argument("path");
 // Use directory at given path (argument)
 // or call point directory otherwise
