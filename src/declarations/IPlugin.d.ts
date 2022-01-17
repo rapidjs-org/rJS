@@ -1,7 +1,7 @@
 declare interface IPlugin {
-    environment: number;
     path: string;
+    specific: boolean;
 
-    compoundOnly?: boolean;
     clientScript?: Buffer;
+    compoundOnly?: boolean;
 }

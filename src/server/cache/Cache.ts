@@ -5,7 +5,10 @@
  * load peaks.
  */
 
-import serverConfig from "../../../config/config.server";
+
+import serverConfig from "../../config/config.server";
+
+import isDevMode from "../../utilities/is-dev-mode";
 
 
 interface IStorageObject<T> {
@@ -13,7 +16,7 @@ interface IStorageObject<T> {
     data: T;
 }
 
-// TODO: Generics?
+
 export abstract class Cache<T> {
     private readonly duration: number;
     /**
@@ -76,6 +79,11 @@ export abstract class Cache<T> {
      * @returns {boolean} Whether the cache holds an entry for the requested URL
      */
     public exists(key: string): boolean {
+        if(isDevMode) {
+            // Always declare as empty in DEV MODE
+            return false;
+        }
+
     	key = this.applyNormalizationCallback(key);
         
     	return !this.isEmpty(key);

@@ -15,7 +15,7 @@ import {IncomingMessage, ServerResponse, STATUS_CODES as statusMessages} from "h
 
 import serverConfig from "../../config/config.server";
 
-import tlds from "../support/tlds.json";
+import tlds from "../tlds.json";
 
 
 import {localeMatchRegex, defaultLang} from "../../rendering/locale/locale";

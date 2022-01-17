@@ -92,12 +92,17 @@ rapidJS.core = (_ => {
 				
 				((res.status - 200) < 99) ? resolve(message) : reject(message);
 			}).catch(err => {
-				reject(new Error(`Could not connect to endpoint: ${err.message || err}`));
+				reject((err instanceof NetworkError) ? new NetworkError(`Could not reach endpoint${endpointName ? ` '${endpointName}'` : ""} for '${pluginName}'`) : err);
 			});
 		});
 
 		function applyProgressHandler(progress) {
-			progressHandler && progressHandler(progress);
+			try {
+				progressHandler && progressHandler(progress);
+			} catch(err) {
+				console.error();
+				console.error();
+			}
 		}
 	};
 
