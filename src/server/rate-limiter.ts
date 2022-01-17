@@ -3,9 +3,10 @@
  */
 
 
-// Parameter
-import serverConfig from "../../config/config.server";
+import serverConfig from "../config/config.server";
 
+
+// Parameter
 const periodLength = 60000;
 
 // Object
