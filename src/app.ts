@@ -43,27 +43,26 @@ if(isDevMode) {
 	require("./live/server");
 	
 	const {registerDetection} = require("./live/detection");
-	const {proposeRefresh} = require("./live/server");
 
 	// Watch project directory level (non-recursively) (server / main module, configs, ...)
 	registerDetection(require("path").dirname(serverConfig.directory.web), () => {
 		// Restart app if file in project root has changed
 		process.on("exit", () => {
-            require("child_process")
-			.spawn(process.argv.shift(), process.argv, {
-                cwd: process.cwd(),
-                detached: true,
-                stdio: "inherit"
-            });
-        });
+			require("child_process")
+				.spawn(process.argv.shift(), process.argv, {
+					cwd: process.cwd(),
+					detached: true,
+					stdio: "inherit"
+				});
+		});
 
-        process.exit();
+		process.exit();
 	}, false);
 	// Watch web file directory (recursively)
-	registerDetection(serverConfig.directory.web, proposeRefresh);
+	registerDetection(serverConfig.directory.web);
 }
 
 
 // Application scoped interface.
 // Accessible from within individual application scope.
-module.exports = appInterface;
+export default appInterface;

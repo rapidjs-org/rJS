@@ -79,10 +79,10 @@ export abstract class Cache<T> {
      * @returns {boolean} Whether the cache holds an entry for the requested URL
      */
     public exists(key: string): boolean {
-        if(isDevMode) {
-            // Always declare as empty in DEV MODE
-            return false;
-        }
+    	if(isDevMode) {
+    		// Always declare as empty in DEV MODE
+    		return false;
+    	}
 
     	key = this.applyNormalizationCallback(key);
         

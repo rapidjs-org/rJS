@@ -42,6 +42,6 @@ export function read(pathname: string): string {
  * @param {string} pathname Path to file (relative to web directory root)
  * @returns {boolean} Whether file exists
  */
-export function exists(pathname: string) {
+export function exists(pathname: string): boolean {
 	return existsSync(join(serverConfig.directory.web, pathname)) ? true : false;
 }

@@ -8,12 +8,13 @@ const config = {
 	pluginConfigIdentifier: "pluginConfig",
 	clientModuleAppName: "rapidJS",
 	clientModuleReferenceName: {
-		config: "SHARED",
+		shared: "SHARED",
 		public: "PUBLIC"
 	},
 	pluginNameRegex: /(@[a-z0-9+-][*a-z0-9._-]*\/)?[a-z0-9+-][a-z0-9._-]*/,
 	pluginNameSeparator: "+",
-	pluginRequestPrefix: "plug-in::"
+	pluginRequestPrefix: "plug-in::",
+	thisRetainerIdentifier: "$this"
 };
 
 
@@ -30,8 +31,6 @@ import * as output from "../../utilities/output";
 import {injectIntoHead} from "../../utilities/markup";
 import {truncateModuleExtension} from "../../utilities/normalize";
 
-import {pluginRegistry} from "../bindings";
-
 import {getNameByCall, getNameByReference, getPathByCall} from "./naming";
 
 
@@ -46,6 +45,13 @@ const pluginNameRegex = new RegExp(`^${config.pluginNameRegex.source}$`, "i");
  */
 const urlPrefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
+
+/**
+ * List (array) of registered plug-in related data.
+ * Integrated into the environment upon registration.
+ * Binding storage to be utilized for organizational management.
+ */
+export const pluginRegistry: Map<string, IPlugin> = new Map();
 
 // REGISTER CLIENT CORE SUPPORT MODULE
 pluginRegistry.set("core", {
@@ -62,9 +68,6 @@ pluginRegistry.set("core", {
  * @param {boolean} compoundOnly Whether to only have the plug-in integrated into compound pages
  */
 function registerClientModule(pluginName: string, modularClientScript: string, compoundOnly = false) {
-	// TODO: Wrap in a way, line numbers keep position (for error output)?
-	// TODO: Wrapper minification?
-
 	// Write module and compound directive to registry
 	const registryEntry = pluginRegistry.get(pluginName);
 
@@ -111,8 +114,10 @@ function loadPlugin(path: string, name: string) {
 				for(const inter in require("${require.resolve("../scope:plugin")}")) {
 					this[inter] = require("${require.resolve("../scope:plugin")}")[inter];
 				}
+
 				this.${config.pluginConfigIdentifier} = ${JSON.stringify(getPluginConfig(name))};
-				this.${config.clientModuleReferenceName.config} = {};
+				
+				const ${config.thisRetainerIdentifier} = this;
 			${Module.wrapper[1]}`;
 		});
 
@@ -141,7 +146,7 @@ function loadPlugin(path: string, name: string) {
  * @param {Object} options Plug-in options object
  * @param {boolean} [isInternalRelaod] Whether the bind call represents an internal reload (disables duplicate guards)
  */
-export function bindPlugin(reference: string, options, isInternalRelaod: boolean = false) {
+export function bindPlugin(reference: string, options, isInternalRelaod = false) {
 	// TODO: Page environment: what about compound focused plug-ins bound to default page envs?
 	if(options.alias && !pluginNameRegex.test(options.alias.trim())) { 
 		throw new SyntaxError(`Invalid plug-in alias given '', '${reference}'`);
@@ -200,6 +205,8 @@ export function bind(reference: string, options: {
  * @returns {string} Markup with reference integration
  */
 export function integratePluginReferences(markup: string, isCompound: boolean): string {
+	// TODO: No bundling (or even unbundle) in DEV MODE for better debugging results
+
 	const effectivePlugins: string[]  = Array.from(pluginRegistry.keys())
 	// Filter for environmentally frontend / client bound plug-ins
 		.filter((name: string) => {
@@ -300,7 +307,7 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 	}
 
 	const bareClientScript = String(readFileSync(clientFilePath));
-	
+
 	// Construct individual script module
 	// TODO: Deperecated explicit identifers from client core interface (mid-term, "use_")
 	// TODO: Minify?
@@ -318,28 +325,35 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 						}
 					};
 					
-					this.endpoint = endpoint.use;
-					this.endpoint = endpoint.use;
-					this.useEndpoint = endpoint.use;
-					this.namedEndpoint = endpoint.useNamed;
-					this.useNamedEndpoint = endpoint.useNamed;
+					const ${config.thisRetainerIdentifier} = {
+						endpoint: endpoint.use,
+						useEndpoint: endpoint.use,
+						namedEndpoint: endpoint.useNamed,
+						useNamedEndpoint: endpoint.useNamed,
 
-					this.${config.clientModuleReferenceName.public} = {};
-					this.${config.clientModuleReferenceName.config} = ${JSON.stringify(sharedConfig)};
+						${config.clientModuleReferenceName.public}: {},
+						${config.clientModuleReferenceName.shared}: ${JSON.stringify(sharedConfig)}
+					};
 
+					for(const member in ${config.thisRetainerIdentifier}) {
+						this[member] = ${config.thisRetainerIdentifier}[member]
+					}
+
+					delete endpoint;
+					
 					`,`
 					
-					return this.${config.clientModuleReferenceName.public};
-				})(${config.clientModuleAppName})
+					return ${config.thisRetainerIdentifier}.${config.clientModuleReferenceName.public};
+				})()
 			}
 		}
 	`]
-	.map(part => {
-	// Minifiy wrapper
-		return part
-			.replace(/([{};,])\s+/g, "$1")
-			.trim();
-	});
+		.map(part => {
+			// Minifiy wrapper
+			return part;
+			/* .replace(/([{};,])\s+/g, "$1")
+				.trim(); */
+		});
 
 	// Register client module in order to be integrated into pages upon request
 	registerClientModule(pluginName, `${modularClientScript[0]}${bareClientScript}${(bareClientScript.slice(-1) != ";") ? ";" : ""}${modularClientScript[1]}`, compoundOnly);

@@ -21,7 +21,7 @@ export class ArbitraryCache<T> extends Cache<T> {
      * Set up optional entry key normalization callback.
      * @param {Function} callback Normalization callback getting passed an entry key to be normalized/unified.
      */
-	public normalize(callback) {
+	public normalize(callback: (key: string) => string) {
 		this.normalizationCallback = callback;
 	}
 }
