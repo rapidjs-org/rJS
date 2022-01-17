@@ -1,4 +1,2 @@
-{
-    "dynamicFileExtension": "html",
-    "privateWebFilePrefix": "_"
+{"compoundPageDirPrefix":"#","dynamicFileDefaultName":"index","dynamicFileExtension":"html","privateWebFilePrefix":"_"
 }

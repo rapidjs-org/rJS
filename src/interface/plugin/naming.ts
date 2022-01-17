@@ -8,7 +8,7 @@ import {join, dirname} from "path";
 
 import {truncateModuleExtension} from "../../utilities/normalize";
 
-import {pluginRegistry} from "../bindings";
+import {pluginRegistry} from "./registry";
 
 
 /**

@@ -1,42 +1,7 @@
-"use strict";
 /**
- * Web file system interface.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.exists = exports.read = void 0;
-const config_json_1 = __importDefault(require("../config.json"));
-const fs_1 = require("fs");
-const path_1 = require("path");
-const config_server_1 = __importDefault(require("../config/config.server"));
-const normalize_1 = require("../utilities/normalize");
-const modifiers_1 = require("../mods/modifiers");
-// TODO: Bind file reader interface?
-/**
- * Read a file from the web directory file system.
- * @param {string} pathname Path to file (relative to web directory root)
- * @returns {Buffer} File contents
- * @throws ClientError (404) if file does not exist
- */
-function read(pathname) {
-    // Construct absolute path on local disc
-    const localPath = (0, path_1.join)(config_server_1.default.directory.web, pathname);
-    let contents = String((0, fs_1.readFileSync)(localPath));
-    // Apply registered file modifiers if is dynamic file request
-    contents = ((0, normalize_1.normalizeExtension)((0, path_1.extname)(pathname)) === config_json_1.default.dynamicFileExtension)
-        ? (0, modifiers_1.renderModifiers)(contents)
-        : contents;
-    return Buffer.from(contents, "utf-8");
-}
-exports.read = read;
-/**
- * Check whether a file exists at a given path in the web directory file system.
- * @param {string} pathname Path to file (relative to web directory root)
- * @returns {boolean} Whether file exists
- */
-function exists(pathname) {
-    return (0, fs_1.existsSync)((0, path_1.join)(config_server_1.default.directory.web, pathname)) ? true : false;
-}
-exports.exists = exists;
+"use strict";var __importDefault=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(exports,"__esModule",{value:!0}),exports.exists=exports.read=void 0;const config_json_1=__importDefault(require("../config.json")),fs_1=require("fs"),path_1=require("path"),config_server_1=__importDefault(require("../config/config.server")),normalize_1=require("../utilities/normalize"),render_1=require("../rendering/render");function read(e){var r=(0,path_1.join)(config_server_1.default.directory.web,e);let i=String((0,fs_1.readFileSync)(r));return i=(0,normalize_1.normalizeExtension)((0,path_1.extname)(e))===config_json_1.default.dynamicFileExtension?(0,render_1.renderModifiers)(i):i,i}function exists(e){return!!(0,fs_1.existsSync)((0,path_1.join)(config_server_1.default.directory.web,e))}exports.read=read,exports.exists=exists;

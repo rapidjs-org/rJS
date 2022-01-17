@@ -13,6 +13,8 @@ import {join} from "path";
 import * as output from "../utilities/output";
 import isDevMode from "../utilities/is-dev-mode";
 
+import {proposeRefresh} from "./server";
+
 
 // Array of detection directories
 const modRegistry: {
@@ -40,7 +42,7 @@ function fileModified(time) {
  * @param {string} path Detection path (starting from root)
  * @param {Function} callback Function to call if modification has been detected
  */
-async function scanDir(path: string, callback: () => void, recursive: boolean = true) {
+async function scanDir(path: string, callback: () => void, recursive = true) {
 	if(!existsSync(path)) {
 		// Directory does not exist
 		return;
@@ -49,7 +51,7 @@ async function scanDir(path: string, callback: () => void, recursive: boolean = 
 	// Read current directory
 	readdir(path, {
 		withFileTypes: true
-	}, (err, dirents: Dirent[]) => {
+	}, (_, dirents: Dirent[]) => {
 		(dirents || []).forEach(dirent => {
 			const curPath: string = join(path, dirent.name);
 
@@ -78,7 +80,9 @@ async function checkFile(path, callback) {
 			output.log(`File modified: Initiated live reload\n- ${path}`);
 			
 			// Change detected (TODO: Cancel further check up as of is suffiecient for performing result action)
-			return callback();
+			callback && callback();
+
+			proposeRefresh();	// Always also reloas connected web client views
 		}
 	});
 }
@@ -89,7 +93,7 @@ async function checkFile(path, callback) {
  * @param {string} path Absolute path to directory
  * @param {Function} callback Function to call if modification has been detected
  */
- export function registerDetection(path: string, callback: () => void, scanRecursively = true) {
+export function registerDetection(path: string, callback?: () => void, scanRecursively = true) {
 	if(!isDevMode) {
 		// DEV MODE only
 		return;
@@ -109,8 +113,8 @@ setInterval(_ => {
 		// Scan registered directories / files respectively
 		modRegistry.forEach(mod => {
 			lstatSync(mod.path).isDirectory() 
-			? scanDir(mod.path, mod.callback, mod.recursive)
-			: checkFile(mod.path, mod.callback);
+				? scanDir(mod.path, mod.callback, mod.recursive)
+				: checkFile(mod.path, mod.callback);
 		});
 	} catch(err) {
 		output.log("An error occurred scanning project files for modification in live mode");
