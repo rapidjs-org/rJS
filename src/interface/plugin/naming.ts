@@ -6,8 +6,6 @@
 import {existsSync} from "fs";
 import {join, dirname} from "path";
 
-import pluginConfig from "../../config/config.plugins";
-
 import {truncateModuleExtension} from "../../utilities/normalize";
 
 import {pluginRegistry} from "../bindings";
@@ -102,26 +100,4 @@ export function getNameByReference(reference: string): string {
 
 	// Local plug-in without (named) package (use file name (without extension))
 	return truncateModuleExtension(reference.match(/([^/]+\/)?[^/]+$/)[0]);
-}
-
-/**
- * Read a parameter value from the plug-in specific configuration file.
- * Automatically using plug-in scope, i.e. configuration sub object with the reading plug-in's name as key
- * @param {string} key Parameter key
- * @returns {string|number|boolean} Respective value if defined
- */
-export function readPluginConfig(key: string): string|number|boolean {
-	const pluginKey: string = getNameByCall(__filename);
-
-	let subObj = pluginConfig[pluginKey];
-
-	if(subObj) {
-		return subObj ? subObj[key] : undefined;
-	}
-
-	// Look in server config plug-in section (old paradigm)
-	// TODO: Deprecate (mid-term)
-	subObj = require("../../config/config.server")["plug-in"][pluginKey];
-	
-	return subObj ? subObj[key] : undefined;
 }
