@@ -35,7 +35,7 @@ export function renderModifiers(message: string, isImplicitRequest = false): str
 	
 	// Work handler queue
 	handlerQueue.forEach((handler: renderer) => {
-		message = handler(message, reducedRequestInfo, isImplicitRequest);
+		message = handler(message, reducedRequestInfo, isImplicitRequest);	// TODO: Where require("../scope:common")?
 	});
 
 	return message;

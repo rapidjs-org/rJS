@@ -1,19 +1,14 @@
 /**
- * Scope universal interface object.
+ * Common application scope interface object.
  */
 
 
 module.exports = {
-	// TODO: Deprecate remove (mid-term)
-	createCache: () => {
-		return new (require("../server/support/cache/ArbitraryCache")).ArbitraryCache();
-	},
-
 	isDevMode: require("../utilities/is-dev-mode"),
 	
 	ClientError: require("./ResponseError/ClientError").ClientError,
 	ServerError: require("./ResponseError/ServerError").ServerError,
-	Cache: require("../server/support/cache/ArbitraryCache").ArbitraryCache,
-
+	Cache: require("../server/cache/ArbitraryCache").ArbitraryCache,
+	
 	file: require("./file")
 };

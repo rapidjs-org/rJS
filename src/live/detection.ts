@@ -7,22 +7,20 @@ const config = {
 };
 
 
-import {readdir, stat, existsSync, Dirent} from "fs";
+import {readdir, stat, lstatSync, existsSync, Dirent} from "fs";
 import {join} from "path";
 
-import serverConfig from "../config/config.server";
-
 import * as output from "../utilities/output";
-
-import {proposeRefresh} from "./server";
+import isDevMode from "../utilities/is-dev-mode";
 
 
 // Array of detection directories
-const detectionDirs: string[] = [];
+const modRegistry: {
+	path: string;
+	recursive: boolean;
 
-
-// Watch web file directory
-registerDetectionDir(serverConfig.directory.web);
+	callback: () => void;
+}[] = [];
 
 
 /**
@@ -40,60 +38,80 @@ function fileModified(time) {
  * Modification to be effective if a file has been chnaged within
  * latest detection period.
  * @param {string} path Detection path (starting from root)
- * @param {Function} [callback] Function to call if modification has been detected
+ * @param {Function} callback Function to call if modification has been detected
  */
-async function scanDir(path: string, callback?: () => void) {
+async function scanDir(path: string, callback: () => void, recursive: boolean = true) {
 	if(!existsSync(path)) {
 		// Directory does not exist
 		return;
 	}
-	
+
 	// Read current directory
 	readdir(path, {
 		withFileTypes: true
-	}, (_, dirents: Dirent[]) => {
+	}, (err, dirents: Dirent[]) => {
 		(dirents || []).forEach(dirent => {
 			const curPath: string = join(path, dirent.name);
 
-			if(dirent.isDirectory()) {
+			if(recursive && dirent.isDirectory()) {
 				// Scan sub directory
-				return scanDir(curPath);
+				return scanDir(curPath, callback, recursive);
 			}
-            
-			// Read file stats to check for modification status
-			stat(curPath, (_, stats) => {
-				if(fileModified(stats.birthtime)
-                || fileModified(stats.mtimeMs)) {
-					// Change detected
-					callback && callback();
 
-					return proposeRefresh();	// Terminate current scanning process
-				}
-			});
+			checkFile(curPath, callback);
 		});
+	});
+}
+
+/**
+ * Scan a specific file for modification.
+ * Modification to be effective if a file has been chnaged within
+ * latest detection period.
+ * @param {string} path Path to file
+ * @param {Function} callback Function to call if modification has been detected
+ */
+async function checkFile(path, callback) {
+	// Read file stats to check for modification status
+	stat(path, (_, stats) => {
+		if(fileModified(stats.birthtime)
+		|| fileModified(stats.mtimeMs)) {
+			output.log(`File modified: Initiated live reload\n- ${path}`);
+			
+			// Change detected (TODO: Cancel further check up as of is suffiecient for performing result action)
+			return callback();
+		}
 	});
 }
 
 
 /**
  * Register a directory for modification detection.
- * @param {string} directory Absolute path to directory
+ * @param {string} path Absolute path to directory
+ * @param {Function} callback Function to call if modification has been detected
  */
-export function registerDetectionDir(directory: string) {
-	detectionDirs.push(directory);
+ export function registerDetection(path: string, callback: () => void, scanRecursively = true) {
+	if(!isDevMode) {
+		// DEV MODE only
+		return;
+	}
+
+	modRegistry.push({
+		path: path,
+		recursive: scanRecursively,
+		callback: callback
+	});
 }
 
 
 // Initialize detection interval
 setInterval(_ => {
 	try {
-		// Scan directories registered for change detection
-		detectionDirs.forEach(dir => {
-			scanDir(dir);
+		// Scan registered directories / files respectively
+		modRegistry.forEach(mod => {
+			lstatSync(mod.path).isDirectory() 
+			? scanDir(mod.path, mod.callback, mod.recursive)
+			: checkFile(mod.path, mod.callback);
 		});
-
-		// TODO: Plug-in files
-		// TODO: Templating files
 	} catch(err) {
 		output.log("An error occurred scanning project files for modification in live mode");
 		output.error(err);

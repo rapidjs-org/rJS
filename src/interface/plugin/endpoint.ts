@@ -8,7 +8,7 @@ const config = {
 };
 
 
-import {ArbitraryCache} from "../../server/support/cache/ArbitraryCache";
+import {ArbitraryCache} from "../../server/cache/ArbitraryCache";
 
 import {currentRequestInfo} from "../../server/hook";
 
@@ -46,13 +46,18 @@ const endpointRouter: Map<string, Map<string, IEndpoint>> = new Map();
  * 								  Use case: multiple endpoints for a single plug-in
  * 								  Default name as set in internal config object (see above)
  */
-function set(callback: EndpointCallback, useCache = false, endpointName: string = config.defaultEndpointName) {
+function set(callback: EndpointCallback, useCache = false, endpointName?: string) {
 	// Retrieve related plug-in name (call wise)
 	const pluginName: string = getNameByCall(__filename);
 
+	if(!endpointName) {
+		endpointName = config.defaultEndpointName;
+	} else if(!/^[a-z0-9_-]+$/i.test(endpointName)) {
+		throw new SyntaxError(`Invalid name '${endpointName}' given defining an endpoint for Plug-in '${pluginName}'`);
+	}
+
 	// Create plug-in specific sub map in the general router map if not yet exists
 	!endpointRouter.has(pluginName) && endpointRouter.set(pluginName, new Map());
-
 	endpointRouter.get(pluginName).set(endpointName, {
 		callback,
 		useCache
