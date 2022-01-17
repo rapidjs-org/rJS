@@ -13,7 +13,7 @@ import {gzipSync} from "zlib";
 
 import serverConfig from "../../config/config.server";
 
-import {UrlCache} from "../support/cache/UrlCache";
+import {UrlCache} from "../cache/UrlCache";
 
 import {Entity} from "./Entity";
 

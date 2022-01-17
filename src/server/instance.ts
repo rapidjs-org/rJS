@@ -15,7 +15,7 @@ import {normalizeExtension} from "../utilities/normalize";
 
 import serverConfig from "../config/config.server";
 
-import {rateExceeded} from "./support/rate-limiter";
+import {rateExceeded} from "./rate-limiter";
 
 import {isClientModuleRequest} from "../interface/plugin/registry";
 
