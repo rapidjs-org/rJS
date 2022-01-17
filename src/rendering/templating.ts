@@ -10,9 +10,7 @@ import {existsSync} from "fs";
 
 import serverConfig from "../config/config.server";
 
-import * as output from "../utilities/output";
-
-import {templatingEngines} from "../interface/bindings";
+import {ssrEngine} from "../interface/bindings";
 
 
 /**
@@ -34,24 +32,9 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo,
 		? templatingObj(reducedRequestInfo)	// Pass request info object to templating module if is exporting a function
 		: templatingObj;	// Stateless templating otherwise (regarding the individual request)
 	
-	templatingEngines
-	// Filter for request adequate engines
-		.filter(engine => {
-			if(!isImplicitRequest) {
-				return !engine.implicitReadingOnly;
-			}
-
-			return true;
-		})
-	// Apply each engine in order of registration
-		.forEach(engine => {
-			try {
-				markup = engine.callback(markup, templatingObj, reducedRequestInfo);
-			} catch(err) {
-				output.log(`An error occurred applying the rendering engine with index ${engine.index}:`);
-				output.error(err);
-			}
-		});
+	// Apply defined rendering engines
+	markup = ssrEngine.apply(markup, [templatingObj, reducedRequestInfo], isImplicitRequest);
+	
 
 	return markup;
 }

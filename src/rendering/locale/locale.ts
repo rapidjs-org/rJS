@@ -65,7 +65,7 @@ export const defaultLang: string = (serverConfig.locale.length > 0)
  */
 export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
 	if(!(reducedRequestInfo.locale || {}).language
-	|| !localeEngine.callback) {
+	|| localeEngine.length == 0) {
 		// Locale processing disabled / no engine bound
 		return markup;
 	}
@@ -92,7 +92,7 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo)
 	});
 	
 	// Apply bound locale handler with locale information and translation object
-	markup = localeEngine.callback(markup, reducedRequestInfo.locale, langObj);
+	markup = localeEngine.apply(markup, [reducedRequestInfo.locale, langObj]);
 
 	// TODO: Lang attr?
 
