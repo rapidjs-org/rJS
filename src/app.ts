@@ -65,4 +65,4 @@ if(isDevMode) {
 
 // Application scoped interface.
 // Accessible from within individual application scope.
-export default appInterface;
+module.exports = appInterface;
