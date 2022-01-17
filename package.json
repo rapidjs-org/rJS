@@ -14,8 +14,8 @@
   },
   "typings": "./types/index.d.ts",
   "files": [
-    "./dist",
-    "./types/*.d.ts"
+    "dist",
+    "types"
   ],
   "keywords": [
     "rapidjs",
