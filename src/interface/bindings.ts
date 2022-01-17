@@ -13,16 +13,16 @@ import * as output from "../utilities/output";
  * Callbacks to be applied to markup ("render") in order of registration (with registration limit).
  */
 class RenderBinding {
-    private engineStore: IRenderingEngine[];
-    private caption: string;
-    private limit: number;
+    private readonly engineStore: IRenderingEngine[];
+    private readonly caption: string;
+    private readonly limit: number;
 
-    public length: number = 0;
+    public length = 0;
 
-    constructor(caption: string, limit: number = Infinity) {
-        this.caption = caption;
-        this.limit = limit;
-        this.engineStore = [];
+    constructor(caption: string, limit = Infinity) {
+    	this.caption = caption;
+    	this.limit = limit;
+    	this.engineStore = [];
     }
 
     /**
@@ -31,43 +31,48 @@ class RenderBinding {
      * @param {boolean} [implicitReadingOnly] Whether to render templating only if is a server implicit reading process (GET) (false by default)
      */
     public bind(callback: (message: string, handlerObj?: Record<string, unknown>, req?: IReducedRequestInfo) => string, implicitReadingOnly?: boolean) {
-        if(this.engineStore.length >= this.limit) {
-            throw new ReferenceError(`Trying to bind more ${this.caption} engines than allowed (max. ${this.limit}).`);
-        }
+    	if(this.engineStore.length >= this.limit) {
+    		throw new ReferenceError(`Trying to bind more ${this.caption} engines than allowed (max. ${this.limit}).`);
+    	}
 
-        this.length++;
+    	this.length++;
 
-        this.engineStore.push({
-            callback,
-            implicitReadingOnly
-        });
+    	this.engineStore.push({
+    		callback,
+    		implicitReadingOnly
+    	});
     }
+
     /**
      * Apply bound rendering engines in order of registration.
      * @param {string} markup Markup to render
      * @returns {string} Rendered markup
      */
     public apply(markup: string, callbackArgs: unknown[], isImplicitRequest?: boolean): string {
-        this.engineStore
-        // Filter for request adequate engines
-		.filter(engine => {
-			if(!isImplicitRequest) {
-				return !engine.implicitReadingOnly;
-			}
+    	this.engineStore
+    	// Filter for request adequate engines
+    		.filter(engine => {
+    			if(!isImplicitRequest) {
+    				return !engine.implicitReadingOnly;
+    			}
 
-			return true;
-		})
+    			return true;
+    		})
 	    // Apply each engine in order of registration
-		.forEach(engine => {
-			try {
-				markup = engine.callback[0].apply(null, ([markup] as unknown[]).concat(callbackArgs));
-			} catch(err) {
-				output.log(`An error occurred applying a ${this.caption} rendering engine:`);
-				output.error(err);
-			}
-		});
+    		.forEach(engine => {
+    			try {
+    				markup = engine.callback[0].apply(null, ([require("../interface/scope:common"), markup] as unknown[]).concat(callbackArgs));
 
-        return markup;
+    				if(typeof(markup) !== "string") {
+    					output.error(new SyntaxError(`Render of ${this.caption} engine is not a string, but has been stringified (check result)`));
+    				}
+    			} catch(err) {
+    				output.log(`An error occurred applying ${this.caption} rendering engine:`);
+    				output.error(err);
+    			}
+    		});
+
+    	return markup;
     }
 }
 
@@ -88,19 +93,9 @@ export const localeEngine: RenderBinding = new RenderBinding("locale", 1);
 
 
 export function bindSSR(...args) {
-    return ssrEngine.bind.call(ssrEngine, args);
+	return ssrEngine.bind.call(ssrEngine, args);
 }
 
 export function bindLocale(...args) {
-    return localeEngine.bind.call(localeEngine, args);
+	return localeEngine.bind.call(localeEngine, args);
 }
-
-
-
-
-/**
- * List (array) of registered plug-in related data.
- * Integrated into the environment upon registration.
- * Binding storage to be utilized for organizational management.
- */
-export const pluginRegistry: Map<string, IPlugin> = new Map();

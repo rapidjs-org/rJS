@@ -9,12 +9,13 @@
     "compile:dev": "tsc -w --outDir ./debug",
     "debug": "rm -rf ./debug && node ./scripts/debug.js",
     "test": "node ./scripts/test.js",
-    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js && cp -r ./types ./dist/types",
-    "release": "npm run build && np"
+    "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
+    "release": "np"
   },
-  "typings": "types/index.d.ts",
+  "typings": "./types/index.d.ts",
   "files": [
-    "dist"
+    "./dist",
+    "./types/*.d.ts"
   ],
   "keywords": [
     "rapidjs",

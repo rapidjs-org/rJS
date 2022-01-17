@@ -11,7 +11,7 @@ let totalFiles = 0;
 // Minify /dist directory
 minify(join(__dirname, "../dist"));
 
-console.log(`> Build complete (${totalFiles} files affected)`);
+console.log(`> Build completed (${totalFiles} files affected).`);
 
 /**
  * Minify script files (recursively).
@@ -48,7 +48,7 @@ function minify(path) {
             
             case "json":
                 code = code
-                .replace(/([{:,])\s+(["'}])/, "$1$2")
+                .replace(/([{:,])\s+(["'}])/g, "$1$2")
                 .replace(/\s*\}$/, "}");
 
                 break;

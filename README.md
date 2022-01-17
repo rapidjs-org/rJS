@@ -5,15 +5,17 @@
 <a href="https://www.npmjs.com/package/@rapidjs.org/core"><img src="https://img.shields.io/npm/v/@rapidjs.org/core"></a>
 <a href="https://www.npmjs.com/package/@rapidjs.org/core"><img src="https://img.shields.io/bundlephobia/min/@rapidjs.org/core"></a>
 
-All-implicit routing, abstract web server framework for Node.js.\
-Individual functionality with feature-specific, modular client-server channel plug-ins.\
-Optional, un-opinionated templating interface. 
+## 
 
-## Ressources
+### UI web server framework
+**No-routing. Pluggable. Unopinionated.**\
+\
+Build Node.js app servers solely defined by their individual application.
 
-[Get started](https://rapidjs.org/docs)\
-[FAQ](https://rapidjs.org/faq)
+• [Get Started](https://rapidjs.org/docs)\
+• [Concepts](https://rapidjs.org)\
+• [FAQ](https://rapidjs.org/faq)
 
----
+## 
 
 <sub>© Thassilo Martin Schiepanski</sub>

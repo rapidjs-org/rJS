@@ -100,8 +100,7 @@ rapidJS.core = (_ => {
 			try {
 				progressHandler && progressHandler(progress);
 			} catch(err) {
-				console.error();
-				console.error();
+				console.error(err);
 			}
 		}
 	};
@@ -109,11 +108,11 @@ rapidJS.core = (_ => {
 
 	/* window.onunhandledrejection = e => {
 		console.warn(e.reason);	// How to determine source?
-	}; */
+	};
 	
 	window.onerror = function(_, __, ___, ____, error) {
 		console.warn(error);
-	};
+	}; */
 
 	/**
 	 * Class representing an individual client error.

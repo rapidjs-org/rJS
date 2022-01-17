@@ -1,17 +1,7 @@
-"use strict";
 /**
- * Class representing an individual client error.
- * Instance to be thrown for a respective response.
+ * rapidJS: Automatic serving, all-implicit-routing, pluggable fullstack scoped
+ *          function modules, un-opinionated templating. 
+ * 
+ * Copyright (c) Thassilo Martin Schiepanski
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ClientError = void 0;
-const ResponseError_1 = require("./ResponseError");
-class ClientError extends ResponseError_1.ResponseError {
-    /**
-     * @param {number} status Status code (within client error code range (4**))
-     */
-    constructor(status, message) {
-        super(4, status, message);
-    }
-}
-exports.ClientError = ClientError;
+"use strict";Object.defineProperty(exports,"__esModule",{value:!0}),exports.ClientError=void 0;const ResponseError_1=require("./ResponseError");class ClientError extends ResponseError_1.ResponseError{constructor(r,e){super(4,r,e)}}exports.ClientError=ClientError;
