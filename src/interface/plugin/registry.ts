@@ -131,11 +131,11 @@ function loadPlugin(path: string, name: string) {
 	}
 
 	if(!(pluginModule instanceof Function)) {
-		throw new SyntaxError(`Plug-in '${name}' server module does not provide an interface function`);
+		// Static plug-in module (not receiving the common interface object)
+		return;
 	}
 
-	// Evaluate plug-in module
-	// Passing the plug-in scoped interface object
+	// Dynamic plug-in module getting passed the common interface object
 	pluginModule(require("../scope:common"));
 }
 
