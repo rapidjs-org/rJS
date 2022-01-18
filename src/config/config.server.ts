@@ -81,8 +81,6 @@ function normalizePath(caption: string, name: string): string {
 		: name;
     
 	if(!existsSync(path)) {
-console.log(path);
-
 		throw new ReferenceError(`${caption} directory given in server configuration file does not exist '${path}'`);
 	}
 
@@ -110,6 +108,9 @@ const config = (read("config", defaultConfig) || read("server", defaultConfig))
 && (config.directory.lang = normalizePath("Lang", config.directory.lang));
 config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
 config.directory.web = normalizePath("Web", config.directory.web);
+for(const path in (config.ssl || {})) {
+    config.ssl[path] = normalizePath("SSL", config.ssl[path]);
+}
 
 // Normalize extension arrays for future uniform usage behavior
 config.extensionWhitelist = normalizeExtensionArray(config.extensionWhitelist);
@@ -123,6 +124,5 @@ for(const extension in config.mimes) {
 config.mimes = normalizedMimesMap;
 
 
-// TODO: Type check
-
+// TODO: Type check configs?
 export default config;
