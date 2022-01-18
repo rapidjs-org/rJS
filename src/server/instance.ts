@@ -61,7 +61,7 @@ require(protocol)
 			// Catch bubbling up unhandled errors for display and generic server error response
 			output.error(err);
 
-			(new entityConstructor.BASIC(null, res)).respond(500);
+			(new entityConstructor.BASIC(req, res)).respond(500);
 		});
 	})
 	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
@@ -74,7 +74,7 @@ require(protocol)
 serverConfig.port.https
 && (require("http")
 	.createServer((req, res) => {
-		(new entityConstructor.BASIC(null, res)).redirect(req.url);
+		(new entityConstructor.BASIC(req, res)).redirect(req.url);
 	})
 	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
 		() => {
