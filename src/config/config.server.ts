@@ -81,6 +81,8 @@ function normalizePath(caption: string, name: string): string {
 		: name;
     
 	if(!existsSync(path)) {
+console.log(path);
+
 		throw new ReferenceError(`${caption} directory given in server configuration file does not exist '${path}'`);
 	}
 
