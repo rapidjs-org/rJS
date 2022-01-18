@@ -109,7 +109,7 @@ const config = (read("config", defaultConfig) || read("server", defaultConfig))
 config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
 config.directory.web = normalizePath("Web", config.directory.web);
 for(const path in (config.ssl || {})) {
-    config.ssl[path] = normalizePath("SSL", config.ssl[path]);
+	config.ssl[path] = normalizePath("SSL", config.ssl[path]);
 }
 
 // Normalize extension arrays for future uniform usage behavior
