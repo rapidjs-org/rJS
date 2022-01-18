@@ -67,9 +67,8 @@ export class DynamicGetEntity extends GetEntity {
 		this.isCompound
 		&& (contents = injectIntoHead(contents, `<base href="${this.url.origin}${this.pathnameToConventional()}">`));
 
-		// Integrate live functionality client script if envioronment is running in DEV MODE
-		isDevMode
-		&& (contents = integrateLiveReference(contents));
+		// Integrate live functionality client script if envioronment is running in DEV MODE (implicit check)
+		contents = integrateLiveReference(contents);
 		
 		return Buffer.from(contents, "utf-8");
 	}

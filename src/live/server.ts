@@ -26,7 +26,7 @@ if(isDevMode) {
 		.createServer()
 		.listen(9393);
 
-	// Create web socket server instance
+	// Create web socket server instance upon
 	const wsServer = new WebSocketServer({
 		httpServer: webServer
 	});
@@ -36,10 +36,9 @@ if(isDevMode) {
 	 * Add request to list of connections.
 	 * @param {IncomingMessage} req Incoming request
 	 */
-	wsServer.on("request", _ => {
-		(connections || []).forEach(connection => {
-			connection.sendUTF("1");
-		});
+	wsServer.on("request", req => {
+		const connection = req.accept(null, req.origin);
+		connections.push(connection);
 	});
 }
 
@@ -59,9 +58,11 @@ export function proposeRefresh() {
  * @returns {Buffer} Markup with client script in head tag
  */
 export function integrateLiveReference(markup: string): string {
-	return injectIntoHead(String(markup), `
+	return isDevMode
+	? injectIntoHead(String(markup), `
         <script>
             ${clientScript}
         </script>
-    `);
+    `)
+	: markup;
 }
