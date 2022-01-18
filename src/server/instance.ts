@@ -39,9 +39,6 @@ const entityConstructor = {
 const options: Record<string, Buffer> = {};
 if(serverConfig.ssl) {	// TODO: How to treat for DEV MODE?
 	const readCertFile = (pathname: string): Buffer => {
-		// Construct application relative path if not given in absolute format
-		pathname = (pathname.charAt(0) == "/") ? pathname : join(dirname(require.main.filename), pathname);
-        
 		return readFileSync(pathname);
 	};
     
