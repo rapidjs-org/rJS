@@ -92,6 +92,7 @@ readdirSync(testsDirPath, {
 
 // Log overall success message if all tests completed successfully
 log(`\n${Test.counter.success}/${Test.counter.success + Test.counter.failed} unit tests passed.`);
+(Test.counter.failed > 0) && log(`\n=========================\n`, "31m");
 
 // Exit with error code if test cases were not fulfilled with overall success
 // Keeps chained scripts from continuing evaluation if tests suite failed
