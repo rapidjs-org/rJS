@@ -108,7 +108,7 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 
 
 // Initialize detection interval
-setInterval(_ => {
+isDevMode && setInterval(_ => {
 	try {
 		// Scan registered directories / files respectively
 		modRegistry.forEach(mod => {

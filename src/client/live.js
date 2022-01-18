@@ -9,7 +9,6 @@
 	};
 
 	const ws = new WebSocket("ws://localhost:9393");
-
 	
 	ws.onopen = _ => {
 		log("Running DEV MODE");
