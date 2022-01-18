@@ -9,6 +9,7 @@ import {readFileSync} from "fs";
 import {join} from "path";
 import {server as WebSocketServer} from "websocket";
 
+import isDevMode from "../utilities/is-dev-mode";
 import {injectIntoHead} from "../utilities/markup";
 
 
@@ -16,29 +17,30 @@ import {injectIntoHead} from "../utilities/markup";
 const clientScript = String(readFileSync(join(__dirname, "../client/live.js")));
 
 
-// Create substantial HTTP server
-const webServer = http
-	.createServer()
-	.listen(9393);
-
-// Create web socket server instance
-const wsServer = new WebSocketServer({
-	httpServer: webServer
-});
-wsServer.on("request", handleRequest);
-
 // Connections array to be worked as list
 const connections = [];
 
+if(isDevMode) {
+	// Create substantial HTTP server
+	const webServer = http
+		.createServer()
+		.listen(9393);
 
-/**
- * Handle web socket request.
- * Add request to list of connections.
- * @param {IncomingMessage} req Incoming request
- */
-function handleRequest(req) {
-	const connection = req.accept(null, req.origin);
-	connections.push(connection);
+	// Create web socket server instance
+	const wsServer = new WebSocketServer({
+		httpServer: webServer
+	});
+
+	/**
+	 * Handle web socket request.
+	 * Add request to list of connections.
+	 * @param {IncomingMessage} req Incoming request
+	 */
+	wsServer.on("request", _ => {
+		(connections || []).forEach(connection => {
+			connection.sendUTF("1");
+		});
+	});
 }
 
 
