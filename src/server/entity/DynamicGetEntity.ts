@@ -12,6 +12,7 @@ import {join, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
 
+import isDevMode from "../../utilities/is-dev-mode";
 import {injectIntoHead} from "../../utilities/markup";
 
 import {renderModifiers} from "../../rendering/render";
@@ -67,7 +68,8 @@ export class DynamicGetEntity extends GetEntity {
 		&& (contents = injectIntoHead(contents, `<base href="${this.url.origin}${this.pathnameToConventional()}">`));
 
 		// Integrate live functionality client script if envioronment is running in DEV MODE
-		contents = integrateLiveReference(contents);
+		isDevMode
+		&& (contents = integrateLiveReference(contents));
 		
 		return Buffer.from(contents, "utf-8");
 	}
