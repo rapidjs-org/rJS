@@ -14,7 +14,8 @@ markup.injectIntoHead(`
 <html>
     <head>
         <title>Test</title>
-    <!-- TEST --> </head>
+    <!-- TEST -->
+</head>
     <body>
         <h1>Test</h1>
     </body>
@@ -35,7 +36,8 @@ markup.injectIntoHead(`
 `, "<!-- TEST -->")).for(`
 <html>
     <head>
-        <!-- TEST --> <script src="./script.js"></script>
+        <!-- TEST -->
+<script src="./script.js"></script>
         <title>Test</title>
     </head>
     <body>
