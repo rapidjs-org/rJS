@@ -7,7 +7,7 @@ import config from "../config.json";
 
 
 import {readFileSync} from "fs";
-import {join, dirname, extname, basename} from "path";
+import {extname, basename} from "path";
 
 import * as output from "../utilities/output";
 import isDevMode from "../utilities/is-dev-mode";
