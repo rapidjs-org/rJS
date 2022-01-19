@@ -59,10 +59,10 @@ export function proposeRefresh() {
  */
 export function integrateLiveReference(markup: string): string {
 	return isDevMode
-	? injectIntoHead(String(markup), `
+		? injectIntoHead(String(markup), `
         <script>
             ${clientScript}
         </script>
     `)
-	: markup;
+		: markup;
 }
