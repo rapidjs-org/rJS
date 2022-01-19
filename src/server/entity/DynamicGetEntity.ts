@@ -12,7 +12,6 @@ import {join, dirname} from "path";
 
 import serverConfig from "../../config/config.server";
 
-import isDevMode from "../../utilities/is-dev-mode";
 import {injectIntoHead} from "../../utilities/markup";
 
 import {renderModifiers} from "../../rendering/render";
