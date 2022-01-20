@@ -43,7 +43,7 @@ compiler.stdout.on("data", data => {
 		// (Re)start debug application
 		console.log("\n• DEBUG APPLICATION:\n")
 		debugApp = fork(join(__dirname, "../debug:app/server"), [
-			"-D",
+			(process.argv.slice(2).includes("--dev") ? "-D" : ""),
 			"-P",
 			"../debug:app/"
 		]);
