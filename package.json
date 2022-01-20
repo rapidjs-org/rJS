@@ -6,8 +6,9 @@
   "scripts": {
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src/",
     "compile": "rm -rf ./dist && tsc --outDir ./dist && cp -r ./src/client/ ./dist/client/",
-    "compile:dev": "tsc -w --outDir ./debug",
-    "debug": "rm -rf ./debug && node ./scripts/debug.js",
+    "compile:watch": "tsc -w --outDir ./debug",
+    "debug:prod": "node ./scripts/debug.js",
+    "debug:dev": "node ./scripts/debug.js --dev",
     "test": "node ./scripts/test.js",
     "build": "npm run lint && npm run compile && npm run test && node ./scripts/build.js",
     "release": "np"
