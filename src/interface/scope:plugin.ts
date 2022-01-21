@@ -5,10 +5,12 @@
 
 import {wrapInterface} from "./wrapper";
 
+
 const endpoint = wrapInterface(require("./plugin/endpoint").setDefaultEndpoint, "creating a plug-in endpoint", true);
 const namedEndpoint = wrapInterface(require("./plugin/endpoint").setNamedEndpoint, "creating a named plug-in endpoint", true);
 
-// TODO: Overload
+
+// Is referenced via require.resolve(); uses common export model
 module.exports = {
 	clientModule: wrapInterface(require("./plugin/registry").initClientModule, "initializing a client module", true),
 	
