@@ -308,8 +308,8 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 		.map(part => {
 			// Minifiy wrapper
 			return part
-			.replace(/([{};,])\s+/g, "$1")
-			.trim();
+				.replace(/([{};,])\s+/g, "$1")
+				.trim();
 		});
 
 	// Register client module in order to be integrated into pages upon request// Write module and compound directive to registry
