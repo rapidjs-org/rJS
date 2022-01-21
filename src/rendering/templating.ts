@@ -20,7 +20,7 @@ import {ssrEngine} from "../interface/bindings";
  * @param {boolean} [isImplicitRequest] Whether the modifier has been called upon an implicit request / reading process
  * @returns {string} Templated markup
  */
-export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
+export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
 	// Retrieve templating object if respective handler module exists (compound only)
 	const templatingModulePath: string = join(serverConfig.directory.web, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
 	// TODO: .ts?
@@ -29,7 +29,7 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo,
 		? require(templatingModulePath)
 		: {};
 	templatingObj = (templatingObj instanceof Function)
-		? templatingObj(reducedRequestInfo)	// Pass request info object to templating module if is exporting a function
+		? templatingObj(require("../interface/scope:common"), reducedRequestInfo)	// Pass request info object to templating module if is exporting a function
 		: templatingObj;	// Stateless templating otherwise (regarding the individual request)
 	
 	// Apply defined rendering engines

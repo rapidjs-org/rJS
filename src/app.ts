@@ -35,8 +35,7 @@ import {registerDetection} from "./live/detection";
 // Start web server instance
 import "./server/instance.js";
 
-
-import * as appInterface from "./interface/scope:app";
+import appInterface from "./interface/scope:app";
 
 
 // Initialize live functionality (websocket modification detection)
