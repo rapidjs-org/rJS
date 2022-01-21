@@ -85,7 +85,7 @@ export class StaticGetEntity extends GetEntity {
 		// Respond with cache activation status (ressource not modified)
 		// if current version has already been served to client
 		if(this.getHeader("If-None-Match") == eTag) {
-			super.respond(304);
+			return super.respond(304);
 		}
 
 		this.respond(200, super.read());
