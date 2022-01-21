@@ -63,7 +63,7 @@ export const defaultLang: string = (serverConfig.locale.length > 0)
  * @param {IReducedRequestInfo} req Related reduced request info object
  * @returns {string} Templated markup
  */
-export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
+export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
 	if(!(reducedRequestInfo.locale || {}).language
 	|| localeEngine.length == 0) {
 		// Locale processing disabled / no engine bound
@@ -81,7 +81,7 @@ export function render(markup: string, reducedRequestInfo?: IReducedRequestInfo)
 	// Compound language file (for compound pages) (higher specificity)
 	if(reducedRequestInfo.isCompound) {
 		const compoundLangFilePath: string = join(serverConfig.directory.web, reducedRequestInfo.pathname, langFileName);
-		console.log(compoundLangFilePath);
+		
 		existsSync(compoundLangFilePath)
 		&& langFilePaths.push(compoundLangFilePath);
 	}

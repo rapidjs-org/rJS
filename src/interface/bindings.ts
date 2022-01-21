@@ -8,6 +8,7 @@
 import * as output from "../utilities/output";
 
 
+
 /**
  * Class representing a render callback binding.
  * Callbacks to be applied to markup ("render") in order of registration (with registration limit).
@@ -34,7 +35,7 @@ class RenderBinding {
     	if(this.engineStore.length >= this.limit) {
     		throw new ReferenceError(`Trying to bind more ${this.caption} engines than allowed (max. ${this.limit}).`);
     	}
-
+		
     	this.length++;
 
     	this.engineStore.push({

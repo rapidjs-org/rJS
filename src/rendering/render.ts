@@ -6,8 +6,8 @@
 
 import {currentRequestInfo} from "../server/hook";
 
-import {render as renderTemplating} from "./templating";
-import {render as renderLocale} from "./locale/locale";
+import renderTemplating from "./templating";
+import renderLocale from "./locale/locale";
 
 
 declare type renderer = (message: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest?: boolean) => string;
@@ -32,10 +32,10 @@ const handlerQueue: renderer[] = [
 export function renderModifiers(message: string, isImplicitRequest = false): string {
 	// Retrieve realted redduced request info object if modifier is effective in request related routine
 	const reducedRequestInfo: IReducedRequestInfo = currentRequestInfo();
-	
+
 	// Work handler queue
 	handlerQueue.forEach((handler: renderer) => {
-		message = handler(message, reducedRequestInfo, isImplicitRequest);	// TODO: Where require("../scope:common")?
+		message = handler(message, reducedRequestInfo, isImplicitRequest);
 	});
 
 	return message;
