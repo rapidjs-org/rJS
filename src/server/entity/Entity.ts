@@ -60,7 +60,7 @@ export class Entity {
     	this.res = res;
 
     	// Construct URL object for request
-    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${this.getHeader("host")}${req.url}`);
+    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers["host"]}${req.url}`);
 
     	this.originalPathname = this.url.pathname;
     }
