@@ -172,7 +172,7 @@ export function bind(reference: string, options: {
  */
 export function integratePluginReferences(markup: string, isCompound: boolean): string {
 	// TODO: No bundling (or even unbundle) in DEV MODE for better debugging results
-
+	
 	const effectivePlugins: string[]  = Array.from(pluginRegistry.keys())
 	// Filter for environmentally frontend / client bound plug-ins
 		.filter((name: string) => {
@@ -186,7 +186,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 			// Filter for not yet (hard)coded plug-ins
 			// Hard coding use case: user defined ordering
 			return !
-			(new RegExp(`<\\s*script\\s+src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
+			(new RegExp(`<\\s*script\\s+((async|defer)\\s+)?src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1(\\s+(async|defer))?\\s*>`, "i"))
 				.test(markup);
 		});
 	// TODO: Pre-filter and store in respective maps?

@@ -316,6 +316,7 @@ export class Entity {
     public getReducedRequestInfo(): IReducedRequestInfo {
     	// TODO: Relevant headers (auth)?
     	return {
+			auth: this.getHeader("Authorization"),
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		locale: this.locale,
     		pathname: decodeURIComponent(this.isCompound ? dirname(this.url.pathname) : this.url.pathname),

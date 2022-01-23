@@ -38,7 +38,7 @@ function writeToFile(message) {
 				logWriteErr = true;
 
 				error(err);
-			}	// TODO: Handle?
+			}
 		});
 }
 
@@ -60,7 +60,7 @@ export function log(message: string, additionalPrefix?: string, styleCode?: stri
 	// Also log message to file if configured and in productive environment
 	isDevMode && serverConfig.directory.log
 	&& writeToFile(`${additionalPrefix ? `[${additionalPrefix}] ` : ""}${JSON.stringify(message)}`);
-}   // TODO: Implement color/style code enum?
+}
 
 /**
  * Log an error to the console.
