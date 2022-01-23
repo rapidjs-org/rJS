@@ -1,4 +1,5 @@
 declare interface IReducedRequestInfo {
+	auth: string;
 	ip: string;
 	locale: {
 		language?: string,
