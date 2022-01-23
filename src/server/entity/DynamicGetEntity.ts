@@ -136,7 +136,7 @@ export class DynamicGetEntity extends GetEntity {
 
 	public process() {
 		super.process();
-		
+
 		// Redirect URL default or extension explicit dynamic request to implicit equivalent
 		if((new RegExp(`(${config.dynamicFileDefaultName}(\\.${config.dynamicFileExtension})?|\\.${config.dynamicFileExtension})$`)).test(this.url.pathname)) {
 			return this.redirect(this.url.pathname.replace(new RegExp(`(${config.dynamicFileDefaultName})?(\\.${config.dynamicFileExtension})?$`), ""));
