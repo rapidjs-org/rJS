@@ -336,5 +336,4 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 	registryEntry.compoundOnly = compoundOnly;
 }
 
-// TODO: Implement option for plug-in to wait for another plug-in to have loaded (in client)
 // TODO: Implement async/defer option for plug-in (via options object on bind)

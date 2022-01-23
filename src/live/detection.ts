@@ -61,9 +61,9 @@ async function scanDir(path: string, callback: () => void, recursive = true) {
 			}
 
 			checkFile(curPath, callback)
-			.catch(_ => {
-				throw true;
-			});
+				.catch(_ => {
+					throw true;
+				});
 		});
 	});
 }
@@ -120,7 +120,7 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 // Initialize detection interval
 isDevMode && setInterval(_ => {
 	// Scan registered directories / files respectively
-	modRegistry.forEach(mod => {
+	modRegistry.forEach(async mod => {
 		if(lstatSync(mod.path).isDirectory()) {
 			// Dir
 			try {
@@ -139,7 +139,6 @@ isDevMode && setInterval(_ => {
 		}
 		
 		// File
-		checkFile(mod.path, mod.callback)
-		.catch(_ => {});
+		await checkFile(mod.path, mod.callback);
 	});
 }, config.detectionFrequency);
