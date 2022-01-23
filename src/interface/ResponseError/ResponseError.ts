@@ -4,6 +4,8 @@
  */
 
 
+// TODO: RedirectError?
+
 export abstract class ResponseError extends Error {
     public status: number;
 

@@ -14,7 +14,7 @@ import {currentRequestInfo} from "../../server/hook";
 
 import {getNameByCall} from "./naming";
 
-
+// TODO: Generalized error response (catch wrapper to hide unexpected error messages)?
 
 /**
  * Endpoint cache (server cache duration; individually set in configuration file).
