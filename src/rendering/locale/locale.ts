@@ -41,7 +41,7 @@ const normalizedLocale: string = serverConfig.locale
 		});
 	
 		return `${(countries.length > 0) ? `${configuration.language}-(${countries.join("|")})|` : ""}${configuration.language}`;
-	})	// TODO: Remove duplicates
+	})
 	.join("|");
 
 // Initially construct locale matching regex based on configured (supported) languages

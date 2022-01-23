@@ -23,8 +23,7 @@ import {ssrEngine} from "../interface/bindings";
 export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
 	// Retrieve templating object if respective handler module exists (compound only)
 	const templatingModulePath: string = join(serverConfig.directory.web, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
-	// TODO: .ts?
-	
+		
 	let templatingObj = (reducedRequestInfo.isCompound && existsSync(templatingModulePath))
 		? require(templatingModulePath)
 		: {};
