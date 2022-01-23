@@ -89,8 +89,6 @@ serverConfig.port.https
  * @param {ServerResponse} res Response object
  */
 async function handleRequest(req, res) {
-	// TODO: Enhance client module request processing?
-	
 	// Retrieve entity type first (or close response if can not be mapped accordingly)
 	let entity;
 	switch(req.method.toUpperCase()) {
@@ -145,5 +143,3 @@ async function handleRequest(req, res) {
 	// Call entity specific request processor method
 	entity.process();
 }
-
-// TODO: Implement option for hiding status codes (reducing the set to {200, 404} for strategy security)
