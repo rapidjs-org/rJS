@@ -60,7 +60,10 @@ async function scanDir(path: string, callback: () => void, recursive = true) {
 				return scanDir(curPath, callback, recursive);
 			}
 
-			checkFile(curPath, callback);
+			checkFile(curPath, callback)
+			.catch(_ => {
+				throw true;
+			});
 		});
 	});
 }
@@ -71,19 +74,26 @@ async function scanDir(path: string, callback: () => void, recursive = true) {
  * latest detection period.
  * @param {string} path Path to file
  * @param {Function} callback Function to call if modification has been detected
+ * @returns {Promise} Rejects if modification has been detected
  */
-async function checkFile(path, callback) {
-	// Read file stats to check for modification status
-	stat(path, (_, stats) => {
-		if(fileModified(stats.birthtime)
-		|| fileModified(stats.mtimeMs)) {
-			output.log(`File modified: Initiated live reload\n- ${path}`);
-			
-			// Change detected (TODO: Cancel further check up as of is suffiecient for performing result action)
-			callback && callback();
+async function checkFile(path, callback): Promise<void> {
+	return new Promise((resolve, reject) => {
+		// Read file stats to check for modification status
+		stat(path, (_, stats) => {
+			if(fileModified(stats.birthtime)
+			|| fileModified(stats.mtimeMs)) {
+				output.log(`File modified: Initiated live reload\n- ${path}`);
+				
+				// Change detected
+				callback && callback();
 
-			proposeRefresh();	// Always also reloas connected web client views
-		}
+				proposeRefresh();	// Always also reloas connected web client views
+
+				reject();	// Cancel further checks for type
+			}
+		});
+
+		resolve();
 	});
 }
 
@@ -109,15 +119,27 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 
 // Initialize detection interval
 isDevMode && setInterval(_ => {
-	try {
-		// Scan registered directories / files respectively
-		modRegistry.forEach(mod => {
-			lstatSync(mod.path).isDirectory() 
-				? scanDir(mod.path, mod.callback, mod.recursive)
-				: checkFile(mod.path, mod.callback);
-		});
-	} catch(err) {
-		output.log("An error occurred scanning project files for modification in live mode");
-		output.error(err);
-	}
+	// Scan registered directories / files respectively
+	modRegistry.forEach(mod => {
+		if(lstatSync(mod.path).isDirectory()) {
+			// Dir
+			try {
+				scanDir(mod.path, mod.callback, mod.recursive);
+			} catch(feedback) {
+				if(feedback === true) {
+					return;	// Intended termination
+				}
+
+				// Actual error
+				output.log("An error occurred performing a live reload:");
+				output.error(feedback);
+			}
+
+			return;
+		}
+		
+		// File
+		checkFile(mod.path, mod.callback)
+		.catch(_ => {});
+	});
 }, config.detectionFrequency);
