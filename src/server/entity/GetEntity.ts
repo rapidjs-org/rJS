@@ -17,8 +17,6 @@ import {UrlCache} from "../cache/UrlCache";
 
 import {Entity} from "./Entity";
 
-// TODO: 403 on private web files
-
 
 export abstract class GetEntity extends Entity {
     private static readonly cache: UrlCache<Buffer> = new UrlCache();

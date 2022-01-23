@@ -86,7 +86,7 @@ export class PostEntity extends Entity {
 				return this.respond(404);
 			}
 			
-			this.processPagePath();	// TODO: Async?
+			this.processPagePath();
 			
 			super.process();
 			
