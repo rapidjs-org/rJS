@@ -61,7 +61,7 @@ export function getNameByCall(fileName: string): string {
 	} catch(thrown: unknown) {
 		// Use thrown string as for callback loop break
 		if(typeof thrown === "string") {
-			return String(thrown);	// TODO: Store in map?
+			return String(thrown);
 		}
 
 		// Pass possible actual error
