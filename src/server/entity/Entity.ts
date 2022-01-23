@@ -130,7 +130,10 @@ export class Entity {
 		 * • Use error (will use next error page if exists)
 		 */
 
-    	// TODO: Implement sideeffect-less local path construction
+		// Append pathname with default file name if none explicitly given
+		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`)
+    	
+		// TODO: Implement sideeffect-less local path construction?
     	// Respond with file located at exactly requested path if exists
     	if(existsSync(this.localPath())) {
         	return 200;
@@ -139,7 +142,7 @@ export class Entity {
     	// Respond with closest related compound page if exists (bottom-up traversal)
     	// Traverse a pathname to retrieve parameters of the closest compound page in the web file system
     	const originalPathname: string = this.url.pathname;	// Backup as of processing sideeffects
-        
+		
     	// Traversal iteration limit (for preventing too deep nestings or endless traversal
     	const traversalLimit = 100;
     	// Traversal iterations counter

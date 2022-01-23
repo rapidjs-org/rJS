@@ -81,7 +81,7 @@ export function setDefaultEndpoint(callback, useCache = false) {
  */
 export function setNamedEndpoint(name, callback, useCache = false) {
 	set(callback, useCache, name);
-}
+}	// TODO: Single method with overload?
 
 /**
  * Check whether a plug-in endpoint exists (generally or sepcifically, depending on second argument).

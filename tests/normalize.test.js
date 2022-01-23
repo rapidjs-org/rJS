@@ -1,3 +1,5 @@
+section("Normalization utils");
+
 const normalize = require("../dist/utilities/normalize");
 
 test("Normalizes uppercase file extension to common representation",
