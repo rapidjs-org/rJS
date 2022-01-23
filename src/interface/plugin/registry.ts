@@ -83,6 +83,15 @@ export function bindPlugin(name: string, path: string) {
 
 		Module.wrap = ((exports, _, __, __filename, __dirname) => {
 			return `${Module.wrapper[0]}${exports}
+				const console = {
+					log: message => {
+						require("${require.resolve("../../utilities/output")}").log(message, "${name}")
+					},
+					error: err => {
+						require("${require.resolve("../../utilities/output")}").error(err, false, "${name}");
+					}
+				};
+				
 				for(const inter in require("${require.resolve("../scope:plugin")}")) {
 					this[inter] = require("${require.resolve("../scope:plugin")}")[inter];
 				}
@@ -243,7 +252,7 @@ export function retrieveClientModules(pathname: string): Buffer {
  * @param {Object} [sharedConfig] Shared, plug-in local config object providing literals
  */
 export function initClientModule(relativePath: string, sharedConfig?: unknown, compoundOnly?: boolean) {
-	const pluginName: string = getNameByCall(__filename);	// TODO: Wont work with main file implicit local referencing (filas path comparison); Fix!
+	const pluginName: string = getNameByCall(__filename);	// TODO: Wont work with main file implicit local referencing (file path comparison); Fix!
 
 	// TODO: Swap shared and compound argument as of usage frequency (keep backwards compatibility with type check augmented overload)
 
@@ -265,13 +274,22 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 
 	const bareClientScript = String(readFileSync(clientFilePath));
 
-	// TODO: Console log wrapper ?
 	// Construct individual script module
 	const modularClientScript: string[] = [`
 		${config.clientModuleAppName} = {
 			... ${config.clientModuleAppName},
 			... {
 				"${pluginName}": (_ => {
+					const console = {
+						log: message => {
+							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${message}\`, "color: gold;", "color: DarkTurquoise;", "color: auto;");
+						},
+						error: err => {
+							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${err.message}\`, "color: gold;", "color: DarkTurquoise;", "color: red;");
+							window.console.error(err);
+						}
+					};
+
 					const endpoint = {
 						use: (body, progressHandler) => {
 							return ${config.clientModuleAppName}.${config.coreModuleIdentifier}.toEndpoint("${pluginName}", body, progressHandler);

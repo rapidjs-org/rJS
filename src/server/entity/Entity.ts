@@ -130,10 +130,10 @@ export class Entity {
 		 * • Use error (will use next error page if exists)
 		 */
 
-		// Append pathname with default file name if none explicitly given
-		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`)
+    	// Append pathname with default file name if none explicitly given
+    	this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
     	
-		// TODO: Implement sideeffect-less local path construction?
+    	// TODO: Implement sideeffect-less local path construction?
     	// Respond with file located at exactly requested path if exists
     	if(existsSync(this.localPath())) {
         	return 200;

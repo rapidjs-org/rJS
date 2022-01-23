@@ -44,27 +44,34 @@ function writeToFile(message) {
 
 
 /**
- * Log a application referenced message to the console (with prefix).
+ * Log a application referenced message to the console (with app prefix).
  * @param {string} message Message
- * @param {string} [style] Message styling in console code representation
+ * @param {string} [additionalPrefix] Additional prefix to display (after the general app prefix) (e.g. for plug-in logs)
+ * @param {string} [styleCode] Individual message style code
  */
-export function log(message: string, style?: string) {
-	console.log(`\x1b[33m%s${style ? `${style}%s\x1b[0m` : "\x1b[0m%s"}`, `[${config.appName}] `, message);
+export function log(message: string, additionalPrefix?: string, styleCode?: string) {
+	const messageParts = [];
+	messageParts.push(`[${config.appName}]`);					// App prefix
+	additionalPrefix && messageParts.push(`[${additionalPrefix}]`);	// Additional prefix if given
+	messageParts.push(` ${message}`);									// Individual message
+	
+	console.log.apply(null, [`\x1b[33m%s${additionalPrefix ? "\x1b[34m%s" : ""}\x1b[${styleCode ? styleCode : "0m"}%s\x1b[0m`].concat(messageParts));
 	
 	// Also log message to file if configured and in productive environment
 	isDevMode && serverConfig.directory.log
-	&& writeToFile(message);
+	&& writeToFile(`${additionalPrefix ? `[${additionalPrefix}] ` : ""}${JSON.stringify(message)}`);
 }   // TODO: Implement color/style code enum?
 
 /**
  * Log an error to the console.
  * @param {Error} err Error object
  * @param {boolean} [terminate=false] Whether to terminate application execution after error logging
+ * @param {string} [additionalPrefix] Additional prefix to display (after the general app prefix) (e.g. for plug-in logs)
  */
-export function error(err: Error, terminate = false) {
+export function error(err: Error, terminate = false, additionalPrefix?: string) {
 	const message = (err instanceof Error) ? `${err.name}: ${err.message}` : err;
 	
-	log(message, "\x1b[31m");
+	log(message, additionalPrefix, "31m");
 	
 	console.error(Array.isArray(err.stack)
 		? err.stack.map(cs => `at ${String(cs)}`).join("\n")
