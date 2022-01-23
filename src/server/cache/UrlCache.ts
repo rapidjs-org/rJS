@@ -12,7 +12,7 @@ import {Cache} from "./Cache";
 
 export class UrlCache<T> extends Cache<T> {
     protected normalizationCallback = (key: string): string => {
-    	return normalizeUrl(key);  // TODO: Enhance
+    	return normalizeUrl(key);
     };
 
     /**

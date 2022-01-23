@@ -314,7 +314,6 @@ export class Entity {
      * @returns {IReducedRequestInfo} Common reduced request info object (to be defined in accordance with sub entity behavior)
      */
     public getReducedRequestInfo(): IReducedRequestInfo {
-    	// TODO: Relevant headers (auth)?
     	return {
 			auth: this.getHeader("Authorization"),
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
