@@ -12,30 +12,8 @@ import {join, dirname} from "path";
 import {existsSync} from "fs";
 
 import isDevMode from "../utilities/is-dev-mode";
+import {merge} from "../utilities/object";
 
-
-/**
- * 2 level deep merge objects with right associative override.
- * @param {Record} obj1 Object 1
- * @param {Record} obj2 Object 2 (overriding)
- * @returns {Record} Merged object.
- */
-function merge(obj1: Record<string, unknown>, obj2: Record<string, unknown>): Record<string, unknown> {
-	// Explicitly merge sub objects
-	for(const key in obj1) {
-		if((obj1[key] || "").constructor.name !== "Object"
-        || (obj2[key] || "").constructor.name !== "Object") {
-			continue;   // No sub objects for both objects given
-		}
-    
-		obj2[key] = Object.assign(
-			obj1[key],
-			obj2[key]
-		);
-	}
-
-	return {...obj1, ...obj2}; // Merge top level
-}
 
 /**
  * Read a custom config file

@@ -13,6 +13,8 @@ import {localeEngine} from "../../interface/bindings";
 import languageCodes from "./languages.json";
 import countryCodes from "./countries.json";
 
+import {merge} from "../../utilities/object";
+
 
 // Normalize locale information to locale code 'll-CC' array representation (implicitly checking for code validity)
 const checkLocaleCoding = (code: string, referenceArray: string[], caption: string) => {
@@ -86,9 +88,10 @@ export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo
 		&& langFilePaths.push(compoundLangFilePath);
 	}
 
+	// Merge with page based priority
 	let langObj = {};
 	langFilePaths.forEach(path => {
-		langObj = Object.assign(langObj, require(path));	// TODO: Deep merge!
+		langObj = merge(langObj, require(path));
 	});
 	
 	// Apply bound locale handler with locale information and translation object
@@ -99,4 +102,3 @@ export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo
 	return markup;
 }
 
-// TODO: lang attr (HTML)
