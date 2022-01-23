@@ -24,11 +24,14 @@ import {integrateLiveReference} from "../../live/server";
 
 import {GetEntity} from "./GetEntity";
 
-
-// TODO: 404 fs structure map
-// TODO: compound page structure map
+// TODO: Enhance overall processing routine (no self-sideeffects?, cache traversal?, ...)
 
 export class DynamicGetEntity extends GetEntity {
+	/**
+	 * Originally requested pathname for cache activation.
+	 */
+	private readonly origPathname: string;
+
 	/**
      * Create entity object based on web server induced request/response objects.
      * @param {IncomingMessage} req Request object
@@ -37,6 +40,7 @@ export class DynamicGetEntity extends GetEntity {
 	constructor(req, res) {
 		super(req, res);
 
+		this.origPathname = this.url.pathname;
 		this.extension = config.dynamicFileExtension;
 	}
 
@@ -82,7 +86,7 @@ export class DynamicGetEntity extends GetEntity {
         && this.setHeader("X-Frame-Options", "SAMEORIGIN");
 
 		// Search for related error page file if response is meant to be unsuccessful
-		if(status.toString().charAt(0) != "2") {	// TODO: Enhance routine
+		if(status.toString().charAt(0) != "2") {
 			// Conceal status (always use 404) if enabled
 			status = (serverConfig.concealing404 === true)
 				? 404
@@ -143,7 +147,6 @@ export class DynamicGetEntity extends GetEntity {
 		}
 
 		// Enforce configured www strategy
-		// TODO: Ignore on localhost (/ numerical)?
 		if(serverConfig.www === "yes") {
 			if(!this.subdomain[0] ||this.subdomain[0] !== "www") {
 				return this.redirect(this.url.pathname, `www.${this.url.hostname}`);
@@ -158,7 +161,6 @@ export class DynamicGetEntity extends GetEntity {
 		// Redirect only needed for dynamic files (web pages)
 		// as static files can work with explicit request URLs too (reduces redirection overhead)
 		if(this.locale) {
-			// TODO: Register used languages (within certain time period) to redirect accordingly (if mis referenced)? But what about intentional routings?
 			// Redirect default locale explicit URL to implicit representation
 			if(this.locale.language == defaultLang) {
 				// Consider locale accept header if resquesting locale implicitly
@@ -167,7 +169,7 @@ export class DynamicGetEntity extends GetEntity {
 			
 			// Code default locale for implicit processing if was given implicitly by URL
 			this.locale.language = this.locale.language || defaultLang;
-			// TODO: Add default country (normalize configuration)
+			// TODO: Add default country (normalize configuration)?
 		}
 		
 		/*
@@ -176,10 +178,6 @@ export class DynamicGetEntity extends GetEntity {
 		 * • Use compound page (high-low nesting, bottom-up traversal, use (developing) appendix as args)
 		 * • Use error (will use next error page if exists)
 		 */
-
-		// TODO: Implement sideeffect-less local path construction
 		this.respond(this.processPagePath());
-
-		// TODO: Store resolve mapping in order to reduce redunandant processing costs
 	}
 }

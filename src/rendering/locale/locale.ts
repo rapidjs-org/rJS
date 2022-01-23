@@ -94,7 +94,7 @@ export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo
 	// Apply bound locale handler with locale information and translation object
 	markup = localeEngine.apply(markup, [reducedRequestInfo.locale, langObj]);
 
-	// TODO: Lang attr?
+	markup = markup.replace(/(<\s*html((?!(>|lang\s*=\s*("|')?\s*[a-z]{2}\s*\4))(\s|.))*)>/i, `$1 lang="${reducedRequestInfo.locale.language}">`);
 
 	return markup;
 }

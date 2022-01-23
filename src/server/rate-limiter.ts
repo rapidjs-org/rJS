@@ -17,8 +17,6 @@ const limiter = {
 };
 
 
-// TODO: Enhance strategy (reduce throughput)?
-
 /**
  * Update limiter window.
  * @returns {number} Current window weight
