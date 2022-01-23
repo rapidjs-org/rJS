@@ -121,7 +121,6 @@ export function bind(reference: string, options: {
 	alias?: string;
 	specific?: boolean;
 } = {}) {
-	// TODO: Page environment: what about compound focused plug-ins bound to default page envs?
 	if(options.alias && !pluginNameRegex.test(options.alias.trim())) { 
 		throw new SyntaxError(`Invalid plug-in alias given '', '${reference}'`);
 	}
@@ -177,7 +176,6 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 		.filter((name: string) => {
 			// Filter for not yet (hard)coded plug-ins
 			// Hard coding use case: user defined ordering
-			// TODO: Enhance detection (bundled!)
 			return !
 			(new RegExp(`<\\s*script\\s+src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1\\s*>`, "i"))
 				.test(markup);
@@ -247,6 +245,8 @@ export function retrieveClientModules(pathname: string): Buffer {
 export function initClientModule(relativePath: string, sharedConfig?: unknown, compoundOnly?: boolean) {
 	const pluginName: string = getNameByCall(__filename);	// TODO: Wont work with main file implicit local referencing (filas path comparison); Fix!
 
+	// TODO: Swap shared and compound argument as of usage frequency (keep backwards compatibility with type check augmented overload)
+
 	if(/^\//.test(relativePath)) {
 		throw new SyntaxError(`Expecting relative path to plug-in client module upon initialization, given absolute path '${relativePath}' for '${pluginName}'`);
 	}
@@ -265,9 +265,8 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 
 	const bareClientScript = String(readFileSync(clientFilePath));
 
+	// TODO: Console log wrapper ?
 	// Construct individual script module
-	// TODO: Deperecated explicit identifers from client core interface (mid-term, "use_")
-	// TODO: Minify?
 	const modularClientScript: string[] = [`
 		${config.clientModuleAppName} = {
 			... ${config.clientModuleAppName},

@@ -169,9 +169,6 @@ export class DynamicGetEntity extends GetEntity {
 			this.locale.language = this.locale.language || defaultLang;
 			// TODO: Add default country (normalize configuration)
 		}
-
-		// Append pathname with default file name if none explicitly given
-		this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
 		
 		/*
 		 * Response strategy:

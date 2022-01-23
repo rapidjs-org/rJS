@@ -57,6 +57,14 @@ global.test = (title, call) => {
     return new Test(title, call);
 };
 
+/**
+ * Globally accessible test section declaration (output) interface.
+ * @param {String} declaration Declaration
+ */
+global.section = (declaration) => {
+    log(`• ${declaration}:`, "33m");
+};
+
 
 /**
  * Log an optionally styled message to the console.
