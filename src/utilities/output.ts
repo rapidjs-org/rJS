@@ -50,12 +50,15 @@ function writeToFile(message) {
  * @param {string} [styleCode] Individual message style code
  */
 export function log(message: string, additionalPrefix?: string, styleCode?: string) {
+	const atomic: boolean = ["string", "number", "boolean"].includes(typeof(message));
+
 	const messageParts = [];
-	messageParts.push(`[${config.appName}]`);					// App prefix
-	additionalPrefix && messageParts.push(`[${additionalPrefix}]`);	// Additional prefix if given
-	messageParts.push(` ${message}`);									// Individual message
+	messageParts.push(`[${config.appName}]`);							// App prefix
+	additionalPrefix && messageParts.push(`[${additionalPrefix}]`);		// Additional prefix if given
+	messageParts.push(` ${atomic ? message : "↓"}`);					// Individual message
 	
 	console.log.apply(null, [`\x1b[33m%s${additionalPrefix ? "\x1b[34m%s" : ""}\x1b[${styleCode ? styleCode : "0m"}%s\x1b[0m`].concat(messageParts));
+	!atomic && console.log(message);
 	
 	// Also log message to file if configured and in productive environment
 	isDevMode && serverConfig.directory.log
