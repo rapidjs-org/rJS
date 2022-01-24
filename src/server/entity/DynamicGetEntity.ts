@@ -28,11 +28,6 @@ import {GetEntity} from "./GetEntity";
 
 export class DynamicGetEntity extends GetEntity {
 	/**
-	 * Originally requested pathname for cache activation.
-	 */
-	private readonly origPathname: string;
-
-	/**
      * Create entity object based on web server induced request/response objects.
      * @param {IncomingMessage} req Request object
      * @param {ServerResponse} res Response object
@@ -40,7 +35,6 @@ export class DynamicGetEntity extends GetEntity {
 	constructor(req, res) {
 		super(req, res);
 
-		this.origPathname = this.url.pathname;
 		this.extension = config.dynamicFileExtension;
 	}
 

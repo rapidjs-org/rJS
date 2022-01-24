@@ -22,6 +22,7 @@ import {localeMatchRegex, defaultLang} from "../../rendering/locale/locale";
 
 
 // TODO: Locale fs map
+// TODO: Decoupled HEAD routine (pre)?
 
 export class Entity {
     private readonly originalPathname: string;

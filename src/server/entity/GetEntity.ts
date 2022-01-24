@@ -57,8 +57,6 @@ export abstract class GetEntity extends Entity {
      * @param {Buffer} [message] Response message
      */
     public respond(status: number, message?: Buffer) {
-    	super.process();
-		
     	// Set MIME type header accordingly
     	const mime: string = serverConfig.mimes[this.extension];
     	if(mime) {
@@ -79,4 +77,8 @@ export abstract class GetEntity extends Entity {
     	// Perform definite response
     	super.respond(status, message);
     }
+
+	public process() {
+    	super.process();
+	}
 }

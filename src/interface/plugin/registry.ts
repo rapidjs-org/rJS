@@ -282,7 +282,9 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 				"${pluginName}": (_ => {
 					const console = {
 						log: message => {
-							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${message}\`, "color: gold;", "color: DarkTurquoise;", "color: auto;");
+							const atomic = ["string", "number", "boolean"].includes(typeof(message));
+							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${atomic ? message : "↓"}\`, "color: gold;", "color: DarkTurquoise;", "color: auto;");
+							!atomic && window.console.log(message);
 						},
 						error: err => {
 							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${err.message}\`, "color: gold;", "color: DarkTurquoise;", "color: red;");
