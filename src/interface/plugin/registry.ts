@@ -82,7 +82,7 @@ export function bindPlugin(name: string, path: string) {
 		const _wrap = Module.wrap;
 
 		Module.wrap = ((exports, _, __, __filename, __dirname) => {
-			return `${Module.wrapper[0]}${exports}
+			return `${Module.wrapper[0]}
 				const console = {
 					log: message => {
 						require("${require.resolve("../../utilities/output")}").log(message, "${name}")
@@ -99,7 +99,7 @@ export function bindPlugin(name: string, path: string) {
 				this.${config.pluginConfigIdentifier} = ${JSON.stringify(pluginConfigObj)};
 				
 				const ${config.thisRetainerIdentifier} = this;
-			${Module.wrapper[1]}`;
+			${exports}${Module.wrapper[1]}`;
 		});
 
 		pluginModule = require.main.require(path);	// Require using the modified module wrapper

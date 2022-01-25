@@ -78,7 +78,7 @@ export abstract class GetEntity extends Entity {
     	super.respond(status, message);
     }
 
-	public process() {
+    public process() {
     	super.process();
-	}
+    }
 }
