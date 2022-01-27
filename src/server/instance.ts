@@ -25,6 +25,8 @@ import {DynamicGetEntity} from "./entity/DynamicGetEntity";
 import {PostEntity} from "./entity/PostEntity";
 
 import {createHook} from "./hook";
+
+
 const entityConstructor = {
 	BASIC: Entity,
 	GET: {
@@ -55,32 +57,44 @@ const protocol: string = serverConfig.port.https
 
 // Create main server
 require(protocol)
-	.createServer(options, (req, res) => {
-		// Asynchronous request handler
-		handleRequest(req, res).catch(err => {
-			// Catch bubbling up unhandled errors for display and generic server error response
+.createServer(options, (req, res) => {
+	// Asynchronous request handler
+	handleRequest(req, res)
+	.catch(err => {
+		// Catch bubbling up unhandled errors for display and generic server error response
+		output.error(err);
+		
+		try {
+			return (new entityConstructor.BASIC(req, res)).respond(500);
+		} catch(err) {
+			output.log("An unexpected error occurred handling a request:");
 			output.error(err);
-
-			(new entityConstructor.BASIC(req, res)).respond(500);
-		});
-	})
-	.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
-		() => {
-			output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
-			isDevMode && output.log("Running DEV MODE");
-		});
+		}
+	});
+})
+.listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
+() => {
+	output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
+	isDevMode && output.log("Running DEV MODE");
+});
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
-serverConfig.port.https
-&& (require("http")
+if(serverConfig.port.https && serverConfig.port.https) {
+	require("http")
 	.createServer((req, res) => {
-		(new entityConstructor.BASIC(req, res)).redirect(req.url);
+		try { 
+			return (new entityConstructor.BASIC(req, res)).redirect(req.url);
+		} catch(err) {
+			output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
+			output.error(err);
+		}
 	})
 	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
-		() => {
-			// Use set up HTTP port for redirection (80 by default (recommended))
-			output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
-		}));
+	() => {
+		// Use set up HTTP port for redirection (80 by default (recommended))
+		output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
+	});
+}
 
 /**
  * Handle a single request asynchronously.
