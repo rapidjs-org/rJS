@@ -4,7 +4,6 @@
 
 
 import {dirname, join} from "path";
-import {existsSync} from "fs";
 
 import {argument} from "../args";
 
@@ -75,16 +74,12 @@ const projectDirPath = (typeof(argsDirPath) == "string")
  * @param {string} name Pathname to be normalized
  * @returns {string} Normalized pathname
  */
-function normalizePath(caption: string, name: string): string {
+function normalizePath(name: string): string {
 	const path = (name.charAt(0) != "/")
 		? join(projectDirPath, name)
 		: name;
-    
-	if(!existsSync(path)) {
-		throw new ReferenceError(`${caption} directory given in server configuration file does not exist '${path}'`);
-	}
 
-	return join(projectDirPath, name);
+	return path;
 }
 
 /**
@@ -105,11 +100,11 @@ const config = (read("config", defaultConfig) || read("server", defaultConfig))
 
 // Normalize directory links (possibly given in relative representation) to local disc absolute
 (config.locale.length > 0)
-&& (config.directory.lang = normalizePath("Lang", config.directory.lang));
-config.directory.log && (config.directory.log = normalizePath("Log", config.directory.log));
-config.directory.web = normalizePath("Web", config.directory.web);
+&& (config.directory.lang = normalizePath(config.directory.lang));
+config.directory.log && (config.directory.log = normalizePath(config.directory.log));
+config.directory.web = normalizePath(config.directory.web);
 for(const path in (config.ssl || {})) {
-	config.ssl[path] = normalizePath("SSL", config.ssl[path]);
+	config.ssl[path] = normalizePath(config.ssl[path]);
 }
 
 // Normalize extension arrays for future uniform usage behavior

@@ -28,6 +28,8 @@
 // TODO: "Wait for plug-in" feature
 // TODO: "Symlink" files feature?
 
+// Validate config file(s) first
+import "./config/validate";
 
 import serverConfig from "./config/config.server";
 import {registerDetection} from "./live/detection";
