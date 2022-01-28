@@ -27,6 +27,7 @@
 
 // TODO: "Wait for plug-in" feature
 // TODO: "Symlink" files feature?
+// TODO: All CLI interface (link plug-in reference config and rendering script paths)
 
 // Validate config file(s) first
 import "./config/validate";
