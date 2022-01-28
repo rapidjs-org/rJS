@@ -8,7 +8,7 @@
 		log("Perform manual reload to resubscribe when server has been restarted");
 	};
 
-	const ws = new WebSocket("ws://localhost:9393");
+	const ws = new WebSocket("ws://localhost:@WS_PORT");
 	
 	ws.onopen = _ => {
 		log("Running DEV MODE");
