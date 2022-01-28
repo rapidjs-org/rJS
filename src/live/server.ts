@@ -3,6 +3,8 @@
  * file modifications to connected clients.
  */
 
+import config from "../config.json";
+
 
 import http from "http";
 import {readFileSync} from "fs";
@@ -14,8 +16,8 @@ import {injectIntoHead} from "../utilities/markup";
 
 
 // Read client script
-const clientScript = String(readFileSync(join(__dirname, "../client/live.js")));
-
+const clientScript = String(readFileSync(join(__dirname, "../client/live.js")))
+.replace(/@WS_PORT/, String(config.wsPort));	// With configured websocket port (substitution)
 
 // Connections array to be worked as list
 const connections = [];
@@ -24,7 +26,7 @@ if(isDevMode) {
 	// Create substantial HTTP server
 	const webServer = http
 		.createServer()
-		.listen(9393);
+		.listen(config.wsPort);
 
 	// Create web socket server instance upon
 	const wsServer = new WebSocketServer({
