@@ -2,5 +2,6 @@
 	"compoundPageDirPrefix": "#",
 	"dynamicFileDefaultName": "index",
     "dynamicFileExtension": "html",
-    "privateWebFilePrefix": "_"
+    "privateWebFilePrefix": "_",
+    "wsPort": 9393
 }
