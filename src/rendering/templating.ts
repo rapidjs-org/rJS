@@ -5,22 +5,22 @@
 import config from "../config.json";
 
 
-import {join} from "path";
-import {existsSync} from "fs";
+import { join } from "path";
+import { existsSync } from "fs";
 
 import serverConfig from "../config/config.server";
 
-import {ssrEngine} from "../interface/bindings";
+import { ssrEngine } from "../interface/bindings";
 
 
 /**
  * Render templating into given response message markup.
  * @param {string} markup Response message markup to be modified / rendered
- * @param {IReducedRequestInfo} req Related reduced request info object
+ * @param {IRequestObject} req Related reduced request info object
  * @param {boolean} [isImplicitRequest] Whether the modifier has been called upon an implicit request / reading process
  * @returns {string} Templated markup
  */
-export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest = false): string {
+export default function(markup: string, reducedRequestInfo?: IRequestObject, isImplicitRequest = false): string {
 	// Retrieve templating object if respective handler module exists (compound only)
 	const templatingModulePath: string = join(serverConfig.directory.web, `${reducedRequestInfo.pathname.replace(/([^/]+$)/, `${config.privateWebFilePrefix}$1`)}.js`);
 		

@@ -28,7 +28,7 @@
 // TODO: "Wait for plug-in" feature
 // TODO: "Symlink" files feature?
 // TODO: All CLI interface (link plug-in reference config and rendering script paths)
-
+// TODO: Proxy mode?
 
 // Validate config file first
 import "./config/validate";
@@ -42,10 +42,10 @@ import appInterface from "./interface/scope:app";
 // Initialize live functionality (websocket modification detection)
 // Only effective in DEV MODE (implicitly checked)
 
-import {spawn, exec} from "child_process";
+import { spawn, exec } from "child_process";
 
 import serverConfig from "./config/config.server";
-import {registerDetection} from "./live/detection";
+import { registerDetection } from "./live/detection";
 
 // Watch project directory level (non-recursively) (server / main module, configs, ...)
 registerDetection(require("path")

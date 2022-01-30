@@ -3,7 +3,7 @@
  */
 
 
-import {wrapInterface} from "./wrapper";
+import { wrapInterface } from "./wrapper";
 
 const bindSSR = wrapInterface(require("./bindings").bindSSR, "binding an SSR handler", true);
 

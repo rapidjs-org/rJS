@@ -4,7 +4,8 @@
 
 
 module.exports = {
-	isDevMode: require("../utilities/is-dev-mode"),
+	mode: require("../utilities/mode"),
+	isDevMode: require("../utilities/mode").DEV,	// TODO: Deprecate
 	
 	ClientError: require("./ResponseError/ClientError").ClientError,
 	ServerError: require("./ResponseError/ServerError").ServerError,

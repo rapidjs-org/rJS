@@ -8,11 +8,11 @@ const config = {
 };
 
 
-import {join, dirname} from "path";
-import {existsSync} from "fs";
+import { join, dirname } from "path";
+import { existsSync } from "fs";
 
-import isDevMode from "../utilities/is-dev-mode";
-import {merge} from "../utilities/object";
+import {mode} from "../utilities/mode";
+import { merge } from "../utilities/object";
 
 
 /**
@@ -38,7 +38,7 @@ function readCustomConfig(name: string, devConfig = false): Record<string, unkno
 export function read(name: string, defaultConfig: Record<string, unknown> = {}) {
 	// Retrieve custom config object (depending on mode)
 	const customConfig = merge(readCustomConfig(name),
-		isDevMode ? readCustomConfig(name, true) : {});
+		mode.DEV ? readCustomConfig(name, true) : {});
 
 	return merge(defaultConfig, customConfig);
 }
