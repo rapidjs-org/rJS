@@ -11,20 +11,14 @@ import { Entity } from "./Entity";
 
 
 export class PluginEntity extends Entity {
-    private readonly event;
-
     constructor(req, res) {
     	super(req, res);
-
-        this.event = (name, callback) => {
-            req.on(name, callback);
-        }
     }
 
 	protected process() {
 		const body = [];
-		
-		this.event("data", chunk => {
+
+		this.requestEvent("data", chunk => {
 			body.push(chunk);
 
 			if((body.length * 8) <= serverConfig.limit.payloadSize) {
@@ -37,7 +31,7 @@ export class PluginEntity extends Entity {
 			throw true;
 		});
 
-		this.event("end", () => {
+		this.requestEvent("end", () => {
 			// Parse payload
 			let payload: {
 				pluginName: string;
@@ -85,7 +79,7 @@ export class PluginEntity extends Entity {
 			}
 		});
 
-		this.event("error", err => {
+		this.requestEvent("error", err => {
 			if(err === true) {
 				// Intercept intentional value thrown on payload limit reached (true)
 				this.respond(413);

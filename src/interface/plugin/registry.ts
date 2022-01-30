@@ -20,18 +20,18 @@ const config = {
 
 const Module = require("module");
 
-import {join, dirname, extname} from "path";
-import {existsSync, readFileSync} from "fs";
+import { join, dirname, extname } from "path";
+import { existsSync, readFileSync } from "fs";
 
 import pluginConfig from "../../config/config.plugins";
 
-import {registerDetection} from "../../live/detection";
+import { registerDetection } from "../../live/detection";
 
 import * as output from "../../utilities/output";
-import {injectIntoHead} from "../../utilities/markup";
-import {truncateModuleExtension} from "../../utilities/normalize";
+import { injectIntoHead } from "../../utilities/markup";
+import { truncateModuleExtension } from "../../utilities/normalize";
 
-import {getNameByCall, getNameByReference, getPathByCall} from "./naming";
+import { getNameByCall, getNameByReference, getPathByCall } from "./naming";
 
 
 // Automatic client module location detection and integration?
@@ -186,7 +186,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 			// Filter for not yet (hard)coded plug-ins
 			// Hard coding use case: user defined ordering
 			return !
-			(new RegExp(`<\\s*script\\s+((async|defer)\\s+)?src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1(\\s+(async|defer))?\\s*>`, "i"))
+			(new RegExp(`<\\s*script\\s((?!>)(\s|.))*src=("|')\\s*/\\s*${config.pluginRequestPrefix}${name}\\s*\\1((?!>)(\s|.))*>`, "i"))
 				.test(markup);
 		});
 	// TODO: Pre-filter and store in respective maps?
@@ -200,7 +200,7 @@ export function integratePluginReferences(markup: string, isCompound: boolean): 
 	const href = `/${config.pluginRequestPrefix}${effectivePlugins.join(config.pluginNameSeparator)}`;
 
 	markup = injectIntoHead(markup, `
-		<script src="${href}"></script>
+		<script src="${href}" charset="utf-8"></script>
 	`);
 	
 	return markup;
@@ -283,7 +283,7 @@ export function initClientModule(relativePath: string, sharedConfig?: unknown, c
 					const console = {
 						log: message => {
 							const atomic = ["string", "number", "boolean"].includes(typeof(message));
-							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${atomic ? message : "↓"}\`, "color: gold;", "color: DarkTurquoise;", "color: auto;");
+							window.console.log(\`%c[rJS]%c[${pluginName}] %c\${atomic ? message : "\u2193"}\`, "color: gold;", "color: DarkTurquoise;", "color: auto;");
 							!atomic && window.console.log(message);
 						},
 						error: err => {

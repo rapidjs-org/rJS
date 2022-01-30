@@ -31,7 +31,7 @@ class RenderBinding {
      * @param {Function} callback Templating handler function being applied to any dynamic file data
      * @param {boolean} [implicitReadingOnly] Whether to render templating only if is a server implicit reading process (GET) (false by default)
      */
-    public bind(callback: (message: string, handlerObj?: Record<string, unknown>, req?: IReducedRequestInfo) => string, implicitReadingOnly?: boolean) {
+    public bind(callback: (message: string, handlerObj?: Record<string, unknown>, req?: IRequestObject) => string, implicitReadingOnly?: boolean) {
     	if(this.engineStore.length >= this.limit) {
     		throw new ReferenceError(`Trying to bind more ${this.caption} engines than allowed (max. ${this.limit}).`);
     	}

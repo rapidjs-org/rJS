@@ -14,7 +14,7 @@ import { integrateLiveReference  } from "../../live/server";
 import { ResponseError } from "../../interface/ResponseError/ResponseError";
 import { integratePluginReferences, isClientModuleRequest, retrieveClientModules } from "../../interface/plugin/registry";
 
-import isDevMode from "../../utilities/is-dev-mode";
+import { mode } from "../../utilities/mode";
 import { normalizeExtension } from "../../utilities/normalize";
 import { injectIntoHead } from "../../utilities/markup";
 
@@ -102,10 +102,10 @@ export class AssetEntity extends Entity {
 
 		// Integrate plug-in references into head element
 		markup = integratePluginReferences(markup, this.isCompound());
-		
+
 		// Inject compound base defining tag into head for argument neglection (only if is compound)
 		markup = this.isCompound()
-		? injectIntoHead(markup, `<base href="${this.getHeader("Host")}${this.toConventionalPath(this.webPath)}">`)
+		? injectIntoHead(markup, `<base href="${this.hostname}${this.toConventionalPath(this.webPath)}">`)
 		: markup;
 
 		// Integrate live functionality client script if envioronment is running in DEV MODE (implicit check)
@@ -119,21 +119,22 @@ export class AssetEntity extends Entity {
 		if(isClientModuleRequest(this.requestPath)) {
 			this.extension = "js";
 
-			return super.respond(200, retrieveClientModules(this.requestPath));
+			return this.respond(200, retrieveClientModules(this.requestPath));
 		}
 
-        this.isDynamic = /\.[a-z]+$/i.test(this.requestPath);
+        this.isDynamic = !/\.[a-z]+$/i.test(this.requestPath);
 
         this.extension = this.isDynamic
         ? config.dynamicFileExtension
         : normalizeExtension(extname(this.requestPath));
 
-
 		// Block request if asset is not whitelisted (if is enabled providing an according configuration array)
 		// Block request if is private (hidden file, prefixed with indicator)
 		if((new RegExp(`/${config.privateWebFilePrefix}`)).test(this.requestPath)
         || (serverConfig.extensionWhitelist
-        && !serverConfig.extensionWhitelist.includes(this.extension))) {
+        && !serverConfig.extensionWhitelist
+        .concat([config.dynamicFileExtension, "js"])
+        .includes(this.extension))) {
 			return this.respond(403);
 		}
 		
@@ -147,13 +148,12 @@ export class AssetEntity extends Entity {
             // Subdomain
 			this.parseSubdomain();
 
-            // Enforce configured www strategy
-            if(serverConfig.www === "yes"
+			if(serverConfig.www === "yes"
             && this.subdomain[0] !== "www") {
-                return this.redirect(this.requestPath, `www.${this.getHeader("Host")}`);
+                return this.redirect(this.requestPath, `www.${this.hostname}`);
             } else if(serverConfig.www === "no"
             && this.subdomain[0] === "www") {
-                return this.redirect(this.requestPath, this.getHeader("Host").replace(/^www\./, ""));
+                return this.redirect(this.requestPath, this.hostname.replace(/www\./, ""));
             }
 
             // Locale
@@ -220,17 +220,27 @@ export class AssetEntity extends Entity {
     		this.setHeader("Content-Type", mime);
     		this.setHeader("X-Content-Type-Options", "nosniff");
     	}
-
+        
+        // Check whether the requested file is text (ASCII)
+        let isTextFile = true;
+        for(let i = 0; i < message.length; i++) {
+            if(message[i] > 127) {
+                isTextFile = false;
+                
+                break;
+            }
+        }
     	// Apply GZIP compression and set related header if accepted by the client
-    	if(/(^|[, ])gzip($|[ ,])/.test(this.getHeader("Accept-Encoding") || "")
-		&& serverConfig.gzipCompressList.includes(this.extension)) {    // TODO: Check
+        if(serverConfig.gzipCompression
+        && /(^|[, ])gzip($|[ ,])/.test(this.getHeader("Accept-Encoding") || "")
+		&& isTextFile) {
     		// Set header
     		this.setHeader("Content-Encoding", "gzip");
     		// Compress
     		message = gzipSync(message);
     	}
 
-		if(this.isDynamic || isDevMode) {
+		if(this.isDynamic || mode.DEV) {
 			// No ETag for dynamic files
             // or running DEV MODE (always reload)
 			return super.respond(status, message);
@@ -254,7 +264,6 @@ export class AssetEntity extends Entity {
 		// Set cache control headers
 	   	serverConfig.cachingDuration.client
         && this.setHeader("Cache-Control", `public, max-age=${serverConfig.cachingDuration.client}, must-revalidate`);
-		
 
         super.respond(status, message);
 	}

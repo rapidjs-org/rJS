@@ -3,12 +3,12 @@
  */
 
 
-import {existsSync} from "fs";
-import {join, dirname} from "path";
+import { existsSync } from "fs";
+import { join, dirname } from "path";
 
-import {truncateModuleExtension} from "../../utilities/normalize";
+import { truncateModuleExtension } from "../../utilities/normalize";
 
-import {pluginRegistry} from "./registry";
+import { pluginRegistry } from "./registry";
 
 
 /**

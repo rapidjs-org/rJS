@@ -7,12 +7,12 @@ const config = {
 };
 
 
-import {appendFile} from "fs";
-import {join} from "path";
+import { appendFile } from "fs";
+import { join } from "path";
 
 import serverConfig from "../config/config.server";
 
-import isDevMode from "../utilities/is-dev-mode";
+import {mode} from "../utilities/mode";
 
 
 // Display log write errors only once
@@ -61,7 +61,7 @@ export function log(message: string, additionalPrefix?: string, styleCode?: stri
 	!atomic && console.log(message);
 	
 	// Also log message to file if configured and in productive environment
-	isDevMode && serverConfig.directory.log
+	mode.DEV && serverConfig.directory.log
 	&& writeToFile(`${additionalPrefix ? `[${additionalPrefix}] ` : ""}${JSON.stringify(message)}`);
 }
 

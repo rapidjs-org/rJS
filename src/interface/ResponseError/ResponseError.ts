@@ -10,7 +10,8 @@ export abstract class ResponseError extends Error {
     public status: number;
 
     /**
-	 * @param {number} status Status code (within client error code range (4**))
+	 * @param {number} leadingDigit Status code range (leading digit for type)
+	 * @param {number} status Status code (within error code range (<leadingDigit>**))
 	 * @param {string} message Optional description message
 	 */
     constructor(leadingDigit: number, status: number, message?: string) {

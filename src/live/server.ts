@@ -7,12 +7,12 @@ import config from "../config.json";
 
 
 import http from "http";
-import {readFileSync} from "fs";
-import {join} from "path";
-import {server as WebSocketServer} from "websocket";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { server as WebSocketServer } from "websocket";
 
-import isDevMode from "../utilities/is-dev-mode";
-import {injectIntoHead} from "../utilities/markup";
+import {mode} from "../utilities/mode";
+import { injectIntoHead } from "../utilities/markup";
 
 
 // Read client script
@@ -22,7 +22,7 @@ const clientScript = String(readFileSync(join(__dirname, "../client/live.js")))
 // Connections array to be worked as list
 const connections = [];
 
-if(isDevMode) {
+if(mode.DEV) {
 	// Create substantial HTTP server
 	const webServer = http
 		.createServer()
@@ -60,7 +60,7 @@ export function proposeRefresh() {
  * @returns {Buffer} Markup with client script in head tag
  */
 export function integrateLiveReference(markup: string): string {
-	return isDevMode
+	return mode.DEV
 		? injectIntoHead(String(markup), `
         <script>
             ${clientScript}

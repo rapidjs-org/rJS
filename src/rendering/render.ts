@@ -4,13 +4,13 @@
  */
 
 
-import {currentRequestInfo} from "../server/hook";
+import { currentRequestInfo } from "../server/hook";
 
 import renderTemplating from "./templating";
 import renderLocale from "./locale/locale";
 
 
-declare type renderer = (message: string, reducedRequestInfo?: IReducedRequestInfo, isImplicitRequest?: boolean) => string;
+declare type renderer = (message: string, reducedRequestInfo?: IRequestObject, isImplicitRequest?: boolean) => string;
 
 /**
  * Modification handler array to be worked like a queue.
@@ -31,7 +31,7 @@ const handlerQueue: renderer[] = [
  */
 export function renderModifiers(message: string, isImplicitRequest = false): string {
 	// Retrieve realted redduced request info object if modifier is effective in request related routine
-	const reducedRequestInfo: IReducedRequestInfo = currentRequestInfo();
+	const reducedRequestInfo: IRequestObject = currentRequestInfo();
 
 	// Work handler queue
 	handlerQueue.forEach((handler: renderer) => {

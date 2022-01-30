@@ -26,7 +26,7 @@ import { rateExceeded } from "../rate-limiter";
 
 // TODO: Locale fs map
 
-export abstract class Entity {
+export class Entity {
     private readonly req: IncomingMessage;
     private readonly res: ServerResponse;
     private readonly headOnly: boolean;
@@ -49,7 +49,8 @@ export abstract class Entity {
 
 	private requestObj: IRequestObject;	// Create once at most
 
-    protected compoundArgs: string[] = [];
+    protected compoundArgs: string[];
+	protected hostname: string;
     protected requestPath: string;
     protected webPath: string;
 
@@ -61,7 +62,7 @@ export abstract class Entity {
 
 		this.headOnly = headOnly;
 
-    	// Construct URL object for request
+		this.hostname = `http${serverConfig.port.https ? "s" : ""}://${this.getHeader("Host")}/`
     	this.requestPath = this.req.url.replace(/[#?].*$/, "");
 
 		// Block request if individual request maximum reached (rate limiting)
@@ -96,14 +97,17 @@ export abstract class Entity {
 		this.process();
     }
 
-    
+    protected requestEvent(name, callback) {
+		this.req.on(name, callback);
+	}
+
     protected localPath(path) {
         return join(serverConfig.directory.web, path)
 		.replace(/(?<!\.[a-z]+)$/i, `.${config.dynamicFileExtension}`);
     }
 
     protected fileExists(path) {
-        return existsSync(this.localPath(path));
+        return path && existsSync(this.localPath(path));
     }
 
     /**
@@ -158,6 +162,7 @@ export abstract class Entity {
     	// Traverse a pathname to retrieve parameters of the closest compound page in the web file system
 
         // Traversal iteration limit (for preventing too deep nestings or endless traversal
+		this.compoundArgs = [];
     	let traversalLimit = 100;
     	// Traversal loop
         path = this.requestPath;
@@ -182,7 +187,7 @@ export abstract class Entity {
     		}
     	} while(path !== "/");
 
-		this.compoundArgs = null;
+		return undefined;
     }
 
 	protected process() {}
@@ -202,12 +207,12 @@ export abstract class Entity {
         && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
     	
 		// Write set cookies to respective header
-    	/* const setCookieArray: string[] = [];
+    	const setCookieArray: string[] = [];
     	for(const cookie in this.cookies.set) {
     		// TODO: Keep attributes if was received
-    		setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.originalPathname}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? "; SameSite=Strict; Secure; HttpOnly" : ""}`);
+    		setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.requestPath}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? "; SameSite=Strict; Secure; HttpOnly" : ""}`);
     	}
-    	this.res.setHeader("Set-Cookie", setCookieArray); */
+    	this.res.setHeader("Set-Cookie", setCookieArray);
         
 		// Conceal status for client and server errors if enabled (virtual 404)
 		status = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
@@ -244,25 +249,25 @@ export abstract class Entity {
 	 */
 	protected parseSubdomain() {
     	let subdomain: string;
-		const hostname = this.getHeader("Host") || "";
+		const host = this.getHeader("Host") || "";
 
-    	// Trim TLD suffix from hostname
-    	const specialNameRegex = /([0-9]+(\.[0-9]+)*|(\.)?localhost)$/;
-    	if(specialNameRegex.test(hostname)) {
-    		// Local or numerical hostname
-    		this.subdomain.push(hostname
+    	// Trim TLD suffix from host
+    	const specialNameRegex = /([0-9]+(\.[0-9]+)*|(\.)?localhost)(:[0-9]+)?$/;
+    	if(specialNameRegex.test(host)) {
+    		// Local or numerical host
+    		this.subdomain.push(host
     			.replace(specialNameRegex, ""));
 
 			return;
     	}
 
 		// Retrieve TLD (second level if given, first level otherwise)
-		const suffix: string[] = hostname.match(/(\.[^.]+)?(\.[^.]+)$/);
+		const suffix: string[] = host.match(/(\.[^.]+)?(\.[^.]+)$/);
 		if(!tlds.includes(suffix[0].slice(1))
 		&& suffix[1]) {
 			suffix[0] = suffix[2];
 		}
-		subdomain = hostname.slice(0, -suffix[0].length);
+		subdomain = host.slice(0, -suffix[0].length);
 
     	// Partwise array representation
     	subdomain
@@ -305,7 +310,7 @@ export abstract class Entity {
      * @param {string} [hostname] - Host to redirect to
      */
     public redirect(pathname: string, hostname?: string) {
-    	const redirectUrl = new URL(`${hostname || this.getHeader("Host")}${this.req.url}`);
+    	const redirectUrl = new URL(`${hostname || this.hostname}${this.req.url}`);
     	redirectUrl.pathname = pathname;
         
     	this.setHeader("Location", redirectUrl.toString());
@@ -329,7 +334,7 @@ export abstract class Entity {
     		auth: this.getHeader("Authorization"),
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		locale: this.locale,
-    		pathname: isCompound ? dirname(this.webPath) : this.webPath,
+    		pathname: isCompound ? dirname(this.webPath) : (this.webPath || this.requestPath),
     		subdomain: this.subdomain,
             
     		// Cookies manipulation interface

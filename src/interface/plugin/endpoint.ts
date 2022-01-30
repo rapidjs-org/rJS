@@ -8,11 +8,11 @@ const config = {
 };
 
 
-import {ArbitraryCache} from "../../server/cache/ArbitraryCache";
+import { ArbitraryCache } from "../../server/cache/ArbitraryCache";
 
-import {currentRequestInfo} from "../../server/hook";
+import { currentRequestInfo } from "../../server/hook";
 
-import {getNameByCall} from "./naming";
+import { getNameByCall } from "./naming";
 
 // TODO: Generalized error response (catch wrapper to hide unexpected error messages)?
 
@@ -23,7 +23,7 @@ import {getNameByCall} from "./naming";
 const cache: ArbitraryCache<Buffer> = new ArbitraryCache();
 
 
-type EndpointCallback = (body: unknown, req: IReducedRequestInfo) => void;
+type EndpointCallback = (body: unknown, req: IRequestObject) => void;
 
 interface IEndpoint {
 	callback: EndpointCallback;
