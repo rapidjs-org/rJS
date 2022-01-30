@@ -7,13 +7,13 @@ const config = {
 };
 
 
-import {readdir, stat, lstatSync, existsSync, Dirent} from "fs";
-import {join} from "path";
+import { readdir, stat, lstatSync, existsSync, Dirent } from "fs";
+import { join } from "path";
 
 import * as output from "../utilities/output";
-import isDevMode from "../utilities/is-dev-mode";
+import {mode} from "../utilities/mode";
 
-import {proposeRefresh} from "./server";
+import { proposeRefresh } from "./server";
 
 
 // Array of detection directories
@@ -104,7 +104,7 @@ async function checkFile(path, callback): Promise<void> {
  * @param {Function} callback Function to call if modification has been detected
  */
 export function registerDetection(path: string, callback?: () => void, scanRecursively = true) {
-	if(!isDevMode) {
+	if(!mode.DEV) {
 		// DEV MODE only
 		return;
 	}
@@ -118,7 +118,7 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 
 
 // Initialize detection interval
-isDevMode && setInterval(_ => {
+mode.DEV && setInterval(_ => {
 	// Scan registered directories / files respectively
 	modRegistry.forEach(async mod => {
 		if(lstatSync(mod.path).isDirectory()) {

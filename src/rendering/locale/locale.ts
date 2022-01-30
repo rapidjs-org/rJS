@@ -3,17 +3,17 @@
  */
 
 
-import {existsSync} from "fs";
-import {join} from "path";
+import { existsSync } from "fs";
+import { join } from "path";
 
 import serverConfig from "../../config/config.server";
 
-import {localeEngine} from "../../interface/bindings";
+import { localeEngine } from "../../interface/bindings";
 
 import languageCodes from "./languages.json";
 import countryCodes from "./countries.json";
 
-import {merge} from "../../utilities/object";
+import { merge } from "../../utilities/object";
 
 
 // Normalize locale information to locale code 'll-CC' array representation (implicitly checking for code validity)
@@ -62,10 +62,10 @@ export const defaultLang: string = (serverConfig.locale.length > 0)
 /**
  * Render locale into given response message markup.
  * @param {string} markup Response message markup to be modified / rendered
- * @param {IReducedRequestInfo} req Related reduced request info object
+ * @param {IRequestObject} req Related reduced request info object
  * @returns {string} Templated markup
  */
-export default function(markup: string, reducedRequestInfo?: IReducedRequestInfo): string {
+export default function(markup: string, reducedRequestInfo?: IRequestObject): string {
 	if(!(reducedRequestInfo.locale || {}).language
 	|| localeEngine.length == 0) {
 		// Locale processing disabled / no engine bound

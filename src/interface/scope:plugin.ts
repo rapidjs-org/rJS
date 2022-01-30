@@ -3,7 +3,7 @@
  */
 
 
-import {wrapInterface} from "./wrapper";
+import { wrapInterface } from "./wrapper";
 
 
 const endpoint = wrapInterface(require("./plugin/endpoint").setDefaultEndpoint, "creating a plug-in endpoint", true);

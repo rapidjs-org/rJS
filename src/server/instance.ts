@@ -7,11 +7,11 @@
 import { readFileSync } from "fs";
 
 import * as output from "../utilities/output";
-import isDevMode from "../utilities/is-dev-mode";
+import {mode} from "../utilities/mode";
 
 import serverConfig from "../config/config.server";
 
-import { ImmediateEntity } from "./entity/ImmediateEntity";
+import { Entity } from "./entity/Entity";
 import { AssetEntity } from "./entity/AssetEntity";
 import { PluginEntity } from "./entity/PluginEntity";
 
@@ -44,7 +44,7 @@ require(protocol)
 		output.error(err);
 		
 		try {
-			return (new ImmediateEntity(req, res)).respond(500);
+			return (new Entity(req, res)).respond(500);
 		} catch(err) {
 			output.log("An unexpected error occurred handling a request:");
 			output.error(err);
@@ -54,7 +54,7 @@ require(protocol)
 .listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
 () => {
 	output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
-	isDevMode && output.log("Running DEV MODE");
+	mode.DEV && output.log("Running DEV MODE");
 });
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
@@ -62,7 +62,7 @@ if(serverConfig.port.https && serverConfig.port.https) {
 	require("http")
 	.createServer((req, res) => {
 		try { 
-			return (new ImmediateEntity(req, res)).redirect(req.url);
+			return (new Entity(req, res)).redirect(req.url);
 		} catch(err) {
 			output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
 			output.error(err);
@@ -87,6 +87,6 @@ async function handleRequest(req, res) {
 		case "HEAD": return new AssetEntity(req, res, true);
 		case "GET": return new AssetEntity(req, res);
 		case "POST": return new PluginEntity(req, res);
-		default: (new ImmediateEntity(req, res)).respond(405);
+		default: (new Entity(req, res)).respond(405);
 	}
 }

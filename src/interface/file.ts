@@ -5,14 +5,14 @@
 import config from "../config.json";
 
 
-import {existsSync, readFileSync} from "fs";
-import {join, extname} from "path";
+import { existsSync, readFileSync } from "fs";
+import { join, extname } from "path";
 
 import serverConfig from "../config/config.server";
 
-import {normalizeExtension} from "../utilities/normalize";
+import { normalizeExtension } from "../utilities/normalize";
 
-import {renderModifiers} from "../rendering/render";
+import { renderModifiers } from "../rendering/render";
 
 // TODO: Bind file reader interface?
 

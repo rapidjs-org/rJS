@@ -1,4 +1,4 @@
-declare interface IReducedRequestInfo {
+declare interface IRequestObject {
 	auth: string;
 	ip: string;
 	locale: {
