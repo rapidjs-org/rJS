@@ -3,43 +3,22 @@
  * security guards and routines.
  */
 
-import config from "../config.json";
 
-
-import {readFileSync} from "fs";
-import {extname, basename} from "path";
+import { readFileSync } from "fs";
 
 import * as output from "../utilities/output";
 import isDevMode from "../utilities/is-dev-mode";
-import {normalizeExtension} from "../utilities/normalize";
 
 import serverConfig from "../config/config.server";
 
-import {rateExceeded} from "./rate-limiter";
-
-import {isClientModuleRequest} from "../interface/plugin/registry";
-
-import {Entity} from "./entity/Entity";
-import {StaticGetEntity} from "./entity/StaticGetEntity";
-import {DynamicGetEntity} from "./entity/DynamicGetEntity";
-import {PostEntity} from "./entity/PostEntity";
-
-import {createHook} from "./hook";
-
-
-const entityConstructor = {
-	BASIC: Entity,
-	GET: {
-		STATIC: StaticGetEntity,
-		DYNAMIC: DynamicGetEntity
-	},
-	POST: PostEntity
-};
+import { ImmediateEntity } from "./entity/ImmediateEntity";
+import { AssetEntity } from "./entity/AssetEntity";
+import { PluginEntity } from "./entity/PluginEntity";
 
 
 // Retrieve server optional server parameter
 const options: Record<string, Buffer> = {};
-if(serverConfig.ssl) {	// TODO: How to treat for DEV MODE?
+if(serverConfig.ssl) {	// TODO: How to treat in DEV MODE?
 	const readCertFile = (pathname: string): Buffer => {
 		return readFileSync(pathname);
 	};
@@ -65,7 +44,7 @@ require(protocol)
 		output.error(err);
 		
 		try {
-			return (new entityConstructor.BASIC(req, res)).respond(500);
+			return (new ImmediateEntity(req, res)).respond(500);
 		} catch(err) {
 			output.log("An unexpected error occurred handling a request:");
 			output.error(err);
@@ -83,7 +62,7 @@ if(serverConfig.port.https && serverConfig.port.https) {
 	require("http")
 	.createServer((req, res) => {
 		try { 
-			return (new entityConstructor.BASIC(req, res)).redirect(req.url);
+			return (new ImmediateEntity(req, res)).redirect(req.url);
 		} catch(err) {
 			output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
 			output.error(err);
@@ -104,56 +83,10 @@ if(serverConfig.port.https && serverConfig.port.https) {
  */
 async function handleRequest(req, res) {
 	// Retrieve entity type first (or close response if can not be mapped accordingly)
-	let entity;
 	switch(req.method.toUpperCase()) {
-	case "GET": {
-		// (Initial) asset request
-		const extension = extname(req.url);
-		const normalizedExtension = extension ? normalizeExtension(extension) : config.dynamicFileExtension;
-
-		// TODO: Static file external asset server redirect (permanent, for DYNAMIC exclusive servers), per option?
-		entity = new entityConstructor.GET[
-			(normalizedExtension == config.dynamicFileExtension
-			&& !isClientModuleRequest(req.url))
-				? "DYNAMIC"
-				: "STATIC"
-		](req, res);
-
-		break;
+		case "HEAD": return new AssetEntity(req, res, true);
+		case "GET": return new AssetEntity(req, res);
+		case "POST": return new PluginEntity(req, res);
+		default: (new ImmediateEntity(req, res)).respond(405);
 	}
-	case "POST": {
-		// Plug-in channel request
-		entity = new entityConstructor.POST(req, res);
-
-		break;
-	}
-	default: {
-		// Block request as HTTP method is not supported
-		return (new entityConstructor.BASIC(null, res)).respond(405);
-	}
-	}
-
-	// Store hook to entity
-	createHook(entity);
-    
-	// Block request if individual request maximum reached (rate limiting)
-	if(rateExceeded(req.connection.remoteAddress)) {
-		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
-        
-		return entity.respond(429);
-	}
-
-	// Block request if URL is exceeding the maximum length
-	if(serverConfig.limit.urlLength > 0
-	&& req.url.length > serverConfig.limit.urlLength) {
-		return entity.respond(414);
-	}
-	
-	// Block request if requesting a private (hidden file)
-	if((new RegExp(`/${config.privateWebFilePrefix}`)).test(basename(req.url))) {
-		return entity.respond(403);
-	}
-	
-	// Call entity specific request processor method
-	entity.process();
 }
