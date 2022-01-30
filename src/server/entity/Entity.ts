@@ -8,24 +8,28 @@
 import config from "../../config.json";
 
 
-import {existsSync} from "fs";
-import {basename, dirname, join} from "path";
-import {URL} from "url";
-import {IncomingMessage, ServerResponse, STATUS_CODES as statusMessages} from "http";
+import { existsSync } from "fs";
+import { basename, dirname, join } from "path";
+import { URL } from "url";
+import { IncomingMessage, ServerResponse, STATUS_CODES as statusMessages } from "http";
+
 
 import serverConfig from "../../config/config.server";
 
 import tlds from "../tlds.json";
 
+import { localeMatchRegex, defaultLang } from "../../rendering/locale/locale";
 
-import {localeMatchRegex, defaultLang} from "../../rendering/locale/locale";
+import { createHook } from "../hook";
+import { rateExceeded } from "../rate-limiter";
 
 
 // TODO: Locale fs map
-// TODO: Decoupled HEAD routine (pre)?
 
-export class Entity {
-    private readonly originalPathname: string;
+export abstract class Entity {
+    private readonly req: IncomingMessage;
+    private readonly res: ServerResponse;
+    private readonly headOnly: boolean;
     private readonly cookies: {
         received: Record<string, string|number|boolean>;
         set: Record<string, {
@@ -37,33 +41,69 @@ export class Entity {
     	set: {}
     };
 
-    protected readonly req: IncomingMessage;
-    protected readonly res: ServerResponse;
-	protected isCompound = false;
-	protected compoundArgs: string[];
-    protected extension: string;
-    protected subdomain: string[];
-    protected locale: {
+    protected readonly subdomain: string[] = [];
+    protected readonly locale: {
         language?: string;
         country?: string;
     };
 
-    public url: URL;
+	private requestObj: IRequestObject;	// Create once at most
 
-    /**
-     * Create entity object based on web server induced request/response objects.
-     * @param {IncomingMessage} req Request object
-     * @param {ServerResponse} res Response object
-     */
-    constructor(req: IncomingMessage, res: ServerResponse) {
+    protected compoundArgs: string[] = [];
+    protected requestPath: string;
+    protected webPath: string;
+
+
+    constructor(req, res, headOnly: boolean = false) {
     	// Identically store original request/response objects
     	this.req = req;
     	this.res = res;
 
-    	// Construct URL object for request
-    	this.url = new URL(`${serverConfig.port.https ? "https": "http"}://${req.headers["host"]}${req.url}`);
+		this.headOnly = headOnly;
 
-    	this.originalPathname = this.url.pathname;
+    	// Construct URL object for request
+    	this.requestPath = this.req.url.replace(/[#?].*$/, "");
+
+		// Block request if individual request maximum reached (rate limiting)
+		if(rateExceeded(this.req.connection.remoteAddress)) {
+			this.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
+			
+			this.respond(429);
+
+			return;
+		}
+
+		// Block request if URL is exceeding the maximum length
+		if(serverConfig.limit.urlLength > 0
+		&& this.req.url.length > serverConfig.limit.urlLength) {
+			this.respond(414);
+			
+			return;
+		}
+
+		// Hook entity on async thread
+		createHook(this);
+
+
+		// Initialize empty locale object if locale processing is enabled
+    	if(localeMatchRegex && defaultLang) {
+			this.locale = {
+				language: null,
+				country: null
+			};
+		}
+
+		this.process();
+    }
+
+    
+    protected localPath(path) {
+        return join(serverConfig.directory.web, path)
+		.replace(/(?<!\.[a-z]+)$/i, `.${config.dynamicFileExtension}`);
+    }
+
+    protected fileExists(path) {
+        return existsSync(this.localPath(path));
     }
 
     /**
@@ -87,118 +127,66 @@ export class Entity {
     	this.res.setHeader(key, value);
     }
 
-    /**
-	 * Convert the current (conventional page) URL pathname to the compound equivalent
-	 * Applies sideffect to URL pathname property.
-	 * Compound path (internal) to use requested file name as directory prefixed with
-	 * the designated indicator. Actual file to be appended then.
-	 * @returns {string} Converted pathname representation
-	 */
-    protected pathnameToCompound(): string {
-    	return join(dirname(this.url.pathname),
-    		`${config.compoundPageDirPrefix}${basename(this.url.pathname).replace(/\.[a-z0-9]+$/i, "")}`,
-    		basename(this.url.pathname));
-    }
+	protected toConventionalPath(path) {
+		return dirname(path)
+		.replace(new RegExp(`/${config.compoundPageDirPrefix}`), "");
+	}
 
-    /**
-	 * Convert the current (compound page) URL pathname to the conventional equivalent
-	 * Inverse of pathnameToCompound().
-	 * @returns {string} Converted pathname representation
-	 */
-    protected pathnameToConventional(): string {
-    	return decodeURIComponent(this.url.pathname)
-    		.replace(new RegExp(`/${config.compoundPageDirPrefix}([^/]+)/\\1$`), "/$1");
-    }
+	protected toCompoundPath(path) {
+		return join(dirname(path),
+		`${config.compoundPageDirPrefix}${basename(path)}`,
+		basename(path));
+	};
 
-    /**
-     * Construct local disc path to asset ressource.
-     * @returns {String} Local ressource path
-     */
-    protected localPath(): string {
-    	// TODO: With arg for sideeffect-less use
-    	return decodeURIComponent(join(serverConfig.directory.web, this.url.pathname));
-    }
-    
-    /**
-     * Process URL retrieving the related file.
-     * @returns {number} Status code
-     */
-    protected processPagePath(): number {   // TODO: OPTIMIZE!
-    	/*
+    protected retrieveDynamicPath() {
+        /*
 		 * Response strategy:
 		 * • Use conventional page on exact request location if exists.
 		 * • Use compound page (high-low nesting, bottom-up traversal, use (developing) appendix as args)
 		 * • Use error (will use next error page if exists)
 		 */
 
-    	// Append pathname with default file name if none explicitly given
-    	this.url.pathname = this.url.pathname.replace(/\/$/, `/${config.dynamicFileDefaultName}`);
+    	// Append pathname with default names if none explicitly given
+    	let path = this.requestPath
+        .replace(/\/$/, `/${config.dynamicFileDefaultName}`);
     	
-    	// TODO: Implement sideeffect-less local path construction?
-    	// Respond with file located at exactly requested path if exists
-    	if(existsSync(this.localPath())) {
-        	return 200;
+    	if(this.fileExists(path)) {
+        	return path;
     	}
 		
     	// Respond with closest related compound page if exists (bottom-up traversal)
     	// Traverse a pathname to retrieve parameters of the closest compound page in the web file system
-    	const originalPathname: string = this.url.pathname;	// Backup as of processing sideeffects
-		
-    	// Traversal iteration limit (for preventing too deep nestings or endless traversal
-    	const traversalLimit = 100;
-    	// Traversal iterations counter
-    	let traversalCount = 0;
 
-    	// Intermediate compound arguments array
-    	const compoundArgs: string[] = [];
+        // Traversal iteration limit (for preventing too deep nestings or endless traversal
+    	let traversalLimit = 100;
     	// Traversal loop
+        path = this.requestPath;
     	do {
+    		// Search for index named
+    		let compoundPath = this.toCompoundPath(join(path, config.dynamicFileDefaultName));
+    		if(this.fileExists(compoundPath)) {
+    			return compoundPath;
+    		}
+
     		// Certain name
-    		if(!/\/$/.test(this.url.pathname)) {
-    			this.url.pathname = this.pathnameToCompound();
-    			if(existsSync(this.localPath())) {
-    				this.isCompound = true;
-    				this.compoundArgs = compoundArgs.reverse();	// Reverse (stacked) array to obtain URL order
-                    
-    				return 200;
-    			}
-
-    			compoundArgs.push(basename(this.url.pathname));
-    			this.url.pathname = dirname(this.url.pathname);
+            compoundPath = this.toCompoundPath(path);
+    		if(this.fileExists(compoundPath)) {
+                return compoundPath;
     		}
 
-    		// Default name (indexing level)
-    		this.url.pathname = join(dirname(this.url.pathname), config.dynamicFileDefaultName);
-    		this.url.pathname = this.pathnameToCompound();
-    		if(existsSync(this.localPath())) {
-    			this.isCompound = true;
-    			this.compoundArgs = compoundArgs.reverse();	// Reverse (stacked) array to obtain URL order
+    		this.compoundArgs.unshift(basename(path));
+    		path = dirname(path);
 
-    			return 200;
+    		if(--traversalLimit == 0) {
+    			break;
     		}
-            
-    		this.url.pathname = dirname(dirname(this.url.pathname));
+    	} while(path !== "/");
 
-    		traversalCount++;
-
-    		// Throw error upon reached iteration limit
-    		if(traversalCount >= traversalLimit) {
-    			// Close request due to processing timeout if traversal iteration limit reached
-    			return 408;
-    		}
-    	} while(this.url.pathname !== "/");
-
-    	this.url.pathname = originalPathname;	// Use original pathname (strategy adjusted)
-
-    	// No suitable file found
-    	return 404;
+		this.compoundArgs = null;
     }
 
-    /**
-     * Close entity by performing a response with an individual message.
-     * @param {number} status Status code
-     * @param {Buffer} [message] Message data
-     */
+	protected process() {}
+	
     public respond(status: number, message?: Buffer) {
     	// Use generic message if none explicitly given / retrieved processing
     	message = message || Buffer.from(statusMessages[String(status)], "utf-8");
@@ -206,96 +194,95 @@ export class Entity {
     	// Whether server uses a secure connection
     	const isSecure: boolean = serverConfig.port.https ? true : false;
 
-    	/*
-         * Set specific headers.
-         */
-    	this.setHeader("Server", "rapidJS");    // Keep?
+    	this.setHeader("Server", "rapidJS");
     	this.setHeader("X-XSS-Protection", "1");
     	this.setHeader("X-Powered-By", null);
     	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
-    	isSecure        
+    	isSecure
         && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
-    	// Write set cookies to respective header
-    	const setCookieArray: string[] = [];
+    	
+		// Write set cookies to respective header
+    	/* const setCookieArray: string[] = [];
     	for(const cookie in this.cookies.set) {
     		// TODO: Keep attributes if was received
     		setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.originalPathname}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? "; SameSite=Strict; Secure; HttpOnly" : ""}`);
     	}
-    	this.res.setHeader("Set-Cookie", setCookieArray);
+    	this.res.setHeader("Set-Cookie", setCookieArray); */
         
+		// Conceal status for client and server errors if enabled (virtual 404)
+		status = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
+		? 404
+		: status;
+		
     	// Set status code
-    	this.res.statusCode = isNaN(status) ? 500 : status;
+    	this.res.statusCode = status;
 
     	// End request with message
-    	this.res.end(message);
+    	this.res.end(this.headOnly ? null : message);
     }
 
-    /**
-     * Close entity by performing a redirect to a given pathname.
-     * @param {string} pathnanme - Path to redirect to
-     * @param {string} [hostname] - Host to redirect to
-     */
-    public redirect(pathname: string, hostname?: string) {
-    	this.url.pathname = pathname;
-    	hostname && (this.url.hostname = hostname);
-        
-    	this.res.setHeader("Location", this.url.toString());
-        
-    	this.res.statusCode = 301;
-        
-    	this.res.end();
-    }
-
-    public process() {
-    	/*
-         * Parse request cookies.
-         */
+	/*
+	 * Parse request cookies to cookies object (get).
+	 */
+	protected parseCookies() {
     	const cookieStr = this.getHeader("Cookie");
-    	cookieStr && cookieStr
-    		.split(";")
-    		.filter(cookie => (cookie.length > 0))
-    		.forEach(cookie => {
-    			const parts = cookie.split("=");
-    			this.cookies.received[parts.shift().trim()] = decodeURI(parts.join("="));
-    		});
 
-    	/*
-         * Retrieve subdomain(s) and store in array (partwise).
-         */
+		if(!cookieStr) {
+			return;
+		}
+
+    	cookieStr.split(";")
+		.filter(cookie => (cookie.length > 0))
+		.forEach(cookie => {
+			const parts = cookie.split("=");
+			this.cookies.received[parts.shift().trim()] = decodeURI(parts.join("="));
+		});
+	}
+
+	/*
+	 * Parse subdomain(s) to array (partwise).
+	 */
+	protected parseSubdomain() {
     	let subdomain: string;
+		const hostname = this.getHeader("Host") || "";
 
     	// Trim TLD suffix from hostname
     	const specialNameRegex = /([0-9]+(\.[0-9]+)*|(\.)?localhost)$/;
-    	if(specialNameRegex.test(this.url.hostname)) {
+    	if(specialNameRegex.test(hostname)) {
     		// Local or numerical hostname
-    		subdomain = this.url.hostname
-    			.replace(specialNameRegex, "");
-    	} else {
-    		// Retrieve TLD (second level if given, first level otherwise)
-    		const suffix: string[] = this.url.hostname.match(/(\.[^.]+)?(\.[^.]+)$/);
-    		if(!tlds.includes(suffix[0].slice(1))
-            && suffix[1]) {
-    			suffix[0] = suffix[2];
-    		}
-    		subdomain = this.url.hostname.slice(0, -suffix[0].length);
+    		this.subdomain.push(hostname
+    			.replace(specialNameRegex, ""));
+
+			return;
     	}
 
-    	// Partwise array representation
-    	this.subdomain = subdomain
-    		.split(/\./g)
-    		.filter(part => (part.length > 0));
+		// Retrieve TLD (second level if given, first level otherwise)
+		const suffix: string[] = hostname.match(/(\.[^.]+)?(\.[^.]+)$/);
+		if(!tlds.includes(suffix[0].slice(1))
+		&& suffix[1]) {
+			suffix[0] = suffix[2];
+		}
+		subdomain = hostname.slice(0, -suffix[0].length);
 
-    	/*
-         * Retrieve locale information and store in locale object.
-         */
-    	if(!localeMatchRegex
-		|| !defaultLang) {
+    	// Partwise array representation
+    	subdomain
+		.split(/\./g)
+		.filter(part => (part.length > 0))
+		.forEach(part => {
+			this.subdomain.push(part);
+		});
+	}
+
+	/*
+	 * Parse locale information to locale object.
+	 */
+	protected parseLocale() {
+    	if(!this.locale) {
     		// Locale processing not enabled
     		return;
     	}
 
-    	this.locale = {};
-    	const code = this.url.pathname.match(localeMatchRegex);	// TODO: Subdomain for locale?
+    	const code = this.requestPath.match(localeMatchRegex);	// TODO: Subdomain for locale?
     	if(!code) {
     		// Invalid locale prefix provided
     		return;
@@ -303,23 +290,46 @@ export class Entity {
 
     	// Remove leading locale part from internal pathname
     	// (as must not effect fs)
-    	this.url.pathname = this.url.pathname.slice(code[0].length);
 
     	this.locale.language = code[1].match(/^[a-z]{2}/)[0];
     	this.locale.country = (code[1].match(/[A-Z]{2}$/) || [null])[0];
+		
+		// Adapt local path
+    	this.requestPath = this.requestPath.slice(code[0].length);
+	}
+
+
+    /**
+     * Close entity by performing a redirect to a given pathname.
+     * @param {string} pathname - Path to redirect to
+     * @param {string} [hostname] - Host to redirect to
+     */
+    public redirect(pathname: string, hostname?: string) {
+    	const redirectUrl = new URL(`${hostname || this.getHeader("Host")}${this.req.url}`);
+    	redirectUrl.pathname = pathname;
+        
+    	this.setHeader("Location", redirectUrl.toString());
+        
+    	this.respond(301);
     }
 
     /**
      * Get entity related reduced request info object.
      * Enables client request individual behavior (multi interface scope).
-     * @returns {IReducedRequestInfo} Common reduced request info object (to be defined in accordance with sub entity behavior)
+     * @returns {IRequestObject} Common reduced request info object (to be defined in accordance with sub entity behavior)
      */
-    public getReducedRequestInfo(): IReducedRequestInfo {
-    	return {
+    public getRequestObject(): IRequestObject {
+		if(this.requestObj) {
+			return this.requestObj;
+		}
+
+		const isCompound = Array.isArray(this.compoundArgs);
+
+    	this.requestObj = {
     		auth: this.getHeader("Authorization"),
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		locale: this.locale,
-    		pathname: decodeURIComponent(this.isCompound ? dirname(this.url.pathname) : this.url.pathname),
+    		pathname: isCompound ? dirname(this.webPath) : this.webPath,
     		subdomain: this.subdomain,
             
     		// Cookies manipulation interface
@@ -349,13 +359,15 @@ export class Entity {
     		},
 
     		// Compound page specific information
-    		isCompound: this.isCompound,
-    		...(this.isCompound
+    		isCompound: isCompound,
+    		...(isCompound
     			? { compound: {
-    				base: this.pathnameToConventional(),
+    				base: this.toConventionalPath(this.webPath),
     				args: this.compoundArgs
     			} }
     			: {})
     	};
+
+		return this.requestObj;
     }
 }
