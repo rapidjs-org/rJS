@@ -49,7 +49,7 @@ function writeToFile(message) {
  * @param {string} [additionalPrefix] Additional prefix to display (after the general app prefix) (e.g. for plug-in logs)
  * @param {string} [styleCode] Individual message style code
  */
-export function log(message: string, additionalPrefix?: string, styleCode?: string) {
+function log(message: string, additionalPrefix?: string, styleCode?: string) {
 	const atomic: boolean = ["string", "number", "boolean"].includes(typeof(message));
 
 	const messageParts = [];
@@ -71,7 +71,7 @@ export function log(message: string, additionalPrefix?: string, styleCode?: stri
  * @param {boolean} [terminate=false] Whether to terminate application execution after error logging
  * @param {string} [additionalPrefix] Additional prefix to display (after the general app prefix) (e.g. for plug-in logs)
  */
-export function error(err: Error, terminate = false, additionalPrefix?: string) {
+function error(err: Error, terminate = false, additionalPrefix?: string) {
 	const message = (err instanceof Error) ? `${err.name}: ${err.message}` : err;
 	
 	log(message, additionalPrefix, "31m");
@@ -82,3 +82,9 @@ export function error(err: Error, terminate = false, additionalPrefix?: string)�
 		
 	terminate && process.exit();
 }
+
+
+export const output = {
+	log,
+	error
+};

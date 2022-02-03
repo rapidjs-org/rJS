@@ -6,14 +6,20 @@
 
 import { readFileSync } from "fs";
 
-import * as output from "../utilities/output";
+import { output } from "../utilities/output";
 import {mode} from "../utilities/mode";
 
 import serverConfig from "../config/config.server";
 
+import { isClientModuleRequest } from "../interface/plugin/registry";
+
 import { Entity } from "./entity/Entity";
-import { AssetEntity } from "./entity/AssetEntity";
 import { PluginEntity } from "./entity/PluginEntity";
+import {
+	DynamicAssetEntity,
+	StaticAssetEntity,
+	ClientModuleAssetEntity
+} from "./entity/AssetEntity";
 
 
 // Retrieve server optional server parameter
@@ -54,26 +60,25 @@ require(protocol)
 .listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
 () => {
 	output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
-	mode.DEV && output.log("Running DEV MODE");
+	mode.DEV && output.log("Running \x1b[1mDEV MODE", null);
 });
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
-if(serverConfig.port.https && serverConfig.port.https) {
-	require("http")
-	.createServer((req, res) => {
-		try { 
-			return (new Entity(req, res)).redirect(req.url);
-		} catch(err) {
-			output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
-			output.error(err);
-		}
-	})
-	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
-	() => {
-		// Use set up HTTP port for redirection (80 by default (recommended))
-		output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
-	});
-}
+(serverConfig.port.https && serverConfig.port.https)
+&& require("http")
+.createServer((req, res) => {
+	try { 
+		return (new Entity(req, res)).redirect(req.url);
+	} catch(err) {
+		output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
+		output.error(err);
+	}
+})
+.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
+() => {
+	// Use set up HTTP port for redirection (80 by default (recommended))
+	output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
+});
 
 /**
  * Handle a single request asynchronously.
@@ -84,9 +89,22 @@ if(serverConfig.port.https && serverConfig.port.https) {
 async function handleRequest(req, res) {
 	// Retrieve entity type first (or close response if can not be mapped accordingly)
 	switch(req.method.toUpperCase()) {
-		case "HEAD": return new AssetEntity(req, res, true);
-		case "GET": return new AssetEntity(req, res);
+		case "HEAD": return specificAssetEntity(req, res, true);
+		case "GET": return specificAssetEntity(req, res);
 		case "POST": return new PluginEntity(req, res);
 		default: (new Entity(req, res)).respond(405);
 	}
+}
+
+function specificAssetEntity(req, res, headerOnly: boolean = false) {
+	// Custom plugin client module request
+	if(isClientModuleRequest(req.url)) {
+		return new ClientModuleAssetEntity(req, res);
+	}
+
+	const isDynamic = !/\.[a-z]+(\#.+)?(\?..+)?$/i.test(req.url);
+	
+	return isDynamic
+	? new DynamicAssetEntity(req, res, headerOnly)
+	: new StaticAssetEntity(req, res, headerOnly);
 }

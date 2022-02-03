@@ -5,7 +5,7 @@
  */
 
 
-import * as output from "../utilities/output";
+import { output } from "../utilities/output";
 
 
 
