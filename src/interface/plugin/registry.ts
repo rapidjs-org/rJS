@@ -27,7 +27,7 @@ import pluginConfig from "../../config/config.plugins";
 
 import { registerDetection } from "../../live/detection";
 
-import * as output from "../../utilities/output";
+import { output } from "../../utilities/output";
 import { injectIntoHead } from "../../utilities/markup";
 import { truncateModuleExtension } from "../../utilities/normalize";
 

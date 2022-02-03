@@ -2,7 +2,7 @@
 
 import serverConfig from "../../config/config.server";
 
-import * as output from "../../utilities/output";
+import { output } from "../../utilities/output";
 
 import { ResponseError } from "../../interface/ResponseError/ResponseError";
 import { has as endpointHas, use as endpointUse } from "../../interface/plugin/endpoint";
@@ -88,6 +88,13 @@ export class PluginEntity extends Entity {
 			// Pass through unexpected error
 			throw err;
 		});
+	}
+	
+	public respond(status: number, message?: Buffer) {
+		this.setHeader("Content-Type", "application/json");
+		this.setHeader("X-Content-Type-Options", "nosniff");
+		
+		super.respond(status, message);
 	}
 
 }

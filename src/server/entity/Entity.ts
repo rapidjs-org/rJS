@@ -97,6 +97,8 @@ export class Entity {
 		this.process();
     }
 
+	protected process() {}
+
     protected requestEvent(name, callback) {
 		this.req.on(name, callback);
 	}
@@ -190,42 +192,6 @@ export class Entity {
 		return undefined;
     }
 
-	protected process() {}
-	
-    public respond(status: number, message?: Buffer) {
-    	// Use generic message if none explicitly given / retrieved processing
-    	message = message || Buffer.from(statusMessages[String(status)], "utf-8");
-
-    	// Whether server uses a secure connection
-    	const isSecure: boolean = serverConfig.port.https ? true : false;
-
-    	this.setHeader("Server", "rapidJS");
-    	this.setHeader("X-XSS-Protection", "1");
-    	this.setHeader("X-Powered-By", null);
-    	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
-    	isSecure
-        && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
-    	
-		// Write set cookies to respective header
-    	const setCookieArray: string[] = [];
-    	for(const cookie in this.cookies.set) {
-    		// TODO: Keep attributes if was received
-    		setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.requestPath}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? "; SameSite=Strict; Secure; HttpOnly" : ""}`);
-    	}
-    	this.res.setHeader("Set-Cookie", setCookieArray);
-        
-		// Conceal status for client and server errors if enabled (virtual 404)
-		status = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
-		? 404
-		: status;
-		
-    	// Set status code
-    	this.res.statusCode = status;
-
-    	// End request with message
-    	this.res.end(this.headOnly ? null : message);
-    }
-
 	/*
 	 * Parse request cookies to cookies object (get).
 	 */
@@ -304,6 +270,40 @@ export class Entity {
 	}
 
 
+    public respond(status: number, message?: Buffer) {
+    	// Use generic message if none explicitly given / retrieved processing
+    	message = message || Buffer.from(statusMessages[String(status)], "utf-8");
+
+    	// Whether server uses a secure connection
+    	const isSecure: boolean = serverConfig.port.https ? true : false;
+
+    	this.setHeader("X-XSS-Protection", "1; mode=block");
+    	this.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
+    	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
+    	isSecure
+        && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
+    	this.setHeader("Server", "rapidJS");
+
+		// Write set cookies to respective header
+    	const setCookieArray: string[] = [];
+    	for(const cookie in this.cookies.set) {
+    		// TODO: Keep attributes if was received
+    		setCookieArray.push(`${cookie}=${this.cookies.set[cookie].value}; path=${this.requestPath}${this.cookies.set[cookie].maxAge ? `; Max-Age=${this.cookies.set[cookie].maxAge}` : ""}${isSecure ? "; SameSite=Strict; Secure; HttpOnly" : ""}`);
+    	}
+    	this.res.setHeader("Set-Cookie", setCookieArray);
+        
+		// Conceal status for client and server errors if enabled (virtual 404)
+		status = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
+		? 404
+		: status;
+		
+    	// Set status code
+    	this.res.statusCode = status;
+
+    	// End request with message
+    	this.res.end(this.headOnly ? null : message);
+    }
+
     /**
      * Close entity by performing a redirect to a given pathname.
      * @param {string} pathname - Path to redirect to
@@ -331,7 +331,7 @@ export class Entity {
 		const isCompound = Array.isArray(this.compoundArgs);
 
     	this.requestObj = {
-    		auth: this.getHeader("Authorization"),
+    		auth: this.getHeader("Authorization"),	// TODO: Enhance
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
     		locale: this.locale,
     		pathname: isCompound ? dirname(this.webPath) : (this.webPath || this.requestPath),

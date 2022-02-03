@@ -10,7 +10,7 @@ const config = {
 import { readdir, stat, lstatSync, existsSync, Dirent } from "fs";
 import { join } from "path";
 
-import * as output from "../utilities/output";
+import { output } from "../utilities/output";
 import {mode} from "../utilities/mode";
 
 import { proposeRefresh } from "./server";
