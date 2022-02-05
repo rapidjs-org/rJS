@@ -9,7 +9,7 @@ import { readFileSync } from "fs";
 import { output } from "../utilities/output";
 import {mode} from "../utilities/mode";
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
 import { isClientModuleRequest } from "../interface/plugin/registry";
 
