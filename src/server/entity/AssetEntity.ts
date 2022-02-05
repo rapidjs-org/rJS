@@ -7,7 +7,7 @@ import { gzipSync } from "zlib";
 import { createHash } from "crypto";
 
 
-import serverConfig from "../../config/config.server";
+import { serverConfig } from "../../config/config.server";
 
 import { integrateLiveReference  } from "../../live/server";
 

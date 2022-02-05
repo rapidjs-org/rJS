@@ -6,7 +6,7 @@
  */
 
 
-import serverConfig from "../../config/config.server";
+import { serverConfig } from "../../config/config.server";
 
 import {mode} from "../../utilities/mode";
 

@@ -3,7 +3,7 @@
  */
 
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
 
 // Parameter

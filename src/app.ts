@@ -30,6 +30,7 @@
 // TODO: All CLI interface (link plug-in reference config and rendering script paths)
 // TODO: Proxy mode?
 
+
 // Validate config file first
 import "./config/validate";
 
@@ -42,14 +43,14 @@ import appInterface from "./interface/scope:app";
 // Initialize live functionality (websocket modification detection)
 // Only effective in DEV MODE (implicitly checked)
 
-import { spawn, exec } from "child_process";
+import { dirname } from "path";
+import { spawn } from "child_process";
 
-import serverConfig from "./config/config.server";
+import { serverConfig } from "./config/config.server";
 import { registerDetection } from "./live/detection";
 
 // Watch project directory level (non-recursively) (server / main module, configs, ...)
-registerDetection(require("path")
-.dirname(serverConfig.directory.web), () => {
+registerDetection(dirname(serverConfig.directory.web), () => {
 	// Restart app if file in project root has changed
 	spawn(process.argv.shift(), process.argv, {
 		cwd: process.cwd(),
@@ -63,16 +64,23 @@ registerDetection(require("path")
 registerDetection(serverConfig.directory.web);
 
 
-process.on("exit", _ => {
+function cleanEnv() {
+	// Manually close ports in case of implicit failure
 	const killPort = port => {
-		exec(`lsof -t -i:${port}| sed -n 1p | kill -9`)
+        port && require("child_process").exec(`lsof -t -i:${port}| sed -n 1p | kill -9`)
 	};
 
-	// Manually close ports in case of implicit failure
-	serverConfig.port.http && killPort(serverConfig.port.http);
-	serverConfig.port.https && killPort(serverConfig.port.https);
+	killPort(serverConfig.port.http);
+	killPort(serverConfig.port.https);
 	killPort(require("./config.json").wsPort);
-});
+};
+
+
+process.on("SIGTERM", cleanEnv);
+process.on("SIGINT", cleanEnv);
+process.on("SIGKILL", cleanEnv);
+process.on("SIGBREAK", cleanEnv);
+process.on("exit", cleanEnv);
 
 
 // Application scoped interface.
