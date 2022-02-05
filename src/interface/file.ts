@@ -8,7 +8,7 @@ import config from "../config.json";
 import { existsSync, readFileSync } from "fs";
 import { join, extname } from "path";
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
 import { normalizeExtension } from "../utilities/normalize";
 

@@ -8,7 +8,7 @@ import config from "../config.json";
 import { join } from "path";
 import { existsSync } from "fs";
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
 import { ssrEngine } from "../interface/bindings";
 

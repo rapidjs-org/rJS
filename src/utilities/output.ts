@@ -10,7 +10,7 @@ const config = {
 import { appendFile } from "fs";
 import { join } from "path";
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
 import {mode} from "../utilities/mode";
 

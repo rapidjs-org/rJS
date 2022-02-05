@@ -6,7 +6,7 @@
 import { existsSync } from "fs";
 import { join } from "path";
 
-import serverConfig from "../../config/config.server";
+import { serverConfig } from "../../config/config.server";
 
 import { localeEngine } from "../../interface/bindings";
 

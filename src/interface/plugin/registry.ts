@@ -23,7 +23,7 @@ const Module = require("module");
 import { join, dirname, extname } from "path";
 import { existsSync, readFileSync } from "fs";
 
-import pluginConfig from "../../config/config.plugins";
+import { pluginConfig } from "../../config/config.plugins";
 
 import { registerDetection } from "../../live/detection";
 

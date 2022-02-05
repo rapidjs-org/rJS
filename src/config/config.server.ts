@@ -4,18 +4,18 @@
 
 
 import { dirname, join } from "path";
+import { existsSync } from "fs";
 
 
 import { argument } from "../args";
 
 import { normalizeExtension } from "../utilities/normalize";
 
-import defaultConfig from "./default.config.json";
-
 import { read } from "./reader";
+import defaultConfig from "./config.default.json";
 
 
-export interface IServerConfig {
+interface IServerConfig {
     cachingDuration: {
         client: number;
         server: number;
@@ -54,7 +54,7 @@ export interface IServerConfig {
         keyFile?: string
     };
     www?: string;
-}
+};
 
 
 // Retrieve web file (public) directory path on local disc
@@ -70,45 +70,48 @@ const projectDirPath = (typeof(argsDirPath) == "string")
 	: callDirPath;
 
 
-
-const config = (read("config", defaultConfig) || read("server", defaultConfig)) as unknown as IServerConfig;
+export const serverConfig = (read("config", defaultConfig) || read("server", defaultConfig)) as unknown as IServerConfig;
 
 
 /**
- * Normalize directory to project local path.
+ * Project locally normalize and validate configuration path.
+ * @throws {ReferenceError} upon non-existing path.
  * @param {string} caption Error section caption
- * @param {string} name Pathname to be normalized
- * @returns {string} Normalized pathname
+ * @param {Object} path Path property
  */
- function normalizePath(name: string): string {
-	const path = (name.charAt(0) != "/")
-		? join(projectDirPath, name)
-		: name;
+ function validatePath(caption: string, path) {
+    if(!path) {
+        return undefined;
+    }
 
-	return path;
+	path = (path.charAt(0) != "/")
+		? join(projectDirPath, path)
+		: path;
+
+    if(!existsSync(path)) {
+        throw new ReferenceError(`Configured ${caption} directory does not exist '${path}'`);
+    }
+
+    return path;
 }
 
-// Normalize directory links (possibly given in relative representation) to local disc absolute
-(config.locale.length > 0)
-&& (config.directory.lang = normalizePath(config.directory.lang));
-config.directory.log && (config.directory.log = normalizePath(config.directory.log));
-config.directory.web = normalizePath(config.directory.web);
-for(const path in (config.ssl || {})) {
-	config.ssl[path] = normalizePath(config.ssl[path]);
-}
+serverConfig.directory.log = validatePath("log", serverConfig.directory.log);
+serverConfig.directory.web = validatePath("web", serverConfig.directory.web);
+serverConfig.directory.lang = (serverConfig.locale.length > 0)
+? validatePath("lang", serverConfig.directory.lang)
+: undefined;
 
-// Normalize extension arrays for future uniform usage behavior
-config.extensionWhitelist = (config.extensionWhitelist || [])
+
+// Normalize extension arrays for future uniform usage
+serverConfig.extensionWhitelist = (serverConfig.extensionWhitelist || [])
 .map(extension => {
     return normalizeExtension(extension);
 });
 
+
 // Normalize MIMEs map object keys (representing file extensions)
 const normalizedMimesMap: Record<string, string> = {};
-for(const extension in config.mimes) {
-	normalizedMimesMap[normalizeExtension(extension)] = config.mimes[extension];
+for(const extension in (serverConfig.mimes as Record<string, string>)) {
+	normalizedMimesMap[normalizeExtension(extension)] = serverConfig.mimes[extension];
 }
-config.mimes = normalizedMimesMap;
-
-
-export default config;
+serverConfig.mimes = normalizedMimesMap;

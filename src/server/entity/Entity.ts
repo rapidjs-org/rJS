@@ -14,7 +14,7 @@ import { URL } from "url";
 import { IncomingMessage, ServerResponse, STATUS_CODES as statusMessages } from "http";
 
 
-import serverConfig from "../../config/config.server";
+import { serverConfig } from "../../config/config.server";
 
 import tlds from "../tlds.json";
 
@@ -62,8 +62,17 @@ export class Entity {
 
 		this.headOnly = headOnly;
 
-		this.hostname = `http${serverConfig.port.https ? "s" : ""}://${this.getHeader("Host")}/`
     	this.requestPath = this.req.url.replace(/[#?].*$/, "");
+		
+		const host = this.getHeader("Host");
+		this.hostname = `http${serverConfig.port.https ? "s" : ""}://${host}/`;
+
+		// Block request if exact hostname is not matched
+		if(host && host !== serverConfig.hostname) {
+			//this.respondBare(404);
+
+			return;
+		}
 
 		// Block request if individual request maximum reached (rate limiting)
 		if(rateExceeded(this.req.connection.remoteAddress)) {
