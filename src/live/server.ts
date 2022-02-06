@@ -11,13 +11,13 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { server as WebSocketServer } from "websocket";
 
-import {mode} from "../utilities/mode";
+import { mode } from "../utilities/mode";
 import { injectIntoHead } from "../utilities/markup";
 
 
 // Read client script
 const clientScript = String(readFileSync(join(__dirname, "../client/live.js")))
-.replace(/@WS_PORT/, String(config.wsPort));	// With configured websocket port (substitution)
+.replace(/@WS_PORT/, String(config.wsPort));	// With configured websocket port (mark substitution)
 
 // Connections array to be worked as list
 const connections = [];

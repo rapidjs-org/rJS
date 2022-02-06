@@ -15,7 +15,7 @@ import { serverConfig } from "../config/config.server";
 import {mode} from "../utilities/mode";
 
 
-// Display log write errors only once
+// Only error log write call error once in order to prevent endless recursion
 let logWriteErr = false;
 
 /**
@@ -28,18 +28,16 @@ function writeToFile(message) {
 	const time: string = date.toLocaleTimeString();
 
 	appendFile(join(serverConfig.directory.log, `${day}.log`),
-		`[${time}]: ${message}\n`,
-		err => {
-			if(err) {
-				if(logWriteErr) {
-					return;
-				}
+	`[${time}]: ${message}\n`,
+	err => {
+		if(!err || logWriteErr) {
+			return;
+		}
+		
+		logWriteErr = true;
 
-				logWriteErr = true;
-
-				error(err);
-			}
-		});
+		error(err);
+	});
 }
 
 

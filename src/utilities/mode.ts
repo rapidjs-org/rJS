@@ -11,8 +11,6 @@ const isDevMode = argument("dev")
 : false;
 
 
-export const modeName = isDevMode ? "DEV" : "PROD";
-
 export const mode = {
 	PROD: !isDevMode,
 	DEV: isDevMode
