@@ -31,11 +31,9 @@
 // TODO: Proxy mode?
 
 
-// Validate config file first
-import "./config/validate";
-
 // Start web server instance
 import "./server/instance.js";
+
 
 import appInterface from "./interface/scope:app";
 
@@ -43,25 +41,7 @@ import appInterface from "./interface/scope:app";
 // Initialize live functionality (websocket modification detection)
 // Only effective in DEV MODE (implicitly checked)
 
-import { dirname } from "path";
-import { spawn } from "child_process";
-
 import { serverConfig } from "./config/config.server";
-import { registerDetection } from "./live/detection";
-
-// Watch project directory level (non-recursively) (server / main module, configs, ...)
-registerDetection(dirname(serverConfig.directory.web), () => {
-	// Restart app if file in project root has changed
-	spawn(process.argv.shift(), process.argv, {
-		cwd: process.cwd(),
-		detached: true,
-		stdio: "inherit"
-	});
-
-	process.exit();
-}, false);
-// Watch web file directory (recursively)
-registerDetection(serverConfig.directory.web);
 
 
 function cleanEnv() {
@@ -78,7 +58,6 @@ function cleanEnv() {
 
 process.on("SIGTERM", cleanEnv);
 process.on("SIGINT", cleanEnv);
-process.on("SIGKILL", cleanEnv);
 process.on("SIGBREAK", cleanEnv);
 process.on("exit", cleanEnv);
 

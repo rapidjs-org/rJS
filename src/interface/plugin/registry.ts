@@ -2,6 +2,66 @@
  * Plug-in register functionality.
  */
 
+
+class Plugin {
+	constructor(name: string, path: string) {
+		// Empty module cache (for re-evaluation, only triggered in DEV MODE)
+		if(require.cache[path]) {
+			delete require.cache[path];
+		}
+	
+		// Read related plug-in config sub section/object
+		const pluginConfigObj = (pluginConfig[name] as Record<string, unknown>) || undefined;
+	
+		// Require custom wrapped module (providing the plug-in interface to the module context)
+		let pluginModule;
+		try {
+			// Temporarily manipulate wrapper in order to inject this assignment (representing the plug-in interface)
+			const _wrap = Module.wrap;
+	
+			Module.wrap = ((exports, _, __, __filename, __dirname) => {
+				return `${Module.wrapper[0]}
+					const console = {
+						log: message => {
+							require("${require.resolve("../../utilities/output")}").log(message, "${name}")
+						},
+						error: err => {
+							require("${require.resolve("../../utilities/output")}").error(err, false, "${name}");
+						}
+					};
+					
+					for(const inter in require("${require.resolve("../scope:plugin")}")) {
+						this[inter] = require("${require.resolve("../scope:plugin")}")[inter];
+					}
+	
+					this.${config.pluginConfigIdentifier} = ${JSON.stringify(pluginConfigObj)};
+					
+					const ${config.thisRetainerIdentifier} = this;
+				${exports}${Module.wrapper[1]}`;
+			});
+	
+			pluginModule = require.main.require(path);	// Require using the modified module wrapper
+	
+			Module.wrap = _wrap;
+		} catch(err) {
+			err.message += `\n- ${path}`;
+	
+			throw err;
+		}
+	
+		if(!(pluginModule instanceof Function)) {
+			// Static plug-in module (not receiving the common interface object)
+			return;
+		}
+		// Dynamic plug-in module getting passed the common interface object
+		pluginModule(require("../scope:common"));
+		
+		output.log(`↴ ${name}`);	// TODO: Formatted output
+	}
+}
+
+
+
 const config = {
 	configFilePluginScopeName: "plug-in",
 	coreModuleIdentifier: "core",
@@ -22,6 +82,7 @@ const Module = require("module");
 
 import { join, dirname, extname } from "path";
 import { existsSync, readFileSync } from "fs";
+
 
 import { pluginConfig } from "../../config/config.plugins";
 
