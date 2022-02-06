@@ -8,10 +8,14 @@ const config = {
 
 
 import { readdir, stat, lstatSync, existsSync, Dirent } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { spawn } from "child_process";
+
+
+import { serverConfig } from "../config/config.server";
 
 import { output } from "../utilities/output";
-import {mode} from "../utilities/mode";
+import { mode } from "../utilities/mode";
 
 import { proposeRefresh } from "./server";
 
@@ -105,7 +109,7 @@ async function checkFile(path, callback): Promise<void> {
  */
 export function registerDetection(path: string, callback?: () => void, scanRecursively = true) {
 	if(!mode.DEV) {
-		// DEV MODE only
+		// Only register in DEV MODE
 		return;
 	}
 
@@ -115,7 +119,6 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 		callback: callback
 	});
 }
-
 
 // Initialize detection interval
 mode.DEV && setInterval(_ => {
@@ -142,3 +145,19 @@ mode.DEV && setInterval(_ => {
 		await checkFile(mod.path, mod.callback);
 	});
 }, config.detectionFrequency);
+
+
+// Watch project directory level (non-recursively) (server / main module, configs, ...)
+registerDetection(dirname(serverConfig.directory.web), () => {
+	// Restart app if file in project root has changed
+	spawn(process.argv.shift(), process.argv, {
+		cwd: process.cwd(),
+		detached: true,
+		stdio: "inherit"
+	});
+
+	process.exit();
+}, false);
+
+// Watch web file directory (recursively)
+registerDetection(serverConfig.directory.web);

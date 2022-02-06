@@ -8,6 +8,9 @@ const input: string[] = (process.argv.length > 2)
 	? process.argv.slice(2)
 	: [];
 
+// Parse arguments record
+const args: Record<string, string|boolean> = {};
+
 
 /**
  * Parse given CLI arguments against a name for value retrieval
@@ -40,15 +43,6 @@ function parse(name: string, shorthand?: string) {
 	args[name] = value;
 }
 
-
-// Parse arguments record
-const args: Record<string, string|boolean> = {};
-
-// Parse arguments
-parse("dev", "D");      // Whether is in DEV MODE (unary)
-parse("path", "P");     // Explicit project path (instead of using referencing module location)
-
-
 /**
  * Obtain CLI argument value (string).
  * false if not given, true if given without a consequtive value.
@@ -58,3 +52,8 @@ parse("path", "P");     // Explicit project path (instead of using referencing m
 export function argument(name: string): string|boolean {
 	return args[name] || false;
 }
+
+
+// Parse arguments
+parse("dev", "D");      // Whether is in DEV MODE (unary)
+parse("path", "P");     // Explicit project path (instead of using referencing module location)

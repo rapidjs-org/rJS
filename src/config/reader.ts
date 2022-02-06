@@ -10,7 +10,7 @@ const config = {
 import { join, dirname } from "path";
 import { existsSync } from "fs";
 
-import { modeName } from "../utilities/mode";
+import { mode } from "../utilities/mode";
 import { merge } from "../utilities/object";
 
 
@@ -39,7 +39,11 @@ function readFile(name: string, suffix = "") {
  */
 export function read(name: string, defaultConfig: Record<string, unknown> = {}) {
 	// Default < Generic < Mode specific
-	return merge(defaultConfig,
-		merge(readFile(name), readFile(name, `.${modeName.toLowerCase()}`))
-	) as Record<string, unknown>;
+	let obj = merge(defaultConfig, readFile(name)) as Record<string, unknown>;
+
+	for(const name in mode) {
+		obj = merge(obj, readFile(name, `.${name.toLowerCase()}`));
+	}
+
+	return obj;
 }
