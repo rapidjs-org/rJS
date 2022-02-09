@@ -33,17 +33,19 @@ function readFile(name: string, suffix = "") {
 /**
  * Read configuration files for a given name (genral and mode effective).
  * Convert to object representation and deep merge result.
- * @param {string} name Configuration file name (formatted)
+ * @param {string} configName Configuration file name (formatted)
  * @param {Object} [defaultConfig] Default configuration object (static foundation)
  * @returns {Object} Resulting configuration object
  */
-export function read(name: string, defaultConfig: Record<string, unknown> = {}) {
+export function read(configName: string, defaultConfig: Record<string, unknown> = {}) {
 	// Default < Generic < Mode specific
-	let obj = merge(defaultConfig, readFile(name)) as Record<string, unknown>;
-
-	for(const name in mode) {
-		obj = merge(obj, readFile(name, `.${name.toLowerCase()}`));
+	let obj = merge(defaultConfig, readFile(configName)) as Record<string, unknown>;
+	
+	for(const modeName in mode) {
+		obj = mode[modeName]
+		? merge(obj, readFile(`${configName}.${modeName.toLowerCase()}`))
+		: obj;
 	}
-
+	
 	return obj;
 }

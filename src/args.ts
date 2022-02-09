@@ -12,6 +12,11 @@ const input: string[] = (process.argv.length > 2)
 const args: Record<string, string|boolean> = {};
 
 
+// Parse arguments
+parse("dev", "D");      // Whether is in DEV MODE (unary)
+parse("path", "P");     // Explicit project path (instead of using referencing module location)
+
+
 /**
  * Parse given CLI arguments against a name for value retrieval
  * (or evaluation).
@@ -52,8 +57,3 @@ function parse(name: string, shorthand?: string) {
 export function argument(name: string): string|boolean {
 	return args[name] || false;
 }
-
-
-// Parse arguments
-parse("dev", "D");      // Whether is in DEV MODE (unary)
-parse("path", "P");     // Explicit project path (instead of using referencing module location)

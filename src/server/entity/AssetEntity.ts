@@ -12,14 +12,14 @@ import { serverConfig } from "../../config/config.server";
 import { integrateLiveReference  } from "../../live/server";
 
 import { ResponseError } from "../../interface/ResponseError/ResponseError";
-import { integratePluginReferences, retrieveClientModules } from "../../interface/plugin/registry";
+import { Plugin } from "../../interface/plugin/Plugin";
+import { render } from "../../interface/renderer/render";
+import { defaultLang } from "../../interface/renderer/LocaleRenderer";
 
 import { mode } from "../../utilities/mode";
 import { normalizeExtension } from "../../utilities/normalize";
 import { injectIntoHead } from "../../utilities/markup";
 
-import { renderModifiers } from "../../rendering/render";
-import { defaultLang } from "../../rendering/locale/locale";
 
 import { UrlCache } from "../cache/UrlCache";
 
@@ -228,11 +228,11 @@ export class DynamicAssetEntity extends AssetEntity {
 
 		let markup = String(super.read());
         
-		// Apply registered dynamic file modifiers (plug-in integration, templating, locale adaptions, ...)
-		markup = renderModifiers(markup, true);	// true: Marking modifications as implicit
+		// Apply registered dynamic file modifiers (plugin integration, templating, locale adaptions, ...)
+		markup = render(markup, true);	// true: Marking modifications as implicit
 
-		// Integrate plug-in references into head element
-		markup = integratePluginReferences(markup, isCompound);
+		// Integrate plugin references into head element
+		markup = Plugin.integratePluginReferences(markup, isCompound);
 
 		// Inject compound base defining tag into head for argument neglection (only if is compound)
 		markup = isCompound
@@ -290,6 +290,6 @@ export class ClientModuleAssetEntity extends AssetEntity {
 	protected subProcess() {
 		this.extension = "js";
 
-		this.respond(200, retrieveClientModules(this.requestPath))
+		this.respond(200, Plugin.retrieveClientModules(this.requestPath))
 	}
 }

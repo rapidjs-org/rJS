@@ -15,11 +15,11 @@ import { IncomingMessage, ServerResponse, STATUS_CODES as statusMessages } from 
 
 
 import { serverConfig } from "../../config/config.server";
+import { mode } from "../../utilities/mode";
+
+import { localeMatchRegex, defaultLang } from "../../interface/renderer/LocaleRenderer";
 
 import tlds from "../tlds.json";
-
-import { localeMatchRegex, defaultLang } from "../../rendering/locale/locale";
-
 import { createHook } from "../hook";
 import { rateExceeded } from "../rate-limiter";
 
@@ -68,7 +68,8 @@ export class Entity {
 		this.hostname = `http${serverConfig.port.https ? "s" : ""}://${host}/`;
 
 		// Block request if exact hostname is not matched
-		if(host && host !== serverConfig.hostname) {
+		if(!mode.DEV
+		&& host && host !== serverConfig.hostname) {
 			//this.respondBare(404);
 
 			return;
@@ -78,7 +79,7 @@ export class Entity {
 		if(rateExceeded(this.req.connection.remoteAddress)) {
 			this.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
 			
-			this.respond(429);
+			this.respondBare(429);
 
 			return;
 		}
@@ -86,7 +87,7 @@ export class Entity {
 		// Block request if URL is exceeding the maximum length
 		if(serverConfig.limit.urlLength > 0
 		&& this.req.url.length > serverConfig.limit.urlLength) {
-			this.respond(414);
+			this.respondBare(414);
 			
 			return;
 		}
@@ -278,20 +279,31 @@ export class Entity {
     	this.requestPath = this.requestPath.slice(code[0].length);
 	}
 
-
-    public respond(status: number, message?: Buffer) {
+    private respondBare(status: number, message?: Buffer) {
     	// Use generic message if none explicitly given / retrieved processing
     	message = message || Buffer.from(statusMessages[String(status)], "utf-8");
-
-    	// Whether server uses a secure connection
-    	const isSecure: boolean = serverConfig.port.https ? true : false;
-
+		
     	this.setHeader("X-XSS-Protection", "1; mode=block");
     	this.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
     	this.setHeader("Content-Length", Buffer.byteLength(message, "utf-8"));
+    	this.setHeader("Server", "rapidJS");
+
+    	// Set status code
+		// Conceal status for client and server errors if enabled (virtual 404)
+    	this.res.statusCode = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
+		? 404 : status;
+
+    	// End request with message
+    	this.res.end(this.headOnly ? null : message);
+
+	}
+
+    public respond(status: number, message?: Buffer) {
+    	// Whether server uses a secure connection
+    	const isSecure: boolean = serverConfig.port.https ? true : false;
+
     	isSecure
         && this.setHeader("Strict-Transport-Security", `max-age=${serverConfig.cachingDuration.client}; includeSubDomains`);
-    	this.setHeader("Server", "rapidJS");
 
 		// Write set cookies to respective header
     	const setCookieArray: string[] = [];
@@ -301,16 +313,7 @@ export class Entity {
     	}
     	this.res.setHeader("Set-Cookie", setCookieArray);
         
-		// Conceal status for client and server errors if enabled (virtual 404)
-		status = (serverConfig.concealing404 === true) && ["4", "5"].includes(String(status).charAt(0))
-		? 404
-		: status;
-		
-    	// Set status code
-    	this.res.statusCode = status;
-
-    	// End request with message
-    	this.res.end(this.headOnly ? null : message);
+		this.respondBare(status, message);
     }
 
     /**
@@ -338,7 +341,7 @@ export class Entity {
 		}
 
 		const isCompound = Array.isArray(this.compoundArgs);
-
+		
     	this.requestObj = {
     		auth: this.getHeader("Authorization"),	// TODO: Enhance
     		ip: this.getHeader("X-Forwarded-For") || this.req.connection.remoteAddress,
