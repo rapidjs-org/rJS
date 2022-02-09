@@ -1,5 +1,6 @@
 /**
- * Rate limiting to be utilized upon each request.
+ * Rate limiter restricting clients from exceeding a certain
+ * request limit. Implementing a sliding window algorithm.
  */
 
 

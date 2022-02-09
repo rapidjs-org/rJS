@@ -1,5 +1,5 @@
 /**
- * Normalization helper functions.
+ * String normalization utilities.
  */
 
 

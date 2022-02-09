@@ -1,4 +1,5 @@
-var rapidJS = {};
+const rapidJS = {};
+
 rapidJS.core = (_ => {
 	let isCompound;
 

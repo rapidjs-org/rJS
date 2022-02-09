@@ -1,6 +1,8 @@
 /**
- * Web server instance activating HTTP method handlers and general
- * security guards and routines.
+ * Web server instance asynchronically providing generic entity
+ * creation inferred from the request URL for activating the
+ * according processing routine.
+ * Sets up an HTTP to HTTPS redirection server if both enabled.
  */
 
 

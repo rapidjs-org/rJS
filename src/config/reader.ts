@@ -1,5 +1,6 @@
 /**
- * Configuration file reader.
+ * Configuration file reader with runtime mode dependant specific
+ * file override.
  */
 
 const config = {

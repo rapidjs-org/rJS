@@ -1,3 +1,8 @@
+/**
+ * Read plugin configuration file object to be consumed.
+ */
+
+
 import { read } from "./reader";
 
 

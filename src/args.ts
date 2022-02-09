@@ -1,5 +1,5 @@
 /**
- * Command line argument parser.
+ * Command line argument parser with global accessibility.
  */
 
 

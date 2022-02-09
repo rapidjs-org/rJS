@@ -1,4 +1,9 @@
 /**
+ * Markup manipulation utilities.
+ */
+
+
+/**
  * Inject a markup sequence into a original markup's head tag (only if head tag exists).
  * @param {string} origData Markup to inject a given sequence into
  * @param {string} insertData Injection sequence

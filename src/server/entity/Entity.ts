@@ -1,5 +1,4 @@
 /**
- * @class
  * General request/response entity class representing an interface for
  * respective manipulations. Provides general, definite methods for response
  * behavior.

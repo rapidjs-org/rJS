@@ -1,3 +1,9 @@
+/**
+ * Class representing a plugin.
+ * Statically managing all plugins for environmental connection
+ * as well as dynamic file related referencing.
+ */
+
 const config = {
 	configFilePluginScopeName: "plugin",
 	coreModuleIdentifier: "core",
@@ -14,7 +20,7 @@ const config = {
 };
 
 
-const Module = require("module");
+const Module = require("module");   // for runtime dynamic module wrapping
 
 import { join, dirname, extname } from "path";
 import { existsSync, readFileSync } from "fs";
@@ -29,13 +35,9 @@ import { injectIntoHead } from "../../utilities/markup";
 import { truncateModuleExtension } from "../../utilities/normalize";
 
 
-/**
- * Plug-in name regex.
- */
+// Plugin name regex.
 const pluginNameRegex = new RegExp(`^${config.pluginNameRegex.source}$`, "i");
-/**
- * Plug-in request URL prefix regex.
- */
+// Plugin request URL prefix regex.
 const urlPrefixRegex = new RegExp(`^\\/${config.pluginRequestPrefix}`, "i");
 
 
@@ -51,7 +53,7 @@ export class Plugin {
     /**
      * Get path to plugin module that activated calling function.
      * @param {string} fileName Name of current file for checking against (use __filename)
-     * @returns {string} Plug-in module / caller path
+     * @returns {string} Plugin module source path for traversal reference
      */
     private static getCallerPath(fileName: string): string {
         const err = new Error();
