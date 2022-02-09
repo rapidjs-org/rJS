@@ -3,14 +3,11 @@
  */
 
 
-import {wrapInterface} from "./wrapper";
-
-const bindSSR = wrapInterface(require("./bindings").bindSSR, "binding an SSR handler", true);
+import { wrapInterface } from "./wrapper";
 
 
 export default {
-	plugin: wrapInterface(require("./plugin/registry").bind, "connecting a plug-in", true),
-	bindSSR: bindSSR,
-	bindTemplating: bindSSR,
-	bindLocale: wrapInterface(require("./bindings").bindLocale, "binding the locale handler", true)
+	plugin: wrapInterface(require("./plugin/Plugin").bindPlugin, "connecting a plugin", true),
+	bindSSR: wrapInterface(require("./renderer/TemplatingRenderer").bindSSR, "binding an SSR handler", true),
+	bindLocale: wrapInterface(require("./renderer/LocaleRenderer").bindLocale, "binding the locale handler", true)
 };

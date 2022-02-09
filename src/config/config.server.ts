@@ -3,18 +3,20 @@
  */
 
 
-import {dirname, join} from "path";
-
-import {argument} from "../args";
-
-import {normalizeExtension} from "../utilities/normalize";
-
-import defaultConfig from "./default.config.json";
-
-import {read} from "./reader";
+import { dirname, join } from "path";
+import { existsSync } from "fs";
 
 
-export interface IServerConfig {
+import { argument } from "../args";
+
+import { output } from "../utilities/output";
+import { normalizeExtension } from "../utilities/normalize";
+
+import { read } from "./reader";
+import defaultConfig from "./config.default.json";
+
+
+interface IServerConfig {
     cachingDuration: {
         client: number;
         server: number;
@@ -24,7 +26,7 @@ export interface IServerConfig {
         log: string;
         web: string;
     };
-    gzipCompressList: string[];
+    gzipCompression: boolean;
     limit: {
         payloadSize: number;
         requestsPerMin: number;
@@ -53,7 +55,8 @@ export interface IServerConfig {
         keyFile?: string
     };
     www?: string;
-}
+};
+
 
 // Retrieve web file (public) directory path on local disc
 const callDirPath: string = dirname(process.argv[1]);
@@ -68,56 +71,48 @@ const projectDirPath = (typeof(argsDirPath) == "string")
 	: callDirPath;
 
 
+export const serverConfig = (read("config", defaultConfig) || read("server", defaultConfig)) as unknown as IServerConfig;
+
+
 /**
- * Normalize directory to project local path.
+ * Project locally normalize and validate configuration path.
+ * Aborts start-up if given a non-existing path.
  * @param {string} caption Error section caption
- * @param {string} name Pathname to be normalized
- * @returns {string} Normalized pathname
+ * @param {Object} path Path property
  */
-function normalizePath(name: string): string {
-	const path = (name.charAt(0) != "/")
-		? join(projectDirPath, name)
-		: name;
+ function validatePath(caption: string, path) {
+    if(!path) {
+        return undefined;
+    }
 
-	return path;
+	path = (path.charAt(0) != "/")
+		? join(projectDirPath, path)
+		: path;
+    
+    if(!existsSync(path)) {
+        new ReferenceError(`Configured ${caption} directory does not exist '${path}'`);
+    }
+
+    return path;
 }
 
-/**
- * Normalize array of extension names as given to several server configuration parameters.
- * Removes possibly given leading dots as well as translates strings to lowercase represenatation.
- * @param {string[]} array Extension name array
- * @returns Normalized extensions array
- */
-function normalizeExtensionArray(array: string[]) {
-	return (array || []).map(extension => {
-		return normalizeExtension(extension);
-	});
-}
+serverConfig.directory.log = validatePath("log", serverConfig.directory.log);
+serverConfig.directory.web = validatePath("web", serverConfig.directory.web);
+serverConfig.directory.lang = (serverConfig.locale.length > 0)
+? validatePath("lang", serverConfig.directory.lang)
+: undefined;
 
 
-const config = (read("config", defaultConfig) || read("server", defaultConfig)) as unknown as IServerConfig;
+// Normalize extension arrays for future uniform usage
+serverConfig.extensionWhitelist = (serverConfig.extensionWhitelist || [])
+.map(extension => {
+    return normalizeExtension(extension);
+});
 
 
-// Normalize directory links (possibly given in relative representation) to local disc absolute
-(config.locale.length > 0)
-&& (config.directory.lang = normalizePath(config.directory.lang));
-config.directory.log && (config.directory.log = normalizePath(config.directory.log));
-config.directory.web = normalizePath(config.directory.web);
-for(const path in (config.ssl || {})) {
-	config.ssl[path] = normalizePath(config.ssl[path]);
-}
-
-// Normalize extension arrays for future uniform usage behavior
-config.extensionWhitelist = normalizeExtensionArray(config.extensionWhitelist);
-config.gzipCompressList = normalizeExtensionArray(config.gzipCompressList);
-
-// Normalize MIMES map object keys (representing file extensions)
+// Normalize MIMEs map object keys (representing file extensions)
 const normalizedMimesMap: Record<string, string> = {};
-for(const extension in config.mimes) {
-	normalizedMimesMap[normalizeExtension(extension)] = config.mimes[extension];
+for(const extension in (serverConfig.mimes as Record<string, string>)) {
+	normalizedMimesMap[normalizeExtension(extension)] = serverConfig.mimes[extension];
 }
-config.mimes = normalizedMimesMap;
-
-
-// TODO: Type check configs?
-export default config;
+serverConfig.mimes = normalizedMimesMap;

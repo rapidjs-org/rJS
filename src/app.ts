@@ -28,40 +28,39 @@
 // TODO: "Wait for plug-in" feature
 // TODO: "Symlink" files feature?
 // TODO: All CLI interface (link plug-in reference config and rendering script paths)
+// TODO: Proxy mode?
 
-// Validate config file(s) first
-import "./config/validate";
 
-import serverConfig from "./config/config.server";
-import {registerDetection} from "./live/detection";
+import appInterface from "./interface/scope:app";
 
 // Start web server instance
 import "./server/instance.js";
 
-import appInterface from "./interface/scope:app";
-
 
 // Initialize live functionality (websocket modification detection)
 // Only effective in DEV MODE (implicitly checked)
+function cleanEnv() {
+	// Manually close ports in case of implicit failure
+	const killPort = port => {
+        port && require("child_process").exec(`lsof -t -i:${port}| sed -n 1p | kill -9`)
+	};
+	
+	try {
+		const port = require("./config/config.server").serverConfig.port;
+		
+		killPort(port.http);
+		killPort(port.https);
+		killPort(require("./config.json").wsPort);
+	} finally {
+		process.exit();
+	}
+};
 
-// Watch project directory level (non-recursively) (server / main module, configs, ...)
-registerDetection(require("path").dirname(serverConfig.directory.web), () => {
-	// Restart app if file in project root has changed
-	process.on("exit", () => {
-		require("child_process")
-			.spawn(process.argv.shift(), process.argv, {
-				cwd: process.cwd(),
-				detached: true,
-				stdio: "inherit"
-			});
-	});
-
-	process.exit();
-}, false);
-// Watch web file directory (recursively)
-registerDetection(serverConfig.directory.web);
+process.on("SIGTERM", cleanEnv);
+process.on("SIGINT", cleanEnv);
+process.on("SIGBREAK", cleanEnv);
 
 
 // Application scoped interface.
-// Accessible from within individual application scope.
+// Accessible from the individual application scope.
 module.exports = appInterface;

@@ -1,0 +1,16 @@
+{
+    "limit": {
+        "requestsPerMin": 5
+    },
+    "locale": [
+        "en",
+        {
+            "language": "de",
+            "countries": ["DE"]
+        }
+    ],
+    "port": {
+        "http": 7373
+    },
+    "www": "yes"
+}
