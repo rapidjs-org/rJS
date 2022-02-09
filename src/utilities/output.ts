@@ -1,5 +1,5 @@
 /**
- * Application related output formatting.
+ * Application formatted output interface for internal use.
  */
 
 const config = {

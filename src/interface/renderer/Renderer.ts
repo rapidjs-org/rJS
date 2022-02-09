@@ -1,3 +1,11 @@
+/**
+ * Abstract class representing an optional locale renderer to be bound
+ * to the environment.
+ * Constant locale information provided for locale related processing
+ * of each request.
+ */
+
+
 import { output } from "../../utilities/output";
 
 

@@ -1,5 +1,5 @@
 /**
- * Object helper functions.
+ * Object manipulation utilities.
  */
 
 

@@ -1,3 +1,8 @@
+/**
+ * Class representing an entity for asset induced request processing.
+ * Concludes to file type related reading and preparation for response.
+ */
+
 import config from "../../config.json";
 
 
@@ -11,7 +16,7 @@ import { serverConfig } from "../../config/config.server";
 
 import { integrateLiveReference  } from "../../live/server";
 
-import { ResponseError } from "../../interface/ResponseError/ResponseError";
+import { ResponseError } from "../../interface/custom-response/ResponseError";
 import { Plugin } from "../../interface/plugin/Plugin";
 import { render } from "../../interface/renderer/render";
 import { defaultLang } from "../../interface/renderer/LocaleRenderer";
@@ -26,6 +31,9 @@ import { UrlCache } from "../cache/UrlCache";
 import { Entity } from "./Entity";
 
 
+/**
+ * Abstract asset entity class to be extended based on the file type.
+ */
 abstract class AssetEntity extends Entity {
     private static readonly cache: UrlCache<Buffer> = new UrlCache();
     
@@ -145,7 +153,12 @@ abstract class AssetEntity extends Entity {
 	
 }
 
-
+/**
+ * Dynamic asset entity to be used upon web page files (dynamic files).
+ * Applies compound/conventional page strategy first in order to read
+ * the related (base) markup file. Utilizes the bound renderers on the
+ * markup.
+ */
 export class DynamicAssetEntity extends AssetEntity {
 	constructor(req, res, headOnly: boolean = false) {
 		super(req, res, headOnly);
@@ -258,7 +271,10 @@ export class DynamicAssetEntity extends AssetEntity {
 	}
 }
 
-
+/**
+ * Static asset entity to be used upon files other than web page files.
+ * Reads file contents in Buffer for response.
+ */
 export class StaticAssetEntity extends AssetEntity {
 	constructor(req, res, headOnly: boolean = false) {
 		super(req, res, headOnly);
@@ -282,6 +298,10 @@ export class StaticAssetEntity extends AssetEntity {
 	}
 }
 
+/**
+ * Plugin client module asset entity to be used upon corresponding reference.
+ * Passes client script to the response.
+ */
 export class ClientModuleAssetEntity extends AssetEntity {
 	constructor(req, res) {
 		super(req, res);

@@ -1,10 +1,14 @@
+/**
+ * Class representing an entity for plugin induced request processing.
+ * Concludes to endpoint utilization and according responses.
+ */
 
 
 import { serverConfig } from "../../config/config.server";
 
 import { output } from "../../utilities/output";
 
-import { ResponseError } from "../../interface/ResponseError/ResponseError";
+import { ResponseError } from "../../interface/custom-response/ResponseError";
 import { Endpoint } from "../../interface/plugin/Endpoint";
 
 import { Entity } from "./Entity";

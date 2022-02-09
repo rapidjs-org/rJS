@@ -1,5 +1,7 @@
 /**
- * Configuration file for server parameter settings.
+ * Read and prepare server configuration file object to be consumed.
+ * Implicit local file system paths construction and existence validation
+ * and file extension normalization.
  */
 
 
@@ -9,7 +11,6 @@ import { existsSync } from "fs";
 
 import { argument } from "../args";
 
-import { output } from "../utilities/output";
 import { normalizeExtension } from "../utilities/normalize";
 
 import { read } from "./reader";

@@ -1,3 +1,10 @@
+/**
+ * Class representing an optional locale renderer to be bound
+ * to the environment.
+ * Constant locale information provided for locale related processing
+ * of each request.
+ */
+
 
 import { join } from "path";
 import { existsSync } from "fs";
