@@ -5,7 +5,7 @@ import { serverConfig } from "../../config/config.server";
 import { output } from "../../utilities/output";
 
 import { ResponseError } from "../../interface/ResponseError/ResponseError";
-import { has as endpointHas, use as endpointUse } from "../../interface/plugin/endpoint";
+import { Endpoint } from "../../interface/plugin/Endpoint";
 
 import { Entity } from "./Entity";
 
@@ -46,11 +46,11 @@ export class PluginEntity extends Entity {
 				return this.respond(422);
 			}
 
-			if(!endpointHas(payload.pluginName, payload.endpointName)) {
+			if(!Endpoint.has(payload.pluginName, payload.endpointName)) {
 				// No related endpoint found
 				return this.respond(404);
 			}
-
+			
 			// Parse meta information
 			this.parseCookies();
 			this.parseSubdomain();
@@ -58,10 +58,10 @@ export class PluginEntity extends Entity {
 			
 			// Retrieve related page path
 			this.webPath = this.retrieveDynamicPath();
-
+			
 			try {
 				try {
-					const data: Buffer = endpointUse(payload.pluginName, payload.body, payload.endpointName);
+					const data: Buffer = Endpoint.use(payload.pluginName, payload.body, payload.endpointName);
 					
 					this.respond(200, data);
 				} catch(err) {

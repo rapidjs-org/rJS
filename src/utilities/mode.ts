@@ -14,5 +14,4 @@ const isDevMode = argument("dev")
 export const mode = {
 	PROD: !isDevMode,
 	DEV: isDevMode
-	// TODO: PROXY mode?
 };

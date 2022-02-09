@@ -9,6 +9,7 @@ import { existsSync } from "fs";
 
 import { argument } from "../args";
 
+import { output } from "../utilities/output";
 import { normalizeExtension } from "../utilities/normalize";
 
 import { read } from "./reader";
@@ -75,7 +76,7 @@ export const serverConfig = (read("config", defaultConfig) || read("server", def
 
 /**
  * Project locally normalize and validate configuration path.
- * @throws {ReferenceError} upon non-existing path.
+ * Aborts start-up if given a non-existing path.
  * @param {string} caption Error section caption
  * @param {Object} path Path property
  */
@@ -87,9 +88,9 @@ export const serverConfig = (read("config", defaultConfig) || read("server", def
 	path = (path.charAt(0) != "/")
 		? join(projectDirPath, path)
 		: path;
-
+    
     if(!existsSync(path)) {
-        throw new ReferenceError(`Configured ${caption} directory does not exist '${path}'`);
+        new ReferenceError(`Configured ${caption} directory does not exist '${path}'`);
     }
 
     return path;

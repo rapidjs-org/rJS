@@ -31,35 +31,34 @@
 // TODO: Proxy mode?
 
 
+import appInterface from "./interface/scope:app";
+
 // Start web server instance
 import "./server/instance.js";
 
 
-import appInterface from "./interface/scope:app";
-
-
 // Initialize live functionality (websocket modification detection)
 // Only effective in DEV MODE (implicitly checked)
-
-import { serverConfig } from "./config/config.server";
-
-
 function cleanEnv() {
 	// Manually close ports in case of implicit failure
 	const killPort = port => {
         port && require("child_process").exec(`lsof -t -i:${port}| sed -n 1p | kill -9`)
 	};
-
-	killPort(serverConfig.port.http);
-	killPort(serverConfig.port.https);
-	killPort(require("./config.json").wsPort);
+	
+	try {
+		const port = require("./config/config.server").serverConfig.port;
+		
+		killPort(port.http);
+		killPort(port.https);
+		killPort(require("./config.json").wsPort);
+	} finally {
+		process.exit();
+	}
 };
-
 
 process.on("SIGTERM", cleanEnv);
 process.on("SIGINT", cleanEnv);
 process.on("SIGBREAK", cleanEnv);
-process.on("exit", cleanEnv);
 
 
 // Application scoped interface.

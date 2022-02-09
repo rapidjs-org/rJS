@@ -11,7 +11,7 @@ import {mode} from "../utilities/mode";
 
 import { serverConfig } from "../config/config.server";
 
-import { isClientModuleRequest } from "../interface/plugin/registry";
+import { Plugin } from "../interface/plugin/Plugin";
 
 import { Entity } from "./entity/Entity";
 import { PluginEntity } from "./entity/PluginEntity";
@@ -98,7 +98,7 @@ async function handleRequest(req, res) {
 
 function specificAssetEntity(req, res, headerOnly: boolean = false) {
 	// Custom plugin client module request
-	if(isClientModuleRequest(req.url)) {
+	if(Plugin.isClientModuleRequest(req.url)) {
 		return new ClientModuleAssetEntity(req, res);
 	}
 
