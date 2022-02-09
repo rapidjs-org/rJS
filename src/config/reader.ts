@@ -3,42 +3,49 @@
  */
 
 const config = {
-	filePrefix: "rapid.",
-	devSuffix: ".dev"
+	filePrefix: "rapid."
 };
 
 
-import {join, dirname} from "path";
-import {existsSync} from "fs";
+import { join, dirname } from "path";
+import { existsSync } from "fs";
 
-import isDevMode from "../utilities/is-dev-mode";
-import {merge} from "../utilities/object";
+import { mode } from "../utilities/mode";
+import { merge } from "../utilities/object";
 
 
 /**
- * Read a custom config file
+ * Read a specific config file
  * @param {string} name Configuration file name (formatted)
- * @param {boolean} [devConfig] Whether to read DEV MODE specific file (with suffix) 
+ * @param {boolean} [suffix] File suffix (if mode specific)
  * @returns {Object} Configuration object
  */
-function readCustomConfig(name: string, devConfig = false): Record<string, unknown> {
+function readFile(name: string, suffix = "") {
 	// Retrieve custom config object (depending on mode)
 	const customConfigPath = join(dirname(require.main.filename),
-		`${config.filePrefix}${name}${devConfig ? config.devSuffix : ""}.json`);
+		`${config.filePrefix}${name}${suffix}.json`);
 	
-	return existsSync(customConfigPath) ? require(customConfigPath) : {};
+	return existsSync(customConfigPath)
+	? require(customConfigPath)
+	: {};
 }
 
 /**
- * Read an merge configuration files/objects respectively (2 levels deep).
- * @param {string} name Configuration file name (formatted)
- * @param {Object} [defaultConfig] Default configuration object
+ * Read configuration files for a given name (genral and mode effective).
+ * Convert to object representation and deep merge result.
+ * @param {string} configName Configuration file name (formatted)
+ * @param {Object} [defaultConfig] Default configuration object (static foundation)
  * @returns {Object} Resulting configuration object
  */
-export function read(name: string, defaultConfig: Record<string, unknown> = {}) {
-	// Retrieve custom config object (depending on mode)
-	const customConfig = merge(readCustomConfig(name),
-		isDevMode ? readCustomConfig(name, true) : {});
-
-	return merge(defaultConfig, customConfig);
+export function read(configName: string, defaultConfig: Record<string, unknown> = {}) {
+	// Default < Generic < Mode specific
+	let obj = merge(defaultConfig, readFile(configName)) as Record<string, unknown>;
+	
+	for(const modeName in mode) {
+		obj = mode[modeName]
+		? merge(obj, readFile(`${configName}.${modeName.toLowerCase()}`))
+		: obj;
+	}
+	
+	return obj;
 }

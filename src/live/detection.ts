@@ -7,13 +7,17 @@ const config = {
 };
 
 
-import {readdir, stat, lstatSync, existsSync, Dirent} from "fs";
-import {join} from "path";
+import { readdir, stat, lstatSync, existsSync, Dirent } from "fs";
+import { join, dirname } from "path";
+import { spawn } from "child_process";
 
-import * as output from "../utilities/output";
-import isDevMode from "../utilities/is-dev-mode";
 
-import {proposeRefresh} from "./server";
+import { serverConfig } from "../config/config.server";
+
+import { output } from "../utilities/output";
+import { mode } from "../utilities/mode";
+
+import { proposeRefresh } from "./server";
 
 
 // Array of detection directories
@@ -104,8 +108,8 @@ async function checkFile(path, callback): Promise<void> {
  * @param {Function} callback Function to call if modification has been detected
  */
 export function registerDetection(path: string, callback?: () => void, scanRecursively = true) {
-	if(!isDevMode) {
-		// DEV MODE only
+	if(!mode.DEV) {
+		// Only register in DEV MODE
 		return;
 	}
 
@@ -116,9 +120,8 @@ export function registerDetection(path: string, callback?: () => void, scanRecur
 	});
 }
 
-
 // Initialize detection interval
-isDevMode && setInterval(_ => {
+mode.DEV && setInterval(_ => {
 	// Scan registered directories / files respectively
 	modRegistry.forEach(async mod => {
 		if(lstatSync(mod.path).isDirectory()) {
@@ -142,3 +145,19 @@ isDevMode && setInterval(_ => {
 		await checkFile(mod.path, mod.callback);
 	});
 }, config.detectionFrequency);
+
+
+// Watch project directory level (non-recursively) (server / main module, configs, ...)
+registerDetection(dirname(serverConfig.directory.web), () => {
+	// Restart app if file in project root has changed
+	spawn(process.argv.shift(), process.argv, {
+		cwd: process.cwd(),
+		detached: true,
+		stdio: "inherit"
+	});
+
+	process.exit();
+}, false);
+
+// Watch web file directory (recursively)
+registerDetection(serverConfig.directory.web);

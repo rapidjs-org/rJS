@@ -5,9 +5,9 @@
  */
 
 
-import {normalize as normalizeUrl} from "path";
+import { normalize as normalizeUrl } from "path";
 
-import {Cache} from "./Cache";
+import { Cache } from "./Cache";
 
 
 export class UrlCache<T> extends Cache<T> {

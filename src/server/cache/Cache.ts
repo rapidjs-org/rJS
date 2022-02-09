@@ -6,9 +6,9 @@
  */
 
 
-import serverConfig from "../../config/config.server";
+import { serverConfig } from "../../config/config.server";
 
-import isDevMode from "../../utilities/is-dev-mode";
+import {mode} from "../../utilities/mode";
 
 
 interface IStorageObject<T> {
@@ -79,7 +79,7 @@ export abstract class Cache<T> {
      * @returns {boolean} Whether the cache holds an entry for the requested URL
      */
     public exists(key: string): boolean {
-    	if(isDevMode) {
+    	if(mode.DEV) {
     		// Always declare as empty in DEV MODE
     		return false;
     	}

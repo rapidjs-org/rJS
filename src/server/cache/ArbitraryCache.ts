@@ -5,7 +5,7 @@
  */
 
 
-import {Cache} from "./Cache";
+import { Cache } from "./Cache";
 
 
 export class ArbitraryCache<T> extends Cache<T> {

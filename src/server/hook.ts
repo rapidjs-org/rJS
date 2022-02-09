@@ -9,8 +9,9 @@
 import asyncHooks from "async_hooks";
 
 
-import {Entity} from "./entity/Entity";
+import { Entity } from "./entity/Entity";
 
+// TODO: Static member of Entity?
 
 const requests = new Map();
 
@@ -36,21 +37,13 @@ export function createHook(entity: Entity) {
 }
 
 /**
- * Retrieve async thread hooked entity object.
- * @returns {Entity} Reduced request info object
- */
-/* export function currentHook(): Entity {
-	return requests.get(asyncHooks.executionAsyncId());
-} */
-
-/**
  * Get currently effective request info object (based on asynchronous thread).
  * Returns undefined if is not related to a request processing routine.
- * @returns {IReducedRequestInfo} Reduced request info object
+ * @returns {IRequestObject} Reduced request info object
  */
-export function currentRequestInfo(): IReducedRequestInfo {
+export function currentRequestInfo(): IRequestObject {
 	const currentEntity = requests.get(asyncHooks.executionAsyncId());
 	return currentEntity
-		? currentEntity.getReducedRequestInfo()
+		? currentEntity.getRequestObject()
 		: undefined;
 }

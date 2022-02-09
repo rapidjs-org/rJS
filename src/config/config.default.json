@@ -7,7 +7,7 @@
         "web": "web",
         "lang": "lang"
     },
-    "gzipCompressList": ["html", "js"],
+    "gzipCompression": true,
     "limit": {
         "payloadSize": 1000,
         "requestsPending": 511,

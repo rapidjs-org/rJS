@@ -3,43 +3,28 @@
  * security guards and routines.
  */
 
-import config from "../config.json";
 
+import { readFileSync } from "fs";
 
-import {readFileSync} from "fs";
-import {extname, basename} from "path";
+import { output } from "../utilities/output";
+import {mode} from "../utilities/mode";
 
-import * as output from "../utilities/output";
-import isDevMode from "../utilities/is-dev-mode";
-import {normalizeExtension} from "../utilities/normalize";
+import { serverConfig } from "../config/config.server";
 
-import serverConfig from "../config/config.server";
+import { Plugin } from "../interface/plugin/Plugin";
 
-import {rateExceeded} from "./rate-limiter";
-
-import {isClientModuleRequest} from "../interface/plugin/registry";
-
-import {Entity} from "./entity/Entity";
-import {StaticGetEntity} from "./entity/StaticGetEntity";
-import {DynamicGetEntity} from "./entity/DynamicGetEntity";
-import {PostEntity} from "./entity/PostEntity";
-
-import {createHook} from "./hook";
-
-
-const entityConstructor = {
-	BASIC: Entity,
-	GET: {
-		STATIC: StaticGetEntity,
-		DYNAMIC: DynamicGetEntity
-	},
-	POST: PostEntity
-};
+import { Entity } from "./entity/Entity";
+import { PluginEntity } from "./entity/PluginEntity";
+import {
+	DynamicAssetEntity,
+	StaticAssetEntity,
+	ClientModuleAssetEntity
+} from "./entity/AssetEntity";
 
 
 // Retrieve server optional server parameter
 const options: Record<string, Buffer> = {};
-if(serverConfig.ssl) {	// TODO: How to treat for DEV MODE?
+if(serverConfig.ssl) {	// TODO: How to treat in DEV MODE?
 	const readCertFile = (pathname: string): Buffer => {
 		return readFileSync(pathname);
 	};
@@ -65,7 +50,7 @@ require(protocol)
 		output.error(err);
 		
 		try {
-			return (new entityConstructor.BASIC(req, res)).respond(500);
+			return (new Entity(req, res)).respond(500);
 		} catch(err) {
 			output.log("An unexpected error occurred handling a request:");
 			output.error(err);
@@ -75,26 +60,25 @@ require(protocol)
 .listen(serverConfig.port[protocol], serverConfig.hostname, serverConfig.limit.requestsPending,
 () => {
 	output.log(`Server started listening on port ${serverConfig.port[protocol]}`);
-	isDevMode && output.log("Running DEV MODE");
+	mode.DEV && output.log("Running \x1b[1mDEV MODE", null);
 });
 
 // Create redirection server (HTTP to HTTPS) if effective protocol is HTTPS
-if(serverConfig.port.https && serverConfig.port.https) {
-	require("http")
-	.createServer((req, res) => {
-		try { 
-			return (new entityConstructor.BASIC(req, res)).redirect(req.url);
-		} catch(err) {
-			output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
-			output.error(err);
-		}
-	})
-	.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
-	() => {
-		// Use set up HTTP port for redirection (80 by default (recommended))
-		output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
-	});
-}
+(serverConfig.port.https && serverConfig.port.https)
+&& require("http")
+.createServer((req, res) => {
+	try { 
+		return (new Entity(req, res)).redirect(req.url);
+	} catch(err) {
+		output.log("An unexpected error occurred redirecting a request from HTTP to HTTPS:");
+		output.error(err);
+	}
+})
+.listen(serverConfig.port.http, serverConfig.hostname, serverConfig.limit.requestsPending,
+() => {
+	// Use set up HTTP port for redirection (80 by default (recommended))
+	output.log(`HTTP (:${serverConfig.port.http}) to HTTPS (:${serverConfig.port.https}) redirection enabled`);
+});
 
 /**
  * Handle a single request asynchronously.
@@ -104,56 +88,23 @@ if(serverConfig.port.https && serverConfig.port.https) {
  */
 async function handleRequest(req, res) {
 	// Retrieve entity type first (or close response if can not be mapped accordingly)
-	let entity;
 	switch(req.method.toUpperCase()) {
-	case "GET": {
-		// (Initial) asset request
-		const extension = extname(req.url);
-		const normalizedExtension = extension ? normalizeExtension(extension) : config.dynamicFileExtension;
-
-		// TODO: Static file external asset server redirect (permanent, for DYNAMIC exclusive servers), per option?
-		entity = new entityConstructor.GET[
-			(normalizedExtension == config.dynamicFileExtension
-			&& !isClientModuleRequest(req.url))
-				? "DYNAMIC"
-				: "STATIC"
-		](req, res);
-
-		break;
+		case "HEAD": return specificAssetEntity(req, res, true);
+		case "GET": return specificAssetEntity(req, res);
+		case "POST": return new PluginEntity(req, res);
+		default: (new Entity(req, res)).respond(405);
 	}
-	case "POST": {
-		// Plug-in channel request
-		entity = new entityConstructor.POST(req, res);
+}
 
-		break;
-	}
-	default: {
-		// Block request as HTTP method is not supported
-		return (new entityConstructor.BASIC(null, res)).respond(405);
-	}
+function specificAssetEntity(req, res, headerOnly: boolean = false) {
+	// Custom plugin client module request
+	if(Plugin.isClientModuleRequest(req.url)) {
+		return new ClientModuleAssetEntity(req, res);
 	}
 
-	// Store hook to entity
-	createHook(entity);
-    
-	// Block request if individual request maximum reached (rate limiting)
-	if(rateExceeded(req.connection.remoteAddress)) {
-		entity.setHeader("Retry-After", 30000); // Retry after half the rate limiting period length
-        
-		return entity.respond(429);
-	}
-
-	// Block request if URL is exceeding the maximum length
-	if(serverConfig.limit.urlLength > 0
-	&& req.url.length > serverConfig.limit.urlLength) {
-		return entity.respond(414);
-	}
+	const isDynamic = !/\.[a-z]+(\#.+)?(\?..+)?$/i.test(req.url);
 	
-	// Block request if requesting a private (hidden file)
-	if((new RegExp(`/${config.privateWebFilePrefix}`)).test(basename(req.url))) {
-		return entity.respond(403);
-	}
-	
-	// Call entity specific request processor method
-	entity.process();
+	return isDynamic
+	? new DynamicAssetEntity(req, res, headerOnly)
+	: new StaticAssetEntity(req, res, headerOnly);
 }

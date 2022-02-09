@@ -5,14 +5,14 @@
 import config from "../config.json";
 
 
-import {existsSync, readFileSync} from "fs";
-import {join, extname} from "path";
+import { existsSync, readFileSync } from "fs";
+import { join, extname } from "path";
 
-import serverConfig from "../config/config.server";
+import { serverConfig } from "../config/config.server";
 
-import {normalizeExtension} from "../utilities/normalize";
+import { normalizeExtension } from "../utilities/normalize";
 
-import {renderModifiers} from "../rendering/render";
+import { render } from "./renderer/render";
 
 // TODO: Bind file reader interface?
 
@@ -26,12 +26,12 @@ import {renderModifiers} from "../rendering/render";
 export function read(pathname: string): string {
 	// Construct absolute path on local disc
 	const localPath: string = join(serverConfig.directory.web, pathname);
-
+	
 	let contents = String(readFileSync(localPath));
 
 	// Apply registered file modifiers if is dynamic file request
 	contents = (normalizeExtension(extname(pathname)) === config.dynamicFileExtension)
-		? renderModifiers(contents)
+		? render(contents)
 		: contents;
 
 	return contents;
