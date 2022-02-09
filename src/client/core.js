@@ -47,8 +47,8 @@ rapidJS.core = (_ => {
 	const PUBLIC = {};
 
 	/**
-	 * Perform request ro plug-in related endpoint (id set up).
-	 * @param {String} pluginName Internal name of plug-in to be addressed
+	 * Perform request ro plugin related endpoint (id set up).
+	 * @param {String} pluginName Internal name of plugin to be addressed
 	 * @param {Object} [body] Body object to send along being passed to the endpoint callback
 	 * @param {Function} [progressHandler] Callback repeatedly getting passed the current loading progress [0, 1]
 	 * @param {String} [endpointName] Endpoint name if given
@@ -132,7 +132,7 @@ rapidJS.core = (_ => {
 	};
 
 
-	// TODO: Emit event once for each plug-in upon has loaded
+	// TODO: Emit event once for each plugin upon has loaded
 
 
 	return PUBLIC;
