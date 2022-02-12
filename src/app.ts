@@ -27,7 +27,7 @@
 
 // TODO: "Wait for plug-in" feature
 // TODO: "Symlink" files feature?
-// TODO: All CLI interface (link plug-in reference config and rendering script paths)
+// TODO: All CLI interface (link plugin reference config and rendering script paths)
 // TODO: Proxy mode?
 
 
