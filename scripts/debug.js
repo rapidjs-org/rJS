@@ -1,6 +1,6 @@
-const {join} = require("path");
-const {exec, fork} = require("child_process");
-const {existsSync, mkdirSync, readdirSync, copyFileSync} = require("fs");
+const { join } = require("path");
+const { exec, fork } = require("child_process");
+const { existsSync, mkdirSync, readdirSync, copyFileSync } = require("fs");
 
 
 const clientDirPath = {

@@ -5,8 +5,8 @@
  */
 
 
-const {readdirSync} = require("fs");
-const {join} = require("path");
+const { readdirSync } = require("fs");
+const { join } = require("path");
 
 
 /**

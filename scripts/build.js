@@ -1,5 +1,5 @@
-const {readdirSync, readFileSync, writeFileSync} = require("fs");
-const {join, extname} = require("path");
+const { readdirSync, readFileSync, writeFileSync } = require("fs");
+const { join, extname } = require("path");
 const UglifyJS = require("uglify-js");
 
 
