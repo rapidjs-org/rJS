@@ -1,5 +1,5 @@
 import { parseFlag } from "./args";
-import { MODE } from "./MODE";
+import { MODE } from "../../core-old/MODE";
 
 
 const errorControlDisabled: boolean = parseFlag("disable-error-control");

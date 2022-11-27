@@ -1,5 +1,5 @@
 import * as sharedMemory from "./shared-memory";
-import { PATH } from "../PATH";
+import { PATH } from "../../../../core-old/PATH";
 
 
 const sharedMemoryActive = {

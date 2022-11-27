@@ -1,11 +1,5 @@
-export interface IBroadcastMessage {
-	signal: string;
-	
-	data?: string;
-}
-
 export interface IHighlevelURL {
-    hash: string;
+    /* hash: string;
     host: string;
     hostname: string;
     href: string;
@@ -16,7 +10,7 @@ export interface IHighlevelURL {
     protocol: string;
     search: string;
     username: string;
-    searchParams: Record<string, string>;
+    searchParams: Record<string, string>; */
 }
 
 export interface IHighlevelLocale {

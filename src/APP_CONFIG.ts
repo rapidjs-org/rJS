@@ -3,7 +3,7 @@ const devConfig = {
 };
 
 
-import * as print from "../print";
+import * as print from "./print";
 
 import { Config } from "./Config";
 

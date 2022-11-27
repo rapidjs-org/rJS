@@ -11,5 +11,8 @@
     "include": [
         "src/**/*.ts",
         "src/**/*.json"
+    ],
+    "exclude": [
+        "src/core/**/*.ts"
     ]
 }

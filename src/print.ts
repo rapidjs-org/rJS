@@ -12,8 +12,8 @@ import { isMainThread } from "worker_threads";
 import { existsSync, mkdirSync, statSync, appendFile } from "fs";
 import { join } from "path";
 
-import { EVENT_EMITTER } from "./EVENT_EMITTER";
-import { MODE } from "./MODE";
+import { EVENT_EMITTER } from "./process/EVENT_EMITTER";
+import { MODE } from "../../core-old/MODE";
 import { parseOption } from "./args";
 
 

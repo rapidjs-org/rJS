@@ -1,4 +1,4 @@
-import * as sharedMemory from "../../../shared-memory/shared-memory-api";
+import * as sharedMemory from "../shared-memory/shared-memory-api";
 
 
 interface ILimitEntry<V, L> {
@@ -28,7 +28,7 @@ export abstract class LimitDictionary<K, V, L> {
         
         this.id = LimitDictionary.instances++;  // Consistent among processes due to same order of instance creation (assuming no race consitions)
     }
-
+    
     protected abstract retrieveReferenceCallback(key: K): L;
     protected abstract validateLimitCallback(reference: L, current: L): boolean;
 

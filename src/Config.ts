@@ -5,8 +5,8 @@ const devConfig = {
 
 import { existsSync } from "fs";
 
-import { MODE } from "../MODE";
-import { absolutizePath } from "../PATH";
+import { MODE } from "../core/MODE";
+import { absolutizePath } from "../core/PATH";
 
 
 type TObject = Record<string, unknown>;
