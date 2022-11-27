@@ -43,7 +43,7 @@ export class ChildProcessPool extends WorkerPool<TSocketHandle, void> {
         return childProcess;
     }
 
-    protected activateWorker(childProcess: ChildProcess, socketHandle: TSocketHandle): void {
+    protected activateWorker(childProcess: ChildProcess, socketHandle: TSocketHandle) {
         childProcess.send(socketHandle[0], socketHandle[1]);
     }
 

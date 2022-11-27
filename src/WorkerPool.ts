@@ -2,23 +2,27 @@ import { EventEmitter as Worker, EventEmitter } from "events";
 import { cpus } from "os";
 
 
-interface IAssignment<I, O> {
+interface IActiveWorker<O> {
+    resolve: (dataOut: O) => void;
+    timeout: NodeJS.Timeout;
+}
+
+interface IPendingAssignment<I, O> {
     dataIn: I;
     resolve: (dataOut: O) => void;
 }
 
+
+// TODO: Need mutex?
 
 export abstract class WorkerPool<I, O> {
 
     private readonly baseSize: number;
     private readonly timeout: number;
     private readonly maxPending: number;
-    private readonly activeWorkers: Map<number, {
-        resolve: (dataOut: O) => void;
-        timeout: NodeJS.Timeout;
-    }> = new Map();
+    private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
     private readonly idleWorkers: Worker[] = [];
-    private readonly pendingAssignments: IAssignment<I, O>[] = [];
+    private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
     public readonly eventEmitter = new EventEmitter();
 
@@ -39,7 +43,7 @@ export abstract class WorkerPool<I, O> {
 
         const worker: Worker = this.idleWorkers.shift();
         const workerId: number = this.getWorkerId(worker);
-        const assignment: IAssignment<I, O> = this.pendingAssignments.shift();
+        const assignment: IPendingAssignment<I, O> = this.pendingAssignments.shift();
 
         this.activateWorker(worker, assignment.dataIn);
         
@@ -47,7 +51,7 @@ export abstract class WorkerPool<I, O> {
         .set(workerId, {
             resolve: assignment.resolve,
             timeout: setTimeout(() => {
-                this.deactivateWorker(worker, null);    // TODO: How to signal timeout?
+                this.deactivateWorker(worker, new Error(""));    // TODO: How to signal timeout?
             }, this.timeout)
         });
     }
@@ -61,12 +65,15 @@ export abstract class WorkerPool<I, O> {
         return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
     }
 
-    public deactivateWorker(worker: Worker, dataOut: O) {
+    public deactivateWorker(worker: Worker, dataOut: O|Error) {
         const workerId: number = this.getWorkerId(worker);
 
-        this.activeWorkers
-        .get(workerId)
-        .resolve(dataOut);
+        const activeWorker: IActiveWorker<O> = this.activeWorkers.get(workerId);
+
+        clearTimeout(activeWorker.timeout);
+
+        activeWorker
+        .resolve((dataOut instanceof Error) ? null : dataOut);  // TODO: How tohandle errors specifically?
 
         this.activeWorkers.delete(workerId);
 
