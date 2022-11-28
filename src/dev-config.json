@@ -1,0 +1,4 @@
+{
+    "socketsDirPath": "/var/run/",
+    "socketFilePrefix": "rjs.socket."
+}

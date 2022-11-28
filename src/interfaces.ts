@@ -1,3 +1,8 @@
+export interface ISpaceEnv {
+    PATH: string;
+    MODE: string;
+}
+
 export interface IHighlevelURL {
     /* hash: string;
     host: string;

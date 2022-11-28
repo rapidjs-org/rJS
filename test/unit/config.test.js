@@ -20,8 +20,8 @@ const configObjects = {
 };
 
 
-writeFileSync(join(__dirname, "../.tmp/rapidjs.config.json"), JSON.stringify(configObjects.shared));
-writeFileSync(join(__dirname, "../.tmp/rapidjs.config.prod.json"), JSON.stringify(configObjects.prod));
+writeFileSync(resolve("../.tmp/rapidjs.config.json"), JSON.stringify(configObjects.shared));
+writeFileSync(resolve("../.tmp/rapidjs.config.prod.json"), JSON.stringify(configObjects.prod));
 
 
 const { ETypeConstraint, APP_CONFIG, constrain } = require("../../debug/Config/APP_CONFIG");

@@ -1,5 +1,6 @@
+import { ENV } from "../ENV";
+
 import * as sharedMemory from "./shared-memory";
-import { PATH } from "../../../../core-old/PATH";
 
 
 const sharedMemoryActive = {
@@ -13,7 +14,7 @@ sharedMemory.init(appKey);
 
 
 function generateAppKey(): number { // uint32_t (MAX: 4294967296)
-    return parseInt(`rapidJS:${PATH}`
+    return parseInt(`rapidJS:${ENV.PATH}`  // TODO: Check if process CWD is consistent among related contexts
     .split("")
     .map((char: string) => char.charCodeAt(0).toString(16))
     .join("")) % 4294967296;

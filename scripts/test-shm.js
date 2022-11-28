@@ -11,7 +11,7 @@ children.push(detachProcess("read"));
 
 
 function detachProcess(mode) {
-    const child = fork(join(__dirname, "../test/shm.test.js"), [ `--${mode}` ]);
+    const child = fork(resolve("../test/shm.test.js"), [ `--${mode}` ]);
     
     child.on("message", ioMatches => {
         children.forEach(child => child.kill());

@@ -14,6 +14,7 @@ interface IPendingAssignment<I, O> {
 
 
 // TODO: Need mutex?
+// TODO: Always share env and CWD
 
 export abstract class WorkerPool<I, O> {
 
@@ -56,6 +57,12 @@ export abstract class WorkerPool<I, O> {
         });
     }
 
+    private deactivate(workerId: number) {
+        this.activeWorkers.delete(workerId);
+
+        this.activate();
+    }
+
     protected getWorkerId(worker: Worker): number {
         const optimisticWorkerCast = worker as unknown as {
             threadId: number;
@@ -75,11 +82,9 @@ export abstract class WorkerPool<I, O> {
         activeWorker
         .resolve((dataOut instanceof Error) ? null : dataOut);  // TODO: How tohandle errors specifically?
 
-        this.activeWorkers.delete(workerId);
-
         this.idleWorkers.push(worker);
 
-        this.activate();
+        this.deactivate(workerId);
     }
 
     public assign(dataIn: I): Promise<O> {
@@ -106,7 +111,11 @@ export abstract class WorkerPool<I, O> {
             }); */
             
             worker.on("exit", (code: number) => {
-                console.log("EXIT: " + code);
+                if(code === 0) {
+                    return;
+                }
+
+                this.deactivate(this.getWorkerId(worker));
 
                 // TODO: Handle
                 // TODO: Error control

@@ -1,6 +1,6 @@
 const { join } = require("path");
 
 
-const { PATH } = require("../../debug/PATH");
+const { ENV.PATH } = require("../../debug/ENV.PATH");
 
-assert("Check if project path has correctly been constructed", PATH, join(__dirname, "../.tmp"));
+assert("Check if project path has correctly been constructed", ENV.PATH, resolve("../.tmp"));

@@ -1,4 +1,4 @@
-import { Worker as Thread } from "worker_threads";
+import { Worker as Thread, SHARE_ENV } from "worker_threads";
 
 import { IRequest, IResponse } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
@@ -16,7 +16,7 @@ export class ThreadPool extends WorkerPool<IRequest, IResponse> {
 
     protected createWorker(): Thread {
         const thread = new Thread(this.threadModulePath, {
-            argv: process.argv.slice(2).concat(process.argv[1]),    // TODO: What to pass?
+            env: SHARE_ENV,
             workerData: null    // TODO: How to utilize?
         });
 

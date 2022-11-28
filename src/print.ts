@@ -13,7 +13,6 @@ import { existsSync, mkdirSync, statSync, appendFile } from "fs";
 import { join } from "path";
 
 import { EVENT_EMITTER } from "./process/EVENT_EMITTER";
-import { MODE } from "../../core-old/MODE";
 import { parseOption } from "./args";
 
 
@@ -174,14 +173,6 @@ function colorMessage(message: string) {
 }
 
 export function info(message: unknown) {
-    write(EStdChannel.OUT, message);
-}
-
-export function debug(message: unknown) {
-    if(!MODE.DEV) {
-        return;
-    }
-    
     write(EStdChannel.OUT, message);
 }
 

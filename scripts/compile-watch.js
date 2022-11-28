@@ -1,5 +1,8 @@
+"use strict";
+
+
 const { existsSync, mkdirSync, linkSync, copyFileSync, statSync, readdirSync, rmSync } = require("fs");
-const { join } = require("path");
+const { join, dirname } = require("path");
 const { exec, execSync } = require("child_process");
 
 
@@ -11,21 +14,31 @@ process.argv.slice(2).includes("--cpp")
 log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 
-// Create /debug files directory
-!existsSync(join(__dirname, "../debug/shared-memory"))
-&& mkdirSync(join(__dirname, "../debug/shared-memory"), {
-    force: true,
-    recursive: true
-});
 
-!existsSync(join(__dirname, "../debug/help.txt"))
-&& linkSync(join(__dirname, "../src/help.txt"), join(__dirname, "../debug/help.txt"));
+
+
+// Create /debug files directory
+const shmPath = {
+    source: resolve("../src/shared-memory"),
+    debug: resolve("../debug/shared-memory")
+};
+
+makeDir(shmPath.debug);
+
+const helpTextPath = {
+    source: resolve("../src/bin/help.txt"),
+    debug: resolve("../debug/bin/help.txt")
+};
+
+makeDir(dirname(helpTextPath.debug));
+!existsSync(helpTextPath.debug)
+&& linkSync(helpTextPath.source, helpTextPath.debug);
 
 
 let tsLogGroupOpen;
 
 // Start TypeScript compiler (sub-)process in background
-const child = exec(`tsc -w --preserveWatchOutput --outDir ${join(__dirname, "../debug/")}`);
+const child = exec(`tsc -w --preserveWatchOutput --outDir ${resolve("../debug/")}`);
 // Adopt TypeScript compiler output
 child.stdout.on("data", data => {
     if(/[0-9]{2}:[0-9]{2}:[0-9]{2} \- File change detected\. Starting incremental compilation\.\.\./.test(data)
@@ -45,9 +58,8 @@ child.stdout.on("data", data => {
 
 
 // Set up shared memory files / C++ source modification watch
-const detectionFrequency = 2500;
-const shmPath = join(__dirname, "../src/shared-memory/");
-const shmDirents = readdirSync(shmPath, {
+const detectionFrequency = 2500;;
+const shmDirents = readdirSync(shmPath.source, {
     withFileTypes: true
 })
 .filter(dirent => dirent.isFile())
@@ -56,7 +68,7 @@ const shmDirents = readdirSync(shmPath, {
 activeLangs.includes("C++")
 && setInterval(_ => {
     for(const dirent of shmDirents) {
-        if(!shmFileModified(join(shmPath, dirent.name))) {
+        if(!shmFileModified(join(shmPath.source, dirent.name))) {
             continue;
         }
 
@@ -88,11 +100,11 @@ function compileCPP() {
             stdio: "inherit"
         });
         
-        const destPath = join(__dirname, "../debug/shared-memory/shared-memory.node");
+        const destPath = join(shmPath.debug, "./shared-memory.node");
         rmSync(destPath, {
             force: true
         });
-        copyFileSync(join(shmPath, "./build/Release/shared_memory.node"),
+        copyFileSync(join(shmPath.source, "./build/Release/shared_memory.node"),
                      destPath);
     } catch(err) { /**/ }
 
@@ -107,4 +119,12 @@ function shmFileModified(path) {
     const stats = statSync(path);
 
     return (fileModified(stats.birthtime) || fileModified(stats.mtimeMs));
+}
+
+function makeDir(path) {
+    !existsSync(path)
+    && mkdirSync(path, {
+        force: true,
+        recursive: true
+    });
 }

@@ -1,6 +1,6 @@
 import { parentPort } from "worker_threads";
 
-import { IRequest } from "../interfaces";
+import { IRequest } from "../../interfaces";
 
 
 parentPort.on("message", (sReq: IRequest) => {
@@ -8,3 +8,5 @@ parentPort.on("message", (sReq: IRequest) => {
         message: "Hello world!"
     });
 });
+
+// TODO: Clear ENV after has been parsed?

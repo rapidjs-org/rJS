@@ -128,4 +128,4 @@ void Storage::free() {
         
         sem_post(sem);
     }
-}   // TODO: Keep alive on erroneous terminations (global free?)
+}   // TODO: How to free?   <<< IMPORTANT!

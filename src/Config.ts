@@ -3,13 +3,14 @@ const devConfig = {
 };
 
 
+import { join } from "path";
 import { existsSync } from "fs";
 
-import { MODE } from "../core/MODE";
-import { absolutizePath } from "../core/PATH";
+import { ENV } from "./ENV";
 
 
-type TObject = Record<string, unknown>;
+// eslint-disable-next-line no-explicit-any
+type TObject = any;
 
 
 export class Config {
@@ -43,44 +44,54 @@ export class Config {
         return Config.deepMergeObj(...objs, target);
     }
 
-    private static read(name: string|string[], mode?: string) {
-        name = [ name ].flat();
+    public data: TObject = {};
 
-        let i = 0;
-        let fullName: string,
-            fullPath: string;
-        do {
-            fullName = `${name[i++]}.${devConfig.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
-            fullPath = absolutizePath(`${fullName}`);
-        } while(!existsSync(fullPath) && (i < name.length));
-        
-        if(!existsSync(fullPath)) {
-            return {};
-        }
-
-        try {
-            return require(fullPath);
-        } catch(err) {
-            throw SyntaxError(`Configuration file could not be parsed\n${err.message} '${fullName}'`);
-        }
-    }
-
-    private readonly obj: TObject;
-
-    constructor(name: string|string[], defaultConfigObj: TObject = {}) {
-        Object.keys(MODE)
-        .filter(mode => (MODE as Record<string, boolean>)[mode])
+    constructor(name: string|string[]) {
+        Object.keys(ENV.MODE)
+        .filter(mode => (ENV.MODE as Record<string, boolean>)[mode])
         .concat([ "" ])
         .reverse()
         .forEach(mode => {
-            defaultConfigObj = Config.deepMergeObj(defaultConfigObj, Config.read(name, mode));
-        }); // TODO: Merge in default (later)
+            name = [ name ].flat();
 
-        this.obj = defaultConfigObj;
+            let i = 0;
+            let fullName: string,
+                fullPath: string;
+            do {
+                fullName = `${name[i++]}.${devConfig.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
+                fullPath = join(ENV.PATH, `${fullName}`);
+            } while(!existsSync(fullPath) && (i < name.length));
+            
+            if(!existsSync(fullPath)) {
+                return;
+            }
+
+            let fileObj;
+            try {
+                fileObj = require(fullPath);
+            } catch(err) {
+                throw SyntaxError(`Configuration file could not be parsed:\n${err.message} '${fullName}'`);
+            }
+
+            this.data = Config.deepMergeObj(this.data, fileObj);
+        }); // TODO: Merge in default (later)
     }
 
-    public objectify(): TObject {
-        return this.obj;
+    public mergeDefault(defaultParam: string|TObject) {
+        try {
+            this.data = Config.deepMergeObj(
+                (typeof defaultParam === "string")
+                ? require(defaultParam)
+                : defaultParam
+            , this.data);
+        } catch(err) {
+            throw SyntaxError(`Configuration file could not be parsed:\n${err.message} '${defaultParam}'`);
+        }
+    }
+
+    public constrain() {
+        // TODO: Elaborated constraints
+        // Types, patterns, required?
     }
 
 }

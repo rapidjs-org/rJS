@@ -1,7 +1,7 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
-import { PATH } from "../../../../core-old/PATH";
+import { ENV } from "../../ENV";
 
 import { LimitDictionary } from "./LimitDictionary";
 
@@ -26,11 +26,11 @@ export class VFS extends LimitDictionary<string, IFileStamp, IFileReference> {
             return normalize(path);
         });
 
-        this.root = normalize(join(PATH, root));
-                
-        // Error if out of PATH (information hiding / security)
-        if(this.root.slice(0, PATH.length) !== PATH) {
-            throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${PATH}...',\ngiven\t\t'${this.root}'.`);
+        this.root = normalize(join(ENV.PATH, root));
+            
+        // Error if out of ENV.PATH (information hiding / security)
+        if(this.root.slice(0, ENV.PATH.length) !== ENV.PATH) {
+            throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${ENV.PATH}...',\ngiven\t\t'${this.root}'.`);
         }
     }
     
