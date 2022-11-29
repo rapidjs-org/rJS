@@ -3,7 +3,7 @@ const { join } = require("path");
 
 
 const tmpFile = "test.txt";
-const tmpFilePath = resolve("../.tmp", tmpFile);
+const tmpFilePath = join(__dirname, "../.tmp", tmpFile);
 
 const fileContents = {
     initial: "foo",

@@ -11,7 +11,7 @@ assert("Check for correct eventual mutex lock", testMutex.lock(_ =>{
         setTimeout(_ => {
             reference = false;
 
-            resolve(reference);
+            join(__dirname, reference);
         }, 200);
     });
 }), false);

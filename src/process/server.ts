@@ -1,14 +1,10 @@
-const devConfig = {
-    "appNameLong": "rapidJS"
-};
-
-
 import { IncomingMessage, ServerResponse } from "http";
-import { resolve } from "path";
+import { join } from "path";
 import { brotliCompressSync, deflateSync, gzipSync } from "zlib";
 
-import { IHighlevelCookieOut, IHighlevelLocale, IHighlevelURL, IRequest, IResponse, THighlevelCookieIn } from "../interfaces";
-
+import { IRequest, IHighlevelLocale, IHighlevelURL, THighlevelCookieIn } from "../interfaces";
+import { TResponseOverload } from "../types";
+import { respond } from "../respond";
 import { ENV } from "../ENV";
 import { SPACE_CONFIG } from "../SPACE_CONFIG";
 import * as print from "../print";
@@ -28,20 +24,20 @@ process.on("uncaughtException", (err: Error) => {
     
     // TODO: Handle
 
-    process.send("done");   // TODO: Signal error (or keep "error"?)
+    signalDone(); // TODO: Signal error (or keep "error"?)
 });
 
 
 const runsSecure = !!SPACE_CONFIG.data.tls;
-const threadPool: ThreadPool = new ThreadPool(resolve("./thread/thread"));
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
 const rateLimiter: RateLimiter<string> = new RateLimiter(ENV.MODE.DEV ? Infinity : SPACE_CONFIG.data.limit.requestsPerClient);
 
 threadPool.init();
 
 
 process.on("message", async (_, dRes: ServerResponse) => {
-    const dReq: IncomingMessage = dRes.req;
-
+    // TODO: How to handle REQUEST?
+    
     const clientIP: string = dReq.headers["x-forwarded-for"]
     ? flattenHeader(dReq.headers["x-forwarded-for"]).split(/,/g).shift().trim()
     : dReq.socket.remoteAddress;
@@ -161,36 +157,36 @@ process.on("message", async (_, dRes: ServerResponse) => {
         delete sReq.headers["cookie"];
 
         threadPool.assign(sReq)
-        .then((resParam: IResponse|number) => {
-            if(typeof resParam === "number"
-            || resParam.message instanceof Buffer) {
-                return respond(dRes, resParam);
+        .then((sResOverload: TResponseOverload) => {
+            if(typeof sResOverload === "number"
+            || sResOverload.message instanceof Buffer) {
+                return respond(dRes, sResOverload);
             }
 
-            resParam.message = (typeof resParam.message !== "string")
-            ? String(resParam.message)
-            : resParam.message;
+            sResOverload.message = (typeof sResOverload.message !== "string")
+            ? String(sResOverload.message)
+            : sResOverload.message;
 
             let acceptedEncoding: string = parseAcceptHeader("accept-encoding")
             .shift()?.name
             .replace(/^\*$/, "gzip");
             switch(acceptedEncoding) {
                 case "gzip":
-                    resParam.message = gzipSync(resParam.message);
+                    sResOverload.message = gzipSync(sResOverload.message);
                     break;
                 case "br":
-                    resParam.message = brotliCompressSync(resParam.message);
+                    sResOverload.message = brotliCompressSync(sResOverload.message);
                     break;
                 case "deflate":
-                    resParam.message = deflateSync(resParam.message);
+                    sResOverload.message = deflateSync(sResOverload.message);
                     break;
                 default:
-                    resParam.message = Buffer.from(resParam.message, "utf-8");
+                    sResOverload.message = Buffer.from(sResOverload.message, "utf-8");
 
                     acceptedEncoding = null;
             }
 
-            respond(dRes, resParam, {
+            respond(dRes, sResOverload, {
                 "Content-Encoding": acceptedEncoding
             });
         })
@@ -207,6 +203,10 @@ process.on("message", async (_, dRes: ServerResponse) => {
     });
 });
 
+
+function signalDone() {
+    process.send("done");
+}
 
 function constructStrongHost(weakHost: string): string {
     return weakHost
@@ -238,77 +238,4 @@ function parseRequestBody(oReq: IncomingMessage): Promise<string> {
             reject(err);
         });
     });
-}
-
-function respond(dRes: ServerResponse, resParam: IResponse|number, prioritizedHeaders?: Record<string, string|string[]>): void {
-    if(dRes.writableEnded || dRes.writableFinished) {
-        return;
-    }
-        
-    resParam = (typeof resParam === "number")
-    ? {
-        status: resParam
-    }
-    : resParam;
-
-    const contentLength: number = resParam.message
-    ? ((resParam.message instanceof Buffer)
-        ? Buffer.byteLength(resParam.message)
-        : String(resParam.message).length)
-    : 0;
-
-    // TODO: Implement streams?
-
-    // Default headers (overridable)
-    dRes.setHeader("Server", devConfig.appNameLong);
-    dRes.setHeader("X-XSS-Protection", "1; mode=block");
-	dRes.setHeader("X-Powered-By", null);
-
-    // Apply high level headers
-    for(const name in resParam.headers) {
-        dRes.setHeader(name, resParam.headers[name]);
-    }
-    
-    // Default headers (prioritized)
-    dRes.setHeader("Cache-Control", SPACE_CONFIG.data.cache.client ? `public, max-age=${SPACE_CONFIG.data.cache.client}, must-revalidate` : null);
-	dRes.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${SPACE_CONFIG.data.cache.client}; includeSubDomains` : null);
-	dRes.setHeader("Content-Length", String(contentLength));
-    dRes.hasHeader("Content-Type")
-    && dRes.setHeader("X-Content-Type-Options", "nosniff");
-    for(const name in prioritizedHeaders) {
-        dRes.setHeader(name, prioritizedHeaders[name]);
-    }
-    
-    // Set cookie header
-    for(const name in resParam.cookies) {
-        const cookie: IHighlevelCookieOut = resParam.cookies[name];
-	    dRes.setHeader("Set-Cookie", `${name}=${cookie.value}${
-            cookie.maxAge ? `; Max-Age: ${cookie.maxAge}`: ""
-        }${
-            cookie.domain ? `; Domain: ${cookie.domain}`: ""
-        }${
-            cookie.path ? `; Path: ${cookie.path}`: ""
-        }${
-            cookie.sameSite ? `; Same-Site: ${cookie.sameSite}`: ""
-        }${
-            cookie.httpOnly ? "; HttpOnly" : ""
-        }${
-            runsSecure ? "; Secure" : ""
-        }`);
-    }
-    
-    // TODO: Note that string messages are compressed
-    dRes.statusCode = !SPACE_CONFIG.data.concealErrorStatus
-    ? resParam.status : 400;
-
-    // TODO: Respond rich
-    dRes.end(resParam.message);
-
-    resParam.message = `$[...] ${contentLength} bytes`;
-    process.send({
-        signal: "reg:response",
-        data: resParam
-    });
-
-    // TODO: Cache?
 }

@@ -1,8 +1,5 @@
-const devConfig = {
-    ...require("../dev-config.json")
-}
-
-
+import { join } from "path";
+import { fork } from "child_process";
 import { createConnection as createUnixSocketConnection } from "net";
 
 import { ISpaceEnv } from "../interfaces";
@@ -11,10 +8,21 @@ import { MODE } from "./MODE";
 import { PATH } from "./PATH";
 
 
+export function bootReverseProxyServer(port: number, runSecure: boolean = false) {
+    const proxyProcess = fork(join(__dirname, "../reverse-proxy/api.bin"), {
+        //detached: true
+        silent: true
+    });
+
+    proxyProcess.send({
+        port, runSecure
+    }); // TODO: Handle error
+}
+
 export function embedSpace() {
     const spaceEnv: ISpaceEnv = {
         PATH: PATH,
-        MODE: JSON.stringify(MODE)
+        MODE: MODE
     }   // TODO: Determine correctly
     
     const client = createUnixSocketConnection("/tmp/mysocket");
@@ -26,7 +34,7 @@ export function embedSpace() {
     client.on("writable", () => {
         client.end(Buffer.from(JSON.stringify(spaceEnv)));
     });
-    
+
     // ...
     // TODO: Send to proxy (with or after boot)
 }

@@ -7,9 +7,9 @@ assert("Check if rate limiter grants access", testRateLimiter.grantsAccess("foo"
 assert("Check if rate limiter restricts access", testRateLimiter.grantsAccess("foo"), false);
 
 assert("Check if rate limiter grants access after sufficient delay (total)", new Promise(resolve => {
-    setTimeout(_ => resolve(testRateLimiter.grantsAccess("foo")), 550);
+    setTimeout(_ => join(__dirname, testRateLimiter.grantsAccess("foo")), 550);
 }), true);
 
 assert("Check if rate limiter grants access after sufficient delay (weighted)", new Promise(resolve => {
-    setTimeout(_ => resolve(testRateLimiter.grantsAccess("foo")), 300);
+    setTimeout(_ => join(__dirname, testRateLimiter.grantsAccess("foo")), 300);
 }), true);

@@ -58,7 +58,7 @@ export function read<T>(purposeKey: string): Promise<T> {
     return new Promise((resolve, reject) => {
         try {
             const data: T = readSync<T>(purposeKey);
-
+            
             resolve(data);
         } catch(err) {
             reject(err);

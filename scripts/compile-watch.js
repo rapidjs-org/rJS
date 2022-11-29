@@ -19,15 +19,15 @@ log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 // Create /debug files directory
 const shmPath = {
-    source: resolve("../src/shared-memory"),
-    debug: resolve("../debug/shared-memory")
+    source: join(__dirname, "../src/shared-memory"),
+    debug: join(__dirname, "../debug/shared-memory")
 };
 
 makeDir(shmPath.debug);
 
 const helpTextPath = {
-    source: resolve("../src/bin/help.txt"),
-    debug: resolve("../debug/bin/help.txt")
+    source: join(__dirname, "../src/bin/help.txt"),
+    debug: join(__dirname, "../debug/bin/help.txt")
 };
 
 makeDir(dirname(helpTextPath.debug));
@@ -38,7 +38,7 @@ makeDir(dirname(helpTextPath.debug));
 let tsLogGroupOpen;
 
 // Start TypeScript compiler (sub-)process in background
-const child = exec(`tsc -w --preserveWatchOutput --outDir ${resolve("../debug/")}`);
+const child = exec(`tsc -w --preserveWatchOutput --outDir ${join(__dirname, "../debug/")}`);
 // Adopt TypeScript compiler output
 child.stdout.on("data", data => {
     if(/[0-9]{2}:[0-9]{2}:[0-9]{2} \- File change detected\. Starting incremental compilation\.\.\./.test(data)

@@ -3,6 +3,7 @@ import { Socket } from "net";
 
 import { ISpaceEnv } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
+import * as print from "../print";
 
 
 export class ChildProcessPool extends WorkerPool<Socket, void> {
@@ -22,16 +23,19 @@ export class ChildProcessPool extends WorkerPool<Socket, void> {
             cwd: process.cwd(), // TODO: Set according to project
             detached: false,
             silent: true,
-            env: this.env as unknown as Record<string, string>
+            env: {
+                MODE: JSON.stringify(this.env.MODE),
+                PATH: this.env.PATH
+            }
         });
 
 		childProcess.stdout.on("data", (message: Buffer) => {
-			process.stdout.write(String(message).replace(/\n$/, ""));
+			print.info(String(message).replace(/\n$/, ""));
 		});
 		childProcess.stderr.on("data", (err: Buffer) => {
-			process.stderr.write(String(err));
+			print.error(String(err));
 		});
-
+        
         childProcess.on("message", (message: string) => {
             if(message !== "done") {
                 return;
@@ -42,9 +46,9 @@ export class ChildProcessPool extends WorkerPool<Socket, void> {
         
         return childProcess;
     }
-
-    protected activateWorker(childProcess: ChildProcess, socketHandle: Socket) {
-        childProcess.send(null, socketHandle);
+    
+    protected activateWorker(childProcess: ChildProcess, socket: Socket) {
+        childProcess.send("deploy-response", socket);
     }
 
 }

@@ -14,5 +14,5 @@ assert("Check for existence of cache entry", testCache.exists("foo"), true);
 assert("Read existing entry from cache", testCache.read("foo"), "bar");
 
 assert("Check for existence of limit exceeding existing cache entry", new Promise(resolve => {
-    setTimeout(_ => resolve(testCache.exists("foo")), 550);
+    setTimeout(_ => join(__dirname, testCache.exists("foo")), 550);
 }), false);

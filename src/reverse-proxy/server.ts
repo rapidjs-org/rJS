@@ -1,8 +1,9 @@
-import { resolve } from "path";
-import { IncomingMessage, ServerResponse, createServer as createHTTPServer } from "http";
+import { join } from "path";
+import { Server, ServerOptions, RequestListener, IncomingMessage, ServerResponse, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
 import { ISpaceEnv } from "../interfaces";
+import { respond } from "../respond";
 
 import { ChildProcessPool } from "./ProcessPool";
 
@@ -15,25 +16,49 @@ process.on("uncaughtException", (err: Error) => {
 
 
 const hostnameProcessPool: Map<string, ChildProcessPool> = new Map();
+const commonServerOptions = {
+    keepAlive: true // TODO: Optionalize?
+};
 
 
-// TODO: Get protocol once
-createHTTPServer((dReq: IncomingMessage, dRes: ServerResponse) => {
-    const relatedHostname: string = dReq.headers["host"].replace(/:[0-9]+$/, "");
-    // TODO: Implement loose wildcard subdomain *.host.name?
-    console.log(relatedHostname);
+export function bootReverseProxyServer(port: number, runSecure: boolean) {
+    const createServer: (options: ServerOptions, requestListener?: RequestListener) => Server
+    = runSecure
+    ? createHTTPSServer
+    : createHTTPServer;
 
-    const processPool: ChildProcessPool = hostnameProcessPool.get(relatedHostname);
+    createServer({
+        ...commonServerOptions,
 
-    processPool.assign(dRes.socket);
-}).listen(7070);
+        ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
+    }, (dReq: IncomingMessage, dRes: ServerResponse) => {
+        if(!dReq.headers["host"]) {
+            respond(dRes, 422);
 
+            return;
+        }
 
-// TODO: HTTP:80 to HTTPS:433 redirtection server?
+        const relatedHostname: string = dReq.headers["host"].replace(/:[0-9]+$/, "");
+        // TODO: Implement loose wildcard subdomain *.host.name?
 
+        if(!hostnameProcessPool.has(relatedHostname)) {
+            respond(dRes, 404);
+
+            return;
+        }
+        
+        hostnameProcessPool.get(relatedHostname)
+        .assign(dRes.socket);
+    }).listen(port, () => {
+        // TODO: Notify up
+    });
+
+    // TODO: HTTP:80 to HTTPS:433 redirtection server?
+    // TODO: Special case (default) for ports 80/433
+}
 
 export function embedSpace(spaceEnv: ISpaceEnv) {
-    const processPool: ChildProcessPool = new ChildProcessPool(resolve("../process/instance"), spaceEnv);
+    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/server"), spaceEnv);
 
     processPool.init();
 

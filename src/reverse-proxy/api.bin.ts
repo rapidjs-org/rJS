@@ -7,10 +7,13 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 
 import { ISpaceEnv } from "../interfaces";
 
-import { embedSpace } from "./server";
+import { bootReverseProxyServer, embedSpace } from "./server";
 
 
-const port: number = 4000;
+/* process.on("") */
+
+
+/* const socketPort: number = 4000;
 
 createUnixSocketServer((connection: Socket) => {
     console.log(connection);
@@ -24,4 +27,14 @@ createUnixSocketServer((connection: Socket) => {
 
     embedSpace(spaceEnv);
 })
-.listen(`${devConfig.socketsDirPath}${devConfig.socketFilePrefix}${port}`);   // TODO: Infer port form boot data
+.listen(`${devConfig.socketsDirPath}${devConfig.socketFilePrefix}${socketPort}`, () => {
+    process.send("socket-listening");
+});   // TODO: Infere port form boot data */
+
+
+bootReverseProxyServer(7070, false);
+
+embedSpace({
+    PATH: process.cwd(),
+    MODE: { DEV: true, PROD: false }
+});

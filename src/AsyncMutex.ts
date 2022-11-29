@@ -8,7 +8,7 @@ export class AsyncMutex {
 		 if(!this.isLocked) {
 			this.isLocked = true;
 			
-			return Promise.resolve();
+			return Promise.resolve(__dirname, );
 		}
 		
 		return new Promise(resolve => {

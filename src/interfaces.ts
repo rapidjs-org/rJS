@@ -1,7 +1,33 @@
+import { THeaders } from "./types";
+
+
 export interface ISpaceEnv {
     PATH: string;
-    MODE: string;
+    MODE: {
+        DEV: boolean;
+        PROD: boolean;
+    };
 }
+
+
+export interface IRequest {
+    method: string;
+    url: IHighlevelURL;
+    headers: THeaders;
+    
+    body?: unknown;
+    cookies?: THighlevelCookieIn;
+    locale?: IHighlevelLocale[];
+}
+
+export interface IResponse {
+    status: number;
+    
+    headers?: THeaders;
+    message?: string|number|boolean|Buffer;
+    cookies?: Record<string, IHighlevelCookieOut>;
+}
+
 
 export interface IHighlevelURL {
     /* hash: string;
@@ -35,22 +61,4 @@ export interface IHighlevelCookieOut {
     path?: string;
     httpOnly?: boolean;
     sameSite?: string;
-}
-
-export interface IRequest {
-    method: string;
-    url: IHighlevelURL;
-    headers: Record<string, string|string[]>;
-    
-    body?: unknown;
-    cookies?: THighlevelCookieIn;
-    locale?: IHighlevelLocale[];
-}
-
-export interface IResponse {
-    status: number;
-    
-    headers?: Record<string, string|string[]>;
-    message?: string|number|boolean|Buffer;
-    cookies?: Record<string, IHighlevelCookieOut>;
 }

@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import { join } from "path";
 import { writeFile } from "fs";
 
 
@@ -6,7 +6,7 @@ import { writeFile } from "fs";
 writeProxyFile();
 
 function writeProxyFile() {
-    writeFile(resolve("./7070.rjs.proxy"), Buffer.from("111 awdw dwaad"), null, (err: Error) => {
+    writeFile(join(__dirname, "./7070.rjs.proxy"), Buffer.from("111 awdw dwaad"), null, (err: Error) => {
         if(!err) {            
             return;
         }

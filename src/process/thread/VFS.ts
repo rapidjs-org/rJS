@@ -32,6 +32,7 @@ export class VFS extends LimitDictionary<string, IFileStamp, IFileReference> {
         if(this.root.slice(0, ENV.PATH.length) !== ENV.PATH) {
             throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${ENV.PATH}...',\ngiven\t\t'${this.root}'.`);
         }
+        // TODO: Generic out of PATH utility (reuse e.g. for log dir)
     }
     
     private getAbsolutePath(path: string): string {
