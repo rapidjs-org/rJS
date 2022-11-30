@@ -17,6 +17,7 @@ export interface IRequest {
     
     body?: unknown;
     cookies?: THighlevelCookieIn;
+    encoding: IHighlevelEncoding[];
     locale?: IHighlevelLocale[];
 }
 
@@ -42,6 +43,11 @@ export interface IHighlevelURL {
     search: string;
     username: string;
     searchParams: Record<string, string>; */
+}
+
+export interface IHighlevelEncoding {
+    type: string;
+    quality: number;
 }
 
 export interface IHighlevelLocale {

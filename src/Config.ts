@@ -6,8 +6,12 @@ const devConfig = {
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { ENV } from "./ENV";
+/* import { ENV } from "./ENV"; */    // TODO: Eval upon given env / space only
 
+const ENV = {
+    PATH: process.cwd(),
+    MODE: {}
+};  // TODO: Remove after suitable re-implementation
 
 // eslint-disable-next-line no-explicit-any
 type TObject = any;
@@ -44,7 +48,7 @@ export class Config {
         return Config.deepMergeObj(...objs, target);
     }
 
-    public data: TObject = {};
+    public data: TObject = { limit: {} };   // TODO: WIP
 
     constructor(name: string|string[]) {
         Object.keys(ENV.MODE)

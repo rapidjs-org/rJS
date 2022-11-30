@@ -1,19 +1,25 @@
 import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
 
-import { ISpaceEnv } from "../interfaces";
+import { ISpaceEnv, IRequest } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import * as print from "../print";
 
 
-export class ChildProcessPool extends WorkerPool<Socket, void> {
+interface ISocketDelegation {
+    sReq: IRequest;
+    socket: Socket;
+}
+
+
+export class ChildProcessPool extends WorkerPool<ISocketDelegation, void> {
 
     private readonly childProcessModulePath: string;
     private readonly env: ISpaceEnv;
 
     constructor(childProcessModulePath: string, env: ISpaceEnv, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
-
+        
         this.childProcessModulePath = childProcessModulePath;
         this.env = env;
     }
@@ -47,8 +53,8 @@ export class ChildProcessPool extends WorkerPool<Socket, void> {
         return childProcess;
     }
     
-    protected activateWorker(childProcess: ChildProcess, socket: Socket) {
-        childProcess.send("deploy-response", socket);
+    protected activateWorker(childProcess: ChildProcess, socketDelegation: ISocketDelegation) {
+        childProcess.send(socketDelegation.sReq, socketDelegation.socket);
     }
 
 }

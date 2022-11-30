@@ -1,5 +1,10 @@
 import { AsyncMutex } from "../AsyncMutex";
-import { ENV } from "../ENV";
+/* import { ENV } from "./ENV"; */    // TODO: Eval upon given env / space only
+
+const ENV = {
+    PATH: process.cwd(),
+    MODE: { DEV: false }
+};  // TODO: Remove after suitable re-implementation
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?
