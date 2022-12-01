@@ -51,7 +51,15 @@ child.stdout.on("data", data => {
     console.log(`${
         (tsLogGroupOpen && !/^[0-9]{2}:[0-9]{2}:[0-9]{2} \-/.test(data))
         ? "\n" : ""
-    }${data.trim()}`);
+    }${
+        data.trim()
+        .replace(/(^|\n)([^:]+)\(([0-9]+),([0-9]+)\):(.*)/g, (_, indicator, lead, line, pos, trail) => {
+            return `${indicator}\x1b[2m(${lead}:${line}:${pos})\x1b[0m${
+                trail.replace(/^( *error)/g, "\x1b[31m$1\x1b[30m")
+            }`;
+        })
+        .replace(/((^|\n)[0-9]+:[0-9]+:[0-9]+.*)/g, "\x1b[2m$1\x1b[0m")
+    }`);
 
     tsLogGroupOpen = true;
 });
