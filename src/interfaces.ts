@@ -10,6 +10,12 @@ export interface ISpaceEnv {
 }
 
 
+export interface IIntermediateRequest {
+    method: string;
+    url: string;
+    headers: THeaders;
+}
+
 export interface IRequest {
     method: string;
     url: IHighlevelURL;

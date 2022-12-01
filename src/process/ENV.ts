@@ -1,4 +1,4 @@
-import { ISpaceEnv } from "./interfaces";
+import { ISpaceEnv } from "../interfaces";
 
 
 export const ENV: ISpaceEnv = {

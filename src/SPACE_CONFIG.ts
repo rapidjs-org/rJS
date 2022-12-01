@@ -9,7 +9,7 @@ import { Config } from "./Config";
 
 // TODO: Re-implement
 export const SPACE_CONFIG: any/* Config */ = {
-    data: { limit: {} }
+    data: { limit: {}, cache: {} }
 }; /* new Config(devConfig.configNamePrefixList);
 
 SPACE_CONFIG.mergeDefault(join(__dirname, "./default.config.json")); */

@@ -48,7 +48,7 @@ export class Config {
         return Config.deepMergeObj(...objs, target);
     }
 
-    public data: TObject = { limit: {} };   // TODO: WIP
+    public data: TObject = { limit: {}, cache: {} };   // TODO: WIP
 
     constructor(name: string|string[]) {
         Object.keys(ENV.MODE)

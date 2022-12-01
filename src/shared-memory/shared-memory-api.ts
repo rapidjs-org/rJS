@@ -1,4 +1,4 @@
-import { ENV } from "../ENV";
+import { ENV } from "../process/ENV";
 
 import * as sharedMemory from "./shared-memory";
 

@@ -1,18 +1,18 @@
 import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
 
-import { ISpaceEnv, IRequest } from "../interfaces";
+import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import * as print from "../print";
 
 
-interface ISocketDelegation {
-    sReq: IRequest;
+interface IChildData {
+    iReq: IIntermediateRequest;
     socket: Socket;
 }
 
 
-export class ChildProcessPool extends WorkerPool<ISocketDelegation, void> {
+export class ChildProcessPool extends WorkerPool<IChildData, void> {
 
     private readonly childProcessModulePath: string;
     private readonly env: ISpaceEnv;
@@ -53,8 +53,8 @@ export class ChildProcessPool extends WorkerPool<ISocketDelegation, void> {
         return childProcess;
     }
     
-    protected activateWorker(childProcess: ChildProcess, socketDelegation: ISocketDelegation) {
-        childProcess.send(socketDelegation.sReq, socketDelegation.socket);
+    protected activateWorker(childProcess: ChildProcess, childDate: IChildData) {
+        childProcess.send(childDate.iReq, childDate.socket);
     }
 
 }
