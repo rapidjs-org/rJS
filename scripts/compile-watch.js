@@ -14,9 +14,6 @@ process.argv.slice(2).includes("--cpp")
 log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 
-
-
-
 // Create /debug files directory
 const shmPath = {
     source: join(__dirname, "../src/shared-memory"),

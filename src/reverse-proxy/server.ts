@@ -5,8 +5,6 @@ import { createServer as createHTTPSServer } from "https";
 
 import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { THeaders } from "../types";
-import { Config } from "../Config";
-import { RateLimiter } from "./RateLimiter";
 import { respond } from "../respond";
 
 import { ChildProcessPool } from "./ProcessPool";
@@ -18,14 +16,13 @@ process.on("uncaughtException", (err: Error) => {
     // TODO: Handle
 });
 
+// TODO: HTTP/2 with master streams
+
 
 const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
-const commonServerOptions = {
-    keepAlive: true // TODO: Optionalize?
-};
 
 
-function handleSocket(socket: Socket) {
+function handleSocketConnection(socket: Socket, runSecure: boolean) {
     let requestBuffer: string = "";
 
     let chunk: Buffer;
@@ -58,21 +55,24 @@ function handleSocket(socket: Socket) {
         headers[key.trim().toLowerCase()] = value.trim();
     });
 
-    const iReq: IIntermediateRequest = {
-        /* httpVersion: meta[2].split("/")[1], */
-        method: meta[0],
-        url: meta[1],
-        headers: headers
-    };
-    
-    const hostname: string = [ iReq.headers["host"] ].flat()[0]
-    .replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
+    let hostname: string = [ headers["host"] ].flat()[0];
+
+    const url: string = `http${runSecure ? "s" : ""}://${hostname}${meta[1]}`;
+
+    hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
 
     if(!embeddedSpaces.has(hostname)) {
         respond(socket, 404);
 
         return;
     }
+    
+    const iReq: IIntermediateRequest = {
+        /* httpVersion: meta[2].split("/")[1], */
+        method: meta[0],
+        url: url,
+        headers: headers
+    };
     
     embeddedSpaces.get(hostname)
     .assign({
@@ -89,12 +89,12 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
     : createHTTPServer;
 
     createServer({
-        ...commonServerOptions,
+        keepAlive: true,
 
         ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
     })
     .on("connection", (socket: Socket) => {
-        socket.once("readable", () => handleSocket(socket));
+        socket.once("readable", () => handleSocketConnection(socket, runSecure));
     })
     .listen(port, () => {
         // TODO: Notify up

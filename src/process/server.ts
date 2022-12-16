@@ -4,7 +4,7 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
 import { TResponseOverload } from "../types";
-import { RateLimiter } from "../reverse-proxy/RateLimiter";
+import { RateLimiter } from "./RateLimiter";
 import { respond } from "../respond";
 import * as print from "../print";
 
@@ -98,9 +98,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
     .replace(/^(https?:\/\/)?/, `http${SPACE_CONFIG.data.tls ? "s" : ""}://`)   // TLS sufficient? HTTPS embed requirement, so should be present
     .replace(/(:[0-9]+)?$/, `:${SPACE_CONFIG.data.port ?? 80}`);    // TODO: Default?
     
-    const dynamicURL: URL = new URL(!/^https?:\/\//.test(iReq.url)
-    ? `${host}${iReq.url}`
-    : iReq.url);
+    const dynamicURL: URL = new URL(iReq.url);
     const highlevelURL: IHighlevelURL = {
         hash: dynamicURL.hash,
         host: dynamicURL.host,

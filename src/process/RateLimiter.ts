@@ -60,3 +60,4 @@ export class RateLimiter<I> {
 }
 
 // Sliding window with peak adjustments?
+// TODO: All classes inherit from EventEmitter to bubble events up?

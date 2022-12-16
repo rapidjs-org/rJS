@@ -53,8 +53,8 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
         return childProcess;
     }
     
-    protected activateWorker(childProcess: ChildProcess, childDate: IChildData) {
-        childProcess.send(childDate.iReq, childDate.socket);
+    protected activateWorker(childProcess: ChildProcess, childData: IChildData) {
+        childProcess.send(childData.iReq, childData.socket);
     }
 
 }
