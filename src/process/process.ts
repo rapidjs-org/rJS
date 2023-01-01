@@ -6,7 +6,6 @@ import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighl
 import { TResponseOverload } from "../types";
 import { RateLimiter } from "./RateLimiter";
 import { respond } from "../respond";
-import * as print from "../print";
 
 import { ThreadPool } from "./ThreadPool";
 import { ENV } from "./ENV";
@@ -80,7 +79,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
                 }); */
             });
         } catch(err) {
-            print.error(err);
+            console.error(err);
 
             end(socket, 422);
             
@@ -220,7 +219,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         });
     })
     .catch(err => {
-        print.error(err);   // TODO: console.log() or print.info() ?
+        console.error(err);
         
         end(socket, 500);
     });

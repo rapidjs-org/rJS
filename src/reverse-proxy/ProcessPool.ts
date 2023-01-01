@@ -3,7 +3,7 @@ import { Socket } from "net";
 
 import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
-import * as print from "../print";
+import * as print from "./print";
 
 
 interface IChildData {
@@ -39,7 +39,7 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
 			print.info(String(message).replace(/\n$/, ""));
 		});
 		childProcess.stderr.on("data", (err: Buffer) => {
-			print.error(String(err));
+			print.error(String(err));   // TODO: Provide with log file dir?
 		});
         
         childProcess.on("message", (message: string) => {

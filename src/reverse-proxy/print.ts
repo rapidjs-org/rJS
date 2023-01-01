@@ -7,13 +7,12 @@ const devConfig = {
 };
 
 
-import cluster from "cluster";
 import { isMainThread } from "worker_threads";
 import { existsSync, mkdirSync, statSync, appendFile } from "fs";
 import { join } from "path";
 
-import { EVENT_EMITTER } from "./process/EVENT_EMITTER";
-import { parseOption } from "./args";
+import { EVENT_EMITTER } from "../process/EVENT_EMITTER";
+import { parseOption } from "../args";
 
 
 /*
@@ -32,9 +31,6 @@ enum EColorMode {
     BG = "48"
 }
 
-
-// 
-const isRootContext: boolean = cluster.isPrimary && isMainThread;
 
 let lastMessage: {
     count: number;
@@ -92,30 +88,28 @@ function write(channel: EStdChannel, message: unknown) {
     ? formatMessage(serializedMessage)
     : message;
 
-    if(isRootContext) {
-        if(message === lastMessage?.message) {
-            try {
-                process[channel].moveCursor(
-                    (!lastMessage.isMultiline
-                    ? (devConfig.appNameShort.length + lastMessage.message.length + 4)
-                    : 0),
-                    ((!lastMessage.isMultiline || (lastMessage.count > 1))
-                    ? -1
-                    : 0)
-                );
-                process[channel].clearLine(1);
-                
-                process[channel]
-                .write(`${highlight(`(${++lastMessage.count})`, [ 255, 92, 92 ])}\n`);
-            } catch { /**/ }
+    if(message === lastMessage?.message) {
+        try {
+            process[channel].moveCursor(
+                (!lastMessage.isMultiline
+                ? (devConfig.appNameShort.length + lastMessage.message.length + 4)
+                : 0),
+                ((!lastMessage.isMultiline || (lastMessage.count > 1))
+                ? -1
+                : 0)
+            );
+            process[channel].clearLine(1);
+            
+            process[channel]
+            .write(`${highlight(`(${++lastMessage.count})`, [ 255, 92, 92 ])}\n`);
+        } catch { /**/ }
 
-            return;
-        }
-
-        EVENT_EMITTER.emit("log");
-
-        logToFile(message);
+        return;
     }
+
+    EVENT_EMITTER.emit("log");
+
+    logToFile(message);
 
     lastMessage = {
         count: 1,
@@ -124,11 +118,10 @@ function write(channel: EStdChannel, message: unknown) {
     };
     
     process[channel]
-    .write(`${isRootContext
-        ? `${highlight(` ${devConfig.appNameShort} `, [
+    .write(`${
+        highlight(` ${devConfig.appNameShort} `, [
             [ 54, 48, 48, EColorMode.FG ], [ 255, 254, 173, EColorMode.BG ]
-        ], [ 1, 3 ])} `
-        : ""
+        ], [ 1, 3 ])
     }${colorMessage(serializedMessage)}\n`);
 }
 /* info({

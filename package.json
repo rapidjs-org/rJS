@@ -3,11 +3,13 @@
   "version": "0.0.1",
   "description": "",
   "author": "Thassilo Martin Schiepanski",
-  "main": "./dist/>core.js",
+  "bin": {
+    "rjs": "./dist/reverse-proxy/api.bin.js"
+  },
   "scripts": {
-    "init": "npm i && cd ./src/shared-memory/ && node-gyp configure",
+    "setup": "npm i && cd ./src/shared-memory/ && node-gyp configure",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
-    "compile:dist": "node ./node_modules/@rapidjs.org/utilities/build.js",
+    "compile:dist": "node ./node_modules/@rapidjs.org/utilities/build.js && chmod +x ./dist/reverse-proxy/api.bin.js",
     "compile:watch": "node ./scripts/compile-watch.js",
     "compile:watch:all": "node ./scripts/compile-watch.js --cpp",
     "test:integration": "node ./test/integration/app.js",

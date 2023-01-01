@@ -1,8 +1,7 @@
 Usage: <start-command> [--dev|-D]
 
 Flags:
---disable-error-control, -D     Run DEV ENV.MODE
---dev, -D                       Run DEV ENV.MODE
+--dev, -D                       Run DEV MODE (PROD MODE otherwise)
 
 Options:
 --path, -P                      Specify application working directory

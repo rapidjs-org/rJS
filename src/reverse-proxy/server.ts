@@ -7,7 +7,10 @@ import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { THeaders } from "../types";
 import { respond } from "../respond";
 
+import { PATH } from "./PATH";
+import { MODE } from "./MODE";
 import { ChildProcessPool } from "./ProcessPool";
+import * as print from "./print";
 
 
 process.on("uncaughtException", (err: Error) => {
@@ -22,7 +25,7 @@ process.on("uncaughtException", (err: Error) => {
 const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
 
 
-function handleSocketConnection(socket: Socket, runSecure: boolean) {
+function handleSocketConnection(port: number, socket: Socket, runSecure: boolean) {
     let requestBuffer: string = "";
 
     let chunk: Buffer;
@@ -61,7 +64,7 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
 
     hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
 
-    if(!embeddedSpaces.has(hostname)) {
+    if(!embeddedSpaces.has(`${hostname}:${port}`)) {
         respond(socket, 404);
 
         return;
@@ -74,15 +77,15 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
         headers: headers
     };
     
-    embeddedSpaces.get(hostname)
+    embeddedSpaces
+    .get(`${hostname}:${port}`)
     .assign({
         iReq, socket
     });
 }
 
-
 // TODO: Limiters here?
-export function bootReverseProxyServer(port: number, runSecure: boolean) {
+function bootReverseProxyServer(port: number, runSecure: boolean) {
     const createServer: (options: ServerOptions, requestListener?: RequestListener) => Server
     = runSecure
     ? createHTTPSServer
@@ -94,7 +97,7 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
         ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
     })
     .on("connection", (socket: Socket) => {
-        socket.once("readable", () => handleSocketConnection(socket, runSecure));
+        socket.once("readable", () => handleSocketConnection(port, socket, runSecure));
     })
     .listen(port, () => {
         // TODO: Notify up
@@ -104,15 +107,29 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
     // TODO: Special case (default) for ports 80/433
 }
 
-export function embedSpace(spaceEnv: ISpaceEnv) {
-    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/server"), spaceEnv);
+
+export function embedSpace() {
+    // TODO: Port!!!
+    const hostname: string = "localhost";   // TODO: Multiple
+    const port: number = 7070;
+
+    bootReverseProxyServer(port, false);
+
+    const spaceEnv: ISpaceEnv = {
+        PATH: PATH,
+        MODE: MODE
+    };
+
+    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), spaceEnv);
 
     processPool.init();
 
     // TODO: Retrieve related hostname via config
     //const spaceConfig: Config = new Config("...");
 
-    embeddedSpaces.set("localhost", processPool);
+    embeddedSpaces.set(`${hostname}:${port}`, processPool);
+
+    print.info(`Server cluster started listening on ${hostname}:${port}`);  // TODO: Read port ()
 }
 
 
