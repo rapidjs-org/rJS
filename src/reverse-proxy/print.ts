@@ -2,9 +2,7 @@
  * Module containing application specific console print. 
  */
 
-const devConfig = {
-    "appNameShort": "rJS"
-};
+import devConfig from "../dev-config.json";
 
 
 import { isMainThread } from "worker_threads";
@@ -32,37 +30,20 @@ enum EColorMode {
 }
 
 
-let lastMessage: {
+interface ILastMessage {
     count: number;
     isMultiline: boolean;
-    message: string;
-};
-let logDirPath: string;
-setImmediate(() => {
-    let testLogDirPath: string = parseOption("log-dir", "L").string;
+    data: string;
+}
 
-    if(!testLogDirPath) {
-        return;
-    }
-    testLogDirPath = join(process.cwd(), testLogDirPath);
-
-    if(!existsSync(testLogDirPath)) {
-        try {
-            mkdirSync(testLogDirPath);
-        } catch {
-            throw new ReferenceError(`Given log directory neither exist nor can be created at path '${testLogDirPath}'`);
-        }
-    }
-    if(!statSync(testLogDirPath).isDirectory()) {
-        throw new RangeError(`Given log directory is not a directory '${testLogDirPath}'`);
-    }
-
-    logDirPath = testLogDirPath;
-});
+const lastLog: {
+    dir?: string,
+    message?: ILastMessage
+} = {};
 
 
 process.stdin.on("data", (char: string) => {
-    lastMessage = null;
+    lastLog.dir = null;
 
     process.stdout.write(char);
 });
@@ -81,40 +62,43 @@ function stringify(message: unknown): string {
     : message;
 }
 
-function write(channel: EStdChannel, message: unknown) {    
+function write(channel: EStdChannel, message: unknown, logDir?: string) {    
     const serializedMessage: string = stringify(message);
 
     message = (channel === EStdChannel.OUT)
     ? formatMessage(serializedMessage)
     : message;
 
-    if(message === lastMessage?.message) {
+    if(logDir
+    && logDir === lastLog.dir
+    && message === lastLog.message.data) {
         try {
             process[channel].moveCursor(
-                (!lastMessage.isMultiline
-                ? (devConfig.appNameShort.length + lastMessage.message.length + 4)
+                (!lastLog.message.isMultiline
+                ? (devConfig.appNameShort.length + lastLog.message.data.length + 4)
                 : 0),
-                ((!lastMessage.isMultiline || (lastMessage.count > 1))
+                ((!lastLog.message.isMultiline || (lastLog.message.count > 1))
                 ? -1
                 : 0)
             );
             process[channel].clearLine(1);
             
             process[channel]
-            .write(`${highlight(`(${++lastMessage.count})`, [ 255, 92, 92 ])}\n`);
+            .write(`${highlight(`(${++lastLog.message.count})`, [ 255, 92, 92 ])}\n`);
         } catch { /**/ }
 
         return;
     }
 
-    EVENT_EMITTER.emit("log");
+    // EVENT_EMITTER.emit("log");
 
-    logToFile(message);
+    logToFile(message, logDir);
 
-    lastMessage = {
+    lastLog.dir = logDir;
+    lastLog.message = {
         count: 1,
         isMultiline: /\n/.test(serializedMessage),
-        message: serializedMessage
+        data: serializedMessage
     };
     
     process[channel]
@@ -165,11 +149,35 @@ function colorMessage(message: string) {
     .replace(/(^|\s|[[(])([0-9]+([.,-][0-9]+)*)(\s|[^a-z0-9;]|$)/gi, `$1${highlight("$2", [ 0, 167, 225 ])}$4`);   // Number
 }
 
-export function info(message: unknown) {
-    write(EStdChannel.OUT, message);
+function logToFile(message: unknown, logDir?: string) {
+    if(!logDir) {
+        return;
+    }
+    
+    message = stringify(message)
+    .replace(/\x1b\[[0-9;]+m/g, "");    // Remove possibly occurring ANSII formatting codes
+
+    const date: Date = new Date();
+    const day: string = date.toISOString().split("T")[0];
+    const time: string = date.toLocaleTimeString();
+
+    appendFile(join(logDir, `${day}.log`),
+    `[${time}]: ${message}\n`,
+    err => {
+        if(!err) {
+            return;
+        }
+
+        throw new Error(`Could not write to log directory. ${err?.message ?? message}`);
+    });
 }
 
-export function error(err: Error|string) {
+
+export function info(message: unknown, logDir?: string) {
+    write(EStdChannel.OUT, message, logDir);
+}
+
+export function error(err: Error|string, logDir?: string) {
     if(!(err instanceof Error)) {
         write(EStdChannel.ERR, highlight(err, [ 224, 0, 0 ]));
 
@@ -184,28 +192,5 @@ export function error(err: Error|string) {
         err.stack
         ? `\n${highlight(err.stack.replace(message, "").trim(), null, 2)}`
         : ""
-    }`);
-}
-
-export function logToFile(message: unknown) {
-    if(!logDirPath) {
-        return;
-    }
-
-    message = stringify(message)
-    .replace(/\x1b\[[0-9;]+m/g, "");    // Remove possibly occurring ANSII formatting codes
-
-    const date: Date = new Date();
-    const day: string = date.toISOString().split("T")[0];
-    const time: string = date.toLocaleTimeString();
-
-    appendFile(join(logDirPath, `${day}.log`),
-    `[${time}]: ${message}\n`,
-    err => {
-        if(!err) {
-            return;
-        }
-
-        throw new Error(`Could not write to log directory. ${err?.message ?? message}`);
-    });
+    }`, logDir);
 }

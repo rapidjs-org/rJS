@@ -1,63 +1,13 @@
-const devConfig = {
-    "appNameLong": "rapidJS"
-};
+import devConfig from "../dev-config.json";
 
 
-import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
-import { IResponse, IHighlevelCookieOut } from "./interfaces";
-import { THeaders, TResponseOverload } from "./types";
-import { SPACE_CONFIG } from "./SPACE_CONFIG";
+import { IResponse, IHighlevelCookieOut } from "../interfaces";
+import { THeaders, TResponseOverload } from "../types";
+import { DynamicResponse } from "../DynamicResponse";
 
-
-class DynamicResponse {
-
-    private readonly socket: Socket;
-    private readonly headers: THeaders;
-
-    public statusCode: number;
-
-    constructor(socket: Socket) {
-        this.socket = socket;
-        this.headers = {};
-    }
-
-    public setHeader(name: string, value: string|string[]) {
-        this.headers[name] = value;
-    }
-    
-    public hasHeader(name: string) {
-        return !!this.headers[name];
-    }
-
-    public end(message: string|number|boolean|Buffer) {
-        this.statusCode = this.statusCode ?? (message ? 200 : 400);
-
-        const data: string[] = [];
-
-        data.push(`HTTP/1.1 ${this.statusCode ?? 400} ${STATUS_CODES[this.statusCode]}`);
-        
-        for(const name in this.headers) {
-            const value: string = [ this.headers[name] ].flat().join(", ");
-
-            if(!value) {
-                continue;
-            }
-
-            data.push(`${name}: ${value}`);
-        }
-
-        data.push("");
-
-        data.push(message?.toString());
-
-        this.socket.write(data.join("\r\n"));
-
-        this.socket.end();
-    }
-
-}
+import { SPACE_CONFIG } from "./context/SPACE_CONFIG";
 
 
 export function respond(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders): void {

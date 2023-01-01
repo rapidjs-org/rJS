@@ -1,11 +1,6 @@
 #!/usr/bin/env node
 
 
-const devConfig = {
-    ...require("../dev-config.json")
-}
-
-
 import { join } from "path";
 import { readFileSync } from "fs";
 import { Socket, createServer as createUnixSocketServer } from "net";
@@ -13,6 +8,7 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 import { parseFlag } from "../args";
 
 import { embedSpace } from "./server";
+import * as print from "./print";
 
 
 if(parseFlag("help", "H")) {
@@ -21,6 +17,14 @@ if(parseFlag("help", "H")) {
         .replace(/(https?:\/\/[a-z0-9/._-]+)/ig, "\x1b[38;2;255;71;71m$1\x1b[0m")
         + "\n"
     );
+    
+    process.exit(0);
+
+    // TODO: Make extensible?
+}
+
+if(parseFlag("status", "S")) {
+    //print();
     
     process.exit(0);
 

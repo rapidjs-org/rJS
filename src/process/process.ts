@@ -4,12 +4,12 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
 import { TResponseOverload } from "../types";
-import { RateLimiter } from "./RateLimiter";
-import { respond } from "../respond";
 
-import { ThreadPool } from "./ThreadPool";
-import { ENV } from "./ENV";
-import { SPACE_CONFIG } from "../SPACE_CONFIG";
+import { ENV } from "./context/ENV";
+import { SPACE_CONFIG } from "./context/SPACE_CONFIG";
+import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
+import { RateLimiter } from "./RateLimiter";
+import { respond } from "./respond";
 
 
 interface IAcceptHeaderPart {

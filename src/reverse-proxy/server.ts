@@ -1,17 +1,34 @@
+import devConfig from "../dev-config.json";
+
+
 import { join } from "path";
-import { Socket } from "net";
+import { rmSync } from "fs";
+import { Socket, createServer as createUnixSocketServer } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
 import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { THeaders } from "../types";
-import { respond } from "../respond";
+import { DynamicResponse } from "../DynamicResponse";
 
 import { PATH } from "./PATH";
 import { MODE } from "./MODE";
 import { ChildProcessPool } from "./ProcessPool";
 import * as print from "./print";
+import { connectProxySocket } from "./conncect-proxy";
 
+
+const cleanUpUnixSockets = (code: number) => {
+    registeredUnixSocketServers
+    .forEach((server: Server) => {
+        server.close();
+    });
+
+    process.exit(code);
+};
+process.on("SIGINT", cleanUpUnixSockets);
+process.on("SIGTERM", cleanUpUnixSockets);
+process.on("exit", cleanUpUnixSockets);
 
 process.on("uncaughtException", (err: Error) => {
     console.error(err);
@@ -22,6 +39,7 @@ process.on("uncaughtException", (err: Error) => {
 // TODO: HTTP/2 with master streams
 
 
+const registeredUnixSocketServers: Set<unknown> = new Set();
 const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
 
 
@@ -65,7 +83,10 @@ function handleSocketConnection(port: number, socket: Socket, runSecure: boolean
     hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
 
     if(!embeddedSpaces.has(`${hostname}:${port}`)) {
-        respond(socket, 404);
+        const dRes: DynamicResponse = new DynamicResponse(socket);
+        
+        dRes.statusCode = 404;
+        dRes.end();
 
         return;
     }
@@ -76,7 +97,7 @@ function handleSocketConnection(port: number, socket: Socket, runSecure: boolean
         url: url,
         headers: headers
     };
-    
+
     embeddedSpaces
     .get(`${hostname}:${port}`)
     .assign({
@@ -86,12 +107,12 @@ function handleSocketConnection(port: number, socket: Socket, runSecure: boolean
 
 // TODO: Limiters here?
 function bootReverseProxyServer(port: number, runSecure: boolean) {
-    const createServer: (options: ServerOptions, requestListener?: RequestListener) => Server
+    const createWebServer: (options: ServerOptions, requestListener?: RequestListener) => Server
     = runSecure
     ? createHTTPSServer
     : createHTTPServer;
 
-    createServer({
+    createWebServer({
         keepAlive: true,
 
         ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
@@ -100,8 +121,35 @@ function bootReverseProxyServer(port: number, runSecure: boolean) {
         socket.once("readable", () => handleSocketConnection(port, socket, runSecure));
     })
     .listen(port, () => {
+        print.info(`HTTP${runSecure ? "S": ""} server proxy started listening on :${port}`);  // TODO: Read port ()
         // TODO: Notify up
     });
+
+    rmSync(`${devConfig.socketNamePrefix}${port}.sock`, {
+        force: true
+    });
+
+    const unixSocketServer = createUnixSocketServer((stream) => {
+        stream.on("data", (message: Buffer) => {
+            const command: string = message.toString();
+            
+            switch(command) {
+                case "status":
+                    stream.write("OK"); // TODO: Implement
+                    return;
+                case "embed":
+                    console.log("EMBED!");
+                    stream.write("OK"); // TODO: Implement
+                    return;
+            }
+        });
+        // Do something with the client connection
+    })
+    .listen(`${devConfig.socketNamePrefix}${port}.sock`);
+    
+    registeredUnixSocketServers.add(unixSocketServer);
+
+    // TODO: Error handling
 
     // TODO: HTTP:80 to HTTPS:433 redirtection server?
     // TODO: Special case (default) for ports 80/433
@@ -113,23 +161,39 @@ export function embedSpace() {
     const hostname: string = "localhost";   // TODO: Multiple
     const port: number = 7070;
 
+    if(embeddedSpaces.has(`${hostname}:${port}`)) {
+        print.error(`Address in use ${hostname}:${port}`);
+
+        return;
+    }
+
+    // TODO: Boot if not yet running
     bootReverseProxyServer(port, false);
+
+
+    connectProxySocket(port, "embed")
+    .then(msg => console.log(msg));
+
 
     const spaceEnv: ISpaceEnv = {
         PATH: PATH,
         MODE: MODE
     };
 
-    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), spaceEnv);
+    try {
+        const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), spaceEnv);
 
-    processPool.init();
+        processPool.init();
 
-    // TODO: Retrieve related hostname via config
-    //const spaceConfig: Config = new Config("...");
+        // TODO: Retrieve related hostname via config
+        // const spaceConfig: Config = new Config("...");
 
-    embeddedSpaces.set(`${hostname}:${port}`, processPool);
+        embeddedSpaces.set(`${hostname}:${port}`, processPool);
 
-    print.info(`Server cluster started listening on ${hostname}:${port}`);  // TODO: Read port ()
+        print.info(`Embedded application cluster at ${hostname}:${port}`);  // TODO: Read port ()
+    } catch(err) {
+        print.error(err.message);
+    }
 }
 
 

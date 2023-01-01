@@ -1,4 +1,5 @@
 {
-    "socketsDirPath": "/var/run/",
-    "socketFilePrefix": "rjs.socket."
+    "appNameShort": "rJS",
+    "appNameLong": "rapidJS",
+    "socketNamePrefix": "/tmp/rjs.proxy."
 }

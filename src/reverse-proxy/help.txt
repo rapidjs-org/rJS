@@ -2,9 +2,13 @@ Usage: <start-command> [--dev|-D]
 
 Flags:
 --dev, -D                       Run DEV MODE (PROD MODE otherwise)
+--help, -H                      Display help text
+--status, -S                    Display status of all running proxies and applications
 
 Options:
---path, -P                      Specify application working directory
---log-dir, -L                   Specify log file directory
+--wd, -W                        Specify application working directory
+--port, -P                      Specify application port
+--hostname, -H                  Specify application hostname
+--logs, -L                      Specify log file directory
 
 Visit https://rapidjs.org for more information.

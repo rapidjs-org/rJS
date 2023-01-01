@@ -4,7 +4,7 @@ import { parseOption } from "../args";
 
 
 const wdPath: string = process.cwd();
-const argPath: string = parseOption("path", "P").string;
+const argPath: string = parseOption("wd", "W").string;
 
 
 export const PATH: string = normalize(
