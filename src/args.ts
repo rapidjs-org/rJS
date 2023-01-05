@@ -16,10 +16,21 @@ function getNameIndex(name: string, shorthand?: string): number {
 }
 
 /**
+ * Parse a specific positional argument from the given command line arguments.
+ * @param name Position inex
+ * @returns The name of the positional argument if provided at index (no indicating dash)
+ */
+export function parsePositional(index: number = 0): string {
+    return /^[^-]/.test(args[index] ?? "")
+    ? args[index]
+    : undefined;
+}
+
+/**
  * Parse a specific flag from the given command line arguments.
  * @param name Flag name (without indicating double dashes)
  * @param shorthand Flag shorthand (without indicating single dash)
- * @returns Value type resolve interface
+ * @returns Whether the flag is set
  */
 export function parseFlag(name: string, shorthand?: string): boolean {
     return (getNameIndex(name, shorthand) >= 0);

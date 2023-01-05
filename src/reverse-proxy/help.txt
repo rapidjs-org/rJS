@@ -1,11 +1,18 @@
 Usage: <start-command> [--dev|-D]
 
-Flags:
---dev, -D                       Run DEV MODE (PROD MODE otherwise)
---help, -H                      Display help text
---status, -S                    Display status of all running proxies and applications
+• Commands:
 
-Options:
+help                            Display help text
+start                           ...
+stop                            ...
+monitor                         Display status of all running proxies and applications
+
+• Flags:
+
+--dev, -D                       Run DEV MODE (PROD MODE otherwise)
+
+• Options:
+
 --wd, -W                        Specify application working directory
 --port, -P                      Specify application port
 --hostname, -H                  Specify application hostname
