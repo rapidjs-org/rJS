@@ -1,22 +1,26 @@
-import devConfig from "../dev-config.json";
+import devConfig from "../_config.json";
 
 
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 
 
-export function connectProxySocket(port: number, command: string) {
+export function proxyIPC(port: number, command: string, arg?: string|number|boolean): Promise<boolean> {
     return new Promise((resolve, reject) => {
         const client: Socket = createUnixSocketConnection(`${devConfig.socketNamePrefix}${port}.sock`);
-
-        client.write(command);
+        
+        client.write(JSON.stringify({
+            command, arg
+        }));
 
         client.on("data", (message: Buffer) => {
-            resolve(message.toString());
-
+            resolve(message.toString() === "1");
+            
             client.end();
         });
         client.on("error", (error: Buffer) => {
-            reject(error.toString());
+            // console.error(error.toString());
+            
+            reject(new Error(error.toString()));
             
             client.end();
         });

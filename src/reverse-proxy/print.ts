@@ -2,15 +2,11 @@
  * Module containing application specific console print. 
  */
 
-import devConfig from "../dev-config.json";
+import devConfig from "../_config.json";
 
 
-import { isMainThread } from "worker_threads";
-import { existsSync, mkdirSync, statSync, appendFile } from "fs";
+import { appendFile } from "fs";
 import { join } from "path";
-
-import { EVENT_EMITTER } from "../process/EVENT_EMITTER";
-import { parseOption } from "../args";
 
 
 /*
@@ -40,13 +36,6 @@ const lastLog: {
     dir?: string,
     message?: ILastMessage
 } = {};
-
-
-process.stdin.on("data", (char: string) => {
-    lastLog.dir = null;
-
-    process.stdout.write(char);
-});
 
 
 function stringify(message: unknown): string {
@@ -106,7 +95,7 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
         highlight(` ${devConfig.appNameShort} `, [
             [ 54, 48, 48, EColorMode.FG ], [ 255, 254, 173, EColorMode.BG ]
         ], [ 1, 3 ])
-    }${colorMessage(serializedMessage)}\n`);
+    } ${colorMessage(serializedMessage)}\n`);
 }
 /* info({
     "foo": true,
@@ -150,6 +139,7 @@ function colorMessage(message: string) {
 }
 
 function logToFile(message: unknown, logDir?: string) {
+    logDir = process.cwd(); // TODO: Remove after debug
     if(!logDir) {
         return;
     }
@@ -193,4 +183,12 @@ export function error(err: Error|string, logDir?: string) {
         ? `\n${highlight(err.stack.replace(message, "").trim(), null, 2)}`
         : ""
     }`, logDir);
+}
+
+export function enableInputRegistration() {
+    process.stdin.on("data", (char: string) => {
+        lastLog.dir = null;
+
+        process.stdout.write(char);
+    });
 }

@@ -7,8 +7,9 @@ import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import { parseOption } from "../args";
 
-import * as print from "./print";
 import { PATH } from "./PATH";
+import { MODE } from "./MODE";
+import * as print from "./print";
 
 
 interface IChildData {
@@ -23,7 +24,7 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
     private readonly env: ISpaceEnv;
     private readonly logDir: string;
 
-    constructor(childProcessModulePath: string, env: ISpaceEnv, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
         const logDirPath: string = parseOption("status", "S").string;
@@ -45,7 +46,9 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
         // TODO: logDir to ENV?
 
         this.childProcessModulePath = childProcessModulePath;
-        this.env = env;
+        this.env = {
+            PATH, MODE
+        };
     }
     
     protected createWorker(): ChildProcess {        
@@ -55,7 +58,7 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
             silent: true,
             env: {
                 MODE: JSON.stringify(this.env.MODE),
-                PATH: this.env.PATH
+                PATH: this.env.PATH     // TODO: How to handkle uniformously?
             }
         });
 

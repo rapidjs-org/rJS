@@ -1,4 +1,4 @@
-import devConfig from "../dev-config.json";
+import devConfig from "../_config.json";
 
 
 import { Socket } from "net";

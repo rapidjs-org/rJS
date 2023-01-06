@@ -1,4 +1,4 @@
-import devConfig from "../dev-config.json";
+import devConfig from "../_config.json";
 
 
 import { join } from "path";
@@ -7,43 +7,31 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
+import { IIntermediateRequest } from "../interfaces";
 import { THeaders } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
 
-import { PATH } from "./PATH";
-import { MODE } from "./MODE";
 import { ChildProcessPool } from "./ProcessPool";
 import * as print from "./print";
-import { connectProxySocket } from "./conncect-proxy";
 
-
-const cleanUpUnixSockets = (code: number) => {
-    registeredUnixSocketServers
-    .forEach((server: Server) => {
-        server.close();
-    });
-
-    process.exit(code);
-};
-process.on("SIGINT", cleanUpUnixSockets);
-process.on("SIGTERM", cleanUpUnixSockets);
-process.on("exit", cleanUpUnixSockets);
-
-process.on("uncaughtException", (err: Error) => {
-    console.error(err);
-
-    // TODO: Handle
-});
 
 // TODO: HTTP/2 with master streams
 
 
-const registeredUnixSocketServers: Set<unknown> = new Set();
+process.on("message", (message: string) => {
+    const data: {
+        port: number;
+        runSecure: boolean;
+    } = JSON.parse(message);
+
+    bootReverseProxyServer(data.port, data.runSecure)
+});
+
+
 const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
 
 
-function handleSocketConnection(port: number, socket: Socket, runSecure: boolean) {
+function handleSocketConnection(socket: Socket, runSecure: boolean) {
     let requestBuffer: string = "";
 
     let chunk: Buffer;
@@ -82,7 +70,7 @@ function handleSocketConnection(port: number, socket: Socket, runSecure: boolean
 
     hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
 
-    if(!embeddedSpaces.has(`${hostname}:${port}`)) {
+    if(!embeddedSpaces.has(hostname)) {
         const dRes: DynamicResponse = new DynamicResponse(socket);
         
         dRes.statusCode = 404;
@@ -99,14 +87,21 @@ function handleSocketConnection(port: number, socket: Socket, runSecure: boolean
     };
 
     embeddedSpaces
-    .get(`${hostname}:${port}`)
+    .get(hostname)
     .assign({
         iReq, socket
     });
 }
 
+
 // TODO: Limiters here?
-function bootReverseProxyServer(port: number, runSecure: boolean) {
+export function bootReverseProxyServer(port: number, runSecure: boolean) {
+    let remainingListeningEventsForBubbleup: number = 2;
+    const bubbleUp = () => {
+        (--remainingListeningEventsForBubbleup === 0)
+        && process.send("listening");        // TODO: Notify up
+    };
+
     const createWebServer: (options: ServerOptions, requestListener?: RequestListener) => Server
     = runSecure
     ? createHTTPSServer
@@ -118,12 +113,9 @@ function bootReverseProxyServer(port: number, runSecure: boolean) {
         ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
     })
     .on("connection", (socket: Socket) => {
-        socket.once("readable", () => handleSocketConnection(port, socket, runSecure));
+        socket.once("readable", () => handleSocketConnection(socket, runSecure));
     })
-    .listen(port, () => {
-        print.info(`HTTP${runSecure ? "S": ""} server proxy started listening on :${port}`);  // TODO: Read port ()
-        // TODO: Notify up
-    });
+    .listen(port, bubbleUp);
 
     rmSync(`${devConfig.socketNamePrefix}${port}.sock`, {
         force: true
@@ -131,69 +123,72 @@ function bootReverseProxyServer(port: number, runSecure: boolean) {
 
     const unixSocketServer = createUnixSocketServer((stream) => {
         stream.on("data", (message: Buffer) => {
-            const command: string = message.toString();
+            const data: {
+                command: string;
+                arg: string|number|boolean;
+            } = JSON.parse(message.toString());
+            print.info(data)
             
-            switch(command) {
-                case "status":
-                    stream.write("OK"); // TODO: Implement
-                    return;
+            let respondSuccessful: boolean = true;
+            switch(data.command) {
+
+                case "port_available":
+                    respondSuccessful = false;
+                    break;
+
+                case "hostname_available":
+                    print.info(!embeddedSpaces.has(data.arg as string))
+                    respondSuccessful = !embeddedSpaces.has(data.arg as string);
+                    break;
+
                 case "embed":
-                    console.log("EMBED!");
-                    stream.write("OK"); // TODO: Implement
-                    return;
+                    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"));
+
+                    processPool.init();
+                    
+                    embeddedSpaces.set(data.arg as string, processPool);
+
+                    break;
+
+                case "unbed":
+                    
+                    // TODO: Implement
+                    // TODO: Shutdown proxy on last unbed? Shutdown all option?
+
+                    break;
+
+                default:
+                    respondSuccessful = false;
+                
             }
+
+            stream.write(respondSuccessful ? "1" : "0");
         });
         // Do something with the client connection
     })
-    .listen(`${devConfig.socketNamePrefix}${port}.sock`);
+    .listen(`${devConfig.socketNamePrefix}${port}.sock`, bubbleUp);
     
-    registeredUnixSocketServers.add(unixSocketServer);
+    const cleanUpUnixSockets = (code: number) => {
+        unixSocketServer.close();
+        
+        process.exit(code);
+    };
+    process.on("SIGINT", cleanUpUnixSockets);
+    process.on("SIGTERM", cleanUpUnixSockets);
+    process.on("exit", cleanUpUnixSockets);
+
+    process.on("uncaughtException", (err: Error) => {
+        console.error(err); // TODO: Print module
+
+        // TODO: Handle
+    });
+
+    print.enableInputRegistration();
 
     // TODO: Error handling
 
     // TODO: HTTP:80 to HTTPS:433 redirtection server?
     // TODO: Special case (default) for ports 80/433
-}
-
-
-export function embedSpace() {
-    // TODO: Port!!!
-    const hostname: string = "localhost";   // TODO: Multiple
-    const port: number = 7070;
-
-    if(embeddedSpaces.has(`${hostname}:${port}`)) {
-        print.error(`Address in use ${hostname}:${port}`);
-
-        return;
-    }
-
-    // TODO: Boot if not yet running
-    bootReverseProxyServer(port, false);
-
-
-    connectProxySocket(port, "embed")
-    .then(msg => console.log(msg));
-
-
-    const spaceEnv: ISpaceEnv = {
-        PATH: PATH,
-        MODE: MODE
-    };
-
-    try {
-        const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), spaceEnv);
-
-        processPool.init();
-
-        // TODO: Retrieve related hostname via config
-        // const spaceConfig: Config = new Config("...");
-
-        embeddedSpaces.set(`${hostname}:${port}`, processPool);
-
-        print.info(`Embedded application cluster at ${hostname}:${port}`);  // TODO: Read port ()
-    } catch(err) {
-        print.error(err.message);
-    }
 }
 
 
