@@ -184,11 +184,3 @@ export function error(err: Error|string, logDir?: string) {
         : ""
     }`, logDir);
 }
-
-export function enableInputRegistration() {
-    process.stdin.on("data", (char: string) => {
-        lastLog.dir = null;
-
-        process.stdout.write(char);
-    });
-}

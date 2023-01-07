@@ -40,7 +40,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         .shift()
         .trim()
     : socket.remoteAddress;
-    
+        
     if(!rateLimiter.grantsAccess(clientIP)) {
         end(socket, 429);
 

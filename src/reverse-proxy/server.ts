@@ -127,9 +127,9 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
                 command: string;
                 arg: string|number|boolean;
             } = JSON.parse(message.toString());
-            print.info(data)
-            
+
             let respondSuccessful: boolean = true;
+
             switch(data.command) {
 
                 case "port_available":
@@ -137,7 +137,6 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
                     break;
 
                 case "hostname_available":
-                    print.info(!embeddedSpaces.has(data.arg as string))
                     respondSuccessful = !embeddedSpaces.has(data.arg as string);
                     break;
 
@@ -151,9 +150,15 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
                     break;
 
                 case "unbed":
-                    
-                    // TODO: Implement
-                    // TODO: Shutdown proxy on last unbed? Shutdown all option?
+                    if(!embeddedSpaces.has(data.arg as string)) {
+                        respondSuccessful = false;
+                        break;
+                    }
+
+                    embeddedSpaces.delete(data.arg as string);
+
+                    !embeddedSpaces.size
+                    && process.exit(0);
 
                     break;
 
@@ -183,12 +188,9 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
         // TODO: Handle
     });
 
-    print.enableInputRegistration();
-
     // TODO: Error handling
 
     // TODO: HTTP:80 to HTTPS:433 redirtection server?
-    // TODO: Special case (default) for ports 80/433
 }
 
 

@@ -9,7 +9,6 @@ import { parseOption, parsePositional } from "../args";
 
 import * as print from "./print";
 import { proxyIPC } from "./proxy-ipc";
-import { bootReverseProxyServer } from "./server";
 
 
 const providedCommand: string = parsePositional();
@@ -24,11 +23,11 @@ switch(providedCommand) {
         break;
     
     case "start":
-        embedSpace();
+        embedApp();
         break;
         
     case "stop":
-        // ...
+        unbedApp();
         break;
         
     case "monitor":
@@ -46,7 +45,7 @@ switch(providedCommand) {
 }
 
 
-async function embedSpace() {
+async function embedApp() {
     const hostname: string = parseOption("hostname", "H").string ?? "localhost";    // TODO: Intepret hostname protocol if provided
     const port: number = parseOption("port", "P").number ?? 80;    // TODO: HTTP or HTTPS (80, 443)
     
@@ -59,9 +58,12 @@ async function embedSpace() {
     } catch {}
 
     const runSecure: boolean = false;   // TODO: Implement (CLI arg)
-
-    const embedApp = () => {
+    // TODO: Optional HTTPS
+    
+    const embed = async () => {
         try {
+            await proxyIPC(port, "embed", hostname);
+
             print.info(`Embedded application cluster at ${hostname}:${port}`);
         } catch(err) {
             print.info("Could not embed application to proxy:");
@@ -74,23 +76,44 @@ async function embedSpace() {
             throw 0;
         }
 
-        embedApp();
+        embed();
     } catch {
         const proxyProcess = fork(join(__dirname, "./server"), {
             detached: true
         });
 
-        proxyProcess.on("message", (message: string) => {
+        proxyProcess.on("message", async (message: string) => {
             if(message !== "listening") return;
 
             print.info(`HTTP${runSecure ? "S": ""} server proxy started listening on :${port}`);
             // TODO: handle errors, print.error(err.message);
             
-            embedApp();
+            await embed();
+
+            process.exit(0);
         });
 
         proxyProcess.send(JSON.stringify({
             port, runSecure
         }));
+    }
+}
+
+async function unbedApp() {
+    // TODO: IDs?
+
+    const hostname: string = parseOption("hostname", "H").string ?? "localhost";
+    const port: number = parseOption("port", "P").number ?? 80;    // TODO: HTTP or HTTPS (80, 443)
+    
+    try {
+        if(!await proxyIPC(port, "unbed", hostname)) {
+            print.info(`Hostname not registered on proxy ${hostname}:${port}`);
+
+            return;
+        }
+
+        print.info(`Unbedded application cluster from ${hostname}:${port}`);
+    } catch {
+        print.info(`No server proxy listening on :${port}`);
     }
 }
