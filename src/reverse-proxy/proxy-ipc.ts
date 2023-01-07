@@ -4,7 +4,7 @@ import devConfig from "../_config.json";
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 
 
-export function proxyIPC(port: number, command: string, arg?: string|number|boolean): Promise<boolean> {
+export function proxyIPC(port: number, command: string, arg?: unknown): Promise<boolean> {
     return new Promise((resolve, reject) => {
         const client: Socket = createUnixSocketConnection(`${devConfig.socketNamePrefix}${port}.sock`);
         

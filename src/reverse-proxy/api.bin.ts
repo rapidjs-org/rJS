@@ -11,9 +11,9 @@ import * as print from "./print";
 import { proxyIPC } from "./proxy-ipc";
 
 
-const providedCommand: string = parsePositional();
+const command: string = parsePositional(0);
 
-switch(providedCommand) {
+switch(command) {
 
     case "help":
         console.log(
@@ -23,11 +23,22 @@ switch(providedCommand) {
         break;
     
     case "start":
-        embedApp();
+        const shellApp: string = parsePositional(1);
+
+        if(!shellApp) {
+            print.error("Missing shell application argument (position 1)");
+            
+            process.exit(1);
+        }
+
+        // TODO: Check for shell app module validity
+
+        embedApp(shellApp);
         break;
         
     case "stop":
         unbedApp();
+        // TODO: Socket communication fail kill fallback? Double-check?
         break;
         
     case "monitor":
@@ -37,36 +48,46 @@ switch(providedCommand) {
         
     default:
         print.info(
-            providedCommand
-            ? `Unknown command '${providedCommand}'`
+            command
+            ? `Unknown command '${command}'`
             : "No command provided"
         );
+
+        process.exit(1);
 
 }
 
 
-async function embedApp() {
+async function embedApp(shellApp: string) {
     const hostname: string = parseOption("hostname", "H").string ?? "localhost";    // TODO: Intepret hostname protocol if provided
     const port: number = parseOption("port", "P").number ?? 80;    // TODO: HTTP or HTTPS (80, 443)
     
     try {
-        if(!await proxyIPC(port, "hostname_available", hostname)) {
-            print.info(`Hostname already in use on proxy ${hostname}:${port}`);
+        if(!await proxyIPC(port, "shell_running", shellApp)) {
+            print.info("Port is occupied by proxy running a different shell application");  // TODO: Response value
 
             return;
         }
+
+        try {
+            if(!await proxyIPC(port, "hostname_available", hostname)) {
+                print.info(`Hostname already in use on proxy ${hostname}:${port}`);
+    
+                return;
+            }
+        } catch {}
     } catch {}
 
     const runSecure: boolean = false;   // TODO: Implement (CLI arg)
     // TODO: Optional HTTPS
-    
+
     const embed = async () => {
         try {
             await proxyIPC(port, "embed", hostname);
 
             print.info(`Embedded application cluster at ${hostname}:${port}`);
         } catch(err) {
-            print.info("Could not embed application to proxy:");
+            print.error("Could not embed application to proxy:");
             print.error(err.message);
         }
     };
@@ -83,7 +104,11 @@ async function embedApp() {
         });
 
         proxyProcess.on("message", async (message: string) => {
-            if(message !== "listening") return;
+            if(message !== "listening") {
+                print.error(`Error trying to start server proxy: ${message}`);
+
+                return;
+            }
 
             print.info(`HTTP${runSecure ? "S": ""} server proxy started listening on :${port}`);
             // TODO: handle errors, print.error(err.message);
@@ -94,7 +119,7 @@ async function embedApp() {
         });
 
         proxyProcess.send(JSON.stringify({
-            port, runSecure
+            port, shellApp, runSecure
         }));
     }
 }
@@ -107,13 +132,13 @@ async function unbedApp() {
     
     try {
         if(!await proxyIPC(port, "unbed", hostname)) {
-            print.info(`Hostname not registered on proxy ${hostname}:${port}`);
+            print.error(`Hostname not registered on proxy ${hostname}:${port}`);
 
             return;
         }
 
         print.info(`Unbedded application cluster from ${hostname}:${port}`);
     } catch {
-        print.info(`No server proxy listening on :${port}`);
+        print.error(`No server proxy listening on :${port}`);
     }
 }

@@ -21,14 +21,17 @@ import * as print from "./print";
 process.on("message", (message: string) => {
     const data: {
         port: number;
+        shellApp: string;
         runSecure: boolean;
     } = JSON.parse(message);
 
-    bootReverseProxyServer(data.port, data.runSecure)
+    bootReverseProxyServer(data.port, data.shellApp, data.runSecure)
 });
 
 
 const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
+
+let activeShellApp: string;
 
 
 function handleSocketConnection(socket: Socket, runSecure: boolean) {
@@ -95,7 +98,9 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
 
 
 // TODO: Limiters here?
-export function bootReverseProxyServer(port: number, runSecure: boolean) {
+export function bootReverseProxyServer(port: number, shellApp: string, runSecure: boolean) {  // TODO: Retireve object as IPC arg
+    activeShellApp = shellApp;
+
     let remainingListeningEventsForBubbleup: number = 2;
     const bubbleUp = () => {
         (--remainingListeningEventsForBubbleup === 0)
@@ -115,6 +120,13 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
     .on("connection", (socket: Socket) => {
         socket.once("readable", () => handleSocketConnection(socket, runSecure));
     })
+    .once("error", (err: { code: string }) => {
+        process.send(err.code);
+
+        process.exit(0);
+
+        // TODO: Recover?
+    })
     .listen(port, bubbleUp);
 
     rmSync(`${devConfig.socketNamePrefix}${port}.sock`, {
@@ -125,12 +137,16 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
         stream.on("data", (message: Buffer) => {
             const data: {
                 command: string;
-                arg: string|number|boolean;
+                arg: unknown;
             } = JSON.parse(message.toString());
 
             let respondSuccessful: boolean = true;
 
             switch(data.command) {
+
+                case "shell_running":
+                    respondSuccessful = (activeShellApp === data.arg);
+                    break;
 
                 case "port_available":
                     respondSuccessful = false;
@@ -141,7 +157,7 @@ export function bootReverseProxyServer(port: number, runSecure: boolean) {
                     break;
 
                 case "embed":
-                    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"));
+                    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), activeShellApp);
 
                     processPool.init();
                     

@@ -139,10 +139,9 @@ function colorMessage(message: string) {
 }
 
 function logToFile(message: unknown, logDir?: string) {
-    logDir = process.cwd(); // TODO: Remove after debug
     if(!logDir) {
         return;
-    }
+    }   // TODO: How to log?
     
     message = stringify(message)
     .replace(/\x1b\[[0-9;]+m/g, "");    // Remove possibly occurring ANSII formatting codes

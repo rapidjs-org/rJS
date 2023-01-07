@@ -22,9 +22,10 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
 
     private readonly childProcessModulePath: string;
     private readonly env: ISpaceEnv;
+    private readonly activeShellApp: string;
     private readonly logDir: string;
 
-    constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(childProcessModulePath: string, activeShellApp: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
         const logDirPath: string = parseOption("status", "S").string;
@@ -49,6 +50,7 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
         this.env = {
             PATH, MODE
         };
+        this.activeShellApp = activeShellApp;
     }
     
     protected createWorker(): ChildProcess {        
@@ -57,8 +59,9 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
             detached: false,
             silent: true,
             env: {
+                // TODO: Provide with active shell app
                 MODE: JSON.stringify(this.env.MODE),
-                PATH: this.env.PATH     // TODO: How to handkle uniformously?
+                PATH: this.env.PATH     // TODO: How to handle uniformously?
             }
         });
 

@@ -27,6 +27,7 @@ process.on("uncaughtException", (err: Error) => {
 });
 
 
+// TODO: Implement activeShellApp
 const rateLimiter: RateLimiter<string> = new RateLimiter(ENV.MODE.DEV ? Infinity : SPACE_CONFIG.data.limit.requestsPerClient);
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
 
@@ -40,7 +41,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         .shift()
         .trim()
     : socket.remoteAddress;
-        
+
     if(!rateLimiter.grantsAccess(clientIP)) {
         end(socket, 429);
 
