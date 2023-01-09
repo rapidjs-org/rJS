@@ -4,9 +4,9 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
 import { TResponseOverload } from "../types";
+import { MODE } from "../MODE";
+import { SPACE_CONFIG } from "../config/SPACE_CONFIG";
 
-import { ENV } from "./context/ENV";
-import { SPACE_CONFIG } from "./context/SPACE_CONFIG";
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
 import { RateLimiter } from "./RateLimiter";
 import { respond } from "./respond";
@@ -28,7 +28,7 @@ process.on("uncaughtException", (err: Error) => {
 
 
 // TODO: Implement activeShellApp
-const rateLimiter: RateLimiter<string> = new RateLimiter(ENV.MODE.DEV ? Infinity : SPACE_CONFIG.data.limit.requestsPerClient);
+const rateLimiter: RateLimiter<string> = new RateLimiter(MODE.DEV ? Infinity : SPACE_CONFIG.data.limit.requestsPerClient);
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
 
 threadPool.init();
@@ -94,7 +94,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         return;
     }
 
-    const host: string = [ iReq.headers["host"] ].flat()[0]
+    const host: string = [ iReq.headers["host"] ].flat()[0] // TODO: Get upon start up
     .replace(/^(https?:\/\/)?/, `http${SPACE_CONFIG.data.tls ? "s" : ""}://`)   // TLS sufficient? HTTPS embed requirement, so should be present
     .replace(/(:[0-9]+)?$/, `:${SPACE_CONFIG.data.port ?? 80}`);    // TODO: Default?
     

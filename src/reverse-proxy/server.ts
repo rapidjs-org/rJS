@@ -12,7 +12,6 @@ import { THeaders } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
 
 import { ChildProcessPool } from "./ProcessPool";
-import * as print from "./print";
 
 
 // TODO: HTTP/2 with master streams

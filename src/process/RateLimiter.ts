@@ -1,10 +1,5 @@
 import { AsyncMutex } from "../AsyncMutex";
-/* import { ENV } from "./ENV"; */    // TODO: Eval upon given env / space only
-
-const ENV = {
-    PATH: process.cwd(),
-    MODE: { DEV: false }
-};  // TODO: Remove after suitable re-implementation
+import { MODE } from "../MODE";
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?
@@ -24,7 +19,7 @@ export class RateLimiter<I> {
     private currentWindow: TRate<I> = new Map();
 
     constructor(limit: number = Infinity, windowSize = 60000) {
-        this.limit = ENV.MODE.DEV ? Infinity : limit;
+        this.limit = MODE.DEV ? Infinity : limit;
         this.windowSize = windowSize;
 
         this.shift();

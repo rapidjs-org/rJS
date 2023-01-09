@@ -1,8 +1,6 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
-import { ENV } from "../context/ENV";
-
 import { LimitDictionary } from "./LimitDictionary";
 
 
@@ -26,11 +24,11 @@ export class VFS extends LimitDictionary<string, IFileStamp, IFileReference> {
             return normalize(path);
         });
 
-        this.root = normalize(join(ENV.PATH, root));
+        this.root = normalize(join(process.cwd(), root));
             
-        // Error if out of ENV.PATH (information hiding / security)
-        if(this.root.slice(0, ENV.PATH.length) !== ENV.PATH) {
-            throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${ENV.PATH}...',\ngiven\t\t'${this.root}'.`);
+        // Error if out of process.cwd() (information hiding / security)
+        if(this.root.slice(0, process.cwd().length) !== process.cwd()) {
+            throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${process.cwd()}...',\ngiven\t\t'${this.root}'.`);
         }
         // TODO: Generic out of PATH utility (reuse e.g. for log dir)
     }

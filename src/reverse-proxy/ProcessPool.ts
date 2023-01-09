@@ -7,8 +7,8 @@ import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import { parseOption } from "../args";
 
-import { PATH } from "./PATH";
-import { MODE } from "./MODE";
+import { PATH } from "../PATH";
+import { MODE } from "../MODE";
 import * as print from "./print";
 
 
@@ -54,15 +54,10 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
     }
     
     protected createWorker(): ChildProcess {        
-        const childProcess = fork(this.childProcessModulePath, {
+        const childProcess = fork(this.childProcessModulePath, process.argv.slice(2), {
             cwd: process.cwd(), // TODO: Set according to project
             detached: false,
-            silent: true,
-            env: {
-                // TODO: Provide with active shell app
-                MODE: JSON.stringify(this.env.MODE),
-                PATH: this.env.PATH     // TODO: How to handle uniformously?
-            }
+            silent: true
         });
 
 		childProcess.stdout.on("data", (message: Buffer) => {
