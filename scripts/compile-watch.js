@@ -16,15 +16,15 @@ log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 // Create /debug files directory
 const shmPath = {
-    source: join(__dirname, "../src/shared-memory"),
-    debug: join(__dirname, "../debug/shared-memory")
+    source: join(__dirname, "../src/process/shared-memory"),
+    debug: join(__dirname, "../debug/process/shared-memory")
 };
 
 makeDir(shmPath.debug);
 
 const helpTextPath = {
-    source: join(__dirname, "../src/reverse-proxy/help.txt"),
-    debug: join(__dirname, "../debug/reverse-proxy/help.txt")
+    source: join(__dirname, "../src/reverse-proxy/_help.txt"),
+    debug: join(__dirname, "../debug/reverse-proxy/_help.txt")
 };
 
 makeDir(dirname(helpTextPath.debug));
@@ -100,8 +100,9 @@ function compileCPP() {
     logBadge("C++", [ 220, 65, 127 ]);
 
     try {
+        console.log(join(shmPath.source))
         execSync("node-gyp build", {
-            cwd: shmPath,
+            cwd: join(shmPath.source),
             stdio: "inherit"
         });
         
@@ -111,7 +112,9 @@ function compileCPP() {
         });
         copyFileSync(join(shmPath.source, "./build/Release/shared_memory.node"),
                      destPath);
-    } catch(err) { /**/ }
+    } catch(err) {
+        console.log(err);
+    }
 
     tsLogGroupOpen = false;
 }

@@ -1,19 +1,18 @@
-import devConfig from "../_config.json";
-
-
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 
+import { locateSocket } from "./locate-socket";
 
-export function proxyIPC(port: number, command: string, arg?: unknown): Promise<boolean> {
+
+export function proxyIPC(command: string, port?: number, arg?: unknown): Promise<unknown> {
     return new Promise((resolve, reject) => {
-        const client: Socket = createUnixSocketConnection(`${devConfig.socketNamePrefix}${port}.sock`);
+        const client: Socket = createUnixSocketConnection(locateSocket(port));
         
         client.write(JSON.stringify({
             command, arg
         }));
-
+        
         client.on("data", (message: Buffer) => {
-            resolve(message.toString() === "1");
+            resolve(JSON.parse(message.toString()));
             
             client.end();
         });

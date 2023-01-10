@@ -7,7 +7,7 @@ import { IResponse, IHighlevelCookieOut } from "../interfaces";
 import { THeaders, TResponseOverload } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
 
-import { SPACE_CONFIG } from "../config/SPACE_CONFIG";
+import { CONFIG } from "../space/CONFIG";
 
 
 export function respond(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders): void {
@@ -40,8 +40,8 @@ export function respond(socket: Socket, sResOverload: TResponseOverload, priorit
     }
 
     // Default headers (prioritized)
-    dRes.setHeader("Cache-Control", SPACE_CONFIG.data.cache.client && `public, max-age=${SPACE_CONFIG.data.cache.client}, must-revalidate`);
-	// dRes.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${SPACE_CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
+    dRes.setHeader("Cache-Control", CONFIG.data.cache.client && `public, max-age=${CONFIG.data.cache.client}, must-revalidate`);
+	// dRes.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
 	dRes.setHeader("Content-Length", String(contentLength));
     dRes.hasHeader("Content-Type")
     && dRes.setHeader("X-Content-Type-Options", "nosniff");
@@ -69,7 +69,7 @@ export function respond(socket: Socket, sResOverload: TResponseOverload, priorit
     }
     
     // TODO: Note that string messages are compressed
-    dRes.statusCode = !SPACE_CONFIG.data.concealErrorStatus ? sRes.status : null;
+    dRes.statusCode = !CONFIG.data.concealErrorStatus ? sRes.status : null;
 
     dRes.end(sRes.message);
 

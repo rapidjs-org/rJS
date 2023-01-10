@@ -1,15 +1,6 @@
 import { THeaders } from "./types";
 
 
-export interface ISpaceEnv {
-    PATH: string;
-    MODE: {
-        DEV: boolean;
-        PROD: boolean;
-    };
-}
-
-
 export interface IIntermediateRequest {
     method: string;
     url: string;
@@ -17,6 +8,7 @@ export interface IIntermediateRequest {
 }
 
 export interface IRequest {
+    ip: string;
     method: string;
     url: IHighlevelURL;
     headers: THeaders;

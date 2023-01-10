@@ -1,6 +1,3 @@
-import devConfig from "../_config.json";
-
-
 import { join } from "path";
 import { rmSync } from "fs";
 import { Socket, createServer as createUnixSocketServer } from "net";
@@ -10,28 +7,41 @@ import { createServer as createHTTPSServer } from "https";
 import { IIntermediateRequest } from "../interfaces";
 import { THeaders } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
+import { MODE } from "../space/MODE";
+import { SHELL } from "../space/SHELL";
+import { CONFIG } from "../space/CONFIG";
 
-import { ChildProcessPool } from "./ProcessPool";
+import { ProcessPool } from "./ProcessPool";
+import { RateLimiter } from "./RateLimiter";
+import { locateSocket } from "./locate-socket";
+import { PORT } from "./PORT";
 
 
 // TODO: HTTP/2 with master streams
 
 
-process.on("message", (message: string) => {
-    const data: {
-        port: number;
-        shellApp: string;
-        runSecure: boolean;
-    } = JSON.parse(message);
+interface ISpaceEmbed {
+    processPool: ProcessPool;
+    rateLimiter: RateLimiter<string>;
+}
 
-    bootReverseProxyServer(data.port, data.shellApp, data.runSecure)
+
+const embeddedSpaces: Map<string, ISpaceEmbed> = new Map(); // TODO: Multiple hostnames for a single web spacw
+
+
+process.on("message", (message: string) => {
+    if(message !== "start") return;
+
+    startReverseProxyServer()
 });
 
 
-const embeddedSpaces: Map<string, ChildProcessPool> = new Map();
-
-let activeShellApp: string;
-
+function end(socket: Socket, status: number) {
+    const dRes: DynamicResponse = new DynamicResponse(socket);
+    
+    dRes.statusCode = status;
+    dRes.end();
+}
 
 function handleSocketConnection(socket: Socket, runSecure: boolean) {
     let requestBuffer: string = "";
@@ -62,24 +72,32 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
     requestDataLines
     .forEach((dataLine: string) => {
         const [ key, value ] = dataLine.split(":");
-        
+
         headers[key.trim().toLowerCase()] = value.trim();
     });
 
     let hostname: string = [ headers["host"] ].flat()[0];
+    
+    const clientIP: string = socket.remoteAddress;
+    
+    if(!embeddedSpaces.has(hostname)) {
+        end(socket, 404);
+
+        return;
+    }
+
+    const effectiveSpace = embeddedSpaces
+    .get(hostname);
+
+    if(!effectiveSpace.rateLimiter.grantsAccess(clientIP)) {
+        end(socket, 429);
+        
+        return;
+    }
 
     const url: string = `http${runSecure ? "s" : ""}://${hostname}${meta[1]}`;
 
     hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
-
-    if(!embeddedSpaces.has(hostname)) {
-        const dRes: DynamicResponse = new DynamicResponse(socket);
-        
-        dRes.statusCode = 404;
-        dRes.end();
-
-        return;
-    }
     
     const iReq: IIntermediateRequest = {
         /* httpVersion: meta[2].split("/")[1], */
@@ -88,23 +106,22 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
         headers: headers
     };
 
-    embeddedSpaces
-    .get(hostname)
+    effectiveSpace
+    .processPool
     .assign({
         iReq, socket
     });
 }
 
-
 // TODO: Limiters here?
-export function bootReverseProxyServer(port: number, shellApp: string, runSecure: boolean) {  // TODO: Retireve object as IPC arg
-    activeShellApp = shellApp;
-
+export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
     let remainingListeningEventsForBubbleup: number = 2;
     const bubbleUp = () => {
         (--remainingListeningEventsForBubbleup === 0)
         && process.send("listening");        // TODO: Notify up
     };
+
+    const runSecure: boolean = false;   // TODO: From host or option
 
     const createWebServer: (options: ServerOptions, requestListener?: RequestListener) => Server
     = runSecure
@@ -126,71 +143,92 @@ export function bootReverseProxyServer(port: number, shellApp: string, runSecure
 
         // TODO: Recover?
     })
-    .listen(port, bubbleUp);
+    .listen(PORT, bubbleUp);
 
-    rmSync(`${devConfig.socketNamePrefix}${port}.sock`, {
+    rmSync(locateSocket(), {
         force: true
     });
 
-    const unixSocketServer = createUnixSocketServer((stream) => {
-        stream.on("data", (message: Buffer) => {
+    const unixSocketServer = createUnixSocketServer((socket: Socket) => {
+        socket.on("data", (message: Buffer) => {
             const data: {
                 command: string;
-                arg: unknown;
+                arg: string;
             } = JSON.parse(message.toString());
 
-            let respondSuccessful: boolean = true;
+            let response: unknown = false;
 
             switch(data.command) {
 
                 case "shell_running":
-                    respondSuccessful = (activeShellApp === data.arg);
+                    response = SHELL
+                    .match(/(\/)?(@?[a-z0-9_-]+\/)?[a-z0-9_-]+$/i)[0]
+                    .replace(/^\//, ".../");
+
                     break;
 
-                case "port_available":
-                    respondSuccessful = false;
+                case "PORT_available":
+                    response = false;
+
                     break;
 
                 case "hostname_available":
-                    respondSuccessful = !embeddedSpaces.has(data.arg as string);
+                    response = !embeddedSpaces.has(data.arg);
+                    
                     break;
 
                 case "embed":
-                    const processPool: ChildProcessPool = new ChildProcessPool(join(__dirname, "../process/process"), activeShellApp);
+                    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"));
 
                     processPool.init();
                     
-                    embeddedSpaces.set(data.arg as string, processPool);
+                    embeddedSpaces.set(data.arg, {
+                        processPool,
+                        rateLimiter: new RateLimiter(MODE.DEV ? Infinity : CONFIG.data.limit.requestsPerClient)
+                    });
+                    
+                    response = true;
 
                     break;
 
                 case "unbed":
-                    if(!embeddedSpaces.has(data.arg as string)) {
-                        respondSuccessful = false;
+                    if(!embeddedSpaces.has(data.arg)) {
                         break;
                     }
 
-                    embeddedSpaces.delete(data.arg as string);
+                    embeddedSpaces.delete(data.arg);
 
                     !embeddedSpaces.size
-                    && process.exit(0);
+                    && setImmediate(() => process.exit(0));
+                    
+                    response = true;
 
                     break;
+                
+                case "stop":
+                    setImmediate(() => process.exit(0));
+                    
+                    response = true;
 
-                default:
-                    respondSuccessful = false;
+                    break;
+                
+                case "retrieve_hostnames":
+                    response = Array.from(embeddedSpaces.keys());
+
+                    break;
                 
             }
+            
+            socket.write(JSON.stringify(response ?? false));
 
-            stream.write(respondSuccessful ? "1" : "0");
+            socket.destroy();
         });
-        // Do something with the client connection
     })
-    .listen(`${devConfig.socketNamePrefix}${port}.sock`, bubbleUp);
+    .listen(locateSocket(), bubbleUp);
     
     const cleanUpUnixSockets = (code: number) => {
         unixSocketServer.close();
-        
+                
         process.exit(code);
     };
     process.on("SIGINT", cleanUpUnixSockets);
@@ -207,6 +245,3 @@ export function bootReverseProxyServer(port: number, shellApp: string, runSecure
 
     // TODO: HTTP:80 to HTTPS:433 redirtection server?
 }
-
-
-// TODO: Remove DEV from ENV (and use specific dev server?); or keep for staging environments?

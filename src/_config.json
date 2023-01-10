@@ -1,5 +1,6 @@
 {
     "appNameShort": "rJS",
     "appNameLong": "rapidJS",
-    "socketNamePrefix": "/tmp/rjs.proxy."
+    "socketDir": "/tmp",
+    "socketNamePrefix": "rjs.proxy."
 }

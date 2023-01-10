@@ -1,6 +1,6 @@
 import { normalize, join, isAbsolute } from "path";
 
-import { parseOption } from "./args";
+import { parseOption } from "../args";
 
 
 const wdPath: string = process.cwd();

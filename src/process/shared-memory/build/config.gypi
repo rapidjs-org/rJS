@@ -350,16 +350,6 @@
     "want_separate_host_toolset": 0,
     "xcode_version": "12.0",
     "nodedir": "/Users/thassilo/Library/Caches/node-gyp/16.14.1",
-    "standalone_static_library": 1,
-    "metrics_registry": "https://registry.npmjs.org/",
-    "global_prefix": "/usr/local",
-    "local_prefix": "/Users/thassilo/Desktop/rapidjs/core",
-    "globalconfig": "/usr/local/etc/npmrc",
-    "userconfig": "/Users/thassilo/.npmrc",
-    "init_module": "/Users/thassilo/.npm-init.js",
-    "node_gyp": "/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js",
-    "cache": "/Users/thassilo/.npm",
-    "user_agent": "npm/8.5.4 node/v16.14.1 darwin x64 workspaces/false",
-    "prefix": "/usr/local"
+    "standalone_static_library": 1
   }
 }

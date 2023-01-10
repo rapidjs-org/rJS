@@ -397,7 +397,7 @@ class MacTool:
                     "--minimum-deployment-target",
                     os.environ["IPHONEOS_DEPLOYMENT_TARGET"],
                     "--compile",
-                    os.path.abspath(os.environ["CONTENTS_FOLDER_ENV.PATH"]),
+                    os.path.abspath(os.environ["CONTENTS_FOLDER_PATH"]),
                 ]
             )
         else:
@@ -410,7 +410,7 @@ class MacTool:
                     "--minimum-deployment-target",
                     os.environ["MACOSX_DEPLOYMENT_TARGET"],
                     "--compile",
-                    os.path.abspath(os.environ["UNLOCALIZED_RESOURCES_FOLDER_ENV.PATH"]),
+                    os.path.abspath(os.environ["UNLOCALIZED_RESOURCES_FOLDER_PATH"]),
                 ]
             )
         if keys:
@@ -483,7 +483,7 @@ class MacTool:
         )
         target_path = os.path.join(
             os.environ["BUILT_PRODUCTS_DIR"],
-            os.environ["CONTENTS_FOLDER_ENV.PATH"],
+            os.environ["CONTENTS_FOLDER_PATH"],
             "embedded.mobileprovision",
         )
         shutil.copy2(source_path, target_path)
@@ -630,7 +630,7 @@ class MacTool:
       Value of CFBundleIdentifier in the Info.plist located in the bundle.
     """
         info_plist_path = os.path.join(
-            os.environ["TARGET_BUILD_DIR"], os.environ["INFOPLIST_ENV.PATH"]
+            os.environ["TARGET_BUILD_DIR"], os.environ["INFOPLIST_PATH"]
         )
         info_plist_data = self._LoadPlistMaybeBinary(info_plist_path)
         return info_plist_data["CFBundleIdentifier"]

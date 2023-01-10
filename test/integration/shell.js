@@ -10,6 +10,8 @@ module.exports = (shellAPI) => {
      * Request handler interface.
      */
     return (sReq) => {
+        console.log(sReq);
+        
         return (sReq.url.pathname === "/foo.bar")
         ? {
             status: 200,

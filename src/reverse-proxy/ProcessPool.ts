@@ -3,12 +3,11 @@ import { Socket } from "net";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
-import { IIntermediateRequest, ISpaceEnv } from "../interfaces";
+import { IIntermediateRequest } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import { parseOption } from "../args";
+import { PATH } from "../space/PATH";
 
-import { PATH } from "../PATH";
-import { MODE } from "../MODE";
 import * as print from "./print";
 
 
@@ -18,17 +17,15 @@ interface IChildData {
 }
 
 
-export class ChildProcessPool extends WorkerPool<IChildData, void> {
+export class ProcessPool extends WorkerPool<IChildData, void> {
 
-    private readonly childProcessModulePath: string;
-    private readonly env: ISpaceEnv;
-    private readonly activeShellApp: string;
     private readonly logDir: string;
+    private readonly childProcessModulePath: string;
 
-    constructor(childProcessModulePath: string, activeShellApp: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
-        const logDirPath: string = parseOption("status", "S").string;
+        const logDirPath: string = parseOption("logs", "L").string;
         if(logDirPath) {
             this.logDir = join(PATH, logDirPath);
 
@@ -47,10 +44,6 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
         // TODO: logDir to ENV?
 
         this.childProcessModulePath = childProcessModulePath;
-        this.env = {
-            PATH, MODE
-        };
-        this.activeShellApp = activeShellApp;
     }
     
     protected createWorker(): ChildProcess {        
@@ -59,7 +52,7 @@ export class ChildProcessPool extends WorkerPool<IChildData, void> {
             detached: false,
             silent: true
         });
-
+        
 		childProcess.stdout.on("data", (message: Buffer) => {
 			print.info(String(message).replace(/\n$/, ""), this.logDir);
 		});

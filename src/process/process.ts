@@ -4,11 +4,9 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
 import { TResponseOverload } from "../types";
-import { MODE } from "../MODE";
-import { SPACE_CONFIG } from "../config/SPACE_CONFIG";
+import { CONFIG } from "../space/CONFIG";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
-import { RateLimiter } from "./RateLimiter";
 import { respond } from "./respond";
 
 
@@ -28,8 +26,8 @@ process.on("uncaughtException", (err: Error) => {
 
 
 // TODO: Implement activeShellApp
-const rateLimiter: RateLimiter<string> = new RateLimiter(MODE.DEV ? Infinity : SPACE_CONFIG.data.limit.requestsPerClient);
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
+
 
 threadPool.init();
 
@@ -42,13 +40,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         .trim()
     : socket.remoteAddress;
 
-    if(!rateLimiter.grantsAccess(clientIP)) {
-        end(socket, 429);
-
-        return;
-    }
-
-    if(iReq.url.length > SPACE_CONFIG.data.limit.urlLength) {
+    if(iReq.url.length > CONFIG.data.limit.urlLength) {
         end(socket, 414);
 
         return;
@@ -88,15 +80,15 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
         }
     }
 
-    if(bodyString?.length >= SPACE_CONFIG.data.limit.payloadSize) {
+    if(bodyString?.length >= CONFIG.data.limit.payloadSize) {
         end(socket, 413);
 
         return;
     }
 
     const host: string = [ iReq.headers["host"] ].flat()[0] // TODO: Get upon start up
-    .replace(/^(https?:\/\/)?/, `http${SPACE_CONFIG.data.tls ? "s" : ""}://`)   // TLS sufficient? HTTPS embed requirement, so should be present
-    .replace(/(:[0-9]+)?$/, `:${SPACE_CONFIG.data.port ?? 80}`);    // TODO: Default?
+    .replace(/^(https?:\/\/)?/, `http${CONFIG.data.tls ? "s" : ""}://`)   // TLS sufficient? HTTPS embed requirement, so should be present
+    .replace(/(:[0-9]+)?$/, `:${CONFIG.data.port ?? 80}`);    // TODO: Default?
     
     const dynamicURL: URL = new URL(iReq.url);
     const highlevelURL: IHighlevelURL = {
@@ -164,6 +156,8 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
     });
 
     const sReq: IRequest = {
+        ip: clientIP,
+
         method: method,
         url: highlevelURL,
 

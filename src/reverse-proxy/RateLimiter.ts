@@ -1,5 +1,5 @@
 import { AsyncMutex } from "../AsyncMutex";
-import { MODE } from "../MODE";
+import { MODE } from "../space/MODE";
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?
@@ -55,4 +55,3 @@ export class RateLimiter<I> {
 }
 
 // Sliding window with peak adjustments?
-// TODO: All classes inherit from EventEmitter to bubble events up?

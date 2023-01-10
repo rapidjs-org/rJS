@@ -47,7 +47,6 @@ CXXFLAGS.target ?= $(CPPFLAGS) $(CXXFLAGS)
 LINK.target ?= $(LINK)
 LDFLAGS.target ?= $(LDFLAGS)
 AR.target ?= $(AR)
-PLI.target ?= pli
 
 # C++ apps need to be linked with g++.
 LINK ?= $(CXX.target)
@@ -61,7 +60,6 @@ CXXFLAGS.host ?= $(CPPFLAGS_host) $(CXXFLAGS_host)
 LINK.host ?= $(CXX.host)
 LDFLAGS.host ?= $(LDFLAGS_host)
 AR.host ?= ar
-PLI.host ?= pli
 
 # Define a dir function that can handle spaces.
 # http://www.gnu.org/software/make/manual/make.html#Syntax-of-Functions
@@ -163,9 +161,6 @@ quiet_cmd_copy = COPY $@
 # send stderr to /dev/null to ignore messages when linking directories.
 cmd_copy = ln -f "$<" "$@" 2>/dev/null || (rm -rf "$@" && cp -af "$<" "$@")
 
-quiet_cmd_symlink = SYMLINK $@
-cmd_symlink = ln -sf "$<" "$@"
-
 quiet_cmd_alink = LIBTOOL-STATIC $@
 cmd_alink = rm -f $@ && ./gyp-mac-tool filter-libtool libtool $(GYP_LIBTOOLFLAGS) -static -o $@ $(filter %.o,$^)
 
@@ -186,7 +181,7 @@ escape_quotes = $(subst ','\'',$(1))
 # This comment is here just to include a ' to unconfuse syntax highlighting.
 # Define an escape_vars function to escape '$' variable syntax.
 # This allows us to read/write command lines with shell variables (e.g.
-# $LD_LIBRARY_ENV.PATH), without triggering make substitution.
+# $LD_LIBRARY_PATH), without triggering make substitution.
 escape_vars = $(subst $$,$$$$,$(1))
 # Helper that expands to a shell command to echo a string exactly as it is in
 # make. This uses printf instead of echo because printf's behaviour with respect
@@ -331,8 +326,8 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
-cmd_regen_makefile = cd $(srcdir); /Users/thassilo/Desktop/rapidjs/core/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/Users/thassilo/Library/Caches/node-gyp/16.14.1" "-Dnode_gyp_dir=/Users/thassilo/Desktop/rapidjs/core/node_modules/node-gyp" "-Dnode_lib_file=/Users/thassilo/Library/Caches/node-gyp/16.14.1/<(target_arch)/node.lib" "-Dmodule_root_dir=/Users/thassilo/Desktop/rapidjs/core/src/shared-memory" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/Users/thassilo/Desktop/rapidjs/core/src/shared-memory/build/config.gypi -I/Users/thassilo/Desktop/rapidjs/core/node_modules/node-gyp/addon.gypi -I/Users/thassilo/Library/Caches/node-gyp/16.14.1/include/node/common.gypi "--toplevel-dir=." binding.gyp
-Makefile: $(srcdir)/binding.gyp $(srcdir)/build/config.gypi $(srcdir)/../../../../../Library/Caches/node-gyp/16.14.1/include/node/common.gypi $(srcdir)/../../node_modules/node-gyp/addon.gypi
+cmd_regen_makefile = cd $(srcdir); /usr/local/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/Users/thassilo/Library/Caches/node-gyp/16.14.1" "-Dnode_gyp_dir=/usr/local/lib/node_modules/node-gyp" "-Dnode_lib_file=/Users/thassilo/Library/Caches/node-gyp/16.14.1/<(target_arch)/node.lib" "-Dmodule_root_dir=/Users/thassilo/Desktop/rapidjs/core/src/process/shared-memory" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/Users/thassilo/Desktop/rapidjs/core/src/process/shared-memory/build/config.gypi -I/usr/local/lib/node_modules/node-gyp/addon.gypi -I/Users/thassilo/Library/Caches/node-gyp/16.14.1/include/node/common.gypi "--toplevel-dir=." binding.gyp
+Makefile: $(srcdir)/binding.gyp $(srcdir)/../../../../../../Library/Caches/node-gyp/16.14.1/include/node/common.gypi $(srcdir)/build/config.gypi $(srcdir)/../../../../../../../../usr/local/lib/node_modules/node-gyp/addon.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included

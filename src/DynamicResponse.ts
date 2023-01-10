@@ -48,6 +48,7 @@ export class DynamicResponse {
         this.socket.write(data.join("\r\n"));
 
         this.socket.end();
+        this.socket.destroy();  // TODO: Reuse?
     }
 
 }

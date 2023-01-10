@@ -16,6 +16,7 @@ export class ThreadPool extends WorkerPool<IRequest, IResponse> {
 
     protected createWorker(): Thread {
         const thread = new Thread(this.threadModulePath, {
+            argv: process.argv.slice(2),
             env: SHARE_ENV,
             workerData: null    // TODO: How to utilize?
         });

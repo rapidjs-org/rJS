@@ -6,12 +6,9 @@ const devConfig = {
 import { join } from "path";
 import { existsSync } from "fs";
 
-/* import { ENV } from "./ENV"; */    // TODO: Eval upon given env / space only
+import { MODE } from "./space/MODE";
+import { PATH } from "./space/PATH";
 
-const ENV = {
-    PATH: process.cwd(),
-    MODE: {}
-};  // TODO: Remove after suitable re-implementation
 
 // eslint-disable-next-line no-explicit-any
 type TObject = any;
@@ -51,8 +48,8 @@ export class Config {
     public data: TObject = { limit: {}, cache: {} };   // TODO: WIP
 
     constructor(name: string|string[]) {
-        Object.keys(ENV.MODE)
-        .filter(mode => (ENV.MODE as Record<string, boolean>)[mode])
+        Object.keys(MODE)
+        .filter(mode => (MODE as Record<string, boolean>)[mode])
         .concat([ "" ])
         .reverse()
         .forEach(mode => {
@@ -63,7 +60,7 @@ export class Config {
                 fullPath: string;
             do {
                 fullName = `${name[i++]}.${devConfig.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
-                fullPath = join(ENV.PATH, `${fullName}`);
+                fullPath = join(PATH, `${fullName}`);
             } while(!existsSync(fullPath) && (i < name.length));
             
             if(!existsSync(fullPath)) {
