@@ -3,19 +3,21 @@
 import devConfig from "./_config.json";
 
 
-import { join, resolve } from "path";
+import { join } from "path";
 import { Dirent, readFileSync, readdirSync } from "fs";
 import { fork } from "child_process";
 
 import { parseOption, parsePositional } from "./args";
 import { proxyIPC } from "./reverse-proxy/proxy-ipc";
-import { PORT } from "./reverse-proxy/PORT";
+import { PORT } from "./space/PORT";
 import { SHELL } from "./space/SHELL";
 import * as print from "./reverse-proxy/print";
+import { PATH } from "./space/PATH";
+import { MODE } from "./space/MODE";
 
 
-const hostname: string = parseOption("hostname", "H").string ?? "localhost";
 const command: string = parsePositional(0);
+const hostname: string = parseOption("hostname", "H").string ?? "localhost";
 
 
 switch(command) {
@@ -77,28 +79,13 @@ async function start() {
     const hostname: string = parseOption("hostname", "H").string ?? "localhost";    // TODO: Intepret hostname protocol if provided
     const port: number = parseOption("port", "P").number ?? 80;    // TODO: HTTP or HTTPS (80, 443)
 
-    // TODO: Check hostname syntax validity
-    try {
-        const occupantShellApp = await proxyIPC("shell_running") as string;
-
-        if(occupantShellApp !== SHELL) {
-            print.error(`Port is occupied by proxy running a different shell application '${occupantShellApp}'`);  // TODO: Response value
-
-            return;
-        }
-
-        try {
-            if(!await proxyIPC("hostname_available", PORT, hostname)) {
-                print.info(`Hostname already in use on proxy ${hostname}:${port}`);
-    
-                return;
-            }
-        } catch {}
-    } catch {}
-
     const embed = async () => {
         try {
-            await proxyIPC("embed", PORT, hostname);
+            await proxyIPC("embed", PORT, {
+                mode: MODE,
+                path: PATH,
+                hostname
+            });
 
             print.info(`Embedded application cluster at ${hostname}:${port}`);
         } catch(err) {
@@ -106,10 +93,25 @@ async function start() {
             print.error(err.message);
         }
     };
-    
+
+    // TODO: Check hostname syntax validity
     try {
-        if(await proxyIPC("port_available")) {
-            throw 0;
+        const occupantShellApp = await proxyIPC("shell_running") as string;
+
+        if(occupantShellApp !== SHELL) {
+            print.error(`Port is occupied by proxy running a different shell application '${
+                occupantShellApp
+                .match(/(\/)?(@?[a-z0-9_-]+\/)?[a-z0-9_-]+$/i)[0]
+                .replace(/^\//, ".../")
+            }'`);  // TODO: Response value
+
+            return;
+        }
+
+        if(!await proxyIPC("hostname_available", PORT, hostname)) {
+            print.info(`Hostname already in use on proxy ${hostname}:${port}`);
+
+            return;
         }
 
         embed();

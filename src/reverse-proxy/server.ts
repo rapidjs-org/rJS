@@ -4,7 +4,7 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { IIntermediateRequest } from "../interfaces";
+import { ISpace, IIntermediateRequest } from "../interfaces";
 import { THeaders } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
 import { MODE } from "../space/MODE";
@@ -14,11 +14,16 @@ import { CONFIG } from "../space/CONFIG";
 import { ProcessPool } from "./ProcessPool";
 import { RateLimiter } from "./RateLimiter";
 import { locateSocket } from "./locate-socket";
-import { PORT } from "./PORT";
+import { PORT } from "../space/PORT";
 
 
 // TODO: HTTP/2 with master streams
 
+
+
+interface ISpaceInfo extends ISpace {
+    hostname: string;
+}
 
 interface ISpaceEmbed {
     processPool: ProcessPool;
@@ -153,7 +158,7 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
         socket.on("data", (message: Buffer) => {
             const data: {
                 command: string;
-                arg: string;
+                arg: unknown;
             } = JSON.parse(message.toString());
 
             let response: unknown = false;
@@ -161,28 +166,26 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
             switch(data.command) {
 
                 case "shell_running":
-                    response = SHELL
-                    .match(/(\/)?(@?[a-z0-9_-]+\/)?[a-z0-9_-]+$/i)[0]
-                    .replace(/^\//, ".../");
+                    response = SHELL;
 
                     break;
 
-                case "PORT_available":
-                    response = false;
-
-                    break;
-
-                case "hostname_available":
-                    response = !embeddedSpaces.has(data.arg);
+                case "hostname_available":  // TODO: Required? Perhaps combine with 'embed' IPC
+                    response = !embeddedSpaces.has(data.arg as string);
                     
                     break;
 
                 case "embed":
-                    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"));
+                    const spaceInfo = data.arg as ISpaceInfo;
+
+                    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"), {
+                        mode: spaceInfo.mode,
+                        path: spaceInfo.path
+                    });
 
                     processPool.init();
                     
-                    embeddedSpaces.set(data.arg, {
+                    embeddedSpaces.set(spaceInfo.hostname, {
                         processPool,
                         rateLimiter: new RateLimiter(MODE.DEV ? Infinity : CONFIG.data.limit.requestsPerClient)
                     });
@@ -192,11 +195,11 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
                     break;
 
                 case "unbed":
-                    if(!embeddedSpaces.has(data.arg)) {
+                    if(!embeddedSpaces.has(data.arg as string)) {
                         break;
                     }
 
-                    embeddedSpaces.delete(data.arg);
+                    embeddedSpaces.delete(data.arg as string);
 
                     !embeddedSpaces.size
                     && setImmediate(() => process.exit(0));
