@@ -1,5 +1,5 @@
 import { AsyncMutex } from "../AsyncMutex";
-import { MODE } from "../space/MODE";
+import { MODE } from "../MODE";
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?
@@ -8,7 +8,7 @@ import { MODE } from "../space/MODE";
 type TRate<I> = Map<I, number>;
 
 
-export class RateLimiter<I> {
+export class RateLimiter<I> {   // TODO: Shared memory or partitioned logic?
 
     private readonly rateMutex: AsyncMutex = new AsyncMutex();
     private readonly limit: number;

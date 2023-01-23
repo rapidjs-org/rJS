@@ -1,6 +1,7 @@
-export { CONFIG } from "../../space/CONFIG";
-export { MODE } from "../../space/MODE";
-export { PATH } from "../../space/PATH";
+export { MODE } from "../../MODE";
+export { PATH } from "../../PATH";
+
+export { CONFIG } from "../CONFIG";
 
 export { Cache } from "./Cache";
 export { VFS } from "./VFS";

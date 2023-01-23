@@ -7,14 +7,11 @@ import { createServer as createHTTPSServer } from "https";
 import { ISpace, IIntermediateRequest } from "../interfaces";
 import { THeaders } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
-import { MODE } from "../space/MODE";
-import { SHELL } from "../space/SHELL";
-import { CONFIG } from "../space/CONFIG";
 
 import { ProcessPool } from "./ProcessPool";
-import { RateLimiter } from "./RateLimiter";
 import { locateSocket } from "./locate-socket";
-import { PORT } from "../space/PORT";
+import { PORT } from "../PORT";
+import { SHELL } from "../SHELL";
 
 
 // TODO: HTTP/2 with master streams
@@ -25,13 +22,8 @@ interface ISpaceInfo extends ISpace {
     hostname: string;
 }
 
-interface ISpaceEmbed {
-    processPool: ProcessPool;
-    rateLimiter: RateLimiter<string>;
-}
 
-
-const embeddedSpaces: Map<string, ISpaceEmbed> = new Map(); // TODO: Multiple hostnames for a single web spacw
+const embeddedSpaces: Map<string, ProcessPool> = new Map(); // TODO: Multiple hostnames for a single web spacw
 
 
 process.on("message", (message: string) => {
@@ -83,20 +75,9 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
 
     let hostname: string = [ headers["host"] ].flat()[0];
     
-    const clientIP: string = socket.remoteAddress;
-    
     if(!embeddedSpaces.has(hostname)) {
         end(socket, 404);
 
-        return;
-    }
-
-    const effectiveSpace = embeddedSpaces
-    .get(hostname);
-
-    if(!effectiveSpace.rateLimiter.grantsAccess(clientIP)) {
-        end(socket, 429);
-        
         return;
     }
 
@@ -111,8 +92,8 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
         headers: headers
     };
 
-    effectiveSpace
-    .processPool
+    embeddedSpaces
+    .get(hostname)
     .assign({
         iReq, socket
     });
@@ -178,17 +159,14 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
                 case "embed":
                     const spaceInfo = data.arg as ISpaceInfo;
 
-                    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"), {
-                        mode: spaceInfo.mode,
+                    const processPool: ProcessPool = new ProcessPool({
+                        args: process.argv.slice(2),
                         path: spaceInfo.path
-                    });
+                    }, join(__dirname, "../process/process"));
 
                     processPool.init();
                     
-                    embeddedSpaces.set(spaceInfo.hostname, {
-                        processPool,
-                        rateLimiter: new RateLimiter(MODE.DEV ? Infinity : CONFIG.data.limit.requestsPerClient)
-                    });
+                    embeddedSpaces.set(spaceInfo.hostname, processPool);
                     
                     response = true;
 

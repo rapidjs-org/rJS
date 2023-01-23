@@ -3,10 +3,9 @@ import { Socket } from "net";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
-import { IIntermediateRequest } from "../interfaces";
+import { ISpace, IIntermediateRequest } from "../interfaces";
 import { WorkerPool } from "../WorkerPool";
 import { parseOption } from "../args";
-import { PATH } from "../space/PATH";
 
 import * as print from "./print";
 
@@ -21,13 +20,14 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
 
     private readonly logDir: string;
     private readonly childProcessModulePath: string;
+    private readonly spaceInfo: ISpace;
 
-    constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(spaceInfo: ISpace, childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
-        const logDirPath: string = parseOption("logs", "L").string;
+        const logDirPath: string = parseOption("logs", "L").string; // TODO: Project local if given as flag?
         if(logDirPath) {
-            this.logDir = join(PATH, logDirPath);
+            this.logDir = join(spaceInfo.path, logDirPath);
 
             if(!existsSync(this.logDir)) {
                 // TODO: Error; but no termination of proxy process ()
@@ -43,12 +43,13 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
         
         // TODO: logDir to ENV?
 
+        this.spaceInfo = spaceInfo;
         this.childProcessModulePath = childProcessModulePath;
     }
     
     protected createWorker(): ChildProcess {        
-        const childProcess = fork(this.childProcessModulePath, process.argv.slice(2), {
-            cwd: process.cwd(), // TODO: Set according to project
+        const childProcess = fork(this.childProcessModulePath, this.spaceInfo.args, {
+            cwd: this.spaceInfo.path,
             detached: false,
             silent: true
         });
@@ -57,7 +58,7 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
 			print.info(String(message).replace(/\n$/, ""), this.logDir);
 		});
 		childProcess.stderr.on("data", (err: Buffer) => {
-			print.error(String(err), this.logDir);   // TODO: Provide with log file dir from ENV
+			print.error(String(err), this.logDir);
 		});
         
         childProcess.on("message", (message: string) => {

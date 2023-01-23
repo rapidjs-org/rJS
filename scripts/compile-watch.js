@@ -23,8 +23,8 @@ const shmPath = {
 makeDir(shmPath.debug);
 
 const helpTextPath = {
-    source: join(__dirname, "../src/reverse-proxy/_help.txt"),
-    debug: join(__dirname, "../debug/reverse-proxy/_help.txt")
+    source: join(__dirname, "../src/bin/_help.txt"),
+    debug: join(__dirname, "../debug/bin/_help.txt")
 };
 
 makeDir(dirname(helpTextPath.debug));

@@ -7,7 +7,7 @@ import { IResponse, IHighlevelCookieOut } from "../interfaces";
 import { THeaders, TResponseOverload } from "../types";
 import { DynamicResponse } from "../DynamicResponse";
 
-import { CONFIG } from "../space/CONFIG";
+import { CONFIG } from "./CONFIG";
 
 
 export function respond(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders): void {

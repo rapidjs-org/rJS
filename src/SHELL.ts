@@ -1,6 +1,6 @@
 import { isAbsolute, join } from "path";
 
-import { parsePositional } from "../args";
+import { parsePositional } from "./args";
 
 
 let shellReference: string = parsePositional(1);

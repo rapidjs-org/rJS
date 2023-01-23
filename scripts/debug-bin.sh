@@ -1,3 +1,3 @@
 #!/bin/bash
 
-node ./debug/api.cli.js "$@"
+node ./debug/bin/api.cli.js "$@"

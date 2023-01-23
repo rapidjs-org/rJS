@@ -1,19 +1,17 @@
 import { parentPort } from "worker_threads";
 
 import { IRequest } from "../../interfaces";
-import { SHELL } from "../../space/SHELL";
+import { SHELL } from "../../SHELL";
 
 
 // TODO: Shell
 
 const shellAPI = require("./api.shell");
-const shellApp = require(SHELL)(shellAPI);    // TODO: Adapt
+const shellApp = require(SHELL)(shellAPI);
 
 
 parentPort.on("message", (sReq: IRequest) => {
     parentPort.postMessage(shellApp(sReq));
 });
 
-// TODO: Clear ENV after has been parsed?
-
-// TODO: Signal ready state?
+parentPort.postMessage(true);   // Signal ready state

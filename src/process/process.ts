@@ -4,9 +4,10 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
 import { TResponseOverload } from "../types";
-import { CONFIG } from "../space/CONFIG";
+import { CONFIG } from "./CONFIG";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
+import { RateLimiter } from "./RateLimiter";
 import { respond } from "./respond";
 
 
@@ -27,18 +28,20 @@ process.on("uncaughtException", (err: Error) => {
 
 // TODO: Implement activeShellApp
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
+const rateLimiter: RateLimiter<string> = new RateLimiter(CONFIG.data.limit.requestsPerClient);
 
 
 threadPool.init();
 
 
 process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
-    const clientIP: string = iReq.headers["x-forwarded-for"]
-    ? [ iReq.headers["x-forwarded-for"] ].flat()[0]
-        .split(/,/g)
-        .shift()
-        .trim()
-    : socket.remoteAddress;
+    const clientIP: string = socket.remoteAddress;
+
+    if(!rateLimiter.grantsAccess(clientIP)) {
+        end(socket, 429);
+        
+        return;
+    }
 
     if(iReq.url.length > CONFIG.data.limit.urlLength) {
         end(socket, 414);
@@ -157,7 +160,7 @@ process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
 
     const sReq: IRequest = {
         ip: clientIP,
-
+        
         method: method,
         url: highlevelURL,
 

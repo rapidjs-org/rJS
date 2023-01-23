@@ -12,14 +12,9 @@ module.exports = (shellAPI) => {
     return (sReq) => {
         console.log(sReq);
         
-        return (sReq.url.pathname === "/foo.bar")
-        ? {
+        return {
             status: 200,
-            message: "foo"
-        }
-        : {
-            status: 404,
-            message: "baz"
+            message: "SHELL 2"
         };
     };
 };

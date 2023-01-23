@@ -33,7 +33,7 @@ export abstract class WorkerPool<I, O> {
         this.maxPending = maxPending;
     }
 
-    protected abstract createWorker(): Worker;
+    protected abstract createWorker(): Worker|Promise<Worker>;
     
     protected abstract activateWorker(worker: Worker, dataIn: I): void;
 
@@ -106,22 +106,27 @@ export abstract class WorkerPool<I, O> {
         Array.from({ length: this.baseSize }, () => {
             const worker = this.createWorker();
 
-            /* worker.on("err", (err: Error) => {
-                console.error(err);
-            }); */
-            
-            worker.on("exit", (code: number) => {
-                if(code === 0) {
-                    return;
-                }
+            (!(worker instanceof Promise)
+            ? new Promise(resolve => resolve(worker))
+            : worker)
+            .then((worker: Worker) => {
+                /* worker.on("err", (err: Error) => {
+                    console.error(err);
+                }); */
+                
+                worker.on("exit", (code: number) => {
+                    if(code === 0) {
+                        return;
+                    }
+    
+                    this.deactivate(this.getWorkerId(worker));
+    
+                    // TODO: Handle
+                    // TODO: Error control
+                });
 
-                this.deactivate(this.getWorkerId(worker));
-
-                // TODO: Handle
-                // TODO: Error control
+                this.idleWorkers.push(worker);
             });
-
-            this.idleWorkers.push(worker);
         });
 
         delete this.init;   // Singleton usage

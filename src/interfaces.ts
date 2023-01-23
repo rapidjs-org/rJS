@@ -1,6 +1,12 @@
 import { THeaders } from "./types";
 
 
+export interface ISpace {
+    args: string[];
+    path: string;
+}
+
+
 export interface IIntermediateRequest {
     method: string;
     url: string;

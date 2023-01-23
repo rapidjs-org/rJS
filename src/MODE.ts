@@ -1,4 +1,4 @@
-import { parseFlag } from "../args";
+import { parseFlag } from "./args";
 
 
 const devFlagSet: boolean = parseFlag("dev", "D");

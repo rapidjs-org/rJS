@@ -15,3 +15,7 @@ export const CONFIG: any/* Config */ = {
 CONFIG.mergeDefault(join(__dirname, "./default.config.json")); */
 
 /* CONFIG.constrain({}); */
+
+
+
+// processConfig(process.cwd())

@@ -14,18 +14,25 @@ export class ThreadPool extends WorkerPool<IRequest, IResponse> {
         this.threadModulePath = threadModulePath;
     }
 
-    protected createWorker(): Thread {
+    protected createWorker(): Promise<Thread> {
         const thread = new Thread(this.threadModulePath, {
             argv: process.argv.slice(2),
             env: SHARE_ENV,
-            workerData: null    // TODO: How to utilize?
+            workerData: {
+                
+            }    // TODO: How to utilize?
         });
 
-        thread.on("message", (sRes: IResponse) => {
-            this.deactivateWorker(thread, sRes); 
+        return new Promise((resolve, reject) => {
+            thread.once("message", () => {
+                thread.on("message", (sRes: IResponse) => {
+                    this.deactivateWorker(thread, sRes); 
+                });
+
+                resolve(thread);
+            });
+            //thread.on("error", err => reject(err));
         });
-        
-        return thread;
     }
 
     protected activateWorker(thread: Thread, sReq: IRequest) {

@@ -6,9 +6,6 @@ const devConfig = {
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { MODE } from "./space/MODE";
-import { PATH } from "./space/PATH";
-
 
 // eslint-disable-next-line no-explicit-any
 type TObject = any;
@@ -47,20 +44,18 @@ export class Config {
 
     public data: TObject = { limit: {}, cache: {} };   // TODO: WIP
 
-    constructor(name: string|string[]) {
-        Object.keys(MODE)
-        .filter(mode => (MODE as Record<string, boolean>)[mode])
-        .concat([ "" ])
-        .reverse()
+    constructor(name: string|string[], path: string, mode?: string) {
+        [ "" ]
+        .concat(mode ? [ mode ] : [])
         .forEach(mode => {
             name = [ name ].flat();
-
+            
             let i = 0;
             let fullName: string,
                 fullPath: string;
             do {
                 fullName = `${name[i++]}.${devConfig.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
-                fullPath = join(PATH, `${fullName}`);
+                fullPath = join(path, `${fullName}`);
             } while(!existsSync(fullPath) && (i < name.length));
             
             if(!existsSync(fullPath)) {

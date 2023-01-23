@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 
-import devConfig from "./_config.json";
+import devConfig from "../_config.json";
 
 
 import { join } from "path";
 import { Dirent, readFileSync, readdirSync } from "fs";
 import { fork } from "child_process";
 
-import { parseOption, parsePositional } from "./args";
-import { proxyIPC } from "./reverse-proxy/proxy-ipc";
-import { PORT } from "./space/PORT";
-import { SHELL } from "./space/SHELL";
-import * as print from "./reverse-proxy/print";
-import { PATH } from "./space/PATH";
-import { MODE } from "./space/MODE";
+import { parseOption, parsePositional } from "../args";
+import { proxyIPC } from "../reverse-proxy/proxy-ipc";
+import { PORT } from "../PORT";
+import { SHELL } from "../SHELL";
+import { PATH } from "../PATH";
+import { MODE } from "../MODE";
+import * as print from "../reverse-proxy/print";
 
 
 const command: string = parsePositional(0);
@@ -116,14 +116,14 @@ async function start() {
 
         embed();
     } catch {
-        const proxyProcess = fork(join(__dirname, "./reverse-proxy/server"), process.argv.slice(2), {
+        const proxyProcess = fork(join(__dirname, "../reverse-proxy/process"), process.argv.slice(2), {
             cwd: process.cwd(),
             detached: true
         });
 
         proxyProcess.on("message", async (message: string) => {
             if(message !== "listening") {
-                print.error(`Error trying to start server proxy: ${message}`);
+                print.error(`Error trying to start server proxy ':${PORT}': ${message}`);
                 
                 return;
             }
