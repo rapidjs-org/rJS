@@ -16,8 +16,8 @@ log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 // Create /debug files directory
 const shmPath = {
-    source: join(__dirname, "../src/process/shared-memory"),
-    debug: join(__dirname, "../debug/process/shared-memory")
+    source: join(__dirname, "../src/shared-memory"),
+    debug: join(__dirname, "../debug/shared-memory")
 };
 
 makeDir(shmPath.debug);

@@ -8,12 +8,12 @@ import { Dirent, readFileSync, readdirSync } from "fs";
 import { fork } from "child_process";
 
 import { parseOption, parsePositional } from "../args";
-import { proxyIPC } from "../reverse-proxy/proxy-ipc";
+import { proxyIPC } from "../proxy/proxy-ipc";
 import { PORT } from "../PORT";
 import { SHELL } from "../SHELL";
 import { PATH } from "../PATH";
 import { MODE } from "../MODE";
-import * as print from "../reverse-proxy/print";
+import * as print from "../proxy/print";
 
 
 const command: string = parsePositional(0);
@@ -116,7 +116,7 @@ async function start() {
 
         embed();
     } catch {
-        const proxyProcess = fork(join(__dirname, "../reverse-proxy/process"), process.argv.slice(2), {
+        const proxyProcess = fork(join(__dirname, "../proxy/process"), process.argv.slice(2), {
             cwd: process.cwd(),
             detached: true
         });

@@ -7,7 +7,7 @@
     "rjs": "./dist/bin/api.cli.js"
   },
   "scripts": {
-    "setup": "npm i && cd ./src/process/shared-memory/ && node-gyp configure",
+    "setup": "npm i && cd ./src/shared-memory/ && node-gyp configure",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
     "compile:dist": "node ./node_modules/@rapidjs.org/utilities/build.js && chmod +x ./dist/bin/api.bin.js",
     "compile:watch": "node ./scripts/compile-watch.js",
