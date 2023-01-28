@@ -8,7 +8,7 @@ import devConfig from "../_config.json";
 import { appendFile } from "fs";
 import { join } from "path";
 
-import { AsyncMutex } from "../AsyncMutex";
+import { AsyncMutex } from "./AsyncMutex";
 
 
 /*

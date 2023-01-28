@@ -1,4 +1,4 @@
-import { IResponse } from "./interfaces";
+import { IResponse } from "./_interfaces";
 
 
 export type THeaders = Record<string, string|string[]>;

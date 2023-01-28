@@ -1,5 +1,4 @@
-import { AsyncMutex } from "../AsyncMutex";
-import { MODE } from "../MODE";
+import { MODE } from "../bin/runtime";
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?
@@ -10,7 +9,6 @@ type TRate<I> = Map<I, number>;
 
 export class RateLimiter<I> {   // TODO: Shared memory or partitioned logic?
 
-    private readonly rateMutex: AsyncMutex = new AsyncMutex();
     private readonly limit: number;
     private readonly windowSize: number;
 
@@ -26,7 +24,7 @@ export class RateLimiter<I> {   // TODO: Shared memory or partitioned logic?
 
         this.timePivot -= windowSize;
 
-        setInterval(() => this.updateWindows(), windowSize);
+        setInterval(() => this.shift(), windowSize);
     }
 
     private shift() {
@@ -34,10 +32,6 @@ export class RateLimiter<I> {   // TODO: Shared memory or partitioned logic?
             
         this.previousWindow = this.currentWindow;
         this.currentWindow = new Map();
-    }
-
-    private updateWindows() {
-        this.rateMutex.lock(() => this.shift(), true);
     }
 
     public grantsAccess(entityIdentifier: I): boolean {

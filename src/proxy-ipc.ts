@@ -1,6 +1,6 @@
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 
-import { locateSocket } from "./locate-socket";
+import { locateSocket } from "./proxy/locate-socket";
 
 
 export function proxyIPC(command: string, port?: number, arg?: unknown): Promise<unknown> {

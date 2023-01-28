@@ -4,14 +4,14 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { ISpace, IIntermediateRequest } from "../interfaces";
-import { THeaders } from "../types";
+import { ISpace, IIntermediateRequest } from "../_interfaces";
+import { THeaders } from "../_types";
 import { DynamicResponse } from "../DynamicResponse";
 
 import { ProcessPool } from "./ProcessPool";
 import { locateSocket } from "./locate-socket";
 import { PORT } from "../PORT";
-import { SHELL } from "../SHELL";
+import { SHELL } from "../bin/SHELL";
 
 
 // TODO: HTTP/2 with master streams

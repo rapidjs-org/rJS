@@ -1,4 +1,4 @@
-import { PATH } from "../../PATH";
+import { PATH } from "../PATH";
 
 import * as sharedMemory from "./shared-memory";
 

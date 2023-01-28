@@ -1,4 +1,4 @@
-import { THeaders } from "./types";
+import { THeaders } from "./_types";
 
 
 export interface ISpace {

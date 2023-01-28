@@ -5,7 +5,7 @@ const devConfig = {
 
 import { join } from "path";
 
-import { Config } from "../Config";
+import { Config } from "./Config";
 
 // TODO: Re-implement
 export const CONFIG: any/* Config */ = {

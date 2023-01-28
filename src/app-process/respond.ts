@@ -3,11 +3,11 @@ import devConfig from "../_config.json";
 
 import { Socket } from "net";
 
-import { IResponse, IHighlevelCookieOut } from "../interfaces";
-import { THeaders, TResponseOverload } from "../types";
+import { IResponse, IHighlevelCookieOut } from "../_interfaces";
+import { THeaders, TResponseOverload } from "../_types";
 import { DynamicResponse } from "../DynamicResponse";
 
-import { CONFIG } from "./CONFIG";
+import { CONFIG } from "../app-thread/APP_CONFIG";
 
 
 export function respond(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders): void {

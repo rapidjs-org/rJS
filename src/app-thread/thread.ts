@@ -1,7 +1,7 @@
 import { parentPort } from "worker_threads";
 
-import { IRequest } from "../../interfaces";
-import { SHELL } from "../../SHELL";
+import { IRequest } from "../_interfaces";
+import { SHELL } from "../bin/SHELL";
 
 
 // TODO: Shell

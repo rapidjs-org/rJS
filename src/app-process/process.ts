@@ -2,12 +2,12 @@ import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../interfaces";
-import { TResponseOverload } from "../types";
-import { CONFIG } from "./CONFIG";
+import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../_interfaces";
+import { TResponseOverload } from "../_types";
+import { CONFIG } from "../app-thread/APP_CONFIG";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
-import { RateLimiter } from "./RateLimiter";
+import { RateLimiter } from "../app-env/RateLimiter";
 import { respond } from "./respond";
 
 

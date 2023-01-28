@@ -3,9 +3,9 @@ import { Socket } from "net";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
-import { ISpace, IIntermediateRequest } from "../interfaces";
+import { ISpace, IIntermediateRequest } from "../_interfaces";
 import { WorkerPool } from "../WorkerPool";
-import { parseOption } from "../args";
+import { parseOption } from "../bin/args";
 
 import * as print from "./print";
 
