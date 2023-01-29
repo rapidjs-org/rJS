@@ -1,4 +1,4 @@
-import { MODE } from "../bin/runtime";
+import { MODE } from "../bin/embed";
 
 
 // TODO: Assuming even distribution, limit is n * configured_limit; implement hash based distribution for n consistency?

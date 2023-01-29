@@ -3,7 +3,7 @@ import { join, isAbsolute, normalize } from "path";
 import { parsePositional, parseFlag, parseOption } from "./args";
 
 
-export const COMMAND: string = parsePositional(0);
+export const ARGS: string[] = process.argv.slice(2);
 
 
 let shellReference: string = parsePositional(1);

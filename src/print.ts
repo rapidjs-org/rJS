@@ -2,7 +2,7 @@
  * Module containing application specific console print. 
  */
 
-import devConfig from "../_config.json";
+import devConfig from "./_config.json";
 
 
 import { appendFile } from "fs";

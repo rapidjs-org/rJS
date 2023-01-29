@@ -7,15 +7,15 @@ import { Dirent, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { fork } from "child_process";
 
-import { proxyIPC } from "../proxy-ipc";
-import * as print from "../proxy/print";
+import { sendIPC } from "../ipc-locate";
+import * as print from "../print";
 
-import * as runtime from "./runtime";
+import { parsePositional } from "./args";
+import * as embed from "./embed";
 
 
-
-
-switch(runtime.COMMAND) {
+const command: string = parsePositional(0);
+switch(command) {
 
     case "help":
         console.log(
@@ -26,8 +26,8 @@ switch(runtime.COMMAND) {
         break;
     
     case "start":
-        if(!runtime.SHELL) {
-            print.error((runtime.SHELL === undefined)
+        if(!embed.SHELL) {
+            print.error((embed.SHELL === undefined)
             ? "Missing shell application argument (position 1)"
             : "Referenced shell application could not be resolved");
             
@@ -56,8 +56,8 @@ switch(runtime.COMMAND) {
         
     default:
         print.info(
-            runtime.COMMAND
-            ? `Unknown command '${runtime.COMMAND}'`
+            command
+            ? `Unknown command '${command}'`
             : "No command provided"
         );
 
@@ -67,15 +67,11 @@ switch(runtime.COMMAND) {
 
 
 async function start() {
-    const embed = async () => {
+    const embedApp = async () => {
         try {
-            await proxyIPC("embed", runtime.PORT, {
-                mode: runtime.MODE,
-                path: runtime.PATH,
-                hostname: runtime.HOSTNAME
-            });
-
-            print.info(`Embedded application cluster at ${runtime.HOSTNAME}:${runtime.PORT}`);
+            await sendIPC("embed", embed.PORT, embed);
+            
+            print.info(`Embedded application cluster at ${embed.HOSTNAME}:${embed.PORT}`);
         } catch(err) {
             print.error("Could not embed application to proxy:");
             print.error(err.message);
@@ -84,9 +80,9 @@ async function start() {
 
     // TODO: Check hostname syntax validity
     try {
-        const occupantShellApp = await proxyIPC("shell_running") as string;
+        const occupantShellApp = await sendIPC("shell_running") as string;
 
-        if(occupantShellApp !== runtime.SHELL) {
+        if(occupantShellApp !== embed.SHELL) {
             print.error(`Port is occupied by proxy running a different shell application '${
                 occupantShellApp
                 .match(/(\/)?(@?[a-z0-9_-]+\/)?[a-z0-9_-]+$/i)[0]
@@ -96,13 +92,13 @@ async function start() {
             return;
         }
 
-        if(!await proxyIPC("hostname_available", runtime.PORT, runtime.HOSTNAME)) {
-            print.info(`Hostname already in use on proxy ${runtime.HOSTNAME}:${runtime.PORT}`);
+        if(!await sendIPC("hostname_available", embed.PORT, embed.HOSTNAME)) {
+            print.info(`Hostname already in use on proxy ${embed.HOSTNAME}:${embed.PORT}`);
 
             return;
         }
 
-        embed();
+        embedApp();
     } catch {
         const proxyProcess = fork(join(__dirname, "../proxy/process"), process.argv.slice(2), {
             cwd: process.cwd(),
@@ -111,41 +107,41 @@ async function start() {
 
         proxyProcess.on("message", async (message: string) => {
             if(message !== "listening") {
-                print.error(`Error trying to start server proxy ':${runtime.PORT}': ${message}`);
+                print.error(`Error trying to start server proxy ':${embed.PORT}': ${message}`);
                 
                 return;
             }
 
             // TODO: handle errors, print.error(err.message);
             
-            await embed();
+            await embedApp();
 
             process.exit(0);
         }); // TODO: DEV MODE live app log / manipulation inerface
 
-        proxyProcess.send("start");
+        proxyProcess.send(JSON.stringify(embed));
     }
 }
 
 async function stop() {
     // TODO: IDs?
     try {
-        if(!await proxyIPC("unbed", runtime.PORT, runtime.HOSTNAME)) {
-            print.error(`Hostname not registered on proxy ${runtime.HOSTNAME}:${runtime.PORT}`);
+        if(!await sendIPC("unbed", embed.PORT, embed.HOSTNAME)) {
+            print.error(`Hostname not registered on proxy ${embed.HOSTNAME}:${embed.PORT}`);
 
             return;
         }
         
-        print.info(`Unbedded application cluster from ${runtime.HOSTNAME}:${runtime.PORT}`);
+        print.info(`Unbedded application cluster from ${embed.HOSTNAME}:${embed.PORT}`);
     } catch(err) {
-        print.error(`No server proxy listening on :${runtime.PORT}`);
+        print.error(`No server proxy listening on :${embed.PORT}`);
     }
 }
 
 async function stopall() {
     forEachProxy(async (port: number) => {
         try {
-            await proxyIPC("stop", port);
+            await sendIPC("stop", port);
         } catch {}
     })
     .then(() => print.info("Stopped all proxies"));
@@ -155,7 +151,7 @@ function monitor() {
     const proxyHosts: string[] = [];
     
     forEachProxy(async (port: number) => {
-        const embeddedHostnames = await proxyIPC("retrieve_hostnames", port, runtime.HOSTNAME) as string[];
+        const embeddedHostnames = await sendIPC("retrieve_hostnames", port, embed.HOSTNAME) as string[];
 
         proxyHosts.push(`${port}: ${embeddedHostnames.join(", ")}`);
     })

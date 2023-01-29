@@ -1,35 +1,28 @@
 import { join } from "path";
-import { rmSync } from "fs";
-import { Socket, createServer as createUnixSocketServer } from "net";
+import { Socket } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { ISpace, IIntermediateRequest } from "../_interfaces";
+import { IEmbed, IBareRequest } from "../_interfaces";
 import { THeaders } from "../_types";
 import { DynamicResponse } from "../DynamicResponse";
 
 import { ProcessPool } from "./ProcessPool";
-import { locateSocket } from "./locate-socket";
-import { PORT } from "../PORT";
-import { SHELL } from "../bin/SHELL";
+import { listenIPC } from "./ipc-target";
 
 
-// TODO: HTTP/2 with master streams
-
-
-
-interface ISpaceInfo extends ISpace {
-    hostname: string;
-}
+// TODO: HTTP/2 with master streams?
 
 
 const embeddedSpaces: Map<string, ProcessPool> = new Map(); // TODO: Multiple hostnames for a single web spacw
 
 
 process.on("message", (message: string) => {
-    if(message !== "start") return;
+    const activeEmbed: IEmbed = JSON.parse(message);
 
-    startReverseProxyServer()
+    // TODO: Validate message
+
+    startReverseProxyServer(activeEmbed);
 });
 
 
@@ -85,7 +78,7 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
 
     hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
     
-    const iReq: IIntermediateRequest = {
+    const iReq: IBareRequest = {
         /* httpVersion: meta[2].split("/")[1], */
         method: meta[0],
         url: url,
@@ -99,8 +92,8 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
     });
 }
 
-// TODO: Limiters here?
-export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
+
+export function startReverseProxyServer(activeEmbed: IEmbed) {
     let remainingListeningEventsForBubbleup: number = 2;
     const bubbleUp = () => {
         (--remainingListeningEventsForBubbleup === 0)
@@ -114,7 +107,7 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
     ? createHTTPSServer
     : createHTTPServer;
 
-    createWebServer({
+    createWebServer({   // TODO: Net instead?
         keepAlive: true,
 
         ...(runSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
@@ -129,93 +122,52 @@ export function startReverseProxyServer() {  // TODO: Retireve object as IPC arg
 
         // TODO: Recover?
     })
-    .listen(PORT, bubbleUp);
+    .listen(activeEmbed.PORT, bubbleUp);
 
-    rmSync(locateSocket(), {
-        force: true
-    });
+    listenIPC(activeEmbed.PORT, (command: string, arg: unknown) => {
+        switch(command) {
 
-    const unixSocketServer = createUnixSocketServer((socket: Socket) => {
-        socket.on("data", (message: Buffer) => {
-            const data: {
-                command: string;
-                arg: unknown;
-            } = JSON.parse(message.toString());
-
-            let response: unknown = false;
-
-            switch(data.command) {
-
-                case "shell_running":
-                    response = SHELL;
-
-                    break;
-
-                case "hostname_available":  // TODO: Required? Perhaps combine with 'embed' IPC
-                    response = !embeddedSpaces.has(data.arg as string);
-                    
-                    break;
-
-                case "embed":
-                    const spaceInfo = data.arg as ISpaceInfo;
-
-                    const processPool: ProcessPool = new ProcessPool({
-                        args: process.argv.slice(2),
-                        path: spaceInfo.path
-                    }, join(__dirname, "../process/process"));
-
-                    processPool.init();
-                    
-                    embeddedSpaces.set(spaceInfo.hostname, processPool);
-                    
-                    response = true;
-
-                    break;
-
-                case "unbed":
-                    if(!embeddedSpaces.has(data.arg as string)) {
-                        break;
-                    }
-
-                    embeddedSpaces.delete(data.arg as string);
-
-                    !embeddedSpaces.size
-                    && setImmediate(() => process.exit(0));
-                    
-                    response = true;
-
-                    break;
+            case "stop":
+                setImmediate(() => process.exit(0));
                 
-                case "stop":
-                    setImmediate(() => process.exit(0));
-                    
-                    response = true;
-
-                    break;
+                return true;
+            
+            case "retrieve_hostnames":
+                return Array.from(embeddedSpaces.keys());
                 
-                case "retrieve_hostnames":
-                    response = Array.from(embeddedSpaces.keys());
+            case "shell_running":
+                return activeEmbed.SHELL;
 
-                    break;
+            case "hostname_available":  // TODO: Required? Perhaps combine with 'embed' IPC
+                return !embeddedSpaces.has(arg as string);
+
+            case "embed": {
+                const activeEmbed = arg as IEmbed;
+
+                const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"), activeEmbed);
+
+                processPool.init();
                 
+                embeddedSpaces.set(activeEmbed.HOSTNAME, processPool);
+                
+                return true;
+            }
+            case "unbed": {
+                if(!embeddedSpaces.has(arg as string)) {
+                    break;
+                }
+
+                embeddedSpaces.delete(arg as string);
+
+                !embeddedSpaces.size
+                && setImmediate(() => process.exit(0));
+                
+                return true;
             }
             
-            socket.write(JSON.stringify(response ?? false));
-
-            socket.destroy();
-        });
-    })
-    .listen(locateSocket(), bubbleUp);
+        }
+    }, bubbleUp);
     
-    const cleanUpUnixSockets = (code: number) => {
-        unixSocketServer.close();
-                
-        process.exit(code);
-    };
-    process.on("SIGINT", cleanUpUnixSockets);
-    process.on("SIGTERM", cleanUpUnixSockets);
-    process.on("exit", cleanUpUnixSockets);
-
     process.on("uncaughtException", (err: Error) => {
         console.error(err); // TODO: Print module
 

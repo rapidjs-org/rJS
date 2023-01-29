@@ -2,7 +2,7 @@ import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { IRequest, IIntermediateRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../_interfaces";
+import { IRequest, IBareRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../_interfaces";
 import { TResponseOverload } from "../_types";
 import { CONFIG } from "../app-thread/APP_CONFIG";
 
@@ -34,7 +34,7 @@ const rateLimiter: RateLimiter<string> = new RateLimiter(CONFIG.data.limit.reque
 threadPool.init();
 
 
-process.on("message", async (iReq: IIntermediateRequest, socket: Socket) => {
+process.on("message", async (iReq: IBareRequest, socket: Socket) => {
     const clientIP: string = socket.remoteAddress;
 
     if(!rateLimiter.grantsAccess(clientIP)) {

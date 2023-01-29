@@ -1,4 +1,4 @@
-export { MODE } from "../bin/runtime";
+export { MODE } from "../bin/embed";
 export { PATH } from "../PATH";
 
 export { CONFIG } from "./APP_CONFIG";

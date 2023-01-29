@@ -1,13 +1,23 @@
 import { THeaders } from "./_types";
 
 
-export interface ISpace {
-    args: string[];
-    path: string;
+export interface IProxyIPCPackage {
+    command: string;
+    arg: unknown;
 }
 
 
-export interface IIntermediateRequest {
+export interface IEmbed {
+    ARGS: string[];
+    HOSTNAME: string;
+    MODE: string;
+    PATH: string;
+    PORT: number;
+    SHELL: string;
+}
+
+
+export interface IBareRequest {
     method: string;
     url: string;
     headers: THeaders;
