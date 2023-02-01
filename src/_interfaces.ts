@@ -7,13 +7,17 @@ export interface IProxyIPCPackage {
 }
 
 
-export interface IEmbed {
-    ARGS: string[];
-    HOSTNAME: string;
+export interface IAppEnv {
     MODE: string;
+    SHELL: string;
+}
+
+export interface IEmbedEnv extends IAppEnv {
+    HOSTNAME: string;
     PATH: string;
     PORT: number;
-    SHELL: string;
+    
+    ARGS?: string[];
 }
 
 

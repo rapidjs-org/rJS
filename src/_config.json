@@ -2,5 +2,6 @@
     "appNameShort": "rJS",
     "appNameLong": "rapidJS",
     "socketDir": "/tmp",
-    "socketNamePrefix": "rjs.proxy."
+    "socketNamePrefix": "rjs.proxy.",
+    "configNameInfix": "config"
 }

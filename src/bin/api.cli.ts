@@ -7,10 +7,10 @@ import { Dirent, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 import { fork } from "child_process";
 
-import { sendIPC } from "../ipc-locate";
 import * as print from "../print";
 
 import { parsePositional } from "./args";
+import { sendIPC } from "./ipc-source";
 import * as embed from "./embed";
 
 

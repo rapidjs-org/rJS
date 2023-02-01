@@ -23,7 +23,7 @@ export class ThreadPool extends WorkerPool<IRequest, IResponse> {
             }    // TODO: How to utilize?
         });
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             thread.once("message", () => {
                 thread.on("message", (sRes: IResponse) => {
                     this.deactivateWorker(thread, sRes); 

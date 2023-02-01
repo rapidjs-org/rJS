@@ -4,10 +4,10 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { IRequest, IBareRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../_interfaces";
 import { TResponseOverload } from "../_types";
-import { CONFIG } from "../app-thread/APP_CONFIG";
+import { CONFIG } from "../config/app-config";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
-import { RateLimiter } from "../app-env/RateLimiter";
+import { RateLimiter } from "./RateLimiter";
 import { respond } from "./respond";
 
 
@@ -28,7 +28,7 @@ process.on("uncaughtException", (err: Error) => {
 
 // TODO: Implement activeShellApp
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
-const rateLimiter: RateLimiter<string> = new RateLimiter(CONFIG.data.limit.requestsPerClient);
+const rateLimiter: RateLimiter<string> = new RateLimiter();
 
 
 threadPool.init();

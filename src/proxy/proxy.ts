@@ -3,7 +3,7 @@ import { Socket } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { IEmbed, IBareRequest } from "../_interfaces";
+import { IEmbedEnv, IBareRequest } from "../_interfaces";
 import { THeaders } from "../_types";
 import { DynamicResponse } from "../DynamicResponse";
 
@@ -18,7 +18,7 @@ const embeddedSpaces: Map<string, ProcessPool> = new Map(); // TODO: Multiple ho
 
 
 process.on("message", (message: string) => {
-    const activeEmbed: IEmbed = JSON.parse(message);
+    const activeEmbed: IEmbedEnv = JSON.parse(message);
 
     // TODO: Validate message
 
@@ -93,7 +93,7 @@ function handleSocketConnection(socket: Socket, runSecure: boolean) {
 }
 
 
-export function startReverseProxyServer(activeEmbed: IEmbed) {
+export function startReverseProxyServer(activeEmbed: IEmbedEnv) {
     let remainingListeningEventsForBubbleup: number = 2;
     const bubbleUp = () => {
         (--remainingListeningEventsForBubbleup === 0)
@@ -142,7 +142,7 @@ export function startReverseProxyServer(activeEmbed: IEmbed) {
                 return !embeddedSpaces.has(arg as string);
 
             case "embed": {
-                const activeEmbed = arg as IEmbed;
+                const activeEmbed = arg as IEmbedEnv;
 
                 const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"), activeEmbed);
 

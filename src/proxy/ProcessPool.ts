@@ -3,7 +3,7 @@ import { Socket } from "net";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
-import { IEmbed, IBareRequest } from "../_interfaces";
+import { IEmbedEnv, IBareRequest, IAppEnv } from "../_interfaces";
 import { WorkerPool } from "../WorkerPool";
 import * as print from "../print";
 
@@ -18,9 +18,9 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
 
     private readonly logDir: string;
     private readonly childProcessModulePath: string;
-    private readonly associatedEmbed: IEmbed;
+    private readonly associatedEmbed: IEmbedEnv;
 
-    constructor(childProcessModulePath: string, associatedEmbed: IEmbed, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(childProcessModulePath: string, associatedEmbed: IEmbedEnv, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
         const logDirPath: string = "";  //parseOption("logs", "L").string; // TODO: Project local if given as flag?
@@ -47,7 +47,11 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
     
     protected createWorker(): ChildProcess {        
         const childProcess = fork(this.childProcessModulePath, this.associatedEmbed.ARGS, {
-            cwd: this.associatedEmbed.PATH,
+            cwd: this.associatedEmbed.PATH, // TODO: Log toggle option only? (log to project root /logs?)
+            env: {
+                MODE: this.associatedEmbed.MODE,
+                SHELL: this.associatedEmbed.SHELL
+            },
             detached: false,
             silent: true
         });

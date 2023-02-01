@@ -1,5 +1,3 @@
-import { PATH } from "../PATH";
-
 import * as sharedMemory from "./shared-memory";
 
 
@@ -14,7 +12,7 @@ sharedMemory.init(appKey);
 
 
 function generateAppKey(): number { // uint32_t (MAX: 4294967296)
-    return parseInt(`rapidJS:${PATH}`  // TODO: Check if process CWD is consistent among related contexts
+    return parseInt(`rapidJS:${process.env.PATH}`  // TODO: Check if process CWD is consistent among related contexts
     .split("")
     .map((char: string) => char.charCodeAt(0).toString(16))
     .join("")) % 4294967296;

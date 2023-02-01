@@ -1,19 +1,15 @@
-const devConfig = {
-    configNameInfix: "config"
-};
+import devConfig from "../_config.json";
 
 
 import { join } from "path";
 import { existsSync } from "fs";
 
-
-// eslint-disable-next-line no-explicit-any
-type TObject = any;
+import { TJSONObject } from "../_types";
 
 
 export class Config {
 
-    private static deepMergeObj(...objs: TObject[]): TObject {
+    private static deepMergeObj(...objs: TJSONObject[]): TJSONObject {
         if(objs.length === 1) {
             return objs[0];
         }
@@ -31,7 +27,7 @@ export class Config {
             }
             
             // Recursive
-            source[key] = Config.deepMergeObj(target[key] as TObject, source[key] as TObject);
+            source[key] = Config.deepMergeObj(target[key] as TJSONObject, source[key] as TJSONObject);
         }
     
         target = {
@@ -42,10 +38,10 @@ export class Config {
         return Config.deepMergeObj(...objs, target);
     }
 
-    public data: TObject = { limit: {}, cache: {} };   // TODO: WIP
+    public obj: TJSONObject = { limit: {}, cache: {} };   // TODO: WIP
 
     constructor(name: string|string[], path: string, mode?: string) {
-        [ "" ]
+        [ "" ]  // Include general
         .concat(mode ? [ mode ] : [])
         .forEach(mode => {
             name = [ name ].flat();
@@ -66,28 +62,31 @@ export class Config {
             try {
                 fileObj = require(fullPath);
             } catch(err) {
-                throw SyntaxError(`Configuration file could not be parsed:\n${err.message} '${fullName}'`);
+                this.throwParseError(err, fullName);
             }
 
-            this.data = Config.deepMergeObj(this.data, fileObj);
+            this.obj = Config.deepMergeObj(this.obj, fileObj);
         }); // TODO: Merge in default (later)
     }
 
-    public mergeDefault(defaultParam: string|TObject) {
+    private throwParseError(err: Error, path?: string) {
+        throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${path ? ` ${path}` : ""}`);
+    }
+
+    public mergeDefault(defaultParam: string|TJSONObject) {
         try {
-            this.data = Config.deepMergeObj(
+            this.obj = Config.deepMergeObj(
                 (typeof defaultParam === "string")
                 ? require(defaultParam)
                 : defaultParam
-            , this.data);
+            , this.obj);
         } catch(err) {
-            throw SyntaxError(`Configuration file could not be parsed:\n${err.message} '${defaultParam}'`);
+            this.throwParseError(err);
         }
     }
 
     public constrain() {
-        // TODO: Elaborated constraints
-        // Types, patterns, required?
+        
     }
 
 }

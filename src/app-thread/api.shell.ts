@@ -1,7 +1,4 @@
-export { MODE } from "../bin/embed";
-export { PATH } from "../PATH";
-
-export { CONFIG } from "./APP_CONFIG";
+export { CONFIG } from "../config/app-config";
 
 export { Cache } from "./Cache";
 export { VFS } from "./VFS";
