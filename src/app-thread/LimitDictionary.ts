@@ -14,7 +14,6 @@ export abstract class LimitDictionary<K, V, L> {
     private static instances = 0;
 
     private readonly id: number;
-    private readonly intermediateMemory: Map<K, ILimitEntry<V, L>> = new Map();
     private readonly normalizeKeyCallback: (key: K) => K;
 
     private existenceLookupValue: {
@@ -52,13 +51,7 @@ export abstract class LimitDictionary<K, V, L> {
         
         // TODO: Benchmark w and w/o enabled top layer intermediate memory (-> Dict <-> intermediate <-> SHM)
 
-        // TODO: Note values are serialized (JSON.stringify() in order to be stored in SHM)
-        try {
-            sharedMemory.writeSync(this.getInternalKey(key), entry);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
-            // TODO: Provide async interface?
-        } catch {
-            this.intermediateMemory.set(key, entry);
-        }
+        sharedMemory.writeSync(this.getInternalKey(key), entry);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
     }
 
     public read(key: K): V {
@@ -83,12 +76,7 @@ export abstract class LimitDictionary<K, V, L> {
     public exists(key: K): boolean {
         // TODO: Implement intermediate
 
-        let limitEntry: ILimitEntry<V, L>;
-        try {
-            limitEntry = sharedMemory.readSync<ILimitEntry<V, L>>(this.getInternalKey(key));
-        } catch(err) {
-            limitEntry = this.intermediateMemory.get(key);
-        }
+        let limitEntry: ILimitEntry<V, L> = sharedMemory.readSync<ILimitEntry<V, L>>(this.getInternalKey(key));
         
         if(!limitEntry) {
             return false;

@@ -7,6 +7,7 @@ const sharedMemoryActive = {
 };
 const appKey: number = generateAppKey();
 
+const intermediateMemory: Map<string, string> = new Map();    // Fallback
 
 sharedMemory.init(appKey);
 
@@ -36,56 +37,53 @@ export async function write(purposeKey: string, purposeData: unknown): Promise<v
 }
 
 export async function writeSync(purposeKey: string, purposeData: unknown) {
-    if(!sharedMemoryActive.write) {
-        throw new RangeError("Shared memory not available");
-    }
+    const serial: string = (!(typeof(purposeData) === "string")
+    ? JSON.stringify(purposeData)
+    : purposeData);
     
-    try {
-        sharedMemory.write(purposeKey, Buffer.from(
-            (!(typeof(purposeData) === "string")
-            ? JSON.stringify(purposeData)
-            : purposeData), "utf-8"));
-    } catch(err) {            
-        sharedMemoryActive.write = false; // TODO: Distinguish errors?
-        
-        throw err;
+    if(!sharedMemoryActive.write) {
+        try {
+            sharedMemory.write(purposeKey, Buffer.from(serial, "utf-8"));
+
+            return;
+        } catch(err) {            
+            sharedMemoryActive.write = false; // TODO: Distinguish errors?
+        }
     }
+
+    intermediateMemory.set(purposeKey, serial);
 }
 
 export function read<T>(purposeKey: string): Promise<T> {
-    return new Promise((resolve, reject) => {
-        try {
-            const data: T = readSync<T>(purposeKey);
-            
-            resolve(data);
-        } catch(err) {
-            reject(err);
-        }
+    return new Promise(resolve => {
+        const data: T = readSync<T>(purposeKey);
+        
+        resolve(data);
     });
 }
 
 export function readSync<T>(purposeKey: string): T {
-    if(!sharedMemoryActive.read) {
-        throw new RangeError("Shared memory not available");
-    }
-    
-    try {
-        const buffer: Buffer = sharedMemory.read(purposeKey);
-        const serial = String(buffer);
-
-        let data: T;
+    let serial;
+    if(sharedMemoryActive.read) {
         try {
-            data = JSON.parse(serial);
+            const buffer: Buffer = sharedMemory.read(purposeKey);
+            
+            serial = String(buffer);
         } catch {
-            data = serial as unknown as T;
+            sharedMemoryActive.read = false;
         }
-
-        return (data || null) as T;
-    } catch(err) {
-        sharedMemoryActive.read = false;
-
-        throw err;
     }
+
+    serial = serial ?? intermediateMemory.get(purposeKey)M
+    
+    let data: T;
+    try {
+        data = JSON.parse(serial);
+    } catch {
+        data = serial as unknown as T;
+    }
+
+    return (data || null) as T;
 }
 
 export function registerFree(event: string|string[], exitCode = 0) {
