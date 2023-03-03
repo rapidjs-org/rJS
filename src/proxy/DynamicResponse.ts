@@ -1,7 +1,7 @@
 import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
-import { THeaders } from "./_types";
+import { THeaders } from "../_types";
 
 
 export class DynamicResponse {

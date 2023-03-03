@@ -1,4 +1,4 @@
-import devConfig from "../_config.json";
+import _config from "../_config.json";
 
 
 import { join } from "path";
@@ -50,7 +50,7 @@ export class Config {
             let fullName: string,
                 fullPath: string;
             do {
-                fullName = `${name[i++]}.${devConfig.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
+                fullName = `${name[i++]}.${_config.configNameInfix}${mode ? `.${mode.toLowerCase()}` : ""}.json`; // TODO: More config formats?
                 fullPath = join(path, `${fullName}`);
             } while(!existsSync(fullPath) && (i < name.length));
             

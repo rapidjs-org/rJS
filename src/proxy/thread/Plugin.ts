@@ -1,4 +1,4 @@
-/* const devConfig = {
+/* const _config = {
     selfContextIdentifier: "$this"
 };
 

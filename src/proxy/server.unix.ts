@@ -2,12 +2,13 @@ import { rmSync } from "fs";
 import { Socket, createServer as createUnixSocketServer } from "net";
 
 import { IProxyIPCPackage } from "../_interfaces";
-import { locateIPC } from "../ipc-locate";
+
+import { locateProxySocket } from "./utils";
 
 
-export function listenIPC(port: number, handleCallback: (command: string, arg?: unknown) => void, listenCallback?: () => void) {
-    const socketLocation: string = locateIPC(port);
-
+export function create(port: number, handleCallback: (command: string, arg?: unknown) => void, listenCallback?: () => void) {
+    const socketLocation: string = locateProxySocket(port);
+    
     rmSync(socketLocation, {
         force: true
     });

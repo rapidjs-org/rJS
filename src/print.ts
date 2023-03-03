@@ -2,7 +2,7 @@
  * Module containing application specific console print. 
  */
 
-import devConfig from "./_config.json";
+import _config from "./_config.json";
 
 
 import { appendFile } from "fs";
@@ -98,7 +98,7 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
         try {
             /* process[channel].moveCursor(
                 (!lastLog.message.isMultiline
-                ? (devConfig.appNameShort.length + lastLog.message.data.length + 4)
+                ? (_config.appNameShort.length + lastLog.message.data.length + 4)
                 : 0),
                 ((!lastLog.message.isMultiline || (lastLog.message.count > 1))
                 ? -1
@@ -123,7 +123,7 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
     if(!logDir) {
         process[channel]
         .write(`${
-            highlight(` ${devConfig.appNameShort} `, [
+            highlight(` ${_config.appNameShort} `, [
                 [ 54, 48, 48, EColorMode.FG ], [ 255, 254, 173, EColorMode.BG ]
             ], [ 1, 3 ])
         } ${colorMessage(serializedMessage)}\n`);

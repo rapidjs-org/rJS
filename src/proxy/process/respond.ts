@@ -1,4 +1,4 @@
-import devConfig from "../_config.json";
+import _config from "../_config.json";
 
 
 import { Socket } from "net";
@@ -31,7 +31,7 @@ export function respond(socket: Socket, sResOverload: TResponseOverload, priorit
     // TODO: Implement streams?
 
     // Default headers (overridable)
-    dRes.setHeader("Server", devConfig.appNameLong);
+    dRes.setHeader("Server", _config.appNameLong);
     dRes.setHeader("X-XSS-Protection", "1; mode=block");
 
     // Apply high level headers

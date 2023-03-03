@@ -4,24 +4,24 @@
   "description": "",
   "author": "Thassilo Martin Schiepanski",
   "bin": {
-    "rjs": "./dist/bin/api.cli.js"
+    "rjs": "./dist/cli/api.cli.js"
   },
   "scripts": {
     "setup": "npm i && cd ./src/shared-memory/ && node-gyp configure",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
-    "compile:dist": "node ./node_modules/@rapidjs.org/utilities/build.js && chmod +x ./dist/bin/api.bin.js",
+    "compile:dist": "node ./scripts/build.js && chmod +x ./dist/cli/api.cli.js",
     "compile:watch": "node ./scripts/compile-watch.js",
-    "compile:watch:all": "node ./scripts/compile-watch.js --cpp",
+    "compile:watch:cpp": "node ./scripts/compile-watch.js --cpp",
     "test:integration": "node ./test/integration/app.js",
     "test:integration:prod": "node ./test/integration/app.js -L ./test/integration/logs/",
     "test:integration:dev": "node ./test/integration/app.js -D",
     "test:shm": "node ./scripts/test-shm.js",
-    "test:network": "node ./node_modules/@rapidjs.org/utilities/test-network.js",
-    "test:unit": "node ./node_modules/@rapidjs.org/utilities/test-unit.js",
-    "test": "node ./scripts/test-shm.js && node ./node_modules/@rapidjs.org/utilities/test.js",
+    "test:network": "node ./scripts/test-network.js",
+    "test:unit": "node ./scripts/test-unit.js",
+    "test": "node ./scripts/test.js",
     "benchmark:s": "node ./scripts/benchmark.js -s",
-    "benchmark:m": "node ./scripts/benchmark.js -s",
-    "benchmark:l": "node ./scripts/benchmark.js -s",
+    "benchmark:m": "node ./scripts/benchmark.js -m",
+    "benchmark:l": "node ./scripts/benchmark.js -l",
     "release": "npm run test && npm run compile:dist"
   },
   "files": [
@@ -40,7 +40,6 @@
   },
   "homepage": "https://rapidjs.org",
   "devDependencies": {
-    "@rapidjs.org/utilities": "git://github.com/rapidjs-org/utilities.git",
     "@types/node": "^16.11.39",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",

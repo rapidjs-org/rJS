@@ -1,7 +1,7 @@
 import { Worker as Thread, SHARE_ENV } from "worker_threads";
 
 import { IRequest, IResponse } from "../_interfaces";
-import { WorkerPool } from "../WorkerPool";
+import { WorkerPool } from "../../cli/proxy/WorkerPool";
 
 
 export class ThreadPool extends WorkerPool<IRequest, IResponse> {

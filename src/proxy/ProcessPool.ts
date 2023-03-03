@@ -1,31 +1,41 @@
 import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
-import { join } from "path";
-import { existsSync, mkdirSync } from "fs";
 
-import { IEmbedEnv, IBareRequest, IAppEnv } from "../_interfaces";
-import { WorkerPool } from "../WorkerPool";
+import { IBasicRequest } from "../_interfaces";
+import { AsyncMutex } from "../AsyncMutex";
 import * as print from "../print";
+
+import { WorkerPool } from "./AWorkerPool";
 
 
 interface IChildData {
-    iReq: IBareRequest;
+    iReq: IBasicRequest;
     socket: Socket;
 }
+
+
+const contextMutex: AsyncMutex = new AsyncMutex();
 
 
 export class ProcessPool extends WorkerPool<IChildData, void> {
 
     private readonly logDir: string;
     private readonly childProcessModulePath: string;
-    private readonly associatedEmbed: IEmbedEnv;
-
-    constructor(childProcessModulePath: string, associatedEmbed: IEmbedEnv, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    
+    private embedContext: typeof import("./EmbedContext");
+    
+    constructor(childProcessModulePath: string, args: string[], baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
-        const logDirPath: string = "";  //parseOption("logs", "L").string; // TODO: Project local if given as flag?
+        process.argv = process.argv.slice(0, 2).concat(args);
+
+        contextMutex.lock(async () => {
+            this.embedContext = await import("./EmbedContext");
+        });
+
+        /* const logDirPath: string = "";  //parseOption("logs", "L").string; // TODO: Project local if given as flag?
         if(logDirPath) {
-            this.logDir = join(associatedEmbed.PATH, logDirPath);
+            this.logDir = join(PATH, logDirPath);
 
             if(!existsSync(this.logDir)) {
                 // TODO: Error; but no termination of proxy process ()
@@ -37,7 +47,7 @@ export class ProcessPool extends WorkerPool<IChildData, void> {
                     throw new RangeError(`Log directory does not exist nor can be created automatically '${this.logDir}'`);
                 }
             }
-        }
+        } */
         
         // TODO: logDir to ENV?
 

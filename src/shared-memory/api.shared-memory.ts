@@ -74,7 +74,7 @@ export function readSync<T>(purposeKey: string): T {
         }
     }
 
-    serial = serial ?? intermediateMemory.get(purposeKey)M
+    serial = serial ?? intermediateMemory.get(purposeKey);
     
     let data: T;
     try {

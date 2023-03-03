@@ -1,4 +1,4 @@
-import * as sharedMemory from "../shared-memory/shared-memory-api";
+import * as sharedMemory from "../../shared-memory/api.shared-memory";
 
 
 interface ILimitEntry<V, L> {

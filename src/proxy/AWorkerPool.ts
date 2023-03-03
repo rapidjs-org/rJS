@@ -1,4 +1,4 @@
-import { EventEmitter as Worker, EventEmitter } from "events";
+import { EventEmitter as Worker } from "events";
 import { cpus } from "os";
 
 
@@ -14,7 +14,7 @@ interface IPendingAssignment<I, O> {
 
 
 // TODO: Need mutex?
-// TODO: Always share env and CWD
+
 
 export abstract class WorkerPool<I, O> {
 
@@ -24,8 +24,6 @@ export abstract class WorkerPool<I, O> {
     private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
     private readonly idleWorkers: Worker[] = [];
     private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
-
-    public readonly eventEmitter = new EventEmitter();
 
     constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
         this.baseSize = baseSize;
