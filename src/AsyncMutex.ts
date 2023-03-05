@@ -1,9 +1,23 @@
+/**
+ * Class representing a mutual exclusion interface based
+ * on asynchronous routines. Implements a promise-based
+ * lock behavior relying on  a currently pending promise
+ * to resolve until queued instruction callbacks are to
+ * be resolved in turn. 
+ */
 export class AsyncMutex {
 
 	private readonly acquireQueue: ((value?: unknown) => void)[] = [];
 
 	private isLocked = false;
 
+	/**
+	 * Acquire a processing spot, i.e. either direct resolution
+	 * in unlocked state or queue it for eventual lock and process.
+	 * Allows for prioritizing the current over previous acquisitions.
+	 * @param prioritize Whether to prioritize the current acquisition
+	 * @returns Promise resolving once has been successfully acquired
+	 */
 	private acquire(prioritize: boolean) {
 		 if(!this.isLocked) {
 			this.isLocked = true;
@@ -16,6 +30,13 @@ export class AsyncMutex {
 		});
 	}
 
+	/**
+	 * Lock the mutex with the current instructions to be processed
+	 * once implicit memory acquisition is successful.
+	 * @param instructions Instructions callback to be invoked once in turn
+	 * @param prioritize Whether to optionally prioritize the current acquisition
+	 * @returns Promise resolving to the instruction callback return value upon acquisition success
+	 */
 	public lock(instructions: (() => void)|Promise<unknown>, prioritize = false): Promise<unknown> {
 		return new Promise((resolve, reject) => {
 			this.acquire(prioritize)

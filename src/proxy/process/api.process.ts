@@ -1,29 +1,31 @@
+/**
+ * Proxied process cluster node API module.
+ */
+
+
 import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { IRequest, IBareRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding, THighlevelCookieIn } from "../_interfaces";
-import { TResponseOverload } from "../_types";
-import { CONFIG } from "../config/app-config";
+import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../../_types";
+import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../_interfaces";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
+import { Config } from "./Config";
+import { Response } from "./Response";
 import { RateLimiter } from "./RateLimiter";
-import { respond } from "./respond";
 
 
+/**
+ * Interface encoding typical accept header information
+ * including to a coded name and the respectively given
+ * quality/priority value.
+ */
 interface IAcceptHeaderPart {
     name: string;
     quality: number;
 }
 
-
-process.on("uncaughtException", (err: Error) => {
-    console.error(err);
-    
-    // TODO: Handle
-
-    signalDone(); // TODO: Signal error (or keep "error"?)
-});
 
 
 // TODO: Implement activeShellApp
@@ -34,65 +36,64 @@ const rateLimiter: RateLimiter<string> = new RateLimiter();
 threadPool.init();
 
 
-process.on("message", async (iReq: IBareRequest, socket: Socket) => {
+/*
+ * Catch any unhandled exception within this worker process
+ * in order to prevent process termination, but simply handle
+ * the error case for the respective request and feeding back
+ * this worker process to the idle candidate queue within the
+ * parent process.
+ */
+process.on("uncaughtException", (err: Error) => {
+    console.error(err);
+    
+    // TODO: Handle
+
+    signalDone();   // TODO: Signal error (or keep "error"?)
+});
+
+/*
+ * Listen for messages from parent process being consumed as
+ * worker process activations and thus invoking the worker
+ * cycle routine. Inherently, any unqualified request is
+ * prematurely closed with an according status.
+ * 
+ * The worker process does prepare the basic-level request
+ * that is recieved through the notification in order to pass
+ * it on to the thread which is supposed to handle the
+ * generically prepared request package in accordance with
+ * the defined shell server application providing the concrete
+ * server application context. At that, the processing
+ * complexity is distributed to the threads favoring maximum
+ * throughput performance.
+ */
+process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
     const clientIP: string = socket.remoteAddress;
 
-    if(!rateLimiter.grantsAccess(clientIP)) {
-        end(socket, 429);
-        
-        return;
-    }
-
-    if(iReq.url.length > CONFIG.data.limit.urlLength) {
-        end(socket, 414);
-
-        return;
-    }
+    // TODO: Benchmark rate limiter location/process level for
+    // asssessing the different and thus an optimum performance
+    // measure
+    // Block if exceeds rate limit
+    if(!rateLimiter.grantsAccess(clientIP)) return end(socket, 429);
     
+    // Block if exceeds URL length
+    if(iReq.url.length > Config.data.limit.urlLength) return end(socket, 414);
+
+    // Parse body if is payload effective method
     const method: string = iReq.method.toUpperCase();
-
-    let bodyString: string;
+    
+    let body: TJSONObject;
     if([ "POST", "PUT", "OPTIONS" ].includes(method)) {
-        try {
-            const bodyChunks: string[] = [];
+        let bodyBuffer: string = "";
+        let chunk: Buffer;
 
-            bodyString = await new Promise((resolve, reject) => {
-                // TODO: Read body from socket
-                /* iReq.on("data", (chunk: string) => {
-                    bodyChunks.push(chunk);
-                });
-                
-                iReq.on("end", () => {
-                    try {
-                        resolve(bodyChunks.length ? bodyChunks.join("") : null);
-                    } catch(err) {
-                        reject(err);
-                    }
-                });
-                
-                iReq.on("error", err => {
-                    reject(err);
-                }); */
-            });
-        } catch(err) {
-            console.error(err);
+        while(chunk = socket.read()) {
+            bodyBuffer += chunk.toString();
 
-            end(socket, 422);
-            
-            return;
+            if(bodyBuffer.length > CONFIG.data.limit.payloadSize) return end(socket, 413);
         }
     }
-
-    if(bodyString?.length >= CONFIG.data.limit.payloadSize) {
-        end(socket, 413);
-
-        return;
-    }
-
-    const host: string = [ iReq.headers["host"] ].flat()[0] // TODO: Get upon start up
-    .replace(/^(https?:\/\/)?/, `http${CONFIG.data.tls ? "s" : ""}://`)   // TLS sufficient? HTTPS embed requirement, so should be present
-    .replace(/(:[0-9]+)?$/, `:${CONFIG.data.port ?? 80}`);    // TODO: Default?
     
+    // Construct remaining relevant request information
     const dynamicURL: URL = new URL(iReq.url);
     const highlevelURL: IHighlevelURL = {
         hash: dynamicURL.hash,
@@ -158,31 +159,31 @@ process.on("message", async (iReq: IBareRequest, socket: Socket) => {
         highlevelCookies[parts[0].trim()] = value;
     });
 
+    // Construct high-level thread provision request object
     const sReq: IRequest = {
         ip: clientIP,
-        
         method: method,
         url: highlevelURL,
-
         cookies: highlevelCookies,
         encoding: highlevelEncoding,
         locale: highlevelLocale,
-
         headers: iReq.headers,  // TODO: High-level headers interface?
         
-        ...(bodyString ? {
-            bodyString: bodyString
-        } : {})
+        ...(body ?? {})
     };
     
-    // Remove auto-processed headers from serialized high-level representation
+    // Remove auto-processed headers from high-level request
+    // representation
     delete sReq.headers["host"];
     delete sReq.headers["accept-encoding"];
     delete sReq.headers["accept-language"];
     delete sReq.headers["cookie"];
 
+    // Assign accordingly prepared request data to worker thread
+    // for individual processing
     threadPool.assign(sReq)
     .then((sResOverload: TResponseOverload) => {
+        // Send response as received from finished worker routine and close socket
         if(typeof sResOverload === "number"
         || sResOverload.message instanceof Buffer) {
             return end(socket, sResOverload);
@@ -196,6 +197,7 @@ process.on("message", async (iReq: IBareRequest, socket: Socket) => {
         .shift()?.type
         .replace(/^\*$/, "gzip");
 
+        // Encode message as supported and qualified
         switch(acceptedEncoding) {
             case "gzip":
                 sResOverload.message = gzipSync(sResOverload.message);
@@ -223,7 +225,13 @@ process.on("message", async (iReq: IBareRequest, socket: Socket) => {
     });
 });
 
-
+/**
+ * Parse a given accept header based on the typical list and
+ * optional quality syntax:
+ * <name>(;q=<quality:[0,1]>)?(,<name>(;q=<quality:[0,1]>)?)*
+ * @param header Header value (optionally multiple levels ~ array)
+ * @returns Data in interfaced accept header encoding structure
+ */
 function parseAcceptHeader(header: string|string[]): IAcceptHeaderPart[] {
     return ([ header ].flat()[0] ?? "")
     .split(/,/g)
@@ -239,12 +247,21 @@ function parseAcceptHeader(header: string|string[]): IAcceptHeaderPart[] {
     ?? null;
 };
 
+/**
+ * Signal the parent process the work cycle assigned from the
+ * parent has been completed in order to have it fed back to
+ * the idle candidate queue.
+ */
 function signalDone() {
     process.send("done");
 }
 
-function end(...args: unknown[]) {
+/**
+ * End a request 
+ * @param args 
+ */
+function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
     signalDone();
 
-    respond.apply(null, args);
+    new Response(socket, sResOverload, prioritizedHeaders);
 }

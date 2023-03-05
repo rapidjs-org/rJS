@@ -7,7 +7,7 @@ interface ILimitEntry<V, L> {
 }
 
 
-export abstract class LimitDictionary<K, V, L> {
+export abstract class ALimitDictionary<K, V, L> {
     
     private static readonly keyPrefix: string = "LD:";
     

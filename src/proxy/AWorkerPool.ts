@@ -2,11 +2,23 @@ import { EventEmitter as Worker } from "events";
 import { cpus } from "os";
 
 
+/**
+ * Interface encoding active worker data. Includes a resolve
+ * callback for eventual call upon worker result reception
+ * and a timeout attached to terminate exhaustive worker
+ * processing runs.
+ */
 interface IActiveWorker<O> {
     resolve: (dataOut: O) => void;
     timeout: NodeJS.Timeout;
 }
 
+/**
+ * Interface encoding pending assignment data. Includes a
+ * resolve callback for eventual call upon worker result
+ * reception as well as the the input data as to be fed to
+ * the respectively handling worker entity.
+ */
 interface IPendingAssignment<I, O> {
     dataIn: I;
     resolve: (dataOut: O) => void;
@@ -15,8 +27,11 @@ interface IPendingAssignment<I, O> {
 
 // TODO: Need mutex?
 
-
-export abstract class WorkerPool<I, O> {
+/**
+ * Abstract class representing the foundation for concrete
+ * descriptions of worker entity pools.
+ */
+export abstract class AWorkerPool<I, O> {
 
     private readonly baseSize: number;
     private readonly timeout: number;
@@ -31,10 +46,25 @@ export abstract class WorkerPool<I, O> {
         this.maxPending = maxPending;
     }
 
+    /**
+     * Method expected to implement the creation of a worker
+     * entity to be returned.
+     * @returns Worker or promise resolving to worker as to be fed to the system
+     */
     protected abstract createWorker(): Worker|Promise<Worker>;
     
+    /**
+     * Method expected to activate a worker being given the
+     * managed worker and the input data.
+     * @param worker Worker that is to be activated
+     * @param dataIn Data input according to generic type
+     */
     protected abstract activateWorker(worker: Worker, dataIn: I): void;
 
+    /**
+     * Internally activate the next candidate worker entity
+     * with respectively assigned data.
+     */
     private activate() {
         if(!this.pendingAssignments.length || !this.idleWorkers.length) {
             return;
@@ -55,12 +85,23 @@ export abstract class WorkerPool<I, O> {
         });
     }
 
+    /**
+     * Internally deactivate a worker entity by registering
+     * it back to the candidate queue and motivating possibly
+     * pending input data handling.
+     * @param workerId Worker entity identifier
+     */
     private deactivate(workerId: number) {
         this.activeWorkers.delete(workerId);
 
         this.activate();
     }
 
+    /**
+     * Get unique identifier associated with a worker entity.
+     * @param worker Worker entity
+     * @returns Numeric identifier
+     */
     protected getWorkerId(worker: Worker): number {
         const optimisticWorkerCast = worker as unknown as {
             threadId: number;
@@ -70,6 +111,11 @@ export abstract class WorkerPool<I, O> {
         return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
     }
 
+    /**
+     * Accessibly deactivate a worker entity.
+     * @param worker Worker entity
+     * @param dataOut Data to write out to the assignment context
+     */
     public deactivateWorker(worker: Worker, dataOut: O|Error) {
         const workerId: number = this.getWorkerId(worker);
 
@@ -85,6 +131,12 @@ export abstract class WorkerPool<I, O> {
         this.deactivate(workerId);
     }
 
+    /**
+     * Assign work to a worker entity possibly pending for
+     * being handled in case of exhausted pool capacity.
+     * @param dataIn Data input
+     * @returns Promise resolving with worker results once done handling
+     */
     public assign(dataIn: I): Promise<O> {
         return new Promise((resolve: (dataOut: O) => void, reject) => {
             if(this.pendingAssignments.length >= this.maxPending) {
@@ -100,6 +152,11 @@ export abstract class WorkerPool<I, O> {
         });
     }
 
+    /**
+     * Initialize the worker pool based on the defined base or
+     * derived base size. Spins up worker entities to the
+     * candidate queue waiting for work.
+     */
     public init() {
         Array.from({ length: this.baseSize }, () => {
             const worker = this.createWorker();
@@ -127,6 +184,10 @@ export abstract class WorkerPool<I, O> {
             });
         });
 
+        /*
+         * Enforce singleton usage of initialization method by
+         * deleting the method member once called.
+         */
         delete this.init;   // Singleton usage
     }
 

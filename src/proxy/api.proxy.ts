@@ -1,3 +1,9 @@
+/**
+ * Reverse proxy server API module. Provides proxy maintenance
+ * functionality with implicit process detach behavior.
+ */
+
+
 import _config from "../_config.json";
 
 
@@ -10,10 +16,20 @@ import { IProxyIPCPackage } from "../_interfaces";
 import * as print from "../print";
 
 import { locateProxySocket } from "./utils";
-import { ARGS, HOSTNAMES, PORT } from "./EmbedContext";
+import { EmbedContext } from "./EmbedContext";
 
 
-const hostnamesCaption: string = `${HOSTNAMES[0]}${(HOSTNAMES.length > 1) ? `(+${HOSTNAMES.length - 1})`: ""}`;
+/*
+ * Log streamlined global hostname configuration.
+ * e.g.: { example.com, example.net, localhost } → example.com(+2)
+ */ 
+const hostnamesCaption: string = `${
+    EmbedContext.global.hostnames[0]
+}${(
+    EmbedContext.global.hostnames.length > 1)
+    ? `(+${EmbedContext.global.hostnames.length - 1})`
+    : ""
+}`;
 
 
 /**
@@ -109,9 +125,9 @@ export async function embed() {
      * detached first. The embed call is repeated in that case.
      */
     const embedApp = async () => {
-        await messageProxy(PORT, "embed", ARGS);
+        await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
         
-        print.info(`Embedded application cluster at ${hostnamesCaption}:${PORT}`);
+        print.info(`Embedded application cluster at ${hostnamesCaption}:${EmbedContext.global.port}`);
     };
 
     try {
@@ -124,7 +140,7 @@ export async function embed() {
          * Start proxy process as initial embedding has failed and proxy
          * process is thus assumed to be missing.
          */
-        const proxyProcess = fork(join(__dirname, "./server.http"), ARGS, {
+        const proxyProcess = fork(join(__dirname, "./server.http"), EmbedContext.global.args, {
             detached: true
         });
 
@@ -140,11 +156,13 @@ export async function embed() {
                  * Definite embedding request to just started proxy process.
                  */
                 await embedApp();
+
+                process.exit(0);
             } catch(err) {
                 print.error(`Could not embed application to proxy: err.message`);
+                
+                process.exit(1);
             }
-
-            process.exit(0);
         }); // TODO: DEV MODE live app log / manipulation inerface
     }
 }
@@ -157,7 +175,7 @@ export async function embed() {
 export async function unbed() {
     // TODO: IDs?
     try {
-        if(!await messageProxy(PORT, "unbed", HOSTNAMES)) {
+        if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
             print.error("Hostnames not registered on proxy");
 
             return;
@@ -165,7 +183,7 @@ export async function unbed() {
         
         print.info("Unbedded application");
     } catch(err) {
-        print.error(`No server proxy listening on :${PORT}`);
+        print.error(`No server proxy listening on :${EmbedContext.global.port}`);
     }
 }
 
@@ -193,9 +211,9 @@ export function monitor() {
     const proxyHosts: string[] = [];
     
     forEachProxy(async (port: number) => {
-        /* const embeddedHostnames = await messageProxy("monitor", port, embed.HOSTNAME) as string[];
+        const embeddedHostnames = await messageProxy(port, "monitor") as string[][];
 
-        proxyHosts.push(`${port}: ${embeddedHostnames.join(", ")}`); */  // TODO: Implement
+        proxyHosts.push(`${port}: ${embeddedHostnames}`);   // TODO: "Beautify"
     })
     .then(() => print.info(`Proxies:\n${proxyHosts.join("\n")}`))
     .catch(() => print.error("No proxies running"));

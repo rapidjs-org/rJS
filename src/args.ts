@@ -1,5 +1,5 @@
 /**
- * Application specific argument parser.
+ * Module representing a CLI argument parser.
  */
 
 
@@ -16,7 +16,8 @@ function retrieveKeyIndex(name: string, shorthand?: string): number {
 }
 
 /**
- * Parse a specific positional argument from the given command line arguments.
+ * Parse a specific positional argument from the given command
+ * line arguments.
  * @param index Position key
  * @returns The name of the positional argument if provided at index (no indicating dash)
  */

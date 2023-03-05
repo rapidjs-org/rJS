@@ -1,5 +1,7 @@
 /**
- * Module containing application specific console print. 
+ * Module representing application specific console output
+ * functionality implementing a scoping prefix and uniformal
+ * std channel formatting.
  */
 
 import _config from "./_config.json";

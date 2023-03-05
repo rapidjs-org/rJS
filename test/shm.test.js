@@ -12,7 +12,7 @@ process.on("message", consistencyStr => {
         // WRITE PARTY
         sharedMemory.writeSync("existing", referenceData);
         
-        log(`[ SHM : ${sharedMemory.getAppKey()} : "existing" ] WRITE -> '${referenceData}'`);
+        log(`[ SHM : ${sharedMemory.getConcreteAppKey()} : "existing" ] WRITE -> '${referenceData}'`);
 
         return;
     }
@@ -21,10 +21,10 @@ process.on("message", consistencyStr => {
     setTimeout(_ => {
         try {
             const dataExisting = sharedMemory.readSync("existing");
-            log(`[ SHM : ${sharedMemory.getAppKey()} : "existing" ] READ -> '${dataExisting}'`);
+            log(`[ SHM : ${sharedMemory.getConcreteAppKey()} : "existing" ] READ -> '${dataExisting}'`);
 
             const dataNonExisting = sharedMemory.readSync("nonExisting");
-            log(`[ SHM : ${sharedMemory.getAppKey()} : "nonExisting" ] READ -> ${dataNonExisting}`);
+            log(`[ SHM : ${sharedMemory.getConcreteAppKey()} : "nonExisting" ] READ -> ${dataNonExisting}`);
 
             process.send(
                 dataExisting === referenceData

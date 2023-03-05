@@ -4,16 +4,16 @@
  * to be stored in map as long as at least one key is
  * associated with it.
  */
-
 export class MultiMap<K, T> {
 
     private readonly valueMap: Map<number, T> = new Map();
     private readonly associationMap: Map<K, number> = new Map();
     private readonly associationTotalMap: Map<number, number> = new Map();
 
-    /* 
+    /*
      * Use a simple inceremental value counter as unique
-     * internal association reference.
+     * internal association reference. Multi map usage
+     * presumed in low capacity scenarios.
      */
     private entryCounter: number = 0;
     
@@ -99,7 +99,7 @@ export class MultiMap<K, T> {
 
             consolidatedMap.set(internalReference, keyArray);
         });
-        
+
         return Array.from(consolidatedMap.values());
     }
 

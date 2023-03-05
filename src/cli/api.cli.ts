@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 
 
+/**
+ * Command line interface entry module interpreting the
+ * induced command in order to perform a respective
+ * application routine. Each routine is disjunctive to
+ * the other routines, i.e. does not invoke others as a
+ * sub-/follow-up routine.
+ */
+
+
 import { readFileSync } from "fs";
 import { join } from "path";
 

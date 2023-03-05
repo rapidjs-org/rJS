@@ -3,9 +3,11 @@ Usage: rjs <command> [--<arg:key>|-<arg:shorthand>]*
 • Commands:
 
 help                            Display help text
+monitor                         Display status of all running proxies and applications
 start                           Start a new web space with a specific shell application (successive argument at position 1)
 stop                            Stop an existing web space
-monitor                         Display status of all running proxies and applications
+
+Optional | start | command arguments:
 
 • Flags:
 

@@ -8,9 +8,6 @@
 #include "./storage.h"
 
 
-// TODO: Adopt on windows
-
-
 uint32_t app_key;
 
 

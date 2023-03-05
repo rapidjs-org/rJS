@@ -1,18 +1,26 @@
+/**
+ * Module representing a custom HTTP server implementation
+ * based on the core TCP server module. Favors reverse proxy
+ * behavior due to directed socket distribution for worker
+ * process internal closure.
+ */
+
+
 import { join } from "path";
 import { Socket } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
 import { THeaders } from "../_types";
+import { IBasicRequest } from "../_interfaces";
 
 import { MultiMap } from "./MultiMap";
 import { EmbedContext } from "./EmbedContext";
 import { ProcessPool } from "./ProcessPool";
 import { create as createUnixServer } from "./server.unix";
-import { IBasicRequest } from "../_interfaces";
 
 
-// TODO: HTTP/2 with master streams?
+// TODO: Implement HTTP/2 option using proxy mastered streams?
 
 
 /*
@@ -26,6 +34,13 @@ let parentNotificationReference: number = 2;
  * Map of embedded contexts ...
  */
 const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
+
+
+process.on("uncaughtException", (err: Error) => {
+    console.error(err); // TODO: Print
+
+    // TODO: Handle
+});
 
 
 /**
@@ -52,12 +67,18 @@ function eventuallyInitNotifyParent() {
     ...(EmbedContext.global.isSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
 })
 .on("connection", (socket: Socket) => {
+    /*
+     * Handle TCP connections for HTTP syntactics. The reverse
+     * proxy must not perform on any aditional request specific
+     * information, but is designed for minimum distributional
+     * handling functionality.
+     */
     socket.once("readable", () => {
+        // Read TCP request data into buffer for HTTP interpretation
         let requestBuffer: string = "";
-
         let chunk: Buffer;
         let headersDelimiterIndex: number;
-
+        
         while(chunk = socket.read()) {
             requestBuffer += chunk.toString();
 
@@ -69,6 +90,7 @@ function eventuallyInitNotifyParent() {
         
         socket.unshift(requestBuffer.slice(headersDelimiterIndex + 4));
         
+        // Separate buffer into meta and header part
         const requestDataLines: string[] = requestBuffer
         .slice(0, headersDelimiterIndex)
         .split(/\r\n/g);
@@ -85,26 +107,36 @@ function eventuallyInitNotifyParent() {
             headers[key.trim().toLowerCase()] = value.trim();
         });
 
+        // Extract approached hostname
         let hostname: string = [ headers["host"] ].flat()[0];
         
+        // Terminate socket handling if hostname is not registered
+        // in proxy
         if(!contextPools.has(hostname)) {
             socket.end();
             socket.destroy();
 
             return;
         }
+        
+        /* const httpVersion: string = meta[2].split("/")[1]; */
 
+        // Extract request path to construct fully qualified URL
         const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}${meta[1]}`;
 
-        hostname = hostname.replace(/:[0-9]+$/, "");   // Port is safe (known)    // TODO: Implement useful header manipulation interface
+        // Remove port from URL in case of explicit statement (known)
+        hostname = hostname.replace(/:[0-9]+$/, "");
         
+        // Construct basic-level request object containing minimum
+        // relevant information for being send to a worker process
         const iReq: IBasicRequest = {
-            /* httpVersion: meta[2].split("/")[1], */
             method: meta[0],
             url: url,
             headers: headers
         };
 
+        // Assign the basic request alongside the socket connection
+        // to the next worker handler candidate for hostname
         contextPools
         .get(hostname)
         .assign({
@@ -126,6 +158,7 @@ function eventuallyInitNotifyParent() {
  * manipulation inter process communication.
  */
 createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
+    // Differ socket request for proxy manipulation
     switch(command) {
 
         /*
@@ -135,7 +168,7 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
         case "embed": {
             const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
-            const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/process"), embedContext);
+            const processPool: ProcessPool = new ProcessPool(join(__dirname, "./process/api.process"), embedContext);
 
             processPool.init();
             
@@ -181,11 +214,5 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
     }
 }, eventuallyInitNotifyParent);
 
-
-process.on("uncaughtException", (err: Error) => {
-    console.error(err); // TODO: Print
-
-    // TODO: Handle
-});
 
 // TODO: HTTP:80 to HTTPS:433 redirection server?

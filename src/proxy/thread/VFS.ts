@@ -1,7 +1,7 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
-import { LimitDictionary } from "./LimitDictionary";
+import { ALimitDictionary } from "./ALimitDictionary";
 
 
 interface IFileReference {
@@ -15,7 +15,7 @@ interface IFileStamp {
 }
 
 
-export class VFS extends LimitDictionary<string, IFileStamp, IFileReference> {
+export class VFS extends ALimitDictionary<string, IFileStamp, IFileReference> {
 
     private readonly root: string;
 

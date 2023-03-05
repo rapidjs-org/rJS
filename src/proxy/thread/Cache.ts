@@ -1,7 +1,7 @@
-import { LimitDictionary } from "./LimitDictionary";
+import { ALimitDictionary } from "./ALimitDictionary";
 
 
-export class Cache<K, V> extends LimitDictionary<K, V, number> {
+export class Cache<K, V> extends ALimitDictionary<K, V, number> {
 
     private readonly duration: number;
     
