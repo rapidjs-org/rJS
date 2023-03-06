@@ -43,6 +43,12 @@ const applicableSpecifiers: string[] = [ "" ]
  * the common configurations in the core.
  */
 export class Config {
+    
+    /*
+     * Always provide main concrete server application configuration
+     * for shorthand access.
+     */
+    public static readonly main: Config = new Config("config");
 
     /**
      * Deep merge objects for left-associative taget override.
@@ -84,7 +90,7 @@ export class Config {
      */
     private obj: TJSONObject;
 
-    constructor(name: string|string[], path: string) {
+    constructor(name: string|string[], subPath: string = "") {
         applicableSpecifiers
         .forEach((specifier: string) => {
             name = [ name ].flat();
@@ -94,18 +100,16 @@ export class Config {
                 fullPath: string;
             do {
                 fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
-                fullPath = join(path, `${fullName}`);
+                fullPath = join(EmbedContext.global.path, subPath, `${fullName}`);
             } while(!existsSync(fullPath) && (i < name.length));
             
-            if(!existsSync(fullPath)) {
-                return;
-            }
+            if(!existsSync(fullPath)) throw new ReferenceError(`Missing configuration file '${name}'`);
 
             let fileObj;
             try {
                 fileObj = require(fullPath);
             } catch(err) {
-                throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${path}'` : ""}`);
+                throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${join(subPath, fullName)}'` : ""}`);
             }
 
             this.obj = Config.deepMergeObj(this.obj, fileObj);
@@ -135,22 +139,20 @@ export class Config {
 
     /**
      * Read a specific value from the configuration possibly
-     * given a nested key as an array of keys.
-     * @param nestedKey Atomic key or array of nested keys
+     * given an atomic or nested key as a rest parameter.
+     * @param nestedKey Possibly nested keys
      * @returns Type resolve interface
      */
-    public get(nestedKey: string|string[]): ITypeResolveInterface {
-        const keys: string[] = [ nestedKey ].flat();
-
-        let value: string|number|boolean|TJSONObject = this.obj[keys.shift()];
+    public get(...nestedKey: string[]): ITypeResolveInterface {
+        let value: string|number|boolean|TJSONObject = this.obj[nestedKey.shift()];
 
         try {
-            keys
+            nestedKey
             .forEach((key: string) => {
                 value = (value as TJSONObject)[key];
             });
         } catch {
-            throw new SyntaxError(`Required configuration missing '${keys.join(".")}'`);    // TODO: To resolve interface to depict required type?
+            throw new SyntaxError(`Required configuration missing '${nestedKey.join(".")}'`);    // TODO: To resolve interface to depict required type?
         }
 
         return this.createResolveInterface(value);

@@ -6,10 +6,13 @@ interface ILimitEntry<V, L> {
     limitReference: L;
 }
 
-
+/**
+ * Abstract class representing a dictionary whose entries are
+ * existentially bound to a specific limit reference.
+ */
 export abstract class ALimitDictionary<K, V, L> {
     
-    private static readonly keyPrefix: string = "LD:";
+    private static readonly sharedKeyPrefix: string = "LD:";
     
     private static instances = 0;
 
@@ -25,14 +28,14 @@ export abstract class ALimitDictionary<K, V, L> {
     constructor(normalizeKeyCallback?: (key: K) => K) {
         this.normalizeKeyCallback = normalizeKeyCallback || (k => k);   // Identity by default
         
-        this.id = LimitDictionary.instances++;  // Consistent among processes due to same order of instance creation (assuming no race consitions)
+        this.id = ALimitDictionary.instances++;  // Consistent among processes due to same order of instance creation (assuming no race consitions)
     }
     
     protected abstract retrieveReferenceCallback(key: K): L;
     protected abstract validateLimitCallback(reference: L, current: L): boolean;
 
     private getInternalKey(key: K): string {
-        return `${LimitDictionary.keyPrefix}${this.id}${this.normalizeKeyCallback(key).toString()}`;
+        return `${ALimitDictionary.sharedKeyPrefix}${this.id}${this.normalizeKeyCallback(key).toString()}`;
     }
 
     protected setExistenceLookup(key: K, value: V) {

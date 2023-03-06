@@ -1,19 +1,18 @@
-/* const _config = {
-    selfContextIdentifier: "$this"
-};
-
-
 import { join } from "path";
 
 
+/**
+ * Class representing both a single plug-in abstraction and
+ * a static cumulative management interface providing a
+ * comprehensive interface for plug-in implementation within
+ * the conrete server application.
+ */
 export class Plugin {
     
     private readonly name: string;
 
     constructor(path: string) {
-        require(join(process.cwd(), path));  // TODO: Work with a common base path (e.g. ./plugins/*)?
         
-        // TODO: Define $this
     }
 
-} */
+}

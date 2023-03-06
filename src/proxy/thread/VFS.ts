@@ -4,17 +4,29 @@ import { join, normalize } from "path";
 import { ALimitDictionary } from "./ALimitDictionary";
 
 
+/**
+ * Interface encoding a file reference representation containing
+ * relevant manipulation information for limit validation.
+ */
 interface IFileReference {
     ctime: number;
     mtime: number;
 }
 
+/**
+ * Interface encoding a file stamp containing information
+ * relevant for file system abstraction implementations.
+ */
 interface IFileStamp {
     ETag: string;
     data: string;
 }
 
 
+/**
+ * Class representing a comprehensively response writing
+ * and closing a given socket.
+ */
 export class VFS extends ALimitDictionary<string, IFileStamp, IFileReference> {
 
     private readonly root: string;

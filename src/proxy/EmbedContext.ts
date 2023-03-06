@@ -16,10 +16,10 @@ export class EmbedContext {
      * Considered global embed context as is sufficient for most
      * memory spaces.
      */
-    static global = new EmbedContext(process.argv.slice(2));
+    public static readonly global = new EmbedContext(process.argv.slice(2));
 
     public readonly args: string[];
-    public readonly shellReference: string;
+    public readonly concreteAppModulePath: string;
     public readonly hostnames: string[];
     public readonly isSecure: boolean;
     public readonly port: number;
@@ -37,24 +37,24 @@ export class EmbedContext {
         this.args = args;
         
         /*
-         * Which server shell interpreting the concrete application
-         * is requested to be embedded.
+         * Which concrete server application the core is supposed
+         * to interpret within the related cluster threads.
          */
-        // TODO: Provide positional-only aliases for known |start| <shell> combinations
-        let shellReference: string = parsePositional(1);
-        if(shellReference) {
-            shellReference = (!/^(@?[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(shellReference) && !isAbsolute(shellReference))
-            ? join(process.cwd(), shellReference)
-            : shellReference;
+        // TODO: Provide positional-only aliases for known |start| <concrete> combinations
+        let concreteReference: string = parsePositional(1);
+        if(concreteReference) {
+            concreteReference = (!/^(@?[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(concreteReference) && !isAbsolute(concreteReference))
+            ? join(process.cwd(), concreteReference)
+            : concreteReference;
             
             try {
-                shellReference = require.resolve(shellReference);
+                concreteReference = require.resolve(concreteReference);
             } catch {
-                shellReference = null;
+                concreteReference = null;
             }
         }
         
-        this.shellReference = shellReference;
+        this.concreteAppModulePath = concreteReference;
 
         /*
          * Which hostname(s) to associate with the application and

@@ -3,7 +3,7 @@
  */
 
 
-import { THeaders, THighlevelCookieIn } from "./_types";
+import { TCookies, THeaders, THighlevelCookieIn } from "./_types";
 
 
 export interface IProxyIPCPackage {
@@ -34,9 +34,9 @@ export interface IRequest {
 export interface IResponse {
     status: number;
     
+    cookies?: TCookies;
     headers?: THeaders;
     message?: string|number|boolean|Buffer;
-    cookies?: Record<string, IHighlevelCookieOut>;
 }
 
 

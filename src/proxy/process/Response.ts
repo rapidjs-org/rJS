@@ -1,33 +1,42 @@
+import _config from "../../_config.json";
+
+
 import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
 import { THeaders, TResponseOverload } from "../../_types";
 import { IResponse, IHighlevelCookieOut } from "../../_interfaces";
 
+import { Config } from "./Config
+
 
 /**
- * Class representing a response writing and closing a
- * given socket comprehensively.
+ * Class representing a comprehensively response writing
+ * and closing a given socket.
  */
 export class Response {
 
     private readonly headers: THeaders;
 
-    public statusCode: number;
-    
     constructor(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
         if(socket.writableEnded || socket.writableFinished) {
             return;
         }
 
+        // Store headers encoded with designated interface in order
+        // to manipulate it from abstracting methods
         this.headers = {};
 
+        // Retrieve a uniformal response object regardless of the
+        // what response data has been overloaded
         const sRes: IResponse = (typeof sResOverload === "number")
         ? {
             status: sResOverload
         }
         : sResOverload;
-        
+
+        // Retrieve a uniformal response object regardless of the
+        // what response data has been overloaded
         const contentLength: number = sRes.message
         ? ((sRes.message instanceof Buffer)
             ? Buffer.byteLength(sRes.message)
@@ -44,7 +53,7 @@ export class Response {
         }
     
         // Default headers (prioritized)
-        this.setHeader("Cache-Control", CONFIG.data.cache.client && `public, max-age=${CONFIG.data.cache.client}, must-revalidate`);
+        this.setHeader("Cache-Control", `public, max-age=${Config.main.get("cache", "client").number()}, must-revalidate`);
         // this.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
         this.setHeader("Content-Length", String(contentLength));
         this.hasHeader("Content-Type")
@@ -56,7 +65,7 @@ export class Response {
         // Set cookie header
         for(const name in sRes.cookies) {
             const cookie: IHighlevelCookieOut = sRes.cookies[name];
-    
+            
             this.setHeader("Set-Cookie", `${name}=${cookie.value}${
                 cookie.maxAge ? `; Max-Age: ${cookie.maxAge}`: ""
             }${
@@ -73,7 +82,9 @@ export class Response {
         }
         
         // TODO: Note that string messages are compressed
-        const statusCode: number = !CONFIG.data.concealErrorStatus
+
+        // Write response data message
+        const statusCode: number = !Config.main.get("concealErrorStatus").bool()
         ? sRes.status
         : (sRes.message ? 200 : 400);
         
@@ -97,14 +108,26 @@ export class Response {
 
         socket.write(data.join("\r\n"));
 
+        // Close socket connection
         socket.end();
         socket.destroy();  // TODO: Reuse?
     }
 
+    /**
+     * Set a specific header for the response.
+     * @param name Header name
+     * @param value Header value
+     */
     private setHeader(name: string, value: string|string[]) {
         this.headers[name] = value;
     }
-    
+
+    /**
+     * Check whether a specific header for the response has
+     * been set.
+     * @param name Header name
+     * @returns Whether the header is set
+     */
     private hasHeader(name: string) {
         return !!this.headers[name];
     }

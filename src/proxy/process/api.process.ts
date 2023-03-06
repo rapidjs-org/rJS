@@ -14,6 +14,7 @@ import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve contex
 import { Config } from "./Config";
 import { Response } from "./Response";
 import { RateLimiter } from "./RateLimiter";
+import { EmbedContext } from "../EmbedContext";
 
 
 /**
@@ -29,8 +30,12 @@ interface IAcceptHeaderPart {
 
 
 // TODO: Implement activeShellApp
-const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/thread"));
-const rateLimiter: RateLimiter<string> = new RateLimiter();
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"));
+const rateLimiter: RateLimiter<string> = new RateLimiter(
+    EmbedContext.global.mode.DEV
+    ? Infinity
+    : Config.main.get("limit", "requestsPerClient").number()
+);
 
 
 threadPool.init();
@@ -76,7 +81,7 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
     if(!rateLimiter.grantsAccess(clientIP)) return end(socket, 429);
     
     // Block if exceeds URL length
-    if(iReq.url.length > Config.data.limit.urlLength) return end(socket, 414);
+    if(iReq.url.length > Config.main.get("limit", "urlLength").number()) return end(socket, 414);
 
     // Parse body if is payload effective method
     const method: string = iReq.method.toUpperCase();
@@ -89,7 +94,7 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
         while(chunk = socket.read()) {
             bodyBuffer += chunk.toString();
 
-            if(bodyBuffer.length > CONFIG.data.limit.payloadSize) return end(socket, 413);
+            if(bodyBuffer.length > Config.main.get("limit", "payloadSize").number()) return end(socket, 413);
         }
     }
     
@@ -257,8 +262,12 @@ function signalDone() {
 }
 
 /**
- * End a request 
- * @param args 
+ * End a request by sending a specific response, followed by
+ * signaling the parent process pool the worker process has
+ * therefore completed the current processing cycle.
+ * @param socket Related conenction socket
+ * @param sResOverload Response specification object or status overload
+ * @param prioritizedHeaders Headers to prioritize over implicitly set ones
  */
 function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
     signalDone();
