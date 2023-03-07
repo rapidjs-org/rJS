@@ -5,14 +5,12 @@
 
 import { parentPort } from "worker_threads";
 
-import { IRequest, IResponse } from "../../_interfaces";
+import { TConcreteAppAPI, TConcreteAppHandler } from "../../_types";
+import { IRequest } from "../../_interfaces";
 
 import { EmbedContext } from "../EmbedContext";
 
 import * as concreteAPI from "./api.concrete";
-
-
-type TConcreteAppHandler = (req: IRequest) => IResponse;
 
 
 /*
@@ -26,7 +24,7 @@ type TConcreteAppHandler = (req: IRequest) => IResponse;
  */
 let concreteAppHandler: TConcreteAppHandler;
 import(EmbedContext.global.concreteAppModulePath)
-.then((api: (concreteAPI: typeof import("./api.concrete")) => TConcreteAppHandler) => {
+.then((api: (concreteAPI: TConcreteAppAPI) => TConcreteAppHandler) => {
     concreteAppHandler = api(concreteAPI);
 
     // Signal parent process the thread is ready for being
@@ -36,7 +34,7 @@ import(EmbedContext.global.concreteAppModulePath)
 
 
 /*
- * Listen for 
+ * Listen for incoming requests to handle with specified routine.
  */
 parentPort.on("message", (sReq: IRequest) => {
     parentPort.postMessage(

@@ -74,7 +74,7 @@ export class RateLimiter<I> {
         
         currentLimitData.currentWindow.set(entityIdentifier, currentHits);
 
-        const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / currentLimitData.windowSize, 1);
+        const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / this.windowSize, 1);
         const weightedHits: number
         = ((currentLimitData.previousWindow.get(entityIdentifier) ?? 0) * (1 - currentWindowWeight))
         + (currentHits * currentWindowWeight);
