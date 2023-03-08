@@ -94,11 +94,11 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
     ? formatMessage(serializedMessage)
     : message;
 
-    if(lastLog.message
+    /* if(lastLog.message
     && (!logDir || logDir === lastLog.dir)
     && message === lastLog.message.data) {
         try {
-            /* process[channel].moveCursor(
+            process[channel].moveCursor(
                 (!lastLog.message.isMultiline
                 ? (_config.appNameShort.length + lastLog.message.data.length + 4)
                 : 0),
@@ -106,14 +106,14 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
                 ? -1
                 : 0)
             );
-            process[channel].clearLine(1); */   // TODO: Fix
+            process[channel].clearLine(1);  // TODO: Fix
             
             process[channel]
             .write(`${highlight(`(${++lastLog.message.count})`, [ 255, 92, 92 ])}\n`);
-        } catch { /**/ }
+        } catch {}
 
         return;
-    }
+    } */
 
     lastLog.dir = logDir;
     lastLog.message = {

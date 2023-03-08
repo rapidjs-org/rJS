@@ -35,6 +35,10 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
         });
 
         return new Promise((resolve) => {
+            /* thread.on("error", err => {
+                throw err;
+            }); */
+
             thread.once("message", () => {
                 thread.on("message", (sRes: IResponse) => {
                     this.deactivateWorker(thread, sRes); 
@@ -42,7 +46,6 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
 
                 resolve(thread);
             });
-            //thread.on("error", err => reject(err));
         });
     }
 

@@ -1,4 +1,4 @@
-import * as sharedMemory from "../../shared-memory/api.shared-memory";
+import { ASharedDictionary } from "../ASharedDictionary";
 
 
 type TRate<I> = Map<I, number>;
@@ -18,7 +18,6 @@ interface ILimiterData<I> {
 }
 
 
-
 /**
  * Class representing a rate limiter providing a cohesive
  * interface for feeding and validating whether a client
@@ -29,34 +28,45 @@ interface ILimiterData<I> {
  * rates and validated for their weighted sliding window
  * total as a reference.
  */
-export class RateLimiter<I> {
-
-    private static readonly sharedKey: string = "RL";
+export class RateLimiter<I> extends ASharedDictionary<I, ILimiterData<I>> {
 
     private readonly limit: number;
     private readonly windowSize: number;
     
     constructor(limit: number, windowSize = 60000) {
+        super();
+
         this.limit = limit;
         this.windowSize = windowSize;
     }
-
+    
     /**
      * Update limit data according to the carreid pivot timestamp.
      * I.e. windows are retained, shifted or all-new created.
      * Subsequently, the given identity entry is incremented for
      * the then coded current window.
      */
-    private updateLimitData(entityIdentifier: I): ILimiterData<I> {
-        const currentLimitData: ILimiterData<I> = sharedMemory.readSync<ILimiterData<I>>(RateLimiter.sharedKey)
+    private updateLimitData(): ILimiterData<I> {
+        const currentLimitData: ILimiterData<I> = this.readShared()
         ?? {
             timePivot: Date.now(),
             previousWindow: new Map(),
             currentWindow: new Map()
         };
 
-        currentLimitData.currentWindow.set(entityIdentifier,
-            currentLimitData.currentWindow.get(entityIdentifier) + 1);
+        const now: number = Date.now();
+        const nowPivot: number = now - currentLimitData.timePivot;
+        
+        if(nowPivot <= this.windowSize) return currentLimitData;
+
+        currentLimitData.currentWindow = (nowPivot <= (2 * this.windowSize))
+        ? currentLimitData.currentWindow
+        : new Map();
+
+        currentLimitData.previousWindow = currentLimitData.currentWindow;
+        currentLimitData.currentWindow = new Map();
+
+        currentLimitData.timePivot = now;
         
         return currentLimitData;
     }
@@ -68,16 +78,18 @@ export class RateLimiter<I> {
      * @returns Whether access is granted (the limit has not been exceeded yet)
      */
     public grantsAccess(entityIdentifier: I): boolean {
-        const currentLimitData: ILimiterData<I> = this.updateLimitData(entityIdentifier);
+        const currentLimitData: ILimiterData<I> = this.updateLimitData();
 
         const currentHits: number = (currentLimitData.currentWindow.get(entityIdentifier) ?? 0) + 1;
         
         currentLimitData.currentWindow.set(entityIdentifier, currentHits);
-
+        
         const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / this.windowSize, 1);
         const weightedHits: number
         = ((currentLimitData.previousWindow.get(entityIdentifier) ?? 0) * (1 - currentWindowWeight))
         + (currentHits * currentWindowWeight);
+
+        this.writeShared(currentLimitData);
         
         return (weightedHits <= this.limit);
     }

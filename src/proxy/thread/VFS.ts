@@ -1,7 +1,7 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
-import { ALimitDictionary } from "./ALimitDictionary";
+import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 
 
 /**
@@ -27,7 +27,7 @@ interface IFileStamp {
  * Class representing a comprehensively response writing
  * and closing a given socket.
  */
-export class VFS extends ALimitDictionary<string, IFileStamp, IFileReference> {
+export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReference> {
 
     private readonly root: string;
 

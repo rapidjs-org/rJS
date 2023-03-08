@@ -129,7 +129,7 @@ export class Config {
                 return (value && value !== "false");
             },
             number: () => {
-                return Number.parseFloat(value.toString());
+                return +value.toString();
             },
             string: () => {
                 return value.toString();

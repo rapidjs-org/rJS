@@ -7,6 +7,7 @@
     "rjs": "./dist/cli/api.cli.js"
   },
   "scripts": {
+    "debug": "./scripts/debug.sh",
     "setup": "npm i && cd ./src/shared-memory/ && node-gyp configure",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
     "compile:dist": "node ./scripts/build.js && chmod +x ./dist/cli/api.cli.js",

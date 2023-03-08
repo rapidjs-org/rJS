@@ -1,13 +1,13 @@
 import { Config } from "../process/Config";
 
-import { ALimitDictionary } from "./ALimitDictionary";
+import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 
 
 /**
  * Class representing a purpuse-directed cache, i.e. a
  * time limited dicitionary data structure.
  */
-export class Cache<K, V> extends ALimitDictionary<K, V, number> {
+export class Cache<K, V> extends ASharedLimitDictionary<K, V, number> {
 
     private readonly duration: number;
     

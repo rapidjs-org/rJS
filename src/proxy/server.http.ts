@@ -16,6 +16,7 @@ import { IBasicRequest } from "../_interfaces";
 
 import { MultiMap } from "./MultiMap";
 import { EmbedContext } from "./EmbedContext";
+import { ErrorControl } from "./ErrorControl";
 import { ProcessPool } from "./ProcessPool";
 import { create as createUnixServer } from "./server.unix";
 
@@ -36,11 +37,7 @@ let parentNotificationReference: number = 2;
 const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
 
 
-process.on("uncaughtException", (err: Error) => {
-    console.error(err); // TODO: Print
-
-    // TODO: Handle
-});
+new ErrorControl();
 
 
 /**

@@ -1,6 +1,6 @@
 import { join, isAbsolute, normalize } from "path";
 
-import { parsePositional, parseFlag, parseOption } from "../args";
+import * as args from "../args";
 
 
 /**
@@ -29,19 +29,19 @@ export class EmbedContext {
         PROD: boolean;
     };
 
-    constructor(args: string[]) {
+    constructor(relatedArgs: string[]) {
         /*
          * Arguments provided for context resembling process argv
          * without the leading exec and file path information.
          */
-        this.args = args;
+        this.args = relatedArgs;
         
         /*
          * Which concrete server application the core is supposed
          * to interpret within the related cluster threads.
          */
         // TODO: Provide positional-only aliases for known |start| <concrete> combinations
-        let concreteReference: string = parsePositional(1);
+        let concreteReference: string = args.parsePositional(1);
         if(concreteReference) {
             concreteReference = (!/^(@?[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(concreteReference) && !isAbsolute(concreteReference))
             ? join(process.cwd(), concreteReference)
@@ -60,28 +60,28 @@ export class EmbedContext {
          * Which hostname(s) to associate with the application and
          * therefore reverse-proxy accordingly.
          */
-        this.hostnames = (parseOption("hostname", "H").string ?? "localhost")
+        this.hostnames = (args.parseOption("hostname", "H").string ?? "localhost")
         .split(/,/g);
         // TODO: Check hostnames syntax validity
 
         /*
          * Whether to require HTTPS to be used (instead of bare HTTP).
          */
-        this.isSecure = parseFlag("secure", "S") || /^https:\/\//i.test(this.hostnames[0]);
+        this.isSecure = args.parseFlag("secure", "S") || /^https:\/\//i.test(this.hostnames[0]);
         
         /*
          * Which port to embed application to. Embeds to the related
          * proxy process if already exists, or spins up a process
          * first otherwise.
          */
-        this.port = parseOption("port", "P").number ?? (this.isSecure ? 443 : 80);
+        this.port = args.parseOption("port", "P").number ?? (this.isSecure ? 443 : 80);
         
         /*
          * Working directory of the embedded application. Uses the
          * commanding CWD by default.
          */
         const wdPath: string = process.cwd();
-        const argPath: string = parseOption("wd", "W").string;
+        const argPath: string = args.parseOption("wd", "W").string;
         
         this.path = normalize(
             argPath
@@ -97,7 +97,7 @@ export class EmbedContext {
          * state boolean. Enables multiple concurrent modes and a
          * simple access usage.
          */
-        const devFlagSet: boolean = parseFlag("dev", "D");
+        const devFlagSet: boolean = args.parseFlag("dev", "D");
         
         this.mode = {
             DEV: devFlagSet,

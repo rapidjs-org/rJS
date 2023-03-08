@@ -1,7 +1,7 @@
-import * as sharedMemory from "../../shared-memory/api.shared-memory";
+import { ASharedDictionary } from "../ASharedDictionary";
 
 
-interface ILimitEntry<V, L> {
+interface ILimitValue<V, L> {
     value: V;
     limitReference: L;
 }
@@ -10,15 +10,8 @@ interface ILimitEntry<V, L> {
  * Abstract class representing a dictionary whose entries are
  * existentially bound to a specific limit reference.
  */
-export abstract class ALimitDictionary<K, V, L> {
+export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<K, ILimitValue<V, L>> {
     
-    private static readonly sharedKeyPrefix: string = "LD:";
-    
-    private static instances = 0;
-
-    private readonly id: number;
-    private readonly normalizeKeyCallback: (key: K) => K;
-
     private existenceLookupValue: {
         key: K;
         value: V;
@@ -26,41 +19,35 @@ export abstract class ALimitDictionary<K, V, L> {
     };
 
     constructor(normalizeKeyCallback?: (key: K) => K) {
-        this.normalizeKeyCallback = normalizeKeyCallback || (k => k);   // Identity by default
-        
-        this.id = ALimitDictionary.instances++;  // Consistent among processes due to same order of instance creation (assuming no race consitions)
+        super(normalizeKeyCallback);
     }
     
     protected abstract retrieveReferenceCallback(key: K): L;
     protected abstract validateLimitCallback(reference: L, current: L): boolean;
 
-    private getInternalKey(key: K): string {
-        return `${ALimitDictionary.sharedKeyPrefix}${this.id}${this.normalizeKeyCallback(key).toString()}`;
-    }
-
     protected setExistenceLookup(key: K, value: V) {
         this.existenceLookupValue = {
-            key: this.normalizeKeyCallback(key),
+            key: this.normalizeKey(key),
             value: value,
             timestamp: Date.now()
         };
     }
 
     public write(key: K, value: V) {
-        const entry: ILimitEntry<V, L> = {
+        const limitValue: ILimitValue<V, L> = {
             value: value,
             limitReference: this.retrieveReferenceCallback(key)
         };
         
         // TODO: Benchmark w and w/o enabled top layer intermediate memory (-> Dict <-> intermediate <-> SHM)
 
-        sharedMemory.writeSync(this.getInternalKey(key), entry);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
+        this.writeShared(limitValue, key);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
     }
 
     public read(key: K): V {
         // TODO: Implement intermediate
 
-        if((this.existenceLookupValue || {}).key !== this.normalizeKeyCallback(key)
+        if((this.existenceLookupValue || {}).key !== this.normalizeKey(key)
         || (Date.now() - ((this.existenceLookupValue || {}).timestamp || 0)) > 1000) {    // TODO: Define timeout threshold (from config?)
             const exists: boolean = this.exists(key);
 
@@ -79,9 +66,9 @@ export abstract class ALimitDictionary<K, V, L> {
     public exists(key: K): boolean {
         // TODO: Implement intermediate
 
-        let limitEntry: ILimitEntry<V, L> = sharedMemory.readSync<ILimitEntry<V, L>>(this.getInternalKey(key));
+        let limitValue: ILimitValue<V, L> = this.readShared(key);
         
-        if(!limitEntry) {
+        if(!limitValue) {
             return false;
         }
         
@@ -92,11 +79,11 @@ export abstract class ALimitDictionary<K, V, L> {
             return false;
         }
         
-        if(!this.validateLimitCallback(limitEntry.limitReference, reference)) {
+        if(!this.validateLimitCallback(limitValue.limitReference, reference)) {
             return false;
         }
         
-        this.setExistenceLookup(key, limitEntry.value); // Already store to reduce repeated SHM access on subsequent read
+        this.setExistenceLookup(key, limitValue.value); // Already store to reduce repeated SHM access on subsequent read
 
         return true;
     }

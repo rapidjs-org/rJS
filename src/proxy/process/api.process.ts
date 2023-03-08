@@ -10,11 +10,13 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../../_types";
 import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../_interfaces";
 
+import { EmbedContext } from "../EmbedContext";
+import { ErrorControl } from "../ErrorControl";
+
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context
 import { Config } from "./Config";
 import { Response } from "./Response";
 import { RateLimiter } from "./RateLimiter";
-import { EmbedContext } from "../EmbedContext";
 
 
 /**
@@ -26,7 +28,6 @@ interface IAcceptHeaderPart {
     name: string;
     quality: number;
 }
-
 
 
 // TODO: Implement activeShellApp
@@ -48,13 +49,10 @@ threadPool.init();
  * this worker process to the idle candidate queue within the
  * parent process.
  */
-process.on("uncaughtException", (err: Error) => {
-    console.error(err);
-    
-    // TODO: Handle
-
+new ErrorControl(() => {
     signalDone();   // TODO: Signal error (or keep "error"?)
 });
+
 
 /*
  * Listen for messages from parent process being consumed as
@@ -121,11 +119,8 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
     .map((locale: IAcceptHeaderPart) => {
         const parts: string[] = locale.name.match(/^([a-z]+|\*)(-([A-Z]+))?$/);
         
-        if(!parts) {
-            return null;
-        }
-        
-        return {
+        return parts
+        ? {
             language: parts[1],
             quality: locale.quality,
 
@@ -133,7 +128,8 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
             ? {
                 region: parts[3]
             }: {}
-        };
+        }
+        : null;
     })
     .filter((locale: IHighlevelLocale) => locale);
 
@@ -149,9 +145,7 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
     [ iReq.headers["cookie"] ].flat()[0]
     ?.split(/;/g)
     .forEach((cookie: string) => {
-        if(!/\s*[^;, ]+=.+\s*/.test(cookie)) {
-            return;
-        }
+        if(!/\s*[^;, ]+=.+\s*/.test(cookie)) return;
 
         const parts: string[] = cookie.split(/=/);
         let value: string|number|boolean;
