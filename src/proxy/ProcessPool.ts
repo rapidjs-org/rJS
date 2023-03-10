@@ -6,6 +6,7 @@ import * as print from "../print";
 
 import { AWorkerPool } from "./AWorkerPool";
 import { EmbedContext } from "./EmbedContext";
+import { ErrorControl } from "./ErrorControl";
 
 
 /**
@@ -18,6 +19,9 @@ interface IChildData {
     iReq: IBasicRequest;
     socket: Socket;
 }
+
+
+new ErrorControl();
 
 
 /**
@@ -70,7 +74,9 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
 			print.info(String(message).replace(/\n$/, "")/* , this.logDir */);
 		});
 		childProcess.stderr.on("data", (err: Buffer) => {
-			print.error(String(err)/* , this.logDir */);
+            print.error(String(err));
+
+            process.exit(1);
 		});
         
         childProcess.on("message", (message: string) => {

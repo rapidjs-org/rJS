@@ -161,6 +161,8 @@ function write(channel: EStdChannel, message: unknown, logDir?: string) {
     ]
 }); */
 
+// TODO: Log file rotation
+
 
 export function info(message: unknown, logDir?: string) {
     write(EStdChannel.OUT, message, logDir);
