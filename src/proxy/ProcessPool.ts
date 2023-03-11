@@ -33,6 +33,8 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
     //private readonly logDir: string;
     private readonly childProcessModulePath: string;
     private readonly embedContext: EmbedContext;
+
+    private isRunning: boolean = true;
     
     constructor(childProcessModulePath: string, embedContext: EmbedContext, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
@@ -73,10 +75,20 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
 		childProcess.stdout.on("data", (message: Buffer) => {
 			print.info(String(message).replace(/\n$/, "")/* , this.logDir */);
 		});
+        /*
+         * Any error occurring within processes is locally intercepted.
+         * Hence, any error bubbling up is due to explicit pass through
+         * behavior motivated by error control instances.
+         * 
+         * Terminate any running clustered sub-process and 
+         * it handled with downwards-inherent cluster termination.
+         */
 		childProcess.stderr.on("data", (err: Buffer) => {
-            print.error(String(err));
+            this.clear();
 
-            process.exit(1);
+            this.isRunning = false; // TODO: Use in monitoring / diagnosis
+
+            print.error(String(err));
 		});
         
         childProcess.on("message", (message: string) => {
@@ -90,6 +102,15 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
         return childProcess;
     }
     
+    /**
+     * Destroy a worker process as required by the abstract parent
+     * class. Terminates the process registered as a worker.
+     * @param childProcess Child process handle
+     */
+    protected destroyWorker(childProcess: ChildProcess) {
+        childProcess.kill();
+    }
+
     /**
      * Activate a worker as required by the abstract parent class.
      * Sends the input data encoding request and socket related

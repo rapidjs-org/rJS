@@ -35,6 +35,14 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
         });
 
         return new Promise((resolve) => {
+            /*
+             * Any error occurring within threads is locally intercepted.
+             * Hence, any error bubbling up is due to explicit pass
+             * through behavior motivated by error control instances.
+             * 
+             * Pass through error to parent process at this level to have
+             * it handled with downwards-inherent cluster termination.
+             */
             thread.on("error", err => {
                 throw err;
             });
@@ -47,6 +55,15 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
                 resolve(thread);
             });
         });
+    }
+    
+    /**
+     * Destroy a worker thread as required by the abstract parent
+     * class. Terminates the thread registered as a worker.
+     * @param thread Thread handle
+     */
+    protected destroyWorker(thread: Thread) {
+        thread.terminate();
     }
 
     /**

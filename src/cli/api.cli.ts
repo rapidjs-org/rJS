@@ -72,7 +72,9 @@ switch(command) {
 
         break;
     
-    // Handle undefined command
+    /*
+     * Handle undefined command.
+     */
     default:
         print.info(
             command

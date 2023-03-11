@@ -37,6 +37,7 @@ export abstract class AWorkerPool<I, O> {
     private readonly timeout: number;
     private readonly maxPending: number;
     private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
+    private readonly registeredWorkers: Worker[] = [];
     private readonly idleWorkers: Worker[] = [];
     private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
@@ -47,11 +48,11 @@ export abstract class AWorkerPool<I, O> {
     }
 
     /**
-     * Method expected to implement the creation of a worker
-     * entity to be returned.
-     * @returns Worker or promise resolving to worker as to be fed to the system
+     * Methods expected to implement the creation / destruction
+     * of a worker entity to be returned.
      */
     protected abstract createWorker(): Worker|Promise<Worker>;
+    protected abstract destroyWorker(worker: Worker): void;
     
     /**
      * Method expected to activate a worker being given the
@@ -127,7 +128,7 @@ export abstract class AWorkerPool<I, O> {
         .resolve((dataOut instanceof Error) ? null : dataOut);  // TODO: How tohandle errors specifically?
 
         this.idleWorkers.push(worker);
-
+        
         this.deactivate(workerId);
     }
 
@@ -153,35 +154,13 @@ export abstract class AWorkerPool<I, O> {
     }
 
     /**
-     * Initialize the worker pool based on the defined base or
-     * derived base size. Spins up worker entities to the
+     * Initialize the worker pool based on the defined base
+     * or derived base size. Spins up worker entities to the
      * candidate queue waiting for work.
      */
     public init() {
-        Array.from({ length: this.baseSize }, () => {
-            const worker = this.createWorker();
-
-            (!(worker instanceof Promise)
-            ? new Promise(resolve => resolve(worker))
-            : worker)
-            .then((worker: Worker) => {
-                /* worker.on("err", (err: Error) => {
-                    console.error(err);
-                }); */
-                
-                worker.on("exit", (code: number) => {
-                    if(code === 0) {
-                        return;
-                    }
-    
-                    this.deactivate(this.getWorkerId(worker));
-    
-                    // TODO: Handle
-                    // TODO: Error control
-                });
-
-                this.idleWorkers.push(worker);
-            });
+        Array.from({ length: this.baseSize }, async () => {
+            this.registeredWorkers.push(await this.createWorker());
         });
 
         /*
@@ -189,6 +168,19 @@ export abstract class AWorkerPool<I, O> {
          * deleting the method member once called.
          */
         delete this.init;   // Singleton usage
+    }
+    
+    /**
+     * Clear cluster by terminating all workers and preventing
+     * new workers from being created through deletion of the
+     * respective factory method.
+     */
+    public clear() {
+        delete this.createWorker;
+
+        this.registeredWorkers.forEach((worker: Worker) => {
+            this.destroyWorker(worker);
+        });
     }
 
     // TODO: Elastic size
