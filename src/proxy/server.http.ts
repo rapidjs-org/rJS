@@ -168,6 +168,12 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "./process/api.process"), embedContext);
 
             processPool.init();
+
+            processPool.on("terminate", () => {
+                if(contextPools.size() > 1) return;
+                
+                process.exit(1);
+            });
             
             contextPools.set(embedContext.hostnames, processPool);
             

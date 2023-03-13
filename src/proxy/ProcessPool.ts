@@ -34,7 +34,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
     private readonly childProcessModulePath: string;
     private readonly embedContext: EmbedContext;
 
-    private isRunning: boolean = true;
+    private terminatedError: string;
     
     constructor(childProcessModulePath: string, embedContext: EmbedContext, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
@@ -84,11 +84,14 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
          * it handled with downwards-inherent cluster termination.
          */
 		childProcess.stderr.on("data", (err: Buffer) => {
+            // Write error message to termination reference
+            this.terminatedError = String(err);
+
             this.clear();
 
-            this.isRunning = false; // TODO: Use in monitoring / diagnosis
-
-            print.error(String(err));
+            this.emit("terminate");
+            
+            print.error(this.terminatedError);
 		});
         
         childProcess.on("message", (message: string) => {
@@ -120,6 +123,16 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      */
     protected activateWorker(childProcess: ChildProcess, childData: IChildData) {
         childProcess.send(childData.iReq, childData.socket);
+    }
+
+    /**
+     * Retrieve the error message the cluyter has terminated with.
+     * Implicit to checking whether the cluster has terminated
+     * handling requests.
+     * @returns Error message or null if still running
+     */
+    public retrieveTerminatedError(): string {
+        return this.terminatedError;
     }
 
 }

@@ -126,8 +126,10 @@ export async function embed() {
      */
     const embedApp = async () => {
         await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
-        
-        print.info(`Embedded application cluster at ${hostnamesCaption}:${EmbedContext.global.port}`);
+
+        print.info(`Embed application cluster at ${hostnamesCaption}:${EmbedContext.global.port}`);
+
+        setImmediate(() => process.exit(0));
     };
 
     try {
@@ -156,8 +158,6 @@ export async function embed() {
                  * Definite embedding request to just started proxy process.
                  */
                 await embedApp();
-
-                process.exit(0);
             } catch(err) {
                 print.error(`Could not embed application to proxy: err.message`);
                 

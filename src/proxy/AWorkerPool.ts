@@ -1,4 +1,4 @@
-import { EventEmitter as Worker } from "events";
+import { EventEmitter, EventEmitter as Worker } from "events";
 import { cpus } from "os";
 
 
@@ -31,7 +31,7 @@ interface IPendingAssignment<I, O> {
  * Abstract class representing the foundation for concrete
  * descriptions of worker entity pools.
  */
-export abstract class AWorkerPool<I, O> {
+export abstract class AWorkerPool<I, O> extends EventEmitter {
 
     private readonly baseSize: number;
     private readonly timeout: number;
@@ -42,6 +42,8 @@ export abstract class AWorkerPool<I, O> {
     private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
     constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
+        super();
+
         this.baseSize = baseSize;
         this.timeout = timeout;
         this.maxPending = maxPending;
