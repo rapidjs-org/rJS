@@ -171,7 +171,7 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
 
             processPool.on("terminate", () => {
                 if(contextPools.size() > 1) return;
-                
+
                 process.exit(1);
             });
             

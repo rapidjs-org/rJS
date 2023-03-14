@@ -129,7 +129,7 @@ export async function embed() {
 
         print.info(`Embed application cluster at ${hostnamesCaption}:${EmbedContext.global.port}`);
 
-        setImmediate(() => process.exit(0));
+        process.exit(0);
     };
 
     try {
@@ -143,6 +143,7 @@ export async function embed() {
          * process is thus assumed to be missing.
          */
         const proxyProcess = fork(join(__dirname, "./server.http"), EmbedContext.global.args, {
+            cwd: process.cwd(),
             detached: true
         });
 

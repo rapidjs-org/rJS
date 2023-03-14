@@ -35,7 +35,7 @@ export class EmbedContext {
          * without the leading exec and file path information.
          */
         this.args = relatedArgs;
-        
+
         /*
          * Which concrete server application the core is supposed
          * to interpret within the related cluster threads.
@@ -86,7 +86,7 @@ export class EmbedContext {
         this.path = normalize(
             argPath
             ? (!isAbsolute(argPath)
-                ? join(process.cwd(), argPath)
+                ? join(wdPath, argPath)
                 : argPath)
             : wdPath
         );

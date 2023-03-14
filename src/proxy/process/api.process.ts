@@ -80,7 +80,7 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
     
     // Block if exceeds URL length
     if(iReq.url.length > Config.main.get("limit", "urlLength").number()) return end(socket, 414);
-
+    
     // Parse body if is payload effective method
     const method: string = iReq.method.toUpperCase();
     

@@ -67,7 +67,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      */
     protected createWorker(): ChildProcess {        
         const childProcess = fork(this.childProcessModulePath, this.embedContext.args, {
-            cwd: this.embedContext.path,
+            cwd: process.cwd(),
             detached: false,
             silent: true
         });
@@ -89,9 +89,9 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
 
             this.clear();
 
-            this.emit("terminate");
-            
             print.error(this.terminatedError);
+            
+            this.emit("terminate");
 		});
         
         childProcess.on("message", (message: string) => {
