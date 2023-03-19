@@ -6,17 +6,15 @@
  */
 
 
-import { join } from "path";
 import { Socket } from "net";
-import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
-import { createServer as createHTTPSServer } from "https";
+import { join } from "path";
 
-import { THeaders } from "../_types";
 import { IBasicRequest } from "../_interfaces";
+import { EmbedContext } from "../EmbedContext";
+import { HTTPServer } from "../HTTPServer";
 
 import { MultiMap } from "./MultiMap";
-import { EmbedContext } from "./EmbedContext";
-import { ErrorControl } from "./ErrorControl";
+import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "./ProcessPool";
 import { create as createUnixServer } from "./server.unix";
 
@@ -39,6 +37,28 @@ const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
 
 new ErrorControl();
 
+/*
+ * Create the reverse proxying web server instance.
+ */
+new HTTPServer((socket: Socket, iReq: IBasicRequest) => {
+    // Terminate socket handling if hostname is not registered
+    // in proxy
+    if(!contextPools.has(iReq.hostname)) {
+        socket.end();
+        socket.destroy();
+
+        return;
+    }
+    
+    // Assign the basic request alongside the socket connection
+    // to the next worker handler candidate for hostname
+    contextPools
+    .get(iReq.hostname)
+    .assign({
+        iReq, socket
+    });
+}, eventuallyInitNotifyParent);
+
 
 /**
  * Notify parent process after initialization has completed.
@@ -52,103 +72,7 @@ function eventuallyInitNotifyParent() {
 }
 
 
-/*
- * Create the reverse proxying web server instance.
- */
-((EmbedContext.global.isSecure
-? createHTTPSServer
-: createHTTPServer) as ((options: ServerOptions, requestListener?: RequestListener) => Server))
-({   // TODO: Net instead?
-    keepAlive: true,
 
-    ...(EmbedContext.global.isSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
-})
-.on("connection", (socket: Socket) => {
-    /*
-     * Handle TCP connections for HTTP syntactics. The reverse
-     * proxy must not perform on any aditional request specific
-     * information, but is designed for minimum distributional
-     * handling functionality.
-     */
-    socket.once("readable", () => {
-        // Read TCP request data into buffer for HTTP interpretation
-        let requestBuffer: string = "";
-        let chunk: Buffer;
-        let headersDelimiterIndex: number;
-        
-        while(chunk = socket.read()) {
-            requestBuffer += chunk.toString();
-
-            headersDelimiterIndex = requestBuffer.indexOf("\r\n\r\n");
-            if(headersDelimiterIndex >= 0) {
-                break;
-            }
-        }
-        
-        socket.unshift(requestBuffer.slice(headersDelimiterIndex + 4));
-        
-        // Separate buffer into meta and header part
-        const requestDataLines: string[] = requestBuffer
-        .slice(0, headersDelimiterIndex)
-        .split(/\r\n/g);
-
-        const meta = requestDataLines
-        .shift()
-        .split(/ +/g);
-
-        const headers: THeaders = {};
-        requestDataLines
-        .forEach((dataLine: string) => {
-            const [ key, value ] = dataLine.split(":");
-
-            headers[key.trim().toLowerCase()] = value.trim();
-        });
-
-        // Extract approached hostname
-        let hostname: string = [ headers["host"] ].flat()[0];
-        
-        // Terminate socket handling if hostname is not registered
-        // in proxy
-        if(!contextPools.has(hostname)) {
-            socket.end();
-            socket.destroy();
-
-            return;
-        }
-        
-        /* const httpVersion: string = meta[2].split("/")[1]; */
-
-        // Extract request path to construct fully qualified URL
-        const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}${meta[1]}`;
-
-        // Remove port from URL in case of explicit statement (known)
-        hostname = hostname.replace(/:[0-9]+$/, "");
-        
-        // Construct basic-level request object containing minimum
-        // relevant information for being send to a worker process
-        const iReq: IBasicRequest = {
-            method: meta[0],
-            url: url,
-            headers: headers
-        };
-
-        // Assign the basic request alongside the socket connection
-        // to the next worker handler candidate for hostname
-        contextPools
-        .get(hostname)
-        .assign({
-            iReq, socket
-        });
-    });
-})
-.once("error", (err: { code: string }) => {
-    process.send(err.code);
-
-    process.exit(0);
-
-    // TODO: Recover?
-})
-.listen(EmbedContext.global.port, eventuallyInitNotifyParent);
 
 /*
  * Create the proxy inherent unix socket server for runtime

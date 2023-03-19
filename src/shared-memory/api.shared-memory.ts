@@ -6,7 +6,7 @@
  */
 
 
-import { EmbedContext } from "../proxy/EmbedContext";   // Special cross-reference
+import { EmbedContext } from "../EmbedContext";   // Special cross-reference
 
 import * as sharedMemory from "./shared-memory";
 

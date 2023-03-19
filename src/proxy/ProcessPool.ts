@@ -4,9 +4,9 @@ import { Socket } from "net";
 import { IBasicRequest } from "../_interfaces";
 import * as print from "../print";
 
-import { AWorkerPool } from "./AWorkerPool";
-import { EmbedContext } from "./EmbedContext";
-import { ErrorControl } from "./ErrorControl";
+import { AWorkerPool } from "../AWorkerPool";
+import { EmbedContext } from "../EmbedContext";
+import { ErrorControl } from "../ErrorControl";
 
 
 /**

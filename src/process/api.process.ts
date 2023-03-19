@@ -7,9 +7,8 @@ import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../../_types";
-import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../_interfaces";
-
+import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../_types";
+import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 

@@ -16,7 +16,7 @@ import { IProxyIPCPackage } from "../_interfaces";
 import * as print from "../print";
 
 import { locateProxySocket } from "./utils";
-import { EmbedContext } from "./EmbedContext";
+import { EmbedContext } from "../EmbedContext";
 
 
 /*

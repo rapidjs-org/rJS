@@ -1,11 +1,11 @@
-import _config from "../../_config.json";
+import _config from "../_config.json";
 
 
 import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
-import { THeaders, TResponseOverload } from "../../_types";
-import { IResponse, IHighlevelCookieOut } from "../../_interfaces";
+import { THeaders, TResponseOverload } from "../_types";
+import { IResponse, IHighlevelCookieOut } from "../_interfaces";
 
 import { Config } from "./Config";
 

@@ -1,6 +1,6 @@
 import { join, isAbsolute, normalize } from "path";
 
-import * as args from "../args";
+import * as args from "./args";
 
 
 /**

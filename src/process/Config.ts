@@ -1,11 +1,10 @@
-import _config from "../../_config.json";
+import _config from "../_config.json";
 
 
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { TJSONObject } from "../../_types";
-
+import { TJSONObject } from "../_types";
 import { EmbedContext } from "../EmbedContext";
 
 

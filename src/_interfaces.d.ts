@@ -13,11 +13,11 @@ export interface IProxyIPCPackage {
 
 
 export interface IBasicRequest {
-    method: string;
     headers: THeaders;
+    hostname: string;
+    method: string;
     url: string;
 }
-
 
 export interface IRequest {
     method: string;

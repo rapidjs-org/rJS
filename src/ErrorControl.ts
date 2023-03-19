@@ -1,4 +1,4 @@
-import * as print from "../print";
+import * as print from "./print";
 
 
 export class ErrorControl {

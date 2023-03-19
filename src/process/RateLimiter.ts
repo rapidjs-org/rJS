@@ -1,4 +1,4 @@
-import { ASharedDictionary } from "../ASharedDictionary";
+import { ASharedDictionary } from "./ASharedDictionary";
 
 
 type TRate<I> = Map<I, number>;

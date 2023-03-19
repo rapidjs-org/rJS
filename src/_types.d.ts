@@ -16,6 +16,6 @@ export type THighlevelCookieIn = Record<string, string|number|boolean>;
 
 export type TCookies = Record<string, IHighlevelCookieOut>;
 
-export type TConcreteAppAPI = typeof import("./proxy/thread/api.concrete");
+export type TConcreteAppAPI = typeof import("./process/thread/api.concrete");
 
 export type TConcreteAppHandler = (req: IRequest) => IResponse;
