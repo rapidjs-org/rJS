@@ -40,7 +40,7 @@ new ErrorControl();
 /*
  * Create the reverse proxying web server instance.
  */
-new HTTPServer((socket: Socket, iReq: IBasicRequest) => {
+new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
     // Terminate socket handling if hostname is not registered
     // in proxy
     if(!contextPools.has(iReq.hostname)) {

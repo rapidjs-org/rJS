@@ -9,7 +9,7 @@ import { EmbedContext } from "./EmbedContext";
 
 export class HTTPServer {
 
-    constructor(requestHandlerCallback: (socket: Socket, req: IBasicRequest) => void, listensCallback?: () => void) {
+    constructor(requestHandlerCallback: (req: IBasicRequest, socket: Socket) => void, listensCallback?: () => void) {
         ((EmbedContext.global.isSecure
         ? createHTTPSServer
         : createHTTPServer) as ((options: ServerOptions, requestListener?: RequestListener) => Server))

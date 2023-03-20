@@ -9,11 +9,12 @@ import { Socket } from "net";
 
 import { IBasicRequest } from "../_interfaces";
 import { HTTPServer } from "../HTTPServer";
+import { handleRequest } from "../process/api.process";
 
 
 /*
  * Create the standalone web server instance.
  */
-new HTTPServer((socket: Socket, iReq: IBasicRequest) => {
-    // TODO: Connect process
-});
+new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
+    handleRequest(iReq, socket);
+}); 

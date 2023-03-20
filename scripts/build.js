@@ -3,6 +3,9 @@ const { existsSync, statSync, readFileSync, readdirSync, writeFileSync, rmSync }
 const { execSync } = require("child_process");
 
 
+// TODO: Packages for CLI (standalone, proxy?)
+
+
 const signatureFilePath = join(process.cwd(), process.argv.slice(2)[0] ?? "./signature.txt");
 
 if(!existsSync(signatureFilePath)) {

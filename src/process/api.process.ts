@@ -53,22 +53,75 @@ new ErrorControl(() => {
 });
 
 
-/*
- * Listen for messages from parent process being consumed as
- * worker process activations and thus invoking the worker
- * cycle routine. Inherently, any unqualified request is
- * prematurely closed with an according status.
- * 
- * The worker process does prepare the basic-level request
- * that is recieved through the notification in order to pass
- * it on to the thread which is supposed to handle the
- * generically prepared request package in accordance with
- * the defined shell server application providing the concrete
- * server application context. At that, the processing
- * complexity is distributed to the threads favoring maximum
- * throughput performance.
+/**
+ * Proxy activation interface (via worker message listener).
+ * Explicit export member invocation in standalone setup.
  */
-process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
+process.on("message", handleRequest);
+
+
+/**
+ * Parse a given accept header based on the typical list and
+ * optional quality syntax:
+ * <name>(;q=<quality:[0,1]>)?(,<name>(;q=<quality:[0,1]>)?)*
+ * @param header Header value (optionally multiple levels ~ array)
+ * @returns Data in interfaced accept header encoding structure
+ */
+function parseAcceptHeader(header: string|string[]): IAcceptHeaderPart[] {
+    return ([ header ].flat()[0] ?? "")
+    .split(/,/g)
+    .map((encoding: string) => encoding.trim())
+    .filter((encoding: string) => encoding)
+    .map((enconding: string) => {
+        return {
+            name: enconding.match(/^[^;]+/)[0],
+            quality: parseFloat((enconding.match(/;q=([01](.[0-9]+)?)$/) || [ null, "1" ])[1])
+        };
+    })
+    .sort((a, b) => (b.quality - a.quality)) as IAcceptHeaderPart[]
+    ?? null;
+};
+
+/**
+ * Signal the parent process the work cycle assigned from the
+ * parent has been completed in order to have it fed back to
+ * the idle candidate queue.
+ */
+function signalDone() {
+    process.send("done");
+}
+
+/**
+ * End a request by sending a specific response, followed by
+ * signaling the parent process pool the worker process has
+ * therefore completed the current processing cycle.
+ * @param socket Related conenction socket
+ * @param sResOverload Response specification object or status overload
+ * @param prioritizedHeaders Headers to prioritize over implicitly set ones
+ */
+function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
+    signalDone();
+
+    new Response(socket, sResOverload, prioritizedHeaders);
+}
+
+
+/*
+ * Handkle messages posted from parent process / module being
+ * consumed as worker process or module activations respectively
+ * or module and thus invoking its cycle routine. Inherently, any
+ * unqualified request is prematurely closed with an according
+ * status code.
+ * 
+ * The cycle does prepare the basic-level request that is recieved 
+ * hrough the notification in order to pass it on to the thread
+ * which is supposed to handle the generically prepared request
+ * package in accordance with the defined shell server application
+ * providing the concrete server application context. At that, the
+ * processing complexity is distributed to the threads favoring
+ * maximum throughput performance.
+ */
+export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     const clientIP: string = socket.remoteAddress;
 
     // TODO: Benchmark rate limiter location/process level for
@@ -221,49 +274,4 @@ process.on("message", async (iReq: IBasicRequest, socket: Socket) => {
         
         end(socket, 500);
     });
-});
-
-/**
- * Parse a given accept header based on the typical list and
- * optional quality syntax:
- * <name>(;q=<quality:[0,1]>)?(,<name>(;q=<quality:[0,1]>)?)*
- * @param header Header value (optionally multiple levels ~ array)
- * @returns Data in interfaced accept header encoding structure
- */
-function parseAcceptHeader(header: string|string[]): IAcceptHeaderPart[] {
-    return ([ header ].flat()[0] ?? "")
-    .split(/,/g)
-    .map((encoding: string) => encoding.trim())
-    .filter((encoding: string) => encoding)
-    .map((enconding: string) => {
-        return {
-            name: enconding.match(/^[^;]+/)[0],
-            quality: parseFloat((enconding.match(/;q=([01](.[0-9]+)?)$/) || [ null, "1" ])[1])
-        };
-    })
-    .sort((a, b) => (b.quality - a.quality)) as IAcceptHeaderPart[]
-    ?? null;
-};
-
-/**
- * Signal the parent process the work cycle assigned from the
- * parent has been completed in order to have it fed back to
- * the idle candidate queue.
- */
-function signalDone() {
-    process.send("done");
-}
-
-/**
- * End a request by sending a specific response, followed by
- * signaling the parent process pool the worker process has
- * therefore completed the current processing cycle.
- * @param socket Related conenction socket
- * @param sResOverload Response specification object or status overload
- * @param prioritizedHeaders Headers to prioritize over implicitly set ones
- */
-function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
-    signalDone();
-
-    new Response(socket, sResOverload, prioritizedHeaders);
 }
