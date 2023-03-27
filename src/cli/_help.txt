@@ -12,7 +12,8 @@ Optional | start | command arguments:
 • Flags:
 
 --dev, -D                       Run DEV MODE (PROD MODE otherwise)
---secure, -S                    Whether to use HTTPS (false by default)
+--secure, -S                    Use HTTPS (HTTP by default)
+--standalone                    Ininitalize in standlone environment (reverse proxied by default)
 
 • Options:
 

@@ -55,7 +55,7 @@ export class HTTPServer {
                 requestDataLines
                 .forEach((dataLine: string) => {
                     const [ key, value ] = dataLine.split(":");
-        
+                    
                     headers[key.trim().toLowerCase()] = value.trim();
                 });
         
@@ -78,7 +78,7 @@ export class HTTPServer {
                     url: url
                 };
 
-                requestHandlerCallback(socket, iReq);
+                requestHandlerCallback(iReq, socket);
             });
         })
         .once("error", (err: { code: string }) => {
