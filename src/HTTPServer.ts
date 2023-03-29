@@ -5,20 +5,22 @@ import { createServer as createHTTPSServer } from "https";
 import { THeaders } from "./_types";
 import { IBasicRequest } from "./_interfaces";
 import { EmbedContext } from "./EmbedContext";
+import * as print from "./print";
 
 
 export class HTTPServer {
 
-    constructor(requestHandlerCallback: (req: IBasicRequest, socket: Socket) => void, listensCallback?: () => void) {
+    constructor(requestHandlerCallback: (req: IBasicRequest, socket: Socket) => void, listensCallback?: () => void, errorCallback?: (err: { code: string }) => void) {
         ((EmbedContext.global.isSecure
         ? createHTTPSServer
         : createHTTPServer) as ((options: ServerOptions, requestListener?: RequestListener) => Server))
         ({   // TODO: Net instead?
             keepAlive: true,
-        
+            
             ...(EmbedContext.global.isSecure ? {} : {}),  // TODO: TLS security (with periodical reloading)
         })
         .on("connection", (socket: Socket) => {
+            
             /*
             * Handle TCP connections for HTTP syntactics. The reverse
             * proxy must not perform on any aditional request specific
@@ -33,7 +35,7 @@ export class HTTPServer {
                 
                 while(chunk = socket.read()) {
                     requestBuffer += chunk.toString();
-        
+                    
                     headersDelimiterIndex = requestBuffer.indexOf("\r\n\r\n");
                     if(headersDelimiterIndex >= 0) {
                         break;
@@ -77,16 +79,17 @@ export class HTTPServer {
                     method: meta[0],
                     url: url
                 };
-
+                console.log(iReq)
+                
                 requestHandlerCallback(iReq, socket);
             });
+
         })
         .once("error", (err: { code: string }) => {
-            process.send(err.code);
-        
-            process.exit(0);
-        
-            // TODO: Recover?
+            errorCallback
+            && errorCallback(err);
+
+            print.error(`Server could not be started: ${err.code}`);
         })
         .listen(EmbedContext.global.port, listensCallback);
     }

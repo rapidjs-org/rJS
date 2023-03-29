@@ -12,24 +12,12 @@ import { Dirent, readdirSync } from "fs";
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 import { join } from "path";
 
+import { captionEffectiveHostnames } from "../utils";
 import { IProxyIPCPackage } from "../_interfaces";
 import * as print from "../print";
 
 import { locateProxySocket } from "./utils";
 import { EmbedContext } from "../EmbedContext";
-
-
-/*
- * Log streamlined global hostname configuration.
- * e.g.: { example.com, example.net, localhost } → example.com(+2)
- */ 
-const hostnamesCaption: string = `${
-    EmbedContext.global.hostnames[0]
-}${(
-    EmbedContext.global.hostnames.length > 1)
-    ? `(+${EmbedContext.global.hostnames.length - 1})`
-    : ""
-}`;
 
 
 /**
@@ -127,7 +115,7 @@ export async function embed() {
     const embedApp = async () => {
         await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
 
-        print.info(`Embed application cluster at ${hostnamesCaption}:${EmbedContext.global.port}`);
+        print.info(`Embed application cluster at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
 
         process.exit(0);
     };
@@ -213,7 +201,7 @@ export function monitor() {
     
     forEachProxy(async (port: number) => {
         const embeddedHostnames = await messageProxy(port, "monitor") as string[][];
-
+        
         proxyHosts.push(`${port}: ${embeddedHostnames}`);   // TODO: "Beautify"
     })
     .then(() => print.info(`Proxies:\n${proxyHosts.join("\n")}`))

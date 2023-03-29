@@ -7,6 +7,8 @@ import { existsSync } from "fs";
 import { TJSONObject } from "../_types";
 import { EmbedContext } from "../EmbedContext";
 
+import defaultConfig from "./default.config.json";
+
 
 /**
  * Interface encoding type-wise value resolve functionality
@@ -47,7 +49,7 @@ export class Config {
      * Always provide main concrete server application configuration
      * for shorthand access.
      */
-    public static readonly main: Config = new Config("config");
+    public static readonly main: Config = new Config("config", "", defaultConfig);
 
     /**
      * Deep merge objects for left-associative taget override.
@@ -89,21 +91,23 @@ export class Config {
      */
     private obj: TJSONObject;
 
-    constructor(name: string|string[], subPath: string = "") {
+    constructor(name: string|string[], subPath: string = "", defaultConfig = {}) {
+        this.obj = defaultConfig;
+
         applicableSpecifiers
         .forEach((specifier: string) => {
             name = [ name ].flat();
-            
+             
             let i = 0;
             let fullName: string,
                 fullPath: string;
             do {
                 fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
                 fullPath = join(EmbedContext.global.path, subPath, `${fullName}`);
-            } while(!existsSync(fullPath) && (i < name.length));
-            
-            if(!existsSync(fullPath)) throw new ReferenceError(`Missing configuration file '${name}'`);
 
+                if(i === name.length) return;
+            } while(!existsSync(fullPath));
+            
             let fileObj;
             try {
                 fileObj = require(fullPath);
@@ -112,7 +116,7 @@ export class Config {
             }
 
             this.obj = Config.deepMergeObj(this.obj, fileObj);
-        }); // TODO: Merge in default (later)
+        });
     }
 
     /**

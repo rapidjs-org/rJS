@@ -1,5 +1,5 @@
 /**
- * Module containing proxy context utility functions for
+ * Module containing sub-dependent utility functions for
  * supporting reuse in related, but arbitrary (sub-)contexts.
  */
 

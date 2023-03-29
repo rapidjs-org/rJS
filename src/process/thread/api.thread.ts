@@ -27,14 +27,15 @@ new ErrorControl();
  */
 let concreteAppHandler: TConcreteAppHandler;
 import(EmbedContext.global.concreteAppModulePath)
-.then((api: (concreteAPI: TConcreteAppAPI) => TConcreteAppHandler) => {
-    concreteAppHandler = api(concreteAPI);
-
+.then((api: {
+    default: (concreteAPI: TConcreteAppAPI) => TConcreteAppHandler
+}) => {
+    concreteAppHandler = api.default(concreteAPI);
+        
     // Signal parent process the thread is ready for being
     // assigned request data
     parentPort.postMessage(true);
 });
-
 
 /*
  * Listen for incoming requests to handle with specified routine.

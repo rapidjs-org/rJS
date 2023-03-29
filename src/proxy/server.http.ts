@@ -57,7 +57,11 @@ new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
     .assign({
         iReq, socket
     });
-}, eventuallyInitNotifyParent);
+}, eventuallyInitNotifyParent, err => {
+    process.send(err.code);
+
+    process.exit(0);
+});
 
 
 /**
@@ -70,8 +74,6 @@ function eventuallyInitNotifyParent() {
     (--parentNotificationReference === 0)
     && process.send("listening");        // TODO: Notify up
 }
-
-
 
 
 /*
