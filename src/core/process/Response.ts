@@ -5,7 +5,7 @@ import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
 import { THeaders, TResponseOverload } from "../_types";
-import { IResponse, IHighlevelCookieOut } from "../_interfaces";
+import { IResponse, IHighlevelCookieOut } from "../../_interfaces";
 
 import { Config } from "./Config";
 

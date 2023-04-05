@@ -147,7 +147,7 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
 
                 return;
             }
-
+            
             this.pendingAssignments
             .push({ dataIn, resolve });
             
@@ -162,7 +162,10 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      */
     public init() {
         Array.from({ length: this.baseSize }, async () => {
-            this.registeredWorkers.push(await this.createWorker());
+            const worker: Worker = await this.createWorker();
+
+            this.registeredWorkers.push(worker);
+            this.idleWorkers.push(worker);
         });
 
         /*

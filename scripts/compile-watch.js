@@ -16,15 +16,15 @@ log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
 
 // Create /debug files directory
 const shmPath = {
-    source: join(__dirname, "../src/shared-memory"),
-    debug: join(__dirname, "../debug/shared-memory")
+    source: join(__dirname, "../src/core/shared-memory"),
+    debug: join(__dirname, "../debug/core/shared-memory")
 };
 
 makeDir(shmPath.debug);
 
 const helpTextPath = {
-    source: join(__dirname, "../src/cli/_help.txt"),
-    debug: join(__dirname, "../debug/cli/_help.txt")
+    source: join(__dirname, "../src/_help.txt"),
+    debug: join(__dirname, "../debug/_help.txt")
 };
 
 makeDir(dirname(helpTextPath.debug));

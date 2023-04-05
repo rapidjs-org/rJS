@@ -12,12 +12,13 @@ import { Dirent, readdirSync } from "fs";
 import { Socket, createConnection as createUnixSocketConnection } from "net";
 import { join } from "path";
 
+import { IProxyIPCPackage } from "../../_interfaces";
+import * as print from "../../print";
+
 import { captionEffectiveHostnames } from "../utils";
-import { IProxyIPCPackage } from "../_interfaces";
-import * as print from "../print";
+import { EmbedContext } from "../EmbedContext";
 
 import { locateProxySocket } from "./utils";
-import { EmbedContext } from "../EmbedContext";
 
 
 /**

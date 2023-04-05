@@ -9,7 +9,7 @@
 import { Socket } from "net";
 import { join } from "path";
 
-import { IBasicRequest } from "../_interfaces";
+import { IBasicRequest } from "../../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { HTTPServer } from "../HTTPServer";
 
@@ -35,6 +35,11 @@ let parentNotificationReference: number = 2;
 const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
 
 
+/*
+ * Catch any unhandled exception within this worker process
+ * in order to prevent process termination, but simply handle
+ * the error case for the respective request.
+ */
 new ErrorControl();
 
 /*
@@ -91,7 +96,7 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
         case "embed": {
             const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
-            const processPool: ProcessPool = new ProcessPool(join(__dirname, "./process/api.process"), embedContext);
+            const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
 
             processPool.init();
 

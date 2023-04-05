@@ -1,8 +1,8 @@
 import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
 
-import { IBasicRequest } from "../_interfaces";
-import * as print from "../print";
+import { IBasicRequest } from "../../_interfaces";
+import * as print from "../../print";
 
 import { AWorkerPool } from "../AWorkerPool";
 import { EmbedContext } from "../EmbedContext";

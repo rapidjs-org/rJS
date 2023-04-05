@@ -7,8 +7,9 @@ import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../_types";
-import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../_interfaces";
+import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../../_types";
+import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../_interfaces";
+
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 
@@ -88,7 +89,10 @@ function parseAcceptHeader(header: string|string[]): IAcceptHeaderPart[] {
  * the idle candidate queue.
  */
 function signalDone() {
-    process.send("done");
+    // Ignore in standlone mode => try
+    try {
+        process.send("done");
+    } catch {}
 }
 
 /**
@@ -229,7 +233,7 @@ export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     delete sReq.headers["accept-encoding"];
     delete sReq.headers["accept-language"];
     delete sReq.headers["cookie"];
-
+    
     // Assign accordingly prepared request data to worker thread
     // for individual processing
     threadPool.assign(sReq)

@@ -1,5 +1,5 @@
 import { TCookies, THeaders } from "../../_types";
-import { IResponse } from "../../_interfaces";
+import { IResponse } from "../../../_interfaces";
 
 
 /**

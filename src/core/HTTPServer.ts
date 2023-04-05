@@ -3,9 +3,9 @@ import { Server, ServerOptions, RequestListener, createServer as createHTTPServe
 import { createServer as createHTTPSServer } from "https";
 
 import { THeaders } from "./_types";
-import { IBasicRequest } from "./_interfaces";
+import { IBasicRequest } from "../_interfaces";
 import { EmbedContext } from "./EmbedContext";
-import * as print from "./print";
+import * as print from "../print";
 
 
 export class HTTPServer {
@@ -79,7 +79,6 @@ export class HTTPServer {
                     method: meta[0],
                     url: url
                 };
-                console.log(iReq)
                 
                 requestHandlerCallback(iReq, socket);
             });

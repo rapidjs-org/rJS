@@ -3,7 +3,7 @@
  */
 
 
-import { IRequest, IResponse, IHighlevelCookieOut } from "./_interfaces";
+import { IRequest, IResponse, IHighlevelCookieOut } from "../_interfaces";
 
 
 export type THeaders = Record<string, string|string[]>;
@@ -16,6 +16,6 @@ export type THighlevelCookieIn = Record<string, string|number|boolean>;
 
 export type TCookies = Record<string, IHighlevelCookieOut>;
 
-export type TConcreteAppAPI = typeof import("./core/process/thread/api.concrete");
+export type TConcreteAppAPI = typeof import("./process/thread/api.concrete");
 
 export type TConcreteAppHandler = (req: IRequest) => IResponse;

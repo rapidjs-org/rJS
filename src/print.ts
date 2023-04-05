@@ -4,13 +4,13 @@
  * std channel formatting.
  */
 
-import _config from "./_config.json";
+import _config from "./core/_config.json";
 
 
 import { appendFile } from "fs";
 import { join } from "path";
 
-import { AsyncMutex } from "./AsyncMutex";
+import { AsyncMutex } from "./core/AsyncMutex";
 
 
 /*

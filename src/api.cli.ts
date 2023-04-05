@@ -13,10 +13,10 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { parsePositional, parseOption } from "../args";
-import { serveStandalone } from "../standalone/api.standalone";
-import * as proxy from "../proxy/api.proxy";
-import * as print from "../print";
+import { parsePositional, parseFlag } from "./args";
+import { serveStandalone } from "./core/standalone/api.standalone";
+import * as proxy from "./core/proxy/api.proxy";
+import * as print from "./print";
 
 
 /*
@@ -42,7 +42,7 @@ switch(command) {
      * underlying proxy application.
      */
     case "start":
-        parseOption("standalone")
+        parseFlag("standalone")
         ? serveStandalone()
         : proxy.embed();
         
