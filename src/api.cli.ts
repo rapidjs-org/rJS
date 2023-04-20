@@ -14,7 +14,6 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 import { parsePositional, parseFlag } from "./args";
-import { serveStandalone } from "./core/standalone/api.standalone";
 import * as proxy from "./core/proxy/api.proxy";
 import * as print from "./print";
 
@@ -43,7 +42,8 @@ switch(command) {
      */
     case "start":
         parseFlag("standalone")
-        ? serveStandalone()
+        ? import("./core/standalone/api.standalone")
+            .then(api => api.serveStandalone())
         : proxy.embed();
         
         break;

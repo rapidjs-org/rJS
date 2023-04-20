@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./debug.sh stop -P 7070
+./scripts/debug.sh stop -P 7070

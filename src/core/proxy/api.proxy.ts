@@ -114,9 +114,11 @@ export async function embed() {
      * detached first. The embed call is repeated in that case.
      */
     const embedApp = async () => {
-        await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
-
-        print.info(`Embed application cluster at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        const hostCaption: string = `${captionEffectiveHostnames()}:${EmbedContext.global.port}`;
+        
+        await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args)
+        ? print.info(`Embedded application cluster at ${hostCaption}`)
+        : print.info(`Application cluster already running at ${hostCaption}`);
 
         process.exit(0);
     };
@@ -166,12 +168,12 @@ export async function unbed() {
     // TODO: IDs?
     try {
         if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
-            print.error("Hostnames not registered on proxy");
+            print.error(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
 
             return;
         }
-        
-        print.info("Unbedded application");
+
+        print.info(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
     } catch(err) {
         print.error(`No server proxy listening on :${EmbedContext.global.port}`);
     }

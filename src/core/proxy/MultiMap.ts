@@ -6,16 +6,19 @@
  */
 export class MultiMap<K, T> {
 
-    private readonly valueMap: Map<number, T> = new Map();
     private readonly associationMap: Map<K, number> = new Map();
-    private readonly associationTotalMap: Map<number, number> = new Map();
-
+    private readonly valueMap: Map<number, T> = new Map();
+    
     /*
      * Use a simple inceremental value counter as unique
      * internal association reference. Multi map usage
      * presumed in low capacity scenarios.
      */
     private entryCounter: number = 0;
+
+    private normalizeKeyArgument(keyArgument: K|K[]): K[] {
+        return [ keyArgument ].flat() as K[];
+    }
     
     /**
      * Set a value to the map given an arbitrary, non-zero
@@ -23,16 +26,14 @@ export class MultiMap<K, T> {
      * @param keyArgument Atomic key or array of keys to associate
      * @param value Common value
      */
-    public set(keyArgument: K|K[], value: T) {        
-        const keys: K[] = [ keyArgument ].flat() as K[];
+    public set(keyArgument: K|K[], value: T) {
+        const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
         this.valueMap.set(++this.entryCounter, value);
         
         keys.forEach((key: K) => {
             this.associationMap.set(key, this.entryCounter);
         });
-
-        this.associationTotalMap.set(this.entryCounter, keys.length);
     }
 
     /**
@@ -48,20 +49,20 @@ export class MultiMap<K, T> {
      * Delete a value by atomic key.
      * @param key Atomic key associated with value
      */
-    public delete(key: K) {
-        const association: number = this.associationMap.get(key);
-        const associationTotal: number = this.associationTotalMap.get(association);
+    public delete(keyArgument: K|K[]) {
+        const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
-        this.associationMap.delete(key);
-        
-        if(associationTotal > 1) {
-            this.associationTotalMap.set(association, associationTotal - 1);
+        keys.forEach((key: K) => {
+            const association: number = this.associationMap.get(key);
 
-            return;
-        }
-
-        this.associationTotalMap.delete(association);
-        this.valueMap.delete(association);
+            this.associationMap.forEach((value: number, key: K) => {
+                if(value !== association) return;
+                
+                this.associationMap.delete(key);
+            });
+            
+            this.valueMap.delete(association);
+        });
     }
 
     /**
@@ -70,8 +71,14 @@ export class MultiMap<K, T> {
      * @param key Atomic key to check for
      * @returns Whether an associated value exists
      */
-    public has(key: K): boolean {
-        return this.associationMap.has(key);
+    public has(keyArgument: K|K[]): boolean {
+        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+
+        for(let key of keys) {
+            if(this.associationMap.has(key)) return true;
+        }
+
+        return false;
     }
 
     /**

@@ -93,8 +93,10 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
          * Embed a concrete server application to the proxy associated
          * with a single or multiple ambiguous hostnames.
          */
-        case "embed": {
+        case "embed": {            
             const embedContext: EmbedContext = new EmbedContext(arg as string[]);
+
+            if(contextPools.has(embedContext.hostnames)) return false;
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
 
@@ -117,16 +119,11 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
          * by other hostnames.
          */
         case "unbed": {
-            [ arg as string ].flat()
-            .forEach((hostname: string) => {
-                if(!contextPools.has(hostname)) return;
-                
-                contextPools.delete(arg as string);
-    
-                !contextPools.size()
-                && setImmediate(() => process.exit(0));
-            });
+            contextPools.delete(arg as (string|string[]));
             
+            !contextPools.size()
+            && setImmediate(() => process.exit(0));
+
             return true;
         }
         
