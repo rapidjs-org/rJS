@@ -4,58 +4,20 @@
  */
 
 
-import _config from "../_config.json";
+import _config from "../../_config.json";
 
 
 import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
-import { Socket, createConnection as createUnixSocketConnection } from "net";
 import { join } from "path";
 
-import { IProxyIPCPackage } from "../../_interfaces";
 import * as print from "../../print";
 
 import { captionEffectiveHostnames } from "../utils";
 import { EmbedContext } from "../EmbedContext";
 
-import { locateProxySocket } from "./utils";
+import { messageProxy } from "../utils";
 
-
-/**
- * Message the context related proxy application by sending it
- * to the respective UNIX socket. The socket location is inherent
- * to the current runtime context as provided by the present
- * argument set.
- * @param port Portmto which the addressed proxy is bound
- * @param command Command to expect the proxy application to execute
- * @param arg Argument supplementory to command
- * @returns Promise resolving to the buffered proxy response message
- */
-function messageProxy(port: number, command: string, arg?: unknown): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-        const client: Socket = createUnixSocketConnection(locateProxySocket(port));
-        
-        const proxyIPCPackage: IProxyIPCPackage = {
-            command, arg
-        };
-        
-        client.write(JSON.stringify(proxyIPCPackage));
-        
-        client.on("data", (message: Buffer) => {
-            resolve(JSON.parse(message.toString()));
-            
-            client.end();
-        });
-
-        client.on("error", (error: Buffer) => {
-            // console.error(error.toString());
-            
-            reject(new Error(error.toString()));
-            
-            client.end();
-        });
-    });
-}
 
 /**
  * Invoke callback for each running proxy instance passing the
@@ -118,7 +80,7 @@ export async function embed() {
         
         await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args)
         ? print.info(`Embedded application cluster at ${hostCaption}`)
-        : print.info(`Application cluster already running at ${hostCaption}`);
+        : print.error(`Application cluster already running at ${hostCaption}`);
 
         process.exit(0);
     };
@@ -151,9 +113,7 @@ export async function embed() {
                  */
                 await embedApp();
             } catch(err) {
-                print.error(`Could not embed application to proxy: err.message`);
-                
-                process.exit(1);
+                print.error(`Could not embed application to proxy: ${err.message}`);
             }
         }); // TODO: DEV MODE live app log / manipulation inerface
     }

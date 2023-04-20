@@ -11,7 +11,7 @@ import { Socket, createServer as createUnixSocketServer } from "net";
 
 import { IProxyIPCPackage } from "../../_interfaces";
 
-import { locateProxySocket } from "./utils";
+import { locateProxySocket } from "../utils";
 
 
 /**
