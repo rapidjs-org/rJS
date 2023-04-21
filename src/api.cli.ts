@@ -13,16 +13,19 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { parsePositional, parseFlag } from "./args";
+import { SArgs } from "./SArgs";
+import { ConsoleLog } from "./ConsoleLog";
 import * as proxy from "./core/proxy/api.proxy";
-import * as print from "./print";
+
+
+new ConsoleLog();
 
 
 /*
  * Interpret first positional argument as execution command.
  * Command to depict which functional aspect to perform.
  */
-const command: string = parsePositional(0);
+const command: string = SArgs.parsePositional(0);
 switch(command) {
 
     /*
@@ -41,7 +44,7 @@ switch(command) {
      * underlying proxy application.
      */
     case "start":
-        parseFlag("standalone")
+        SArgs.parseFlag("standalone")
         ? import("./core/standalone/api.standalone")
             .then(api => api.serveStandalone())
         : proxy.embed();
@@ -79,7 +82,7 @@ switch(command) {
      * Handle undefined command.
      */
     default:
-        print.info(
+        console.log(
             command
             ? `Unknown command '${command}'`
             : "No command provided"
