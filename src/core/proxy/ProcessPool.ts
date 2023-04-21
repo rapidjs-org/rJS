@@ -2,7 +2,6 @@ import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
 
 import { IBasicRequest } from "../../_interfaces";
-import * as print from "../../print";
 
 import { AWorkerPool } from "../AWorkerPool";
 import { EmbedContext } from "../EmbedContext";
@@ -73,7 +72,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
         });
         
 		childProcess.stdout.on("data", (message: Buffer) => {
-			print.info(String(message).replace(/\n$/, "")/* , this.logDir */);
+			console.log(String(message).replace(/\n$/, "")/* , this.logDir */);
 		});
         /*
          * Any error occurring within processes is locally intercepted.
@@ -89,7 +88,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
 
             this.clear();
 
-            print.error(this.terminatedError);
+            console.error(this.terminatedError);
             
             this.emit("terminate");
 		});

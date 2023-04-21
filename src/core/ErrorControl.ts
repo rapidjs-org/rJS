@@ -1,6 +1,3 @@
-import * as print from "../print";
-
-
 /**
  * Class representing an error controller residing on top
  * of current process' scope in order to intercept any
@@ -15,7 +12,7 @@ export class ErrorControl {
     constructor(exceptionCallback: (err: Error) => void = (() => null), keepAliveDelay: number = 30000) {
         setTimeout(() => {
             process.on("uncaughtException", (err: Error) => {
-                print.error(err);
+                console.error(err);
                 
                 exceptionCallback(err);
             });

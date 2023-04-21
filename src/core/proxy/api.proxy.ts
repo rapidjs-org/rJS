@@ -11,8 +11,6 @@ import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
-import * as print from "../../print";
-
 import { captionEffectiveHostnames } from "../utils";
 import { EmbedContext } from "../EmbedContext";
 
@@ -79,8 +77,8 @@ export async function embed() {
         const hostCaption: string = `${captionEffectiveHostnames()}:${EmbedContext.global.port}`;
         
         await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args)
-        ? print.info(`Embedded application cluster at ${hostCaption}`)
-        : print.error(`Application cluster already running at ${hostCaption}`);
+        ? console.log(`Embedded application cluster at ${hostCaption}`)
+        : console.error(`Application cluster already running at ${hostCaption}`);
 
         process.exit(0);
     };
@@ -102,7 +100,7 @@ export async function embed() {
 
         proxyProcess.on("message", async (message: string) => {
             if(message !== "listening") {
-                print.error(`Error trying to start server proxy: ${message}`);
+                console.error(`Error trying to start server proxy: ${message}`);
                 
                 return;
             }
@@ -113,7 +111,7 @@ export async function embed() {
                  */
                 await embedApp();
             } catch(err) {
-                print.error(`Could not embed application to proxy: ${err.message}`);
+                console.error(`Could not embed application to proxy: ${err.message}`);
             }
         }); // TODO: DEV MODE live app log / manipulation inerface
     }
@@ -128,14 +126,14 @@ export async function unbed() {
     // TODO: IDs?
     try {
         if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
-            print.error(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+            console.error(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
 
             return;
         }
 
-        print.info(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        console.log(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
     } catch(err) {
-        print.error(`No server proxy listening on :${EmbedContext.global.port}`);
+        console.error(`No server proxy listening on :${EmbedContext.global.port}`);
     }
 }
 
@@ -150,7 +148,7 @@ export function stop() {
             await messageProxy(port, "stop");
         } catch {}
     })
-    .then(() => print.info("Stopped all proxies"));
+    .then(() => console.log("Stopped all proxies"));
 }
 
 /**
@@ -167,6 +165,6 @@ export function monitor() {
         
         proxyHosts.push(`${port}: ${embeddedHostnames}`);   // TODO: "Beautify"
     })
-    .then(() => print.info(`Proxies:\n${proxyHosts.join("\n")}`))
-    .catch(() => print.error("No proxies running"));
+    .then(() => console.log(`Proxies:\n${proxyHosts.join("\n")}`))
+    .catch(() => console.error("No proxies running"));
 }

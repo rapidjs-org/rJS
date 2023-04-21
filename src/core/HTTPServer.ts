@@ -5,7 +5,6 @@ import { createServer as createHTTPSServer } from "https";
 import { THeaders } from "./_types";
 import { IBasicRequest } from "../_interfaces";
 import { EmbedContext } from "./EmbedContext";
-import * as print from "../print";
 
 
 export class HTTPServer {
@@ -88,7 +87,7 @@ export class HTTPServer {
             errorCallback
             && errorCallback(err);
 
-            print.error(`Server could not be started: ${err.code}`);
+            console.error(`Server could not be started: ${err.code}`);
         })
         .listen(EmbedContext.global.port, listensCallback);
     }

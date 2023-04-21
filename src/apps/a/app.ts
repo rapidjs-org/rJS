@@ -8,6 +8,7 @@ export default function(api: TConcreteAppAPI) {
      * Request handler interface.
      */
     return (sReq: TConcreteAppHandler) => {
+        console.log("REQ");
         console.log(sReq);
         
         return new api.Response("Success", 200);

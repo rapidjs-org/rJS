@@ -468,7 +468,7 @@ class MacTool:
     def _InstallProvisioningProfile(self, profile, bundle_identifier):
         """Installs embedded.mobileprovision into the bundle.
 
-    Args:
+    SArgs:
       profile: string, optional, short name of the .mobileprovision file
         to use, if empty or the file is missing, the best file installed
         will be used
@@ -497,7 +497,7 @@ class MacTool:
     the PROVISIONING_PROFILE variable, only consult it) and select the most
     specific that correspond to the bundle identifier.
 
-    Args:
+    SArgs:
       profile: string, optional, short name of the .mobileprovision file
         to use, if empty or the file is missing, the best file installed
         will be used
@@ -558,7 +558,7 @@ class MacTool:
     def _LoadProvisioningProfile(self, profile_path):
         """Extracts the plist embedded in a provisioning profile.
 
-    Args:
+    SArgs:
       profile_path: string, path to the .mobileprovision file
 
     Returns:
@@ -590,7 +590,7 @@ class MacTool:
     plist to the XML format if it can't be parsed (assuming that it is in
     the binary format).
 
-    Args:
+    SArgs:
       plist_path: string, path to a plist file, in XML or binary format
 
     Returns:
@@ -611,7 +611,7 @@ class MacTool:
     def _GetSubstitutions(self, bundle_identifier, app_identifier_prefix):
         """Constructs a dictionary of variable substitutions for Entitlements.plist.
 
-    Args:
+    SArgs:
       bundle_identifier: string, value of CFBundleIdentifier from Info.plist
       app_identifier_prefix: string, value for AppIdentifierPrefix
 
@@ -642,7 +642,7 @@ class MacTool:
     add extra entitlements defined in the .mobileprovision file and the copy
     the generated plist to "${BundlePath}.xcent".
 
-    Args:
+    SArgs:
       entitlements: string, optional, path to the Entitlements.plist template
         to use, defaults to "${SDKROOT}/Entitlements.plist"
       substitutions: dictionary, variable substitutions
@@ -670,7 +670,7 @@ class MacTool:
     def _ExpandVariables(self, data, substitutions):
         """Expands variables "$(variable)" in data.
 
-    Args:
+    SArgs:
       data: object, can be either string, list or dictionary
       substitutions: dictionary, variable substitutions to perform
 
