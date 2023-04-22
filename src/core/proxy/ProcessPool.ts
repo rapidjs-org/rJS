@@ -33,7 +33,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
     private readonly childProcessModulePath: string;
     private readonly embedContext: EmbedContext;
 
-    private terminatedError: string;
+    private terminationError: string;
     
     constructor(childProcessModulePath: string, embedContext: EmbedContext, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
@@ -84,11 +84,11 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
          */
 		childProcess.stderr.on("data", (err: Buffer) => {
             // Write error message to termination reference
-            this.terminatedError = String(err);
+            this.terminationError = String(err);
 
             this.clear();
-
-            console.error(this.terminatedError);
+            
+            console.error(this.terminationError);
             
             this.emit("terminate");
 		});
@@ -131,7 +131,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      * @returns Error message or null if still running
      */
     public retrieveTerminatedError(): string {
-        return this.terminatedError;
+        return this.terminationError;
     }
 
 }

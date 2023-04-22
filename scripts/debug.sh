@@ -1,3 +1,17 @@
 #!/bin/bash
 
-node ./debug/api.cli.js "$@"
+case $1 in
+	start:proxy)
+		node ./debug/api.cli.js start ./test/integration/shell -P 7070 -W ./test/integration/ -L ../logs/
+		;;
+	start:standalone)
+		node ./debug/api.cli.js start ./test/integration/shell -P 7070 -W ./test/integration/ -L ../logs/ --standalone
+		;;
+	stop)
+		node ./debug/api.cli.js stop -P 7070
+		;;
+    *)
+        tput setaf 1
+        echo "Specify debug command ∈ { start:proxy, start:standalone, stop }"
+        tput sgr0
+esac

@@ -1,4 +1,4 @@
-import { TCookies, THeaders } from "../../_types";
+import { TCookies, THeaders } from "../../../_types";
 import { IResponse } from "../../../_interfaces";
 
 

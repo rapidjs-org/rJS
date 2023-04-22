@@ -11,6 +11,8 @@ export abstract class ALogIntercept {
         // @ts-ignore
         process.stdout.write = (data, callback?) => {
             const message: string = this.handleStdout(String(data));
+            
+            if(!message) return;
 
             return this._stdout(message, callback);
         };
@@ -19,6 +21,8 @@ export abstract class ALogIntercept {
         // @ts-ignore
         process.stderr.write = (data, callback?) => {
             const message: string = this.handleStderr(String(data));
+
+            if(!message) return;
 
             return this._stderr(message, callback);
         };

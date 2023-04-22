@@ -18,7 +18,9 @@ enum EColorMode {
 export class ConsoleLog extends ALogIntercept {
 
     private static color(str: string, color: TColor|TColor[]): string {
-        [ color ].flat()
+        ((!Array.isArray(color[0])
+        ? [ color ]
+        : color) as TColor[])
         .forEach((c: TColor) => {
             const colorMode: number = ((c.length > 3) ? c.pop() : false) ? 48 : 38;
 
@@ -57,13 +59,13 @@ export class ConsoleLog extends ALogIntercept {
 
         // Type based highlighting
         message = message
-        .replace(/(^|\s|[[(])([0-9]+([.,-][0-9]+)*)(\s|[^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
+        .replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
 
         return `${
             ConsoleLog.style(
                 ConsoleLog.color(` ${
                     _config.appNameShort
-                    .replace("r", "\x1b[38;2;255;97;97mr\x1b[39m")
+                    .replace("r", ConsoleLog.color("r", [ 255, 97, 97 ]))
                 } `, [
                     [ 54, 48, 48 ], [ 255, 254, 173, EColorMode.BG ]
                 ]),
@@ -76,7 +78,7 @@ export class ConsoleLog extends ALogIntercept {
         return ConsoleLog.write(data);
     }
     protected handleStderr(data: string): string {
-        data = ConsoleLog.color(data, [ 224, 0, 0, EColorMode.FG ]);
+        data = ConsoleLog.color(data, [ 224, 0, 0 ]);
         
         return ConsoleLog.write(data);
     }

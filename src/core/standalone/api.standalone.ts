@@ -10,9 +10,13 @@ import { Socket } from "net";
 import { IBasicRequest } from "../../_interfaces";
 
 import { HTTPServer } from "../HTTPServer";
+import { FileLog } from "../FileLog";
 import { EmbedContext } from "../EmbedContext";
 import { handleRequest } from "../process/api.process";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
+
+
+//new FileLog(EmbedContext.global.path);
 
 
 /**

@@ -2,7 +2,7 @@ import { Socket } from "net";
 import { Server, ServerOptions, RequestListener, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
-import { THeaders } from "./_types";
+import { THeaders } from "../_types";
 import { IBasicRequest } from "../_interfaces";
 import { EmbedContext } from "./EmbedContext";
 

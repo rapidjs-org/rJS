@@ -12,9 +12,10 @@ import { join } from "path";
 import { IBasicRequest } from "../../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { HTTPServer } from "../HTTPServer";
+import { ErrorControl } from "../ErrorControl";
+import { FileLog } from "../FileLog";
 
 import { MultiMap } from "./MultiMap";
-import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "./ProcessPool";
 import { create as createUnixServer } from "./server.unix";
 
@@ -99,6 +100,8 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
             if(contextPools.has(embedContext.hostnames)) return false;
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
+            
+            new FileLog(embedContext.path, true);
 
             processPool.init();
 
