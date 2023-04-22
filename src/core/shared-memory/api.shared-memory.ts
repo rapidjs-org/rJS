@@ -65,7 +65,7 @@ export async function writeSync(purposeKey: string, purposeData: unknown) {
     ? JSON.stringify(purposeData)
     : purposeData);
     
-    if(!sharedMemoryActive.write) {
+    if(sharedMemoryActive.write) {
         try {
             sharedMemory.write(purposeKey, Buffer.from(serial, "utf-8"));
 
@@ -106,7 +106,7 @@ export function readSync<T>(purposeKey: string): T {
     if(sharedMemoryActive.read) {
         try {
             const buffer: Buffer = sharedMemory.read(purposeKey);
-            
+
             serial = String(buffer);
         } catch {
             sharedMemoryActive.read = false;
@@ -114,7 +114,7 @@ export function readSync<T>(purposeKey: string): T {
     }
 
     serial = serial ?? intermediateMemory.get(purposeKey);
-    
+
     let data: T;
     try {
         data = JSON.parse(serial);

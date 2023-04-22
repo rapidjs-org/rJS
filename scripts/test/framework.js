@@ -1,287 +1,141 @@
 const { join } = require("path");
-const { existsSync, mkdirSync, rmSync, readdirSync } = require("fs");
-const { fork } = require("child_process");
+const { existsSync, readdirSync } = require("fs");
 
 
-const commonSubstring = {
-    cross: "\x1b[31m✗",
-    tick: "\x1b[32m✓"
-};
-for(const substring in commonSubstring) {
-    commonSubstring[substring] += "\x1b[0m";
-}
-
-const testCounter = {
-    failed: 0,
-    succeeded: 0
-};
-
-const testRange = {
-    callQueue: [],
-    stackSize: 0
-};
-
-const exitTimeoutLength = 3000;
-let exitTimeout = null;
-let timeoutEnabled = false;
-
-const tmpDirPath = join(process.cwd(), "./test/.tmp/");
-
-const envProcesses = [];
-
-
-!existsSync(tmpDirPath)
-&& mkdirSync(tmpDirPath);
-
-
-process.on("uncaughtException", err => {
-    console.error(err);
-
-    process.exit(1);
-});
-
-process.on("exit", code => {
-    try {
-        envProcesses.forEach(process => process.kill());
-    } catch { /**/ }
-
-    if(code === -1) {
-        return;
-    }
-
-    const resultIndicatorSubstring = "\x1b[2m➞  \x1b[0m";
-
-    if(code !== 0) {
-        console.log(`\n${resultIndicatorSubstring}${commonSubstring.cross} Test run has tertminated due to runtime error.\n`);
-
-        return code;
-    }
-
-    if((testCounter.succeeded + testCounter.failed) === 0) {
-        return;
-    }
-
-    const ratioSubstring = `(${testCounter.succeeded}/${testCounter.failed + testCounter.succeeded})`;
-
-    if(testCounter.failed > 0) {
-        console.error(`${resultIndicatorSubstring}${commonSubstring.cross} Test run \x1b[5m\x1b[31mfailed\x1b[0m ${ratioSubstring}.\n`);
-
-        return 1;
-    }
-
-    console.log(`${resultIndicatorSubstring}${commonSubstring.tick} Test run \x1b[5m\x1b[32msucceeded\x1b[0m ${ratioSubstring}.\n`);
-});
-
-process.on("exit", cleanUp);
-process.on("SIGINT", cleanUp);
-process.on("SIGTERM", cleanUp);
-process.on("uncaughtException", cleanUp);
-process.on("unhandledRejection", cleanUp);
-
-
-process.argv.push("--path");
-process.argv.push("./test/.tmp");  // Set working directory arguments
-
-
-// TODO: Mark app log / separate
-
-
-function runEnvironmentalScript(name, env) {
-    const path = join(process.cwd(), "./test/", `${name.toLowerCase()}.${env}.js`);
-
-    if(!existsSync(path)) {
-        return null;
-    }
-
-    console.log(`\x1b[2m+ ENV \x1b[1m${env.toUpperCase()}\x1b[0m\n`);
-
-    const child = fork(path, [], {
-        stdio: "pipe"
-    }); // TODO: Mode; [ "--dev" ] ?
-
-    child.stdout.on("data", data => {
-        console.group();
-        console.log(`\x1b[2m--- ENV log ---`);
-        console.log(String(data));
-        console.groupEnd("\x1b[0m");
-    });
-
-    child.stderr.on("data", data => {
-        console.group();
-        console.log(`\x1b[2m--- ENV \x1b[31merror\x1b[30m ---`);
-        console.error(String(data));
-        console.groupEnd("\x1b[0m");
-    });
-
-    return child;
-}
-
-function cleanUp() {
-    existsSync(tmpDirPath)
-    && rmSync(tmpDirPath, {
-        recursive: true
-    });
-
-    process.exit(-1);
-}
-
-function logBadge(message, colorRgb, suffix) {
-    const fgDirective = (colorRgb.reduce((p, c) => p + c, 0) < ((3 * 256) / 1.25))
-    ? "\x1b[38;2;255;255;255m" : "";
-
-    console.log(`${fgDirective}\x1b[1m\x1b[48;2;${colorRgb[0]};${colorRgb[1]};${colorRgb[2]}m ${message} \x1b[0m${suffix ? ` ${suffix}` : ""}\n`);
-}
-
-function updateExitTimeout() {
-    clearTimeout(exitTimeout);
-
-    if(!timeoutEnabled) {
-        return;
-    }
+global.frame = function(label, scopeCallback = (() => {})) {
+    TestFramework.lastFrameLabel = label;
     
-    exitTimeout = setTimeout(_ => {
-        (testRange.stackSize === 0)
-        && process.exit(0);
+    scopeCallback();
+};
 
-        throw new EvalError("Test case has timed out");
-    }, exitTimeoutLength);
-}
 
-function minAssert(caption, specificAssert, actualExpression, expected) {   // TODO: Call lists?
-    testRange.stackSize++;
+class TestFramework {
 
-    let specificResult;
+    static evalQueue = [];
+    static lastFrameLabel;
+    
+    static serialize(value) {
+        return ![ "string", "number", "boolean" ].includes(typeof(value))
+        ? JSON.stringify(value)
+        : value;
+    }
 
-    const catchError = err => {
-        if(specificAssert) {
-            throw err;
-        }
-
-        specificResult = {
-            hasSucceeded: false,
-            actual: `\x1b[31m${err.stack || err.name}\x1b[0m`,
-            expected: "No error"
-        }
-    };
-
-    const complete = _ => {
-        const hasSucceeded = (specificResult !== undefined)
-        ? (specificResult.hasSucceeded ?? specificResult)
-        : true;
+    constructor(config = {}, prepareCallback = (a => a)) {
+        const testDirPath = join(process.cwd(), process.argv.slice(2)[0] ?? "test");
         
-        logBadge(`Case ${(testCounter.failed + testCounter.succeeded + 1)}`, [ 255, 249, 194 ], `${commonSubstring[hasSucceeded ? "tick" : "cross"]} \x1b[2m${caption}\x1b[0m`);
+        if(!existsSync(testDirPath)) throw new ReferenceError(`Test directory not found '${testDirPath}'`);
 
-        testCounter[hasSucceeded ? "succeeded" : "failed"]++;
+        process.on("exit", () => {
+            const totalAssertions = this.stats.failed + this.stats.successful;
 
-        if(!hasSucceeded) {
-            console.group();
-            
-            const logValue = (caption, value) => {
-                console.log(`\x1b[48:5:253m\x1b[38;2;255;255;255m ${caption} \x1b[0m\n`);
-                console.log(value);
-                console.log("");
-            };
-            
-            logValue("Expected", specificResult.expected || expected);
-            logValue("Actual", specificResult.actual || actualExpression);
-            
-            console.groupEnd();
-        }
-        
-        if(--testRange.stackSize === 0 && testRange.callQueue.length) {
-            run.apply(null, testRange.callQueue.shift());
-        } else {
-            updateExitTimeout();
-        }
-    };
+            if(!totalAssertions) return;
 
-    try {
-        actualExpression = (actualExpression instanceof Function)
-        ? actualExpression()
-        : actualExpression;
-    } catch(err) {
-        catchError(err);
+            const resultsStr = `(${this.stats.successful}/${totalAssertions}) ~ ${Math.round((this.stats.successful / Math.max(totalAssertions, 1)) * 100)}% successful`;
 
-        complete();
+            console.log();
 
-        return;
-    }
-    
-    specificResult = specificAssert
-    ? specificAssert(actualExpression, expected)
-    : actualExpression;
-    
-    (!(specificResult instanceof Promise)
-    ? new Promise(r => r(specificResult))
-    : specificResult)
-    .then(result => {
-        specificResult = result;
-    })
-    .catch(catchError)
-    .finally(complete);
-}
+            this.stats.failed
+            ? console.log(`\x1b[1m\x1b[2m→\x1b[0m \x1b[31mTest suite failed: ${resultsStr}\x1b[0m`)
+            : console.log(`\x1b[1m\x1b[2m→\x1b[0m \x1b[32mTest suite successfully completed: ${resultsStr}\x1b[0m`);
 
+            console.log();
 
-global.assertSuccess = function(caption, actualExpression) {
-    minAssert(caption, null, actualExpression, null);
-};
-
-
-module.exports.run = async function(path, caption, captionColorRgb, specificAssert, useTimeout = false) {
-    timeoutEnabled = useTimeout;
-    
-    const envProcess = runEnvironmentalScript(caption, "setup");
-    if(envProcess) {
-        envProcesses.push(envProcess);
-
-        const envTimeout = setTimeout(_ => {
-            throw new RangeError(`Environmental setup has timed out '${caption.toLowerCase()}.setup.js'`);
-        }, 10000);
-
-        await new Promise(resolve => {
-            envProcess.on("message", code => {
-                if(code !== 0) {
-                    reject(new EvalError(`Environmental setup terminated with error code ${code} '${caption}.setup.js'`));
-                }
-
-                join(__dirname, );
-            });
+            process.exit(this.stats.failed ? 1 : 0);
         });
 
-        clearTimeout(envTimeout);
-    }
-
-    process.on("exit", _ => {
-        runEnvironmentalScript(caption, "cleanup");
-    });
-
-    updateExitTimeout();
-
-    if(testRange.stackSize > 0) {
-        testRange.callQueue.push([ path, caption, captionColorRgb, specificAssert ]);
+        console.log(`\n\x1b[1m\x1b[48;2;${config.badgeColorBg.join(";")}m${config.badgeFgLight ? "\x1b[97m" : ""} ${config.name.toUpperCase()} TESTS \x1b[0m\n`);
         
-        return;
+        this.stats = {
+            failed: 0,
+            successful: 0
+        };
+        this.prepareCallback = prepareCallback;
+        
+        global.assertEquals = (...args) => this.assertEquals.apply(this, args);
+
+        this.scanDir(testDirPath);
+    }
+
+    scanDir(path) {
+        readdirSync(path, {
+            withFileTypes: true
+        })
+        .forEach(dirent => {
+            const subPath = join(path, dirent.name);
+
+            if(dirent.isDirectory()) {
+                this.scanDir(subPath);
+
+                return;
+            }
+            
+            if(!/.*\.test\.js$/.test(dirent.name)) return;
+
+            require(subPath);
+        });
+    }
+
+    evaluate(label, actual, expected, evalCallback, frameLabel) {
+        if(!expected || !evalCallback) throw new SyntaxError(`Illegal assertion: Expects 3 arguments, given ${args.length}`);
+
+        frameLabel
+        && console.log(`\n\x1b[1m${frameLabel}\x1b[0m\n`);
+        
+        const wasSuccessful = evalCallback(actual, expected);
+
+        this.stats[wasSuccessful ? "successful" : "failed"]++;
+        
+        console.log(`${
+            wasSuccessful
+            ? `\x1b[1m\x1b[32m✓\x1b[0m \x1b[2m${label}\x1b[0m`
+            : `\x1b[1m\x1b[31m✗\x1b[0m \x1b[31m${label}\x1b[0m`
+        }`);
+
+        !wasSuccessful
+        && console.log(`
+            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(actual)}\x1b[0m
+            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(expected)}\x1b[0m
+            \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
+        `
+        .replace(/(\n+)\s+/g, "$1  ")
+        .replace(/^\n|\n\s*$/g, ""));
+    }
+
+    async assert(actual) {
+        const actualValue = new Promise(resolve => {
+            TestFramework.evalQueue
+            .push(async () => {
+                actual = this.prepareCallback(actual);
+
+                const result = (actual instanceof Promise)
+                ? (await actual)
+                : actual;
+
+                resolve(result);
+                
+                (TestFramework.evalQueue.shift() ?? (() => {}))();
+            });
+        });
+        
+        (TestFramework.evalQueue.length === 1)
+        && TestFramework.evalQueue[0]();
+
+        return actualValue;
     }
     
-    logBadge(`${caption.toUpperCase()} Tests`, captionColorRgb);
-    
-    global.assert = (caption, actualExpression, expected) => { // =: assert equals
-        minAssert(caption, specificAssert, actualExpression, expected);
-    };
-    
-    path = join(process.cwd(), "./test/", path);
-    readdirSync(path, {
-        withFileTypes: true
-    })
-    .filter(dirent => dirent.isFile())
-    .filter(dirent => /\.test\.js$/.test(dirent.name))
-    .forEach(dirent => {
-        try {
-            require(join(path, dirent.name));
-        } catch(err) {
-            console.error(err);
+    async assertEquals(label, actual, expected) {
+        const frameLabel = TestFramework.lastFrameLabel;
+        TestFramework.lastFrameLabel = null;
 
-            process.exit(1);
-        }
-    });
-};
+        this.evaluate(label,
+            (await this.assert(actual)), expected,
+            (actual, expected) => {
+                return (TestFramework.serialize(actual) === TestFramework.serialize(expected));
+            },
+            frameLabel);
+    };
+
+}
+
+
+exports.TestFramework = TestFramework;
