@@ -3,7 +3,7 @@ const http = require("http");
 const https = require("https");
 
 
-const { run } = require("./test-framework.js");
+const { run } = require("./framework.js");
 
 run("./network/", "Network", [ 45, 120, 240 ], assert, true);
 
