@@ -1,10 +1,12 @@
 const { join } = require("path");
-const { existsSync, readdirSync } = require("fs");
+const { existsSync, readdirSync, lstatSync } = require("fs");
 
 
 class TestFramework {
 
+    static testPath = join(process.cwd(), process.argv.slice(2)[0] ?? "test");
     static context;
+    static exitTimeout;
     static evalQueue = [];
     static lastFrameLabel;
     static lastFileLabel;
@@ -14,11 +16,9 @@ class TestFramework {
         ? JSON.stringify(value)
         : value;
     }
-
+    
     constructor(config = {}, prepareCallback = (a => a)) {
-        const testDirPath = join(process.cwd(), process.argv.slice(2)[0] ?? "test");
-        
-        if(!existsSync(testDirPath)) throw new ReferenceError(`Test directory not found '${testDirPath}'`);
+        if(!existsSync(TestFramework.testPath)) throw new ReferenceError(`Test directory not found '${TestFramework.testPath}'`);
 
         process.on("exit", () => {
             const totalAssertions = this.stats.failed + this.stats.successful;
@@ -48,10 +48,18 @@ class TestFramework {
         
         TestFramework.context = this;
 
-        this.scanDir(testDirPath);
+        this.scanDir(TestFramework.testPath);
     }
 
     scanDir(path) {
+        if(!lstatSync(path).isDirectory()) {
+            TestFramework.lastFileLabel = path.match(/[^/]+$/)[0];
+
+            require(path);
+
+            return;
+        }
+
         readdirSync(path, {
             withFileTypes: true
         })
@@ -119,6 +127,8 @@ class TestFramework {
     }
 
     async prepare(actual) {
+        clearTimeout(TestFramework.exitTimeout);
+
         const actualValue = new Promise((resolve, reject) => {
             TestFramework.evalQueue
             .push(async () => {
@@ -140,6 +150,12 @@ class TestFramework {
                 } finally {
                     clearTimeout(prepareTimeout);
                 }
+                
+                TestFramework.exitTimeout = setTimeout(() => {
+                    if(TestFramework.evalQueue.length) return;
+                    
+                    process.exit(0);
+                }, 3000);
                 
                 (TestFramework.evalQueue.shift() ?? (() => {}))();
             });
