@@ -2,17 +2,12 @@ const { join } = require("path");
 const { existsSync, readdirSync } = require("fs");
 
 
-global.frame = function(label, scopeCallback = (() => {})) {
-    TestFramework.lastFrameLabel = label;
-    
-    scopeCallback();
-};
-
-
 class TestFramework {
 
+    static context;
     static evalQueue = [];
     static lastFrameLabel;
+    static lastFileLabel;
     
     static serialize(value) {
         return ![ "string", "number", "boolean" ].includes(typeof(value))
@@ -43,7 +38,7 @@ class TestFramework {
             process.exit(this.stats.failed ? 1 : 0);
         });
 
-        console.log(`\n\x1b[1m\x1b[48;2;${config.badgeColorBg.join(";")}m${config.badgeFgLight ? "\x1b[97m" : ""} ${config.name.toUpperCase()} TESTS \x1b[0m\n`);
+        console.log(`\n\x1b[1m\x1b[48;2;${config.badgeColorBg.join(";")}m${config.badgeFgLight ? "\x1b[97m" : ""} ${config.name.toUpperCase()} TESTS \x1b[0m`);
         
         this.stats = {
             failed: 0,
@@ -51,7 +46,7 @@ class TestFramework {
         };
         this.prepareCallback = prepareCallback;
         
-        global.assertEquals = (...args) => this.assertEquals.apply(this, args);
+        TestFramework.context = this;
 
         this.scanDir(testDirPath);
     }
@@ -71,17 +66,35 @@ class TestFramework {
             
             if(!/.*\.test\.js$/.test(dirent.name)) return;
 
+            TestFramework.lastFileLabel = dirent.name;
+
             require(subPath);
         });
     }
 
-    evaluate(label, actual, expected, evalCallback, frameLabel) {
+    async evaluate(label, actual, expected, evalCallback) {
+        const fileLabel = TestFramework.lastFileLabel;
+        TestFramework.lastFileLabel = null;
+        const frameLabel = TestFramework.lastFrameLabel;
+        TestFramework.lastFrameLabel = null;
+
+        let error;
+        try {
+            actual = await TestFramework.context.prepare(actual);
+        } catch(err) {
+            error = err;
+        }
+
         if(!expected || !evalCallback) throw new SyntaxError(`Illegal assertion: Expects 3 arguments, given ${args.length}`);
 
+        fileLabel
+        && console.log(`\n\x1b[2m•\x1b[0m \x1b[36m${fileLabel}\x1b[0m${!frameLabel ? "\n" : ""}`);
         frameLabel
         && console.log(`\n\x1b[1m${frameLabel}\x1b[0m\n`);
         
-        const wasSuccessful = evalCallback(actual, expected);
+        TestFramework.isNewFile = false;
+
+        const wasSuccessful = evalCallback(actual, expected, error);
 
         this.stats[wasSuccessful ? "successful" : "failed"]++;
         
@@ -91,27 +104,42 @@ class TestFramework {
             : `\x1b[1m\x1b[31m✗\x1b[0m \x1b[31m${label}\x1b[0m`
         }`);
 
-        !wasSuccessful
-        && console.log(`
-            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(actual)}\x1b[0m
-            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(expected)}\x1b[0m
+        if(wasSuccessful) return;
+
+        console.log(`
+            \x1b[2mActual:\x1b[0m    \x1b[31m${error ? `\x1b[3mError:\x1b[23m] {err.name}` : TestFramework.serialize(actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
+            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
             \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
         `
         .replace(/(\n+)\s+/g, "$1  ")
         .replace(/^\n|\n\s*$/g, ""));
+
+        error
+        && console.error(`\x1b[2m\x1b[31m${error.name}: ${error.message.slice(0, 20)}${(error.message.length > 20) ? "…" : ""}\x1b[0m`);
     }
 
-    async assert(actual) {
-        const actualValue = new Promise(resolve => {
+    async prepare(actual) {
+        const actualValue = new Promise((resolve, reject) => {
             TestFramework.evalQueue
             .push(async () => {
-                actual = this.prepareCallback(actual);
+                let prepareTimeout;
+                try {
+                    prepareTimeout = setTimeout(() => {
+                        throw new Timeout();
+                    }, 5000);
+                    
+                    actual = this.prepareCallback(actual);
 
-                const result = (actual instanceof Promise)
-                ? (await actual)
-                : actual;
+                    const result = (actual instanceof Promise)
+                    ? (await actual)
+                    : actual;
 
-                resolve(result);
+                    resolve(result);
+                } catch(err) {
+                    reject(err);
+                } finally {
+                    clearTimeout(prepareTimeout);
+                }
                 
                 (TestFramework.evalQueue.shift() ?? (() => {}))();
             });
@@ -122,20 +150,34 @@ class TestFramework {
 
         return actualValue;
     }
-    
-    async assertEquals(label, actual, expected) {
-        const frameLabel = TestFramework.lastFrameLabel;
-        TestFramework.lastFrameLabel = null;
-
-        this.evaluate(label,
-            (await this.assert(actual)), expected,
-            (actual, expected) => {
-                return (TestFramework.serialize(actual) === TestFramework.serialize(expected));
-            },
-            frameLabel);
-    };
 
 }
 
 
 exports.TestFramework = TestFramework;
+
+
+global.frame = function(label, scopeCallback = (() => {})) {
+    TestFramework.lastFrameLabel = label;
+    
+    scopeCallback();
+};
+
+
+global.assertEquals = async (label, actual, expected) => {
+    TestFramework.context
+    .evaluate(label,
+        actual, expected,
+        (actual, expected) => {
+            return (TestFramework.serialize(actual) === TestFramework.serialize(expected));
+        });
+};
+
+global.assertError = async (label, actual) => {
+    TestFramework.context
+    .evaluate(label, actual, "\x1b[3mError\x1b[23m",
+        (_, __, error) => {
+            return (error instanceof Error);
+        }
+    );
+};

@@ -37,6 +37,7 @@ assertEquals("Test Func Sync – Unequal", () => 123, 1234);
 
 frame("Frame 2", () => {
 
-    assertEquals("Test Atomic Sync – Equal", "abc", "abc");
+    assertError("Test Error Sync – Error", () => { throw new Error("Error"); });
+    assertError("Test Error Sync – No Error", "abc");
 
 });
