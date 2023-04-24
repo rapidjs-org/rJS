@@ -115,7 +115,7 @@ class TestFramework {
         if(wasSuccessful) return;
 
         console.log(`
-            \x1b[2mActual:\x1b[0m    \x1b[31m${error ? `\x1b[3mError:\x1b[23m] {err.name}` : TestFramework.serialize(actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
+            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
             \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
             \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
         `

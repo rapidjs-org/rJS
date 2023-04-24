@@ -1,0 +1,39 @@
+import { SArgs } from "./SArgs";
+
+
+type TCommandHandler = () => void;
+
+
+export class CLI {
+
+    static commandHandlers: Map<string, TCommandHandler> = new Map();
+
+    static registerCommand(name: string, commandHandler: TCommandHandler) {
+        this.commandHandlers.set(name, commandHandler);
+    }
+
+    static eval() {
+        /*
+        * Interpret first positional argument as execution command.
+        * Command to depict which functional aspect to perform.
+        */
+        const commandName: string = SArgs.parsePositional(0);
+        const commandHandler: TCommandHandler = this.commandHandlers.get(commandName);
+        
+        if(commandHandler) {
+            commandHandler();
+
+            return;
+        }
+
+        // Handle undefined command
+        console.log(
+            commandName
+            ? `Unknown command '${commandName}'`
+            : "No command provided"
+        );
+
+        process.exit(1);
+    }
+
+}

@@ -1,5 +1,7 @@
 const { lstatSync, existsSync } = require("fs");
 const { join, dirname } = require("path");
+const http = require("http");
+const https = require("https");
 
 const { TestFramework } = require("./framework");
 
@@ -11,7 +13,7 @@ process.on("exit", async () => {
     console.log();
 
     evalEnvScript("cleanup");
-    
+
     console.log(separator);
 });
 
@@ -31,10 +33,8 @@ evalEnvScript("setup", (hasSetup) => {
         new TestFramework({
             name: "Network",
             badgeColorBg: [ 200, 255, 200 ]
-        }, actual => {
-            return (actual instanceof Function)
-            ? actual()
-            : actual;
+        }, endpoint => {
+            return performRequest(endpoint);
         });
     });
 });
@@ -56,13 +56,15 @@ async function evalEnvScript(label, proceedCallback) {
 
 function performRequest(endpoint) {
     return new Promise((_, reject) => {
-        const req = ((endpoint.url.protocol.toLowerCase() === "https")
+        const url = new URL(endpoint.url);
+
+        const req = ((url.protocol.toLowerCase() === "https")
         ? https
         : http)
         .request({
-            hostname: endpoint.url.hostname,
-            port: endpoint.url.port,
-            path: endpoint.url.href,
+            hostname: url.hostname,
+            port: url.port,
+            path: url.href,
             method: endpoint.method || "GET",
             headers: endpoint.headers || {}
         }, res => {

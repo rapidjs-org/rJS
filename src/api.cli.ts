@@ -15,6 +15,7 @@ import { join } from "path";
 
 import { SArgs } from "./SArgs";
 import { ConsoleLog } from "./ConsoleLog";
+import { CLI } from "./CLI";
 import * as proxy from "./core/proxy/api.proxy";
 
 
@@ -22,72 +23,49 @@ new ConsoleLog();
 
 
 /*
- * Interpret first positional argument as execution command.
- * Command to depict which functional aspect to perform.
+ * Display help text.
  */
-const command: string = SArgs.parsePositional(0);
-switch(command) {
+CLI.registerCommand("help", () => {
+    console.log(
+        String(readFileSync(join(__dirname, "./_help.txt")))
+        .replace(/(https?:\/\/[a-z0-9/._-]+)/ig, "\x1b[38;2;255;71;71m$1\x1b[0m")
+    );
+});
 
-    /*
-     * Display help text.
-     */
-    case "help":
-        console.log(
-            String(readFileSync(join(__dirname, "./_help.txt")))
-            .replace(/(https?:\/\/[a-z0-9/._-]+)/ig, "\x1b[38;2;255;71;71m$1\x1b[0m")
-        );
+/*
+ * Start concrete server application instance embedded in
+ * underlying proxy application.
+ */
+CLI.registerCommand("start", () => {
+    SArgs.parseFlag("standalone")
+    ? import("./core/standalone/api.standalone")
+        .then(api => api.serveStandalone())
+    : proxy.embed();
+});
 
-        break;
-    
-    /*
-     * Start concrete server application instance embedded in
-     * underlying proxy application.
-     */
-    case "start":
-        SArgs.parseFlag("standalone")
-        ? import("./core/standalone/api.standalone")
-            .then(api => api.serveStandalone())
-        : proxy.embed();
-        
-        break;
-    
-    /*
-     * Stop concrete server application instance by unbedding it
-     * from the underlying proxy application.
-     */
-    case "stop":
-        proxy.unbed();
+/*
+ * Stop concrete server application instance by unbedding it
+ * from the underlying proxy application.
+ */
+CLI.registerCommand("stop", () => {
+    proxy.unbed();
+});
 
-        break;
-    
-    /*
-     * Stop all running proxy applications and any concrete server
-     * application inherently.
-     */
-    case "stopall":
-        proxy.stop();
+/*
+ * Stop all running proxy applications and any concrete server
+ * application inherently.
+ */
+CLI.registerCommand("stopall", () => {
+    proxy.stop();
+});
 
-        break;
-    
-    /*
-     * Monitor relevant information about all running proxy applications
-     * and any concrete server application inherently.
-     */
-    case "monitor":
-        proxy.monitor();
+/*
+ * Monitor relevant information about all running proxy applications
+ * and any concrete server application inherently.
+ */
+CLI.registerCommand("monitor", () => {
+    proxy.monitor();
+});
 
-        break;
-    
-    /*
-     * Handle undefined command.
-     */
-    default:
-        console.log(
-            command
-            ? `Unknown command '${command}'`
-            : "No command provided"
-        );
 
-        process.exit(1);
-
-}
+CLI.eval();
