@@ -1,11 +1,14 @@
 const { TestFramework } = require("./framework");
 
 
-new TestFramework({
-    name: "Unit",
-    badgeColorBg: [ 255, 200, 200 ]
-}, actual => {
+TestFramework.definePrepare(actual => {
     return (actual instanceof Function)
     ? actual()
     : actual;
+});
+
+
+TestFramework.init({
+    name: "Unit",
+    badgeColorBg: [ 255, 220, 220 ]
 });

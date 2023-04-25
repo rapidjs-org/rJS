@@ -6,35 +6,42 @@ const https = require("https");
 const { TestFramework } = require("./framework");
 
 
-const separator = `\x1b[2m\x1b[75m${Array.from({ length: 30 }, _ => {}).join("–")}\x1b[0m`;
-
-
 process.on("exit", async () => {
     console.log();
 
     evalEnvScript("cleanup");
-
-    console.log(separator);
 });
+
+
+TestFramework.definePrepare(endpoint => {
+    return performRequest(endpoint);
+});
+
+TestFramework.defineEquals((actual, expected, origEquals) => {
+    if([ "string", "number", "boolean" ].includes(typeof(expected))) {
+        return origEquals(actual.message.text(), String(expected));
+    }
+    
+    for(let key in expected) {
+        if(!origEquals(actual[key], expected[key])) return false;
+    }
+
+    return true;
+});
+
 
 evalEnvScript("setup", (hasSetup) => {
     (!hasSetup
-        ? new Promise(resolve => resolve())
-        : new Promise(resolve => {
-
-            global.SETUP = () => {
-                console.log(separator);
-
-                resolve();
-            };
-
-        }))
+    ? new Promise(resolve => resolve())
+    : new Promise(resolve => {
+        global.SETUP = () => resolve();
+    }))
     .then(() => {
-        new TestFramework({
+        process.stdout.write("\x1b[0m");
+
+        TestFramework.init({
             name: "Network",
-            badgeColorBg: [ 200, 255, 200 ]
-        }, endpoint => {
-            return performRequest(endpoint);
+            badgeColorBg: [ 220, 220, 255 ]
         });
     });
 });
@@ -47,7 +54,7 @@ async function evalEnvScript(label, proceedCallback) {
 
     if(!existsSync(envScriptPath)) return proceedCallback(false);
     
-    console.log(`${separator}\n\x1b[1m\x1b[2m\x1b[4mENVIRONMENT ${label.toUpperCase()}\x1b[0m\x1b[2m\x1b[74m`);
+    console.log(`\x1b[1m\x1b[2m\x1b[4m⁞ ENVIRONMENT ${label.toUpperCase()}\x1b[0m\x1b[2m\x1b[74m`);
     
     require(envScriptPath);
     
@@ -55,12 +62,10 @@ async function evalEnvScript(label, proceedCallback) {
 }
 
 function performRequest(endpoint) {
-    return new Promise((_, reject) => {
+    return new Promise((resolve, reject) => {
         const url = new URL(endpoint.url);
-
-        const req = ((url.protocol.toLowerCase() === "https")
-        ? https
-        : http)
+        
+        const req = ((url.protocol.toLowerCase() === "https") ? https : http)
         .request({
             hostname: url.hostname,
             port: url.port,
@@ -71,7 +76,7 @@ function performRequest(endpoint) {
             res.on("data", message => {
                 message = String(message);
                 
-                join(__dirname, {
+                resolve({
                     headers: res.headers,
                     status: res.statusCode,
                     message: {
