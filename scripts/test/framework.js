@@ -92,9 +92,7 @@ class TestFramework {
         } catch(err) {
             error = err;
         }
-
-        if(!expected || !evalCallback) throw new SyntaxError(`Illegal assertion: Expects 3 arguments, given ${args.length}`);
-
+        
         fileLabel
         && console.log(`\n\x1b[2m•\x1b[0m \x1b[36m${fileLabel}\x1b[0m${!frameLabel ? "\n" : ""}`);
         frameLabel
@@ -128,7 +126,7 @@ class TestFramework {
         .replace(/^\n|\n\s*$/g, ""));
 
         error
-        && console.error(`\x1b[2m\x1b[31m${error.name}: ${error.message.slice(0, 20)}${(error.message.length > 20) ? "…" : ""}\x1b[0m`);
+        && console.error(`\x1b[2m\x1b[31m${error.name}: ${error.message.slice(0, 75)}${(error.message.length > 75) ? "…" : ""}\x1b[0m`);
     }
 
     static async prepare(actual, relatedLabel) {
