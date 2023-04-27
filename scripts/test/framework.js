@@ -92,7 +92,7 @@ class TestFramework {
         } catch(err) {
             error = err;
         }
-        
+
         fileLabel
         && console.log(`\n\x1b[2m•\x1b[0m \x1b[36m${fileLabel}\x1b[0m${!frameLabel ? "\n" : ""}`);
         frameLabel
@@ -100,9 +100,15 @@ class TestFramework {
         
         TestFramework.isNewFile = false;
 
-        let wasSuccessful;
+        let failedDisplay, wasSuccessful;
         try {
-            wasSuccessful = evalCallback(actual, expected, error);
+            failedDisplay = evalCallback(actual, expected, error);
+
+            wasSuccessful = (failedDisplay && (failedDisplay !== true))
+            ? false
+            : failedDisplay;
+            
+            failedDisplay = wasSuccessful ? {} : failedDisplay;
         } catch(err) {
             error = err;
         }
@@ -118,8 +124,8 @@ class TestFramework {
         if(wasSuccessful) return;
 
         console.log(`
-            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
-            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
+            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(failedDisplay.actual ?? actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
+            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(failedDisplay.expected ?? expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
             \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
         `
         .replace(/(\n+)\s+/g, "$1  ")

@@ -21,14 +21,27 @@ TestFramework.defineEquals((actual, expected, origEquals) => {
     const isAtomic = value => [ "string", "number", "boolean" ].includes(typeof(value));
 
     if(isAtomic(expected)) {
-        return origEquals(actual.message, (expected));
+        return origEquals(actual.message, expected) ? true : {
+            actual: actual.message ?? ""
+        };
     }
+
+    const failedDisplay = {
+        actual: {}, expected: {}
+    };
+
+    let hasFailed = false;
 
     for(let key in expected) {
-        if(!origEquals(actual[key], expected[key])) return false;
+        if(origEquals(actual[key], expected[key])) continue;
+
+        failedDisplay.actual[key] = actual[key];
+        failedDisplay.expected[key] = expected[key];
+
+        hasFailed = true;
     }
 
-    return true;
+    return hasFailed ? failedDisplay : true;
 });
 
 
@@ -76,22 +89,17 @@ function performRequest(endpoint) {
             headers: endpoint.headers || {}
         }, res => {
             res.on("data", message => {
-                message = String(message);
-                
                 resolve({
                     headers: res.headers,
                     status: res.statusCode,
-                    message: JSON.parse(JSON.stringify(message))
+                    message: JSON.parse(JSON.stringify(String(message)))
                 });
             });
             res.on("end", () => {
                 resolve({
                     headers: res.headers,
                     status: res.statusCode,
-                    message: {
-                        json: _ => null,
-                        text: _ => null
-                    }
+                    message: null
                 });
             });
         });
