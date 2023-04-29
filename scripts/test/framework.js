@@ -123,8 +123,10 @@ class TestFramework {
 
         if(wasSuccessful) return;
 
+        const displayActual = failedDisplay.actual ?? actual;
+
         console.log(`
-            \x1b[2mActual:\x1b[0m    \x1b[31m${TestFramework.serialize(failedDisplay.actual ?? actual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
+            \x1b[2mActual:\x1b[0m    \x1b[${[ undefined, null ].includes(displayActual) ? 33 : 31}m${TestFramework.serialize(displayActual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
             \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(failedDisplay.expected ?? expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
             \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
         `

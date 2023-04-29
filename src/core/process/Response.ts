@@ -53,7 +53,7 @@ export class Response {
         }
     
         // Default headers (prioritized)
-        this.setHeader("Cache-Control", `public, max-age=${Config.main.get("cache", "client").number()}, must-revalidate`);
+        this.setHeader("Cache-Control", `public, max-age=${Config.global.get("cache", "client").number()}, must-revalidate`);
         // this.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
         this.setHeader("Content-Length", String(contentLength));
         this.hasHeader("Content-Type")
@@ -84,7 +84,7 @@ export class Response {
         // TODO: Note that string messages are compressed
 
         // Write response data message
-        const statusCode: number = !Config.main.get("concealErrorStatus").bool()
+        const statusCode: number = !Config.global.get("concealErrorStatus").bool()
         ? sRes.status
         : (sRes.message ? 200 : 400);
         

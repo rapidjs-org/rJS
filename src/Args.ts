@@ -1,9 +1,24 @@
 /**
- * Class representing a static CLI argument parser.
+ * Class representing a CLI argument parser.
  */
-export class SArgs {
+export class Args {
 
-    private static array: string[] = process.argv.slice(2);
+    public static readonly global = new Args(process.argv.slice(2));
+    
+    private positionals: string[] = [];
+    private designated: string[] = [];
+
+    constructor(array: string[]) {
+        for(let i = 0; i < array.length; i++) {
+            if(/^-/.test(array[i])) {
+                this.designated = array.slice(i);
+
+                break;
+            }
+            
+            this.positionals.push(array[i]);
+        }
+    }
 
     /**
      * Retrieve the index of a key in the arguments array.
@@ -11,8 +26,8 @@ export class SArgs {
      * @param shorthand Shorthand key (without indicating single dash)
      * @returns Value type resolve interface
      */
-    private static retrieveKeyIndex(name: string, shorthand?: string): number {
-        return Math.max(SArgs.array.indexOf(`--${name}`), shorthand ? SArgs.array.indexOf(`-${shorthand}`) : -1);
+    private retrieveKeyIndex(name: string, shorthand?: string): number {
+        return Math.max(this.designated.indexOf(`--${name}`), shorthand ? this.designated.indexOf(`-${shorthand}`) : -1);
     }
 
     /**
@@ -21,10 +36,8 @@ export class SArgs {
      * @param index Position key
      * @returns The name of the positional argument if provided at index (no indicating dash)
      */
-    public static parsePositional(index: number = 0): string {
-        return /^[^-]/.test(SArgs.array[index] ?? "")
-        ? SArgs.array[index]
-        : undefined;
+    public parsePositional(index: number = 0): string {
+        return this.positionals[index];
     }
 
     /**
@@ -33,8 +46,8 @@ export class SArgs {
      * @param shorthand Flag shorthand (without indicating single dash)
      * @returns Whether the flag is set
      */
-    public static parseFlag(key: string, shorthand?: string): boolean {
-        return (SArgs.retrieveKeyIndex(key, shorthand) >= 0);
+    public parseFlag(key: string, shorthand?: string): boolean {
+        return (this.retrieveKeyIndex(key, shorthand) >= 0);
     }
 
     /**
@@ -43,12 +56,12 @@ export class SArgs {
      * @param [shorthand] Option shorthand (without indicating single dash)
      * @returns Value type resolve interface
      */
-    public static parseOption(key: string, shorthand?: string): {
+    public parseOption(key: string, shorthand?: string): {
         string: string;
         number: number;
     } {
-        let index: number = SArgs.retrieveKeyIndex(key, shorthand);
-        if(index < 0 || ++index >= SArgs.array.length) {
+        let index: number = this.retrieveKeyIndex(key, shorthand);
+        if(index < 0 || ++index >= this.designated.length) {
             return {
                 string: undefined,
                 number: undefined
@@ -60,8 +73,8 @@ export class SArgs {
         * Utilize after parsing an option in order to fit type.
         */
         return {
-            string: SArgs.array[index],
-            number: +SArgs.array[index]
+            string: this.designated[index],
+            number: +this.designated[index]
         };
     }
 

@@ -35,7 +35,7 @@ const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thre
 const rateLimiter: RateLimiter<string> = new RateLimiter(
     EmbedContext.global.mode.DEV
     ? Infinity
-    : Config.main.get("limit", "requestsPerClient").number()
+    : Config.global.get("limit", "requestsPerClient").number()
 );
 
 
@@ -135,7 +135,7 @@ export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     if(!rateLimiter.grantsAccess(clientIP)) return end(socket, 429);
     
     // Block if exceeds URL length
-    if(iReq.url.length > Config.main.get("limit", "urlLength").number()) return end(socket, 414);
+    if(iReq.url.length > Config.global.get("limit", "urlLength").number()) return end(socket, 414);
     
     // Parse body if is payload effective method
     const method: string = iReq.method.toUpperCase();
@@ -148,7 +148,7 @@ export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
         while(chunk = socket.read()) {
             bodyBuffer += chunk.toString();
 
-            if(bodyBuffer.length > Config.main.get("limit", "payloadSize").number()) return end(socket, 413);
+            if(bodyBuffer.length > Config.global.get("limit", "payloadSize").number()) return end(socket, 413);
         }
     }
     

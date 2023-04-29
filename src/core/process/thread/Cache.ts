@@ -11,7 +11,7 @@ export class Cache<K, V> extends ASharedLimitDictionary<K, V, number> {
 
     private readonly duration: number;
     
-    constructor(duration: number = Config.main.get("cache", "server").number(), normalizeKeyCallback?: (key: K) => K) {
+    constructor(duration: number = Config.global.get("cache", "server").number(), normalizeKeyCallback?: (key: K) => K) {
         super(normalizeKeyCallback);
         
         this.duration = duration;

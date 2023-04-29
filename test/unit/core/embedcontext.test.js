@@ -1,28 +1,21 @@
-/* 
-public readonly args: string[];
-    public readonly concreteAppModulePath: string;
-    public readonly hostnames: string[];
-    public readonly isSecure: boolean;
-    public readonly port: number;
-    public readonly path: string;
-    public readonly mode: {
-        DEV: boolean;
-        PROD: boolean;
-    };
- */
+const { join } = require("path");
+
+
 const { EmbedContext } = require("../../../debug/core/EmbedContext");
 
 
-const args = [
-    "cmd", "./concrete.js", "-H", "hostname1,hostname2", "--port", 81, "-S", "-W", "./app/", "-D"
+const testArgs = [
+    "start", "./debug/apps/a/app.js", "-H", "hostname1,hostname2", "--port", 81, "-S", "-W", "./app/", "-D"
 ];
-const embedContext = new EmbedContext(args);
+
+const testContext = new EmbedContext(testArgs);
 
 
-//frame("Specific", () => {
-
-    assertEquals("Args array", embedContext.args, args);
-    assertEquals("Concrete app path", embedContext.concreteAppModulePath, args[1]);
-    assertEquals("Hostnames", embedContext.concreteAppModulePath, args[3].split(","));
-
-//});
+assertEquals("Args array", testContext.args, testArgs);
+assertEquals("Concrete app module path", testContext.concreteAppModulePath, join(process.cwd(), testArgs[1]));
+assertEquals("Hostnames", testContext.hostnames, testArgs[3].split(","));
+assertEquals("Whether establishes secure conncections", testContext.isSecure, true);
+assertEquals("Port", testContext.port, testArgs[5]);
+assertEquals("Specific app path / working directory", testContext.path, join(process.cwd(), testArgs[8]));
+assertEquals("Runtime mode is DEV", testContext.mode.DEV, true);
+assertEquals("Runtime mode is not PROD", testContext.mode.PROD, false);

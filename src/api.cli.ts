@@ -13,7 +13,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { SArgs } from "./SArgs";
+import { Args } from "./Args";
 import { ConsoleLog } from "./ConsoleLog";
 import { CLI } from "./CLI";
 import * as proxy from "./core/proxy/api.proxy";
@@ -37,7 +37,7 @@ CLI.registerCommand("help", () => {
  * underlying proxy application.
  */
 CLI.registerCommand("start", () => {
-    SArgs.parseFlag("standalone")
+    Args.global.parseFlag("standalone")
     ? import("./core/standalone/api.standalone")
         .then(api => api.serveStandalone())
     : proxy.embed();

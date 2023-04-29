@@ -50,7 +50,7 @@ export class Config {
      * Always provide main concrete server application configuration
      * for shorthand access.
      */
-    public static readonly main: Config = new Config("config", "", defaultConfig);
+    public static readonly global: Config = new Config("config", "", defaultConfig);
 
     /**
      * Deep merge objects for left-associative taget override.
