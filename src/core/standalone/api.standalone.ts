@@ -11,12 +11,20 @@ import { IBasicRequest } from "../../_interfaces";
 
 import { HTTPServer } from "../HTTPServer";
 import { FileLog } from "../FileLog";
+import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
 import { handleRequest } from "../process/api.process";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
 
 
 //new FileLog(EmbedContext.global.path);
+
+/*
+ * Catch any unhandled exception within this worker process
+ * in order to prevent process termination, but simply handle
+ * the error case for the respective request.
+ */
+new ErrorControl();
 
 
 /**

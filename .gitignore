@@ -5,6 +5,5 @@ package-lock.json
 node_modules/
 
 debug/
-src/shared-memory/build/
-test/.tmp/
+src/core/shared-memory/build/
 test/integration/logs/

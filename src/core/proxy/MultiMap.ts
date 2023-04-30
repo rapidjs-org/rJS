@@ -19,6 +19,14 @@ export class MultiMap<K, T> {
     private normalizeKeyArgument(keyArgument: K|K[]): K[] {
         return [ keyArgument ].flat() as K[];
     }
+
+    private cleanValues() {
+        this.valueMap
+        .forEach((_, key: number) => {
+            !Array.from(this.associationMap.values()).includes(key)
+            && this.valueMap.delete(key);
+        });
+    }
     
     /**
      * Set a value to the map given an arbitrary, non-zero
@@ -28,12 +36,14 @@ export class MultiMap<K, T> {
      */
     public set(keyArgument: K|K[], value: T) {
         const keys: K[] = this.normalizeKeyArgument(keyArgument);
-
+        
         this.valueMap.set(++this.entryCounter, value);
         
         keys.forEach((key: K) => {
             this.associationMap.set(key, this.entryCounter);
         });
+
+        this.cleanValues();
     }
 
     /**
@@ -41,8 +51,16 @@ export class MultiMap<K, T> {
      * @param key Atomic key associated with value
      * @returns Associated value
      */
-    public get(key: K): T {
-        return this.valueMap.get(this.associationMap.get(key));
+    public get(keyArgument: K|K[]): T {
+        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+
+        for(let key of keys) {
+            const association: number = this.associationMap.get(key);
+
+            if(association) return this.valueMap.get(association);
+        }
+
+        return undefined;
     }
 
     /**
@@ -53,16 +71,12 @@ export class MultiMap<K, T> {
         const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
         keys.forEach((key: K) => {
-            const association: number = this.associationMap.get(key);
+            if(!this.associationMap.has(key)) return;
 
-            this.associationMap.forEach((value: number, key: K) => {
-                if(value !== association) return;
-                
-                this.associationMap.delete(key);
-            });
-            
-            this.valueMap.delete(association);
+            this.associationMap.delete(key);
         });
+        
+        this.cleanValues();
     }
 
     /**

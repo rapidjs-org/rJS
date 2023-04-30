@@ -13,7 +13,7 @@ import { ErrorControl } from "../../ErrorControl";
 import * as concreteAPI from "./api.concrete";
 
 
-new ErrorControl();
+new ErrorControl(); // TODO: Message up?
 
 
 /*

@@ -9,10 +9,11 @@
  */
 export class ErrorControl {
 
-    constructor(exceptionCallback: (err: Error) => void = (() => null), keepAliveDelay: number = 30000) {
+    constructor(exceptionCallback: (err: Error) => void = (() => null), keepAliveDelay: number = 30000, suppressErrorLog: boolean = false) {
         setTimeout(() => {
             process.on("uncaughtException", (err: Error) => {
-                console.error(err);
+                !suppressErrorLog
+                && console.error(err);
                 
                 exceptionCallback(err);
             });

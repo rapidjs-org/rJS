@@ -3,6 +3,16 @@ const { existsSync, readdirSync, lstatSync } = require("fs");
 
 
 setImmediate(() => process.on("exit", (code) => {
+    if(TestFramework.intermediateErrors.length) {
+        console.log();
+        
+        TestFramework.intermediateErrors.forEach(err => {
+            console.error(`\x1b[31m${err.stack ? err.stack : `${err.name}: ${err.message}`}\x1b[0m\n`);
+        });
+
+        code = 1;
+    }
+
     if(code) return code;
 
     const totalAssertions = TestFramework.stats.failed + TestFramework.stats.successful;
@@ -31,15 +41,20 @@ class TestFramework {
     };
     static testPath = join(process.cwd(), process.argv.slice(2)[0] ?? "test");
     static evalQueue = [];
+    static lastWasFramed = false;
+    static frameID = 0;
+    static consumedFrameIDs = [];
+    static suppressError = false;
+    static intermediateErrors = [];
+    static curFrameLabel;
+    static curFileLabel;
     static exitTimeout;
-    static lastFrameLabel;
-    static lastFileLabel;
     static customEquals;
     static customPrepare;
 
     static init(config = {}) {
-        if(!existsSync(TestFramework.testPath)) throw new ReferenceError(`Test directory not found '${TestFramework.testPath}'`);
-
+        if(!existsSync(TestFramework.testPath)) throw new ReferenceError(`Test target not found '${TestFramework.testPath}'`);
+        
         console.log(`\n\x1b[1m\x1b[48;2;${config.badgeColorBg.join(";")}m${config.badgeFgLight ? "\x1b[97m" : ""} ${config.name.toUpperCase()} TESTS \x1b[0m`);
         
         TestFramework.scanDir(TestFramework.testPath);
@@ -53,9 +68,9 @@ class TestFramework {
 
     static scanDir(path) {
         if(!lstatSync(path).isDirectory()) {
-            TestFramework.lastFileLabel = path.match(/[^/]+$/)[0];
+            TestFramework.curFileLabel = path.match(/[^/]+$/)[0];
 
-            require(path);
+            TestFramework.evalTestModule(path);
 
             return;
         }
@@ -74,31 +89,49 @@ class TestFramework {
             
             if(!/.*\.test\.js$/.test(dirent.name)) return;
 
-            TestFramework.lastFileLabel = dirent.name;
+            TestFramework.curFileLabel = dirent.name;
 
-            require(subPath);
+            TestFramework.evalTestModule(subPath);
         });
     }
     
-    static async evaluate(label, actual, expected, evalCallback) {
-        const fileLabel = TestFramework.lastFileLabel;
-        TestFramework.lastFileLabel = null;
-        const frameLabel = TestFramework.lastFrameLabel;
-        TestFramework.lastFrameLabel = null;
+    static async evaluate(label, actual, expected, evalCallback, preserveError = false) {        
+        const fileLabel = TestFramework.curFileLabel;
+        TestFramework.curFileLabel = null;
+
+        const frameLabel = TestFramework.curFrameLabel;
+
+        TestFramework.suppressError = true;
 
         let error;
         try {
             actual = await TestFramework.prepare(actual, label);
         } catch(err) {
             error = err;
+
+            !preserveError
+            && console.error(err);
         }
+
+        TestFramework.suppressError = false;
 
         fileLabel
         && console.log(`\n\x1b[2m•\x1b[0m \x1b[36m${fileLabel}\x1b[0m${!frameLabel ? "\n" : ""}`);
-        frameLabel
-        && console.log(`\n\x1b[1m${frameLabel}\x1b[0m\n`);
+
+        if(frameLabel) {
+            if(!TestFramework.consumedFrameIDs.includes(frameLabel.id)) {
+                console.log(`\n\x1b[1m${frameLabel.caption}\x1b[0m\n`);
+
+                TestFramework.consumedFrameIDs.push(frameLabel.id);
+            }
+        } else if(TestFramework.lastWasFramed) {
+            !fileLabel
+            && console.log("\n")
+
+            TestFramework.lastWasFramed = false;
+        }
         
-        TestFramework.isNewFile = false;
+        TestFramework.suppressError = true;
 
         let failedDisplay, wasSuccessful;
         try {
@@ -111,7 +144,12 @@ class TestFramework {
             failedDisplay = wasSuccessful ? {} : failedDisplay;
         } catch(err) {
             error = err;
+            
+            !preserveError
+            && console.error(err);
         }
+
+        TestFramework.suppressError = false;
 
         TestFramework.stats[wasSuccessful ? "successful" : "failed"]++;
         
@@ -124,10 +162,11 @@ class TestFramework {
         if(wasSuccessful) return;
 
         const displayActual = failedDisplay.actual ?? actual;
+        const displayExpected = failedDisplay.expected ?? expected;
 
         console.log(`
             \x1b[2mActual:\x1b[0m    \x1b[${[ undefined, null ].includes(displayActual) ? 33 : 31}m${TestFramework.serialize(displayActual)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(actual)})\x1b[0m` : ""}
-            \x1b[2mExpected:\x1b[0m  \x1b[34m${TestFramework.serialize(failedDisplay.expected ?? expected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
+            \x1b[2mExpected:\x1b[0m  \x1b[${[ undefined, null ].includes(displayExpected) ? 33 : 34}m${TestFramework.serialize(displayExpected)}\x1b[0m${(actual == expected) ? ` \x1b[2m(${typeof(expected)})\x1b[0m` : ""}
             \x1b[2m${ Array.from({ length: label.length }, () => "–").join("") }\x1b[0m
         `
         .replace(/(\n+)\s+/g, "$1  ")
@@ -182,6 +221,16 @@ class TestFramework {
         return actualValue;
     }
 
+    static evalTestModule(path) {
+        require(path);
+        
+        for(let key in require.cache) {
+            if(!/\//.test(key)) continue;
+            
+            delete require.cache[key];
+        }
+    }
+
     static definePrepare(callback) {
         TestFramework.customPrepare = callback; 
     }
@@ -193,13 +242,26 @@ class TestFramework {
 }
 
 
+process.on("uncaughtException", err => {
+    TestFramework.suppressError
+    && TestFramework.intermediateErrors.push(err);
+});
+
+
 exports.TestFramework = TestFramework;
 
 
 global.frame = function(label, scopeCallback = (() => {})) {
-    TestFramework.lastFrameLabel = label;
+    TestFramework.curFrameLabel = {
+        caption: label,
+        id: TestFramework.frameID++
+    };
     
+    TestFramework.lastWasFramed = true;
+
     scopeCallback();
+
+    TestFramework.curFrameLabel = null;
 };
 
 
@@ -208,17 +270,15 @@ global.assertEquals = async (label, actual, expected) => {
         return (TestFramework.serialize(actual) === TestFramework.serialize(expected));
     };
 
-    TestFramework.evaluate(label,
-        actual, expected,
-        (actual, expected) => {
-            return (TestFramework.customEquals ?? origEquals)(actual, expected, origEquals);
-        });
+    TestFramework.evaluate(label, actual, expected,
+    (actual, expected) => {
+        return (TestFramework.customEquals ?? origEquals)(actual, expected, origEquals);
+    });
 };
 
 global.assertError = async (label, actual) => {
     TestFramework.evaluate(label, actual, "\x1b[3mError\x1b[23m",
-        (_, __, error) => {
-            return (error instanceof Error);
-        }
-    );
+    (_, __, error) => {
+        return (error instanceof Error);
+    }, true);
 };

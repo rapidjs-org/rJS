@@ -1,4 +1,4 @@
-const sharedMemory = require("../debug/core/shared-memory/api.shared-memory");
+const sharedMemory = require("../../debug/core/shared-memory/api.shared-memory");
 
 
 setInterval(_ => {}, 5000); // Keep alive

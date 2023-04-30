@@ -6,7 +6,7 @@ const { CLI } = require("../../../debug/CLI");
 
 let testReference = false;
 
-CLI.registerCommand("test", () => {
+CLI.registerCommand("test", () => { 
     testReference = true;
 });
 

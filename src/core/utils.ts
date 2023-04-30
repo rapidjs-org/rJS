@@ -71,7 +71,7 @@ export function captionEffectiveHostnames(): string {
         EmbedContext.global.hostnames[0]
     }${(
         EmbedContext.global.hostnames.length > 1)
-        ? `(+${EmbedContext.global.hostnames.length - 1})`
+        ? ` (+${EmbedContext.global.hostnames.length - 1})`
         : ""
     }`;
 }
