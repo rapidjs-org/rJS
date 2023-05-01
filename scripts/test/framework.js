@@ -187,7 +187,8 @@ class TestFramework {
                     prepareTimeout = setTimeout(() => {
                         console.log(`\x1b[2m\x1b[31m⚠ ${relatedLabel}\x1b[0m`);
 
-                        console.error(new EvalError("Preparation of actual test value timed out"));
+                        const err = new EvalError("Preparation of actual test value timed out");
+                        console.error(`\x1b[31m${err.stack ? err.stack : `${err.name}: ${err.message}`}\x1b[0m\n`);
 
                         process.exit(1);
                     }, 3000);

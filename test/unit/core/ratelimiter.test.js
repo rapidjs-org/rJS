@@ -3,7 +3,7 @@ const { RateLimiter } = require("../../../debug/core/process/RateLimiter");
 
 const testID = "test";
 
-const testLimiter = new RateLimiter(1, 50);
+const testLimiter = new RateLimiter(1, 25);
 
 
 frame("First window", () => {
@@ -21,7 +21,7 @@ frame("First window", () => {
 
 });
 
-/* frame("Second window", () => {
+frame("Second window", () => {
 
     assertEquals("Denies upon window shift, due to weighted slide", new Promise(resolve => {
         setTimeout(() => resolve(testLimiter.grantsAccess(testID), 50));
@@ -30,4 +30,4 @@ frame("First window", () => {
         setTimeout(() => resolve(testLimiter.grantsAccess(testID), 75));
     }), true);
 
-}); */
+});

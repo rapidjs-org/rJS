@@ -48,7 +48,7 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
         // TODO: Implement intermediate
 
         if((this.existenceLookupValue || {}).key !== this.normalizeKey(key)
-        || (Date.now() - ((this.existenceLookupValue || {}).timestamp || 0)) > 1000) {    // TODO: Define timeout threshold (from config?)
+        || (Date.now() - ((this.existenceLookupValue || {}).timestamp || 0)) > 250) {    // TODO: Define timeout threshold (from config?)
             const exists: boolean = this.exists(key);
 
             if(!exists) {
@@ -69,6 +69,8 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
         let limitValue: ILimitValue<V, L> = this.readShared(key);
         
         if(!limitValue) {
+            this.setExistenceLookup(key, null);
+
             return false;
         }
         
@@ -76,15 +78,19 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
         try {
             reference = this.retrieveReferenceCallback(key);
         } catch {
+            this.setExistenceLookup(key, null);
+
             return false;
         }
         
         if(!this.validateLimitCallback(limitValue.limitReference, reference)) {
+            this.setExistenceLookup(key, null);
+            
             return false;
         }
         
         this.setExistenceLookup(key, limitValue.value); // Already store to reduce repeated SHM access on subsequent read
-
+       
         return true;
     }
 

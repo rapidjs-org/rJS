@@ -29,6 +29,7 @@ frame("Exceeded entry", () => {
     assertEquals("Check", new Promise(resolve => {
         setTimeout(() => resolve(testCache.exists(testKey), 50));
     }), false);
+    
     assertEquals("Read", new Promise(resolve => {
         setTimeout(() => resolve(testCache.read(testKey), 50));
     }), null);

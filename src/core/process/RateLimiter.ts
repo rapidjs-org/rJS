@@ -1,7 +1,7 @@
 import { ASharedDictionary } from "./ASharedDictionary";
 
 
-type TRate<I> = Map<I, number>;
+type TRate<I extends string|number|symbol> = Record<I, number>;
 
 
 /**
@@ -11,7 +11,7 @@ type TRate<I> = Map<I, number>;
  * for two consecutive windows around a supplementory pivot
  * timestamp for update.
  */
-interface ILimiterData<I> {
+interface ILimiterData<I extends string|number|symbol> {
     timePivot: number;
     previousWindow: TRate<I>;
     currentWindow: TRate<I>;
@@ -28,7 +28,7 @@ interface ILimiterData<I> {
  * rates and validated for their weighted sliding window
  * total as a reference.
  */
-export class RateLimiter<I> extends ASharedDictionary<I, ILimiterData<I>> {
+export class RateLimiter<I extends string|number|symbol> extends ASharedDictionary<I, ILimiterData<I>> {
 
     private readonly limit: number;
     private readonly windowSize: number;
@@ -50,24 +50,24 @@ export class RateLimiter<I> extends ASharedDictionary<I, ILimiterData<I>> {
         const currentLimitData: ILimiterData<I> = this.readShared()
         ?? {
             timePivot: Date.now(),
-            previousWindow: new Map(),
-            currentWindow: new Map()
+            previousWindow: {} as TRate<I>,
+            currentWindow: {} as TRate<I>
         };
-
-        const now: number = Date.now();
-        const nowPivot: number = now - currentLimitData.timePivot;
         
-        if(nowPivot <= this.windowSize) return currentLimitData;
+        const now: number = Date.now();
+        const pivot: number = now - currentLimitData.timePivot;
 
-        currentLimitData.currentWindow = (nowPivot <= (2 * this.windowSize))
+        if(pivot <= this.windowSize) return currentLimitData;
+
+        currentLimitData.currentWindow = (pivot <= (2 * this.windowSize))
         ? currentLimitData.currentWindow
-        : new Map();
+        : {} as TRate<I>;
 
         currentLimitData.previousWindow = currentLimitData.currentWindow;
-        currentLimitData.currentWindow = new Map();
+        currentLimitData.currentWindow = {} as TRate<I>;
 
         currentLimitData.timePivot = now;
-        
+
         return currentLimitData;
     }
 
@@ -79,18 +79,18 @@ export class RateLimiter<I> extends ASharedDictionary<I, ILimiterData<I>> {
      */
     public grantsAccess(entityIdentifier: I): boolean {
         const currentLimitData: ILimiterData<I> = this.updateLimitData();
-
-        const currentHits: number = (currentLimitData.currentWindow.get(entityIdentifier) ?? 0) + 1;
         
-        currentLimitData.currentWindow.set(entityIdentifier, currentHits);
+        const currentHits: number = (currentLimitData.currentWindow[entityIdentifier] ?? 0) + 1;
+        
+        currentLimitData.currentWindow[entityIdentifier] = currentHits;
         
         const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / this.windowSize, 1);
         const weightedHits: number
-        = ((currentLimitData.previousWindow.get(entityIdentifier) ?? 0) * (1 - currentWindowWeight))
+        = ((currentLimitData.previousWindow[entityIdentifier] ?? 0) * (1 - currentWindowWeight))
         + (currentHits * currentWindowWeight);
 
         this.writeShared(currentLimitData);
-        
+
         return (weightedHits <= this.limit);
     }
 }
