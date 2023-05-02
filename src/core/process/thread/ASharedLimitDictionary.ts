@@ -50,7 +50,7 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
         if((this.existenceLookupValue || {}).key !== this.normalizeKey(key)
         || (Date.now() - ((this.existenceLookupValue || {}).timestamp || 0)) > 250) {    // TODO: Define timeout threshold (from config?)
             const exists: boolean = this.exists(key);
-
+            
             if(!exists) {
                 return null;
             }

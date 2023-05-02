@@ -19,6 +19,7 @@ interface ITypeResolveInterface {
     bool: () => boolean;
     number: () => number;
     string: () => string;
+    object: () => TJSONObject;
 }
 
 
@@ -138,6 +139,9 @@ export class Config {
             string: () => {
                 return value.toString();
             },
+            object: () => {
+                return value as TJSONObject
+            }
         };
     }
 

@@ -2,6 +2,7 @@
     "appNameShort": "rJS",
     "appNameLong": "rapidJS",
     "logFileDirName": "logs",
+    "pluginDirName": "plugins",
     "socketDir": "/tmp",
     "socketNamePrefix": "rjs.proxy."
 }
