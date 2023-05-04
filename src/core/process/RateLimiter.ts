@@ -28,7 +28,7 @@ interface ILimiterData<I extends string|number|symbol> {
  * rates and validated for their weighted sliding window
  * total as a reference.
  */
-export class RateLimiter<I extends string|number|symbol> extends ASharedDictionary<I, ILimiterData<I>> {
+export class RateLimiter<I extends string|number|symbol> extends ASharedDictionary<I, ILimiterData<any>> {
 
     private readonly limit: number;
     private readonly windowSize: number;
@@ -55,14 +55,14 @@ export class RateLimiter<I extends string|number|symbol> extends ASharedDictiona
         };
         
         const now: number = Date.now();
-        const pivot: number = now - currentLimitData.timePivot;
+        const delta: number = now - currentLimitData.timePivot;
 
-        if(pivot <= this.windowSize) return currentLimitData;
+        if(delta <= this.windowSize) return currentLimitData;
 
-        currentLimitData.currentWindow = (pivot <= (2 * this.windowSize))
+        currentLimitData.currentWindow = (delta <= (2 * this.windowSize))
         ? currentLimitData.currentWindow
         : {} as TRate<I>;
-
+        
         currentLimitData.previousWindow = currentLimitData.currentWindow;
         currentLimitData.currentWindow = {} as TRate<I>;
 

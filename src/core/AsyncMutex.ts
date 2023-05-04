@@ -5,7 +5,7 @@
  * to resolve until queued instruction callbacks are to
  * be resolved in turn. 
  */
-export class AsyncMutex {
+export class AsyncMutex<T> {
 
 	private readonly acquireQueue: ((value?: unknown) => void)[] = [];
 
@@ -37,14 +37,14 @@ export class AsyncMutex {
 	 * @param prioritize Whether to optionally prioritize the current acquisition
 	 * @returns Promise resolving to the instruction callback return value upon acquisition success
 	 */
-	public lock(instructions: (() => void)|Promise<unknown>, prioritize = false): Promise<unknown> {
-		return new Promise((resolve, reject) => {
+	public lock(instructions: (() => T)|Promise<T>, prioritize = false): Promise<T> {
+		return new Promise((resolve: (result: T) => void, reject) => {
 			this.acquire(prioritize)
 			.then(() => {
 				(!(instructions instanceof Promise)
 				? new Promise<unknown>(r => r(instructions()))
 				: instructions)
-                .then((result: unknown) => resolve(result))
+                .then((result: T) => resolve(result))
 				.catch((err: Error) => reject(err))
 				.finally(() => {
 					this.acquireQueue.length

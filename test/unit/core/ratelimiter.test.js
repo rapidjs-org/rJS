@@ -2,32 +2,38 @@ const { RateLimiter } = require("../../../debug/core/process/RateLimiter");
 
 
 const testID = "test";
+const testWindowSize = 25;
+const testLimiter = new RateLimiter(1, testWindowSize);
 
-const testLimiter = new RateLimiter(1, 25);
+const transientNormal = windowFraction => (windowFraction * testWindowSize) + testWindowSize;
 
 
 frame("First window", () => {
 
     assertEquals("Grants", new Promise(resolve => {
-        setTimeout(() => resolve(testLimiter.grantsAccess(testID), 25));
+        setTimeout(() => resolve(testLimiter.grantsAccess(testID)), transientNormal(0));
     }), true);
     assertEquals("Denies", new Promise(resolve => {
-        setTimeout(() => {
-            testLimiter.grantsAccess(testID);   // Fill to activate weights
-            
-            resolve(testLimiter.grantsAccess(testID), 26);
-        });
+        setTimeout(() => resolve(testLimiter.grantsAccess(testID)), transientNormal(0.75));
     }), false);
 
 });
 
 frame("Second window", () => {
 
-    assertEquals("Denies upon window shift, due to weighted slide", new Promise(resolve => {
-        setTimeout(() => resolve(testLimiter.grantsAccess(testID), 50));
+    assertEquals("Denies: exceeds sliding window (weighted sum)", new Promise(resolve => {
+        setTimeout(() => resolve(testLimiter.grantsAccess(testID)), transientNormal(1.75));
     }), false);
-    assertEquals("Grants within subsequent window, due to weighted slide", new Promise(resolve => {
-        setTimeout(() => resolve(testLimiter.grantsAccess(testID), 75));
+
+});
+
+frame("Third window", () => {
+
+    assertEquals("Grants: sliding window (weighted sum)", new Promise(resolve => {
+        setTimeout(() => resolve(testLimiter.grantsAccess(testID)), transientNormal(3.76));
     }), true);
+    assertEquals("Denies: sliding window (weighted sum)", new Promise(resolve => {
+        setTimeout(() => resolve(testLimiter.grantsAccess(testID)), transientNormal(4.5));
+    }), false);
 
 });

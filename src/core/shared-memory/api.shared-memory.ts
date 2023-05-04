@@ -12,15 +12,6 @@ import * as sharedMemory from "./shared-memory";
 
 
 /*
- * Register whether shared memory ca be accessed in order to
- * circumvent repeated failing low-level memory access approaches.
- */
-const sharedMemoryActive = {
-    write: true,
-    read: true
-};
-
-/*
  * High-level storage fallback in case low-level shared memory
  * mapping behavior is unavailable. Provides a uniformal module
  * interface in order to prevent abstract handling requirement.
@@ -28,6 +19,15 @@ const sharedMemoryActive = {
 const intermediateMemory: Map<string, string> = new Map();
 
 const concreteAppKey: number = generateConcreteAppKey();
+
+const reactivateTimeoutValue: number = 1000 * 60 * 5;
+
+
+/*
+ * Register whether shared memory ca be accessed in order to
+ * circumvent repeated failing low-level memory access approaches.
+ */
+let isActive: boolean = true;
 
 
 /*
@@ -52,6 +52,16 @@ function generateConcreteAppKey(): number { // uint32_t (MAX: 4294967296)
     .join("")) % 4294967296;
 }
 
+function deactivate() {
+    console.error(`Shared memory unavailable: Process-local store intermediate for ${reactivateTimeoutValue / 60000} m`);
+    
+    isActive = false; // TODO: Distinguish errors?
+
+    setTimeout(() => {
+        isActive = true;
+    }, reactivateTimeoutValue);
+}
+
 
 /**
  * Write a key-value-pair to the shared memory associated with the
@@ -65,13 +75,12 @@ export async function writeSync(purposeKey: string, purposeData: unknown) {
     ? JSON.stringify(purposeData)
     : purposeData);
     
-    if(sharedMemoryActive.write) {
+    if(isActive) {
         try {
             sharedMemory.write(purposeKey, Buffer.from(serial, "utf-8"));
-
             return;
-        } catch(err) {            
-            sharedMemoryActive.write = false; // TODO: Distinguish errors?
+        } catch(err) {
+            deactivate();
         }
     }
 
@@ -103,16 +112,16 @@ export async function write(purposeKey: string, purposeData: unknown): Promise<v
  */
 export function readSync<T>(purposeKey: string): T {
     let serial;
-    if(sharedMemoryActive.read) {
+    if(isActive) {
         try {
             const buffer: Buffer = sharedMemory.read(purposeKey);
 
             serial = String(buffer);
         } catch {
-            sharedMemoryActive.read = false;
+            deactivate();
         }
     }
-
+    
     serial = serial ?? intermediateMemory.get(purposeKey);
 
     let data: T;
@@ -148,7 +157,7 @@ export function registerFree(event: string|string[]) {
     .forEach((event: string) => {
         process.on(event, () => sharedMemory.free());
     });
-}   // TODO: Implement in respective application processes
+}   // TODO: Implement at unbed (consistent among runs otherwise as long as heap is maintained)
 
 
 /**

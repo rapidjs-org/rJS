@@ -1,4 +1,4 @@
-import { readSync as shmReadSync, write as shmWrite } from "../shared-memory/api.shared-memory";
+import { readSync as shmReadSync, writeSync as shmWriteSync } from "../shared-memory/api.shared-memory";
 
 
 /**
@@ -29,8 +29,8 @@ export abstract class ASharedDictionary<K, V> {
         return this.normalizeKeyCallback(key);
     }
 
-    protected writeShared(value: V, key?: K) {
-        shmWrite(this.getInternalKey(key), value);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
+    protected writeShared(value: V, key?: K): Promise<void> {
+        return shmWriteSync(this.getInternalKey(key), value);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
     }
 
     protected readShared(key?: K): V {

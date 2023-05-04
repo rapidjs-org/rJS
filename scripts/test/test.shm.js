@@ -6,14 +6,10 @@ const children = [];
 const randomConsistencyStr = Math.round(Math.random() * 100);
 
 
-children.push(detachProcess("write"));
-children.push(detachProcess("read"));
-
-
-function detachProcess(mode) {
-    const child = fork(join(__dirname, "../../test/unit/shm.test.js"), [ `--${mode}` ]);
-    
-    child.on("message", ioMatches => {
+detachProcess("write")
+.on("message", () => {
+    detachProcess("read")
+    .on("message", ioMatches => {   
         children.forEach(child => child.kill());
         
         if(!ioMatches) {
@@ -26,8 +22,15 @@ function detachProcess(mode) {
 
         process.exit(0);
     });
+});
+
+
+function detachProcess(mode) {
+    const child = fork(join(__dirname, "../../test/unit/shm.test.js"), [ `--${mode}` ]);
 
     child.send(randomConsistencyStr);
+
+    children.push(child);
 
     return child;
 }

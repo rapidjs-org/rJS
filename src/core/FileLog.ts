@@ -15,7 +15,7 @@ export class FileLog extends ALogIntercept {
     private path: string;
     private swallowPrint: boolean;
     private hadWriteError: boolean = false;
-    private mutex: AsyncMutex = new AsyncMutex();
+    private mutex: AsyncMutex<void> = new AsyncMutex();
 
     constructor(path: string, swallowPrint: boolean = false) {
         super();
