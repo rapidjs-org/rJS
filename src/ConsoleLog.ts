@@ -39,7 +39,7 @@ export class ConsoleLog extends ALogIntercept {
         return str;
     }
     
-    private static write(message: string): string {   
+    private static write(message: string, noTypeFormatting: boolean = false): string {   
         // Type based indentation
         try {
             JSON.parse(message);
@@ -58,7 +58,9 @@ export class ConsoleLog extends ALogIntercept {
         } catch { /**/ }
 
         // Type based highlighting
-        message = message
+        message = noTypeFormatting
+        ? message
+        : message
         .replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
 
         return `${
@@ -80,7 +82,7 @@ export class ConsoleLog extends ALogIntercept {
     protected handleStderr(data: string): string {
         data = ConsoleLog.color(data, [ 224, 0, 0 ]);
         
-        return ConsoleLog.write(data);
+        return ConsoleLog.write(data, true);
     }
     
 }

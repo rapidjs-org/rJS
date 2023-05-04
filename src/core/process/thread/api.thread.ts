@@ -13,6 +13,11 @@ import { ErrorControl } from "../../ErrorControl";
 import * as concreteAPI from "./api.concrete";
 
 
+if(!EmbedContext.global.concreteAppModulePath) {
+    throw new ReferenceError("Missing concrete application module path");
+}
+
+
 new ErrorControl(); // TODO: Message up?
 
 

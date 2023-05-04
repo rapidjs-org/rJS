@@ -1,11 +1,13 @@
 #!/bin/bash
 
+CONCRETE_APP_MODULE="${2:-app.asset.integration}"
+
 case $1 in
 	start:proxy)
-		node ./debug/api.cli.js start ./test/integration/shell -P 7070 -W ./test/integration/ -L ../logs/
+		node ./debug/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/
 		;;
 	start:standalone)
-		node ./debug/api.cli.js start ./test/integration/shell -P 7070 -W ./test/integration/ -L ../logs/ --standalone
+		node ./debug/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/ --standalone
 		;;
 	stop)
 		node ./debug/api.cli.js stop -P 7070
