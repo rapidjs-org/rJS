@@ -2,9 +2,10 @@ import _config from "../../../_config.json";
 
 
 import { dirname, join } from "path";
-import { readFileSync } from "fs";
 
 import { Config } from "../Config";
+
+import { VFS } from "./VFS";
 
 
 /**
@@ -29,16 +30,16 @@ export class Plugin {
     private readonly name: string;
     private readonly config: Config;
 
+    public readonly VFS: VFS;
+
     constructor(path: string) {
         this.path = path;
         this.name = dirname(path);
         this.config = new Config(`${this.name}.config`, _config.pluginDirName, Config.global.get("plugins", this.name).object() ?? {});
 
-        Plugin.registry.set(this.name, this);
-    }
+        this.VFS = new VFS(path);
 
-    public readFile(name: string): string {
-        return String(readFileSync(join(this.path, /\.[a-z][a-z0-9]*$/i.test(name) ? name : `${name}.js`)));
+        Plugin.registry.set(this.name, this);
     }
 
     public readConfig(...args: unknown[]) {

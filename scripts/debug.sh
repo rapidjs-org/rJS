@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONCRETE_APP_MODULE="${2:-app.asset.integration}"
+CONCRETE_APP_MODULE="${2:-asset.integration}"
 
 case $1 in
 	start:proxy)

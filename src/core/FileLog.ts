@@ -58,7 +58,7 @@ export class FileLog extends ALogIntercept {
         /* this.writeFile(data);
 
         if(this.swallowPrint) return;
- */
+        */
         return data;
     }
     
@@ -68,7 +68,7 @@ export class FileLog extends ALogIntercept {
         this.writeFile(data);
 
         if(this.swallowPrint) return;
- */
+        */
         return data;
     }
     

@@ -66,7 +66,7 @@ async function evalEnvScript(label, proceedCallback) {
     const envScriptPath = join(
         !lstatSync(TestFramework.testPath).isDirectory() ? dirname(TestFramework.testPath) : TestFramework.testPath
     , `network.${label}.js`);
-
+    
     if(!existsSync(envScriptPath)) return proceedCallback(false);
     
     console.log(`\x1b[1m\x1b[2m\x1b[4m⁞ ENVIRONMENT ${label.toUpperCase()}\x1b[0m\x1b[2m\x1b[74m`);
