@@ -93,9 +93,9 @@ export class Config {
      */
     private obj: TJSONObject;
 
-    constructor(name: string|string[], subPath: string = "", defaultConfig = {}) {
-        this.obj = defaultConfig;
-
+    constructor(name: string|string[], subPath: string = "", defaultConfigObj: TJSONObject) {
+        this.obj = defaultConfigObj ?? {};
+        
         applicableSpecifiers
         .forEach((specifier: string) => {
             name = [ name ].flat();
@@ -143,6 +143,10 @@ export class Config {
                 return value as TJSONObject
             }
         };
+    }
+
+    public mergeDefault(defaultConfigObj: TJSONObject) {
+        this.obj = Config.deepMergeObj(defaultConfigObj, this.obj);
     }
 
     /**

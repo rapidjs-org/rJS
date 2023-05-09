@@ -1,7 +1,9 @@
 import _config from "../../../_config.json";
 
 
-import { dirname, join } from "path";
+import { dirname } from "path";
+
+import { TJSONObject } from "../../../_types";
 
 import { Config } from "../Config";
 
@@ -26,14 +28,12 @@ export class Plugin {
         Plugin.registry.forEach(callback);
     }
 
-    private readonly path: string;
     private readonly name: string;
     private readonly config: Config;
 
     public readonly VFS: VFS;
 
     constructor(path: string) {
-        this.path = path;
         this.name = dirname(path);
         this.config = new Config(`${this.name}.config`, _config.pluginDirName, Config.global.get("plugins", this.name).object() ?? {});
 
@@ -44,6 +44,10 @@ export class Plugin {
 
     public readConfig(...args: unknown[]) {
         return this.config.get.apply(this.config, args);
+    }
+
+    public mergeConfigDefault(defaultConfigObj: TJSONObject) {
+        this.config.mergeDefault(defaultConfigObj);
     }
 
 }
