@@ -1,4 +1,10 @@
-import { TConcreteAppAPI, TConcreteAppHandler } from "../../_types";
+import { TConcreteAppAPI } from "../../_types";
+import { IRequest, IResponse } from "../../_interfaces";
+
+import { RequestHandler } from "./RequestHandler";
+
+
+
 
 
 export default function(api: TConcreteAppAPI) {
@@ -7,14 +13,9 @@ export default function(api: TConcreteAppAPI) {
     /*
      * Request handler interface.
      */
-    return (sReq: TConcreteAppHandler) => {
-        console.log("\n\x1b[2mSERIAL REQUEST:\x1b[0m");
-        console.log(sReq);
+    return (sReq: IRequest): IResponse => {
+        const reqHandler = new RequestHandler(sReq.ip, sReq.method, sReq.url, sReq.headers, sReq.body, sReq.encoding, sReq.cookies, sReq.locale);
         
-        const dRes = new api.Response("Success", 200);
-        console.log("\n\x1b[2mPRODUCED RESPONSE:\x1b[0m");
-        console.log(dRes);
-        
-        return dRes;
+        return new api.Response(reqHandler.message, reqHandler.status, reqHandler.headers, reqHandler.cookies);
     };
 }
