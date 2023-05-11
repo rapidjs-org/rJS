@@ -17,7 +17,7 @@ import { handleRequest } from "../process/api.process";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
 
 
-//new FileLog(EmbedContext.global.path);
+new FileLog(EmbedContext.global.path);
 
 /*
  * Catch any unhandled exception within this worker process

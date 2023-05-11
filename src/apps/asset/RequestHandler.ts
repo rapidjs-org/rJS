@@ -12,7 +12,7 @@ export class RequestHandler {
     public headers: THeaders;
     public cookies: TCookies;
 
-    constructor(ip: string, method: string, url: IHighlevelURL, headers: THeaders, body: string, encoding: IHighlevelEncoding[], cookies?: THighlevelCookieIn, locale?: IHighlevelLocale[]) {
+    constructor(ip: string, method: string, url: IHighlevelURL, headers: THeaders, body: unknown, encoding: IHighlevelEncoding[], cookies?: THighlevelCookieIn, locale?: IHighlevelLocale[]) {
         this.message = "Lorem ipsum";
         this.status = 200;
         this.headers = {};

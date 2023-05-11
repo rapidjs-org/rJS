@@ -25,13 +25,15 @@ export class FileLog extends ALogIntercept {
         this.swallowPrint = swallowPrint;
         this.path = join(path, _config.logFileDirName);
 
-        /* mkdirSync(this.path, {
+        mkdirSync(this.path, {
             recursive: true
-        }); */
+        });
     }
 
     private writeFile(message: string) {
-        message = message.replace(/\x1b\[[0-9;]+m/g, "");    // Remove possibly occurring ANSII formatting codes
+        message = message
+        .replace(/\x1b\[[0-9;]+m/g, "")
+        .trim();    // Remove possibly occurring ANSII formatting codes
         
         const date: Date = new Date();
         const day: string = date.toISOString().split("T")[0];
@@ -49,27 +51,29 @@ export class FileLog extends ALogIntercept {
                     this.hadWriteError = false;
                 }, FileLog.writeErrorRetryTimeout);
 
-                this.handleStderr(`Could not write to log directory. ${err?.message ?? message}`, true);
+                this.handleStderr(`Could not write to log directory. ${err?.message ?? message}`, 0, true);
             });
         });
     }
 
-    protected handleStdout(data: string): string {
-        /* this.writeFile(data);
+    public handleStdout(message: string, groupCount: number): string {
+        (groupCount <= 1)
+        && this.writeFile(message);
 
-        if(this.swallowPrint) return;
-        */
-        return data;
+        if(this.swallowPrint) return null;
+        
+        return message;
     }
     
-    protected handleStderr(data: string, passthrough: boolean = false): string {
-        /* if(passthrough) return data;
+    public handleStderr(message: string, groupCount: number, passthrough: boolean = false): string {
+        if(passthrough) return message;
         
-        this.writeFile(data);
+        (groupCount <= 1)
+        && this.writeFile(message);
 
-        if(this.swallowPrint) return;
-        */
-        return data;
+        if(this.swallowPrint) return null;
+        
+        return message;
     }
     
 }

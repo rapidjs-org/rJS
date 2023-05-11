@@ -12,7 +12,6 @@ import { join } from "path";
 import { IBasicRequest } from "../../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { HTTPServer } from "../HTTPServer";
-import { FileLog } from "../FileLog";
 import { ErrorControl } from "../ErrorControl";
 
 import { MultiMap } from "./MultiMap";
@@ -101,8 +100,6 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
             
-            new FileLog(embedContext.path, true);
-
             processPool.init();
 
             processPool.on("terminate", () => {

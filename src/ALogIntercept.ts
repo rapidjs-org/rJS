@@ -10,58 +10,68 @@ interface ILastMessage {
 
 export abstract class ALogIntercept {
 
-    private static _stdout: TChannelWrite = process.stdout.write.bind(process.stdout);
-    private static _stderr: TChannelWrite = process.stdout.write.bind(process.stderr);
-    
-    private readonly lastMessage: ILastMessage = {
+    private static readonly lastMessage: ILastMessage = {
         count: 0,
         message: null,
         timePivot: 0
     };
 
+    public static readonly _stdout: TChannelWrite = process.stdout.write.bind(process.stdout);
+    public static readonly _stderr: TChannelWrite = process.stdout.write.bind(process.stderr);
+    public static readonly instances: ALogIntercept[] = [];
+    
     constructor() {
-        // @ts-ignore
-        process.stdout.write = (data, callback?) => {
-            const message: string = this.handleStdout(String(data));
-
-            return this.write(ALogIntercept._stdout, message);
-        };
-
-        // @ts-ignore
-        process.stderr.write = (data, callback?) => {
-            const message: string = this.handleStderr(String(data));
-
-            return this.write(ALogIntercept._stderr, message);
-        };
+        ALogIntercept.instances.unshift(this);
     }
-
-    private write(channelWrite: TChannelWrite, message: string) {
-        if(!message) return;
-        
-        if(message !== this.lastMessage.message
-        || (Date.now() - this.lastMessage.timePivot) > 5000) {
-            channelWrite(message);
-
-            this.lastMessage.count = 1;
-            this.lastMessage.message = message;
-            this.lastMessage.timePivot = Date.now();
-
-            return message;
+    
+    public static getGroupCount(message: string): number {
+        if(message !== ALogIntercept.lastMessage.message
+        || (Date.now() - ALogIntercept.lastMessage.timePivot) > 5000) {
+    
+            ALogIntercept.lastMessage.count = 1;
+            ALogIntercept.lastMessage.message = message;
+            ALogIntercept.lastMessage.timePivot = Date.now();
+    
+            return 1;
         }
+        
+        ALogIntercept.lastMessage.timePivot = Date.now();
 
-        this.lastMessage.timePivot = Date.now();
-
-        channelWrite(`\x1b[s\x1b[1A\x1b[${
-            message
-            .trim()
-            .split(/\r|\n/g)
-            .pop()
-            .replace(/\x1b\[[0-9;:]+m/g, "")
-            .length
-        }C\x1b[2m\x1b[31m (${++this.lastMessage.count})\x1b[0m\n\x1b[1B`);
+        return ++ALogIntercept.lastMessage.count;
     }
-
-    protected abstract handleStdout(data: string): string;
-    protected abstract handleStderr(data: string): string;
+    
+    public abstract handleStdout(message: string, groupCount: number): string;
+    public abstract handleStderr(message: string, groupCount: number): string;
     
 }
+
+
+// @ts-ignore
+process.stdout.write = (data, callback?) => {
+    let message: string = String(data);
+
+    const groupCount: number = ALogIntercept.getGroupCount(message);
+
+    ALogIntercept.instances.forEach((instance: ALogIntercept) => {
+        message = instance.handleStdout(message, groupCount);
+    });
+
+    if(!message) return;
+
+    return ALogIntercept._stdout(message);
+};
+
+// @ts-ignore
+process.stderr.write = (data, callback?) => {
+    let message: string = String(data);
+    
+    const groupCount: number = ALogIntercept.getGroupCount(message);
+
+    ALogIntercept.instances.forEach((instance: ALogIntercept) => {
+        message = instance.handleStderr(message, groupCount);
+    });
+
+    if(!message) return;
+
+    return ALogIntercept._stderr(message);
+};

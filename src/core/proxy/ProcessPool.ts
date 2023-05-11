@@ -6,6 +6,7 @@ import { IBasicRequest } from "../../_interfaces";
 import { AWorkerPool } from "../AWorkerPool";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
+import { FileLog } from "../FileLog";
 
 
 /**
@@ -72,6 +73,9 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
         });
         
 		childProcess.stdout.on("data", (message: Buffer) => {
+
+            //new FileLog(embedContext.path, true);
+
 			console.log(String(message).replace(/\n$/, "")/* , this.logDir */);
 		});
         /*

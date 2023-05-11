@@ -39,7 +39,7 @@ export class ConsoleLog extends ALogIntercept {
         return str;
     }
     
-    private static write(message: string, noTypeFormatting: boolean = false): string {   
+    private static write(message: string, groupCount: number, noTypeFormatting: boolean = false): string {   
         // Type based indentation
         try {
             JSON.parse(message);
@@ -63,7 +63,7 @@ export class ConsoleLog extends ALogIntercept {
         : message
         .replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
 
-        return `${
+        message = `${
             ConsoleLog.style(
                 ConsoleLog.color(` ${
                     _config.appNameShort
@@ -74,15 +74,26 @@ export class ConsoleLog extends ALogIntercept {
                 [ 1, 3 ]
             )
         } ${message}`;
+        
+        return (groupCount > 1)
+        ? `\x1b[s\x1b[1A\x1b[${
+            message
+            .trim()
+            .split(/\r|\n/g)
+            .pop()
+            .replace(/\x1b\[[0-9;:]+m/g, "")
+            .length
+        }C\x1b[2m\x1b[31m (${groupCount})\x1b[0m\n\x1b[1B`
+        : message;
     }
 
-    protected handleStdout(data: string): string {
-        return ConsoleLog.write(data);
+    public handleStdout(message: string, groupCount: number): string {
+        return ConsoleLog.write(message, groupCount);
     }
-    protected handleStderr(data: string): string {
-        data = ConsoleLog.color(data, [ 224, 0, 0 ]);
+    public handleStderr(message: string, groupCount: number): string {
+        message = ConsoleLog.color(message, [ 224, 0, 0 ]);
         
-        return ConsoleLog.write(data, true);
+        return ConsoleLog.write(message, groupCount, true);
     }
     
 }
