@@ -21,7 +21,7 @@
     "start:core:standalone": "./scripts/debug.sh start:standalone core.integration",
     "start:app": "./scripts/debug.sh start:proxy",
     "start:app:standalone": "./scripts/debug.sh start:standalone",
-    "stop": "./scripts/debug.sh start:stop",
+    "stop": "./scripts/debug.sh stop",
     "metatest:unit": "node ./scripts/test/test-suite.unit.js ./scripts/test/meta/meta.unit.test.js",
     "metatest:network": "node ./scripts/test/test-suite.network.js ./scripts/test/meta/meta.network.test.js",
     "benchmark:s": "node ./scripts/benchmark.js -s",

@@ -4,6 +4,8 @@ import _config from "./_config.json";
 import { THeaders, TCookies, THighlevelCookieIn } from "../../_types";
 import { IHighlevelURL, IHighlevelEncoding, IHighlevelLocale } from "../../_interfaces";
 
+import { VFS } from "./api.core";
+
 
 export class RequestHandler {
 
@@ -13,9 +15,10 @@ export class RequestHandler {
     public cookies: TCookies;
 
     constructor(ip: string, method: string, url: IHighlevelURL, headers: THeaders, body: unknown, encoding: IHighlevelEncoding[], cookies?: THighlevelCookieIn, locale?: IHighlevelLocale[]) {
-        this.message = "Lorem ipsum";
         this.status = 200;
         this.headers = {};
         this.cookies = {};
+
+        this.message = VFS.read(url.pathname).data;
     }
 }
