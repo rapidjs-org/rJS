@@ -18,7 +18,7 @@ export class RequestHandler {
         this.status = 200;
         this.headers = {};
         this.cookies = {};
-
-        this.message = VFS.read(url.pathname).data;
+        
+        this.message = VFS.read(url.pathname)?.data ?? "Not Found";
     }
 }

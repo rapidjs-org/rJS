@@ -1,6 +1,8 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
+import { EmbedContext } from "../../EmbedContext";
+
 import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 
 
@@ -36,17 +38,17 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
             return normalize(path);
         });
 
-        this.root = normalize(join(process.cwd(), root));
+        this.root = normalize(join(EmbedContext.global.path, root));
             
         // Error if out of process.cwd() (information hiding / security)
-        if(this.root.slice(0, process.cwd().length) !== process.cwd()) {
+        if(this.root.slice(0, EmbedContext.global.path.length) !== EmbedContext.global.path) {
             throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${process.cwd()}...',\ngiven\t\t'${this.root}'.`);
         }
         // TODO: Generic out of PATH utility (reuse e.g. for log dir)
     }
     
     private getAbsolutePath(path: string): string {
-        return join(this.root, path);   // TODO: Resolve project locally / from main
+        return join(this.root, path);
     }
 
     private getFileReference(path: string): IFileReference {
@@ -108,7 +110,7 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
         }
         
         const pathOnDisc = this.getAbsolutePath(path);
-
+        
         if(!existsSync(pathOnDisc)) {
             return false;
         }

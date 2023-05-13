@@ -83,7 +83,7 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
             return false;
         }
         
-        if(!this.validateLimitCallback(limitValue.limitReference, reference)) {
+        if(!limitValue.limitReference || !this.validateLimitCallback(limitValue.limitReference, reference)) {
             this.setExistenceLookup(key, null);
             
             return false;
