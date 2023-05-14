@@ -1,4 +1,6 @@
 {
+    "defaultFileExtension": "html",
+    "indexName": "index",
     "privateFileIndicator": "_",
     "webDirName": "web"
 }
