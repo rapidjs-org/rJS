@@ -26,7 +26,7 @@ export abstract class ALogIntercept {
     
     public static getGroupCount(message: string): number {
         if(message !== ALogIntercept.lastMessage.message
-        || (Date.now() - ALogIntercept.lastMessage.timePivot) > 5000) {
+        || (Date.now() - ALogIntercept.lastMessage.timePivot) > 30000) {
     
             ALogIntercept.lastMessage.count = 1;
             ALogIntercept.lastMessage.message = message;

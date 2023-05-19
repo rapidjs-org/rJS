@@ -6,6 +6,7 @@
 
 
 import { Socket } from "net";
+import { join } from "path";
 
 import { IBasicRequest } from "../../_interfaces";
 
@@ -13,7 +14,7 @@ import { HTTPServer } from "../HTTPServer";
 import { FileLog } from "../FileLog";
 import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
-import { handleRequest } from "../process/api.process";
+import { ProcessPool } from "../ProcessPool";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
 
 
@@ -25,6 +26,10 @@ new FileLog(EmbedContext.global.path);
  * the error case for the respective request.
  */
 new ErrorControl();
+
+const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
+
+processPool.init();
 
 
 /**
@@ -43,7 +48,9 @@ export async function serveStandalone() {
 
     try {
         new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
-            handleRequest(iReq, socket);
+            processPool.assign({
+                iReq, socket
+            });
         }, () => {
             console.log(`Started standalone application cluster at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
         });

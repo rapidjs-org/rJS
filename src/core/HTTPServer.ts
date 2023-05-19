@@ -59,16 +59,16 @@ export class HTTPServer {
                     
                     headers[key.trim().toLowerCase()] = value.trim();
                 });
-        
+                
                 // Extract approached hostname
-                let hostname: string = [ headers["host"] ]
+                let hostname: string = [ headers["host"] ?? "localhost" ]
                 .flat()[0]
                 .replace(/:[0-9]+$/, "");
                 
                 /* const httpVersion: string = meta[2].split("/")[1]; */
         
                 // Extract request path to construct fully qualified URL
-                const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}${meta[1]}`;
+                const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}:${EmbedContext.global.port}${meta[1]}`;
                 
                 // Construct basic-level request object containing minimum
                 // relevant information for being send to a worker process

@@ -53,7 +53,7 @@ function generateConcreteAppKey(): number { // uint32_t (MAX: 4294967296)
 }
 
 function deactivate() {
-    console.error(`Shared memory unavailable: Process-local store intermediate for ${reactivateTimeoutValue / 60000} m`);
+    console.log(`Shared memory unavailable: Process-local store intermediate for ${reactivateTimeoutValue / 60000} m`);
     
     isActive = false; // TODO: Distinguish errors?
 

@@ -60,8 +60,9 @@ export class ConsoleLog extends ALogIntercept {
         // Type based highlighting
         message = noTypeFormatting
         ? message
-        : message
-        .replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
+        : message.replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
+
+        message = message.trim();
 
         message = `${
             ConsoleLog.style(
@@ -73,13 +74,12 @@ export class ConsoleLog extends ALogIntercept {
                 ]),
                 [ 1, 3 ]
             )
-        } ${message}`;
+        } ${message}\n`;
         
         return (groupCount > 1)
         ? `\x1b[s\x1b[1A\x1b[${
             message
-            .trim()
-            .split(/\r|\n/g)
+            .split(/\r\n/g)
             .pop()
             .replace(/\x1b\[[0-9;:]+m/g, "")
             .length

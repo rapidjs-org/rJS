@@ -111,7 +111,7 @@ function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders
 
 
 /*
- * Handkle messages posted from parent process / module being
+ * Handle messages posted from parent process / module being
  * consumed as worker process or module activations respectively
  * or module and thus invoking its cycle routine. Inherently, any
  * unqualified request is prematurely closed with an according
@@ -125,7 +125,7 @@ function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders
  * processing complexity is distributed to the threads favoring
  * maximum throughput performance.
  */
-export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
+async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     const clientIP: string = socket.remoteAddress;
 
     // TODO: Benchmark rate limiter location/process level for
@@ -251,7 +251,7 @@ export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
         let acceptedEncoding: string = sReq.encoding
         .shift()?.type
         .replace(/^\*$/, "gzip");
-
+        
         // Encode message as supported and qualified
         switch(acceptedEncoding) {
             case "gzip":
@@ -264,14 +264,12 @@ export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
                 sResOverload.message = deflateSync(sResOverload.message);
                 break;
             default:
-                sResOverload.message = Buffer.from(sResOverload.message, "utf-8");
-
                 acceptedEncoding = null;
         }
 
-        end(socket, sResOverload, {
+        end(socket, sResOverload, acceptedEncoding ? {
             "Content-Encoding": acceptedEncoding
-        });
+        } : {});
     })
     .catch(err => {
         console.error(err);

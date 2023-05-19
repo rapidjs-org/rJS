@@ -124,6 +124,8 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
 
         const activeWorker: IActiveWorker<O> = this.activeWorkers.get(workerId);
 
+        if(!activeWorker) return;
+
         clearTimeout(activeWorker.timeout);
 
         activeWorker

@@ -22,7 +22,7 @@ export class RequestHandler {
         const fileExtension: string = extname(url.pathname).slice(1);
 
         if(fileExtension === _config.defaultFileExtension) {
-            url.pathname = url.pathname.slice(0, -fileExtension.length);
+            url.pathname = url.pathname.slice(0, -(fileExtension.length + 1));
 
             this.redirect(url);
 
@@ -37,12 +37,13 @@ export class RequestHandler {
     }
 
     private redirect(url: IHighlevelURL) {
-        this.status = 200;
+        this.status = 301;
 
-        this.headers["Location"] = `${url.protocol}://${url.host}/${url.pathname}${url.search ? `?${url.search}`: ""}${url.hash ? `#${url.hash}`: ""}`;
+        this.headers["Location"] = `${url.protocol}//${url.host}${url.pathname}${url.search ? `?${url.search}`: ""}${url.hash ? `#${url.hash}`: ""}`;
     }
 
     private file(url: IHighlevelURL) {
+        this.headers["Content-Encoding"] = "text/html";
         this.status = 200;
 
         this.message = VFS.read(url.pathname)?.data ?? "Not Found";

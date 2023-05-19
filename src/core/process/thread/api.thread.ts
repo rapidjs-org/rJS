@@ -36,7 +36,7 @@ import(EmbedContext.global.concreteAppModulePath)
     default: (concreteAPI: TConcreteAppAPI) => TConcreteAppHandler
 }) => {
     concreteAppHandler = api.default(concreteAPI);
-        
+    
     // Signal parent process the thread is ready for being
     // assigned request data
     parentPort.postMessage(true);
@@ -45,7 +45,7 @@ import(EmbedContext.global.concreteAppModulePath)
 /*
  * Listen for incoming requests to handle with specified routine.
  */
-parentPort.on("message", (sReq: IRequest) => {
+parentPort.on("message", (sReq: IRequest) => {    
     parentPort.postMessage(
         concreteAppHandler(sReq)
     );

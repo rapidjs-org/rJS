@@ -22,7 +22,7 @@ export class Response {
         if(socket.writableEnded || socket.writableFinished) {
             return;
         }
-
+        
         // Store headers encoded with designated interface in order
         // to manipulate it from abstracting methods
         this.headers = {};
@@ -38,20 +38,20 @@ export class Response {
         // Retrieve a uniformal response object regardless of the
         // what response data has been overloaded
         const contentLength: number = sRes.message
-        ? ((sRes.message instanceof Buffer)
-            ? Buffer.byteLength(sRes.message)
-            : String(sRes.message).length)
+        ? String(sRes.message).length
         : 0;
         
         // Default headers (overridable)
         this.setHeader("Server", _config.appNameLong);
         this.setHeader("X-XSS-Protection", "1; mode=block");
-    
+        this.setHeader("Connection", "keep-alive");
+        this.setHeader("Keep-Alive", "timeout=5");
+        
         // Apply high level headers
         for(const name in sRes.headers) {
             this.setHeader(name, sRes.headers[name]);
         }
-    
+        
         // Default headers (prioritized)
         this.setHeader("Cache-Control", `public, max-age=${Config.global.get("cache", "client").number()}, must-revalidate`);
         // this.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
@@ -103,14 +103,13 @@ export class Response {
         }
 
         data.push("");
-
-        data.push(sRes.message.toString());
+        data.push(sRes.message as string);
 
         socket.write(data.join("\r\n"));
 
         // Close socket connection
         socket.end();
-        socket.destroy();  // TODO: Reuse?
+        //socket.destroy();  // TODO: Reuse?
     }
 
     /**

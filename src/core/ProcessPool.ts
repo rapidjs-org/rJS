@@ -1,12 +1,12 @@
 import { ChildProcess, fork } from "child_process";
 import { Socket } from "net";
 
-import { IBasicRequest } from "../../_interfaces";
+import { IBasicRequest } from "../_interfaces";
 
-import { AWorkerPool } from "../AWorkerPool";
-import { EmbedContext } from "../EmbedContext";
-import { ErrorControl } from "../ErrorControl";
-import { FileLog } from "../FileLog";
+import { AWorkerPool } from "./AWorkerPool";
+import { EmbedContext } from "./EmbedContext";
+import { ErrorControl } from "./ErrorControl";
+import { FileLog } from "./FileLog";
 
 
 /**
@@ -34,27 +34,9 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
     private readonly childProcessModulePath: string;
     private readonly embedContext: EmbedContext;
 
-    private terminationError: string;
-    
-    constructor(childProcessModulePath: string, embedContext: EmbedContext, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
+    constructor(childProcessModulePath: string, embedContext: EmbedContext = EmbedContext.global, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
         super(baseSize, timeout, maxPending);
 
-        /* const logDirPath: string = "";  //parseOption("logs", "L").string; // TODO: Project local if given as flag?
-        if(logDirPath) {
-            this.logDir = join(PATH, logDirPath);
-
-            if(!existsSync(this.logDir)) {
-                // TODO: Error; but no termination of proxy process ()
-                try {
-                    mkdirSync(this.logDir, {
-                        recursive: true
-                    });
-                } catch {
-                    throw new RangeError(`Log directory does not exist nor can be created automatically '${this.logDir}'`);
-                }
-            }
-        } */
-        
         this.embedContext = embedContext;
         this.childProcessModulePath = childProcessModulePath;
     }
@@ -73,10 +55,9 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
         });
         
 		childProcess.stdout.on("data", (message: Buffer) => {
-
             //new FileLog(embedContext.path, true);
 
-			console.log(String(message).replace(/\n$/, "")/* , this.logDir */);
+			console.log(String(message));
 		});
         /*
          * Any error occurring within processes is locally intercepted.
@@ -87,21 +68,16 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
          * it handled with downwards-inherent cluster termination.
          */
 		childProcess.stderr.on("data", (err: Buffer) => {
-            // Write error message to termination reference
-            this.terminationError = String(err);
+            console.error(String(err));
 
-            this.clear();
-            
-            console.error(this.terminationError);
-            
-            this.emit("terminate");
+            this.deactivateWorker(childProcess, null);
 		});
         
         childProcess.on("message", (message: string) => {
             if(message !== "done") {
                 return;
             }
-            
+
             this.deactivateWorker(childProcess, null);
         });
         
@@ -126,16 +102,6 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      */
     protected activateWorker(childProcess: ChildProcess, childData: IChildData) {
         childProcess.send(childData.iReq, childData.socket);
-    }
-
-    /**
-     * Retrieve the error message the cluyter has terminated with.
-     * Implicit to checking whether the cluster has terminated
-     * handling requests.
-     * @returns Error message or null if still running
-     */
-    public retrieveTerminatedError(): string {
-        return this.terminationError;
     }
 
 }
