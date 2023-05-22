@@ -1,11 +1,11 @@
-import _config from "../../../_config.json";
+import _config from "../../_config.json";
 
 
 import { dirname } from "path";
 
-import { TJSONObject } from "../../../_types";
+import { TJSONObject } from "../../_types";
 
-import { Config } from "../Config";
+import { Config } from "../process/Config";
 
 import { VFS } from "./VFS";
 

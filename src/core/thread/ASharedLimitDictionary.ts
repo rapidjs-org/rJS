@@ -1,4 +1,4 @@
-import { ASharedDictionary } from "../ASharedDictionary";
+import { ASharedDictionary } from "../process/ASharedDictionary";
 
 
 interface ILimitValue<V, L> {

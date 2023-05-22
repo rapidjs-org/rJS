@@ -1,7 +1,7 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
-import { EmbedContext } from "../../EmbedContext";
+import { EmbedContext } from "../EmbedContext";
 
 import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 

@@ -1,4 +1,4 @@
-import { VFS as CoreVFS } from "../../core/process/thread/VFS"; // TODO: s.b.
+import { VFS as CoreVFS } from "../../core/thread/VFS"; // TODO: s.b.
 
 import { TConcreteAppAPI } from "../../_types";
 

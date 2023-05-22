@@ -3,7 +3,7 @@ import _config from "../_config.json";
 import { mkdirSync, appendFile } from "fs";
 import { join } from "path";
 
-import { ALogIntercept } from "../ALogIntercept";
+import { ALogIntercept } from "./LogIntercept";
 
 import { AsyncMutex } from "./AsyncMutex";
 

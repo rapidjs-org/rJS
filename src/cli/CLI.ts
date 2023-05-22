@@ -1,4 +1,4 @@
-import { Args } from "./Args";
+import { Args } from "../Args";
 
 
 type TCommandHandler = () => void;

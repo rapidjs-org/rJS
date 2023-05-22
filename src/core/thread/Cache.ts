@@ -1,4 +1,4 @@
-import { Config } from "../Config";
+import { Config } from "../process/Config";
 
 import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 

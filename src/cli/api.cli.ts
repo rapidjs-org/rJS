@@ -13,13 +13,11 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { Args } from "./Args";
-import { ConsoleLog } from "./ConsoleLog";
+import { Args } from "../Args";
+
+import * as proxy from "../core/proxy/api.proxy";
+
 import { CLI } from "./CLI";
-import * as proxy from "./core/proxy/api.proxy";
-
-
-new ConsoleLog();
 
 
 /*
@@ -38,7 +36,7 @@ CLI.registerCommand("help", () => {
  */
 CLI.registerCommand("start", () => {
     Args.global.parseFlag("standalone")
-    ? import("./core/standalone/api.standalone")
+    ? import("../core/standalone/api.standalone")
         .then(api => api.serveStandalone())
     : proxy.embed();
 });

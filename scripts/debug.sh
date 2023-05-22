@@ -4,13 +4,13 @@ CONCRETE_APP_MODULE="${2:-asset.integration}"
 
 case $1 in
 	start:proxy)
-		node ./debug/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/
+		node ./debug/cli/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/
 		;;
 	start:standalone)
-		node ./debug/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/ --standalone
+		node ./debug/cli/api.cli.js start ./test/integration/$CONCRETE_APP_MODULE -P 7070 -W ./test/integration/ -L ../logs/ --standalone
 		;;
 	stop)
-		node ./debug/api.cli.js stop -P 7070
+		node ./debug/cli/api.cli.js stop -P 7070
 		;;
     *)
         tput setaf 1

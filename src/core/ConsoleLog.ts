@@ -1,7 +1,7 @@
-import _config from "./_config.json";
+import _config from "../_config.json";
 
 
-import { ALogIntercept } from "./ALogIntercept";
+import { ALogIntercept } from "./LogIntercept";
 
 
 /*
