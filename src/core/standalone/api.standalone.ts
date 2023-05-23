@@ -11,18 +11,21 @@ import { join } from "path";
 import { IBasicRequest } from "../../_interfaces";
 
 import { HTTPServer } from "../HTTPServer";
-import { FileLog } from "../FileLog";
+import { ConsoleLogIntercept } from "../ConsoleLogIntercept";
+import { FileLogIntercept } from "../FileLogIntercept";
 import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
 import { ProcessPool } from "../ProcessPool";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
 
 
-new FileLog(EmbedContext.global.path);
+new ConsoleLogIntercept();
+new FileLogIntercept(EmbedContext.global.path);
+
 
 /*
  * Catch any unhandled exception within this worker process
- * in order to prevent process termination, but simply handle
+ * in order to prevent process termination,  but simply handle
  * the error case for the respective request.
  */
 new ErrorControl();

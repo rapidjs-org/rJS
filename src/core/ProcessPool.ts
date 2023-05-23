@@ -4,9 +4,9 @@ import { Socket } from "net";
 import { IBasicRequest } from "../_interfaces";
 
 import { AWorkerPool } from "./AWorkerPool";
+import { FileLogIntercept } from "./FileLogIntercept";
 import { EmbedContext } from "./EmbedContext";
 import { ErrorControl } from "./ErrorControl";
-import { FileLog } from "./FileLog";
 
 
 /**

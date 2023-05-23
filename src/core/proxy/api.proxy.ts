@@ -12,9 +12,13 @@ import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
 import { captionEffectiveHostnames } from "../utils";
+import { ConsoleLogIntercept } from "../ConsoleLogIntercept";
 import { EmbedContext } from "../EmbedContext";
 
 import { messageProxy } from "../utils";
+
+
+new ConsoleLogIntercept();
 
 
 /**

@@ -3,26 +3,23 @@ import _config from "../_config.json";
 import { mkdirSync, appendFile } from "fs";
 import { join } from "path";
 
-import { ALogIntercept } from "./LogIntercept";
-
+import { ALogIntercept } from "./ALogIntercept";
 import { AsyncMutex } from "./AsyncMutex";
 
 
-export class FileLog extends ALogIntercept {
+export class FileLogIntercept extends ALogIntercept {
 
     private static writeErrorRetryTimeout: number = 60000 * 60; // 1 hour
 
     private path: string;
-    private swallowPrint: boolean;
     private hadWriteError: boolean = false;
     private mutex: AsyncMutex<void> = new AsyncMutex();
 
-    constructor(path: string, swallowPrint: boolean = false) {
+    constructor(path: string) {
         super();
 
         // TODO: Global log path configuration?
 
-        this.swallowPrint = swallowPrint;
         this.path = join(path, _config.logFileDirName);
 
         mkdirSync(this.path, {
@@ -49,31 +46,23 @@ export class FileLog extends ALogIntercept {
 
                 setTimeout(() => {
                     this.hadWriteError = false;
-                }, FileLog.writeErrorRetryTimeout);
+                }, FileLogIntercept.writeErrorRetryTimeout);
 
-                this.handleStderr(`Could not write to log directory. ${err?.message ?? message}`, 0, true);
+                this.handleStderr(`Could not write to log directory. ${err?.message ?? message}`);
             });
         });
     }
 
-    public handleStdout(message: string, groupCount: number): string {
-        (groupCount <= 1)
-        && this.writeFile(message);
+    protected handleStdout(message: string) {
+        if(this.getGroupCount(message) > 1) return;
 
-        if(this.swallowPrint) return null;
-        
-        return message;
+        this.writeFile(message);
     }
     
-    public handleStderr(message: string, groupCount: number, passthrough: boolean = false): string {
-        if(passthrough) return message;
-        
-        (groupCount <= 1)
-        && this.writeFile(message);
+    protected handleStderr(message: string, passthrough: boolean = false) {
+        if(passthrough || (this.getGroupCount(message) > 1)) return;
 
-        if(this.swallowPrint) return null;
-        
-        return message;
+        this.writeFile(message);
     }
     
 }

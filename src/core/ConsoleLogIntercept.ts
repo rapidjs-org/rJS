@@ -1,7 +1,7 @@
 import _config from "../_config.json";
 
 
-import { ALogIntercept } from "./LogIntercept";
+import { ALogIntercept } from "./ALogIntercept";
 
 
 /*
@@ -15,7 +15,7 @@ enum EColorMode {
 }
 
 
-export class ConsoleLog extends ALogIntercept {
+export class ConsoleLogIntercept extends ALogIntercept {
 
     private static color(str: string, color: TColor|TColor[]): string {
         ((!Array.isArray(color[0])
@@ -60,15 +60,15 @@ export class ConsoleLog extends ALogIntercept {
         // Type based highlighting
         message = noTypeFormatting
         ? message
-        : message.replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLog.color("$2", [ 0, 167, 225 ])}$4`); // Number
+        : message.replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLogIntercept.color("$2", [ 0, 167, 225 ])}$4`); // Number
 
         message = message.trim();
 
         message = `${
-            ConsoleLog.style(
-                ConsoleLog.color(` ${
+            ConsoleLogIntercept.style(
+                ConsoleLogIntercept.color(` ${
                     _config.appNameShort
-                    .replace("r", ConsoleLog.color("r", [ 255, 97, 97 ]))
+                    .replace("r", ConsoleLogIntercept.color("r", [ 255, 97, 97 ]))
                 } `, [
                     [ 54, 48, 48 ], [ 255, 254, 173, EColorMode.BG ]
                 ]),
@@ -87,13 +87,18 @@ export class ConsoleLog extends ALogIntercept {
         : message;
     }
 
-    public handleStdout(message: string, groupCount: number): string {
-        return ConsoleLog.write(message, groupCount);
+    protected handleStdout(message: string) {
+        message = ConsoleLogIntercept.write(message, this.getGroupCount(message), true);
+
+        ConsoleLogIntercept.writeStdout(message);
     }
-    public handleStderr(message: string, groupCount: number): string {
-        message = ConsoleLog.color(message, [ 224, 0, 0 ]);
-        
-        return ConsoleLog.write(message, groupCount, true);
+
+    protected handleStderr(message: string) {
+        message = ConsoleLogIntercept.color(message, [ 224, 0, 0 ]);
+
+        message =  ConsoleLogIntercept.write(message, this.getGroupCount(message), true);
+
+        ConsoleLogIntercept.writeStdout(message);
     }
     
 }
