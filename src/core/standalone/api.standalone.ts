@@ -9,36 +9,33 @@ import { Socket } from "net";
 import { join } from "path";
 
 import { IBasicRequest } from "../../_interfaces";
+import { LogConsole } from "../../LogConsole";
 
 import { HTTPServer } from "../HTTPServer";
-import { ConsoleLogIntercept } from "../ConsoleLogIntercept";
-import { FileLogIntercept } from "../FileLogIntercept";
+import { LogFile } from "../LogFile";
 import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
 import { ProcessPool } from "../ProcessPool";
 import { captionEffectiveHostnames, messageProxy } from "../utils";
 
 
-new ConsoleLogIntercept();
-new FileLogIntercept(EmbedContext.global.path);
-
-
-/*
- * Catch any unhandled exception within this worker process
- * in order to prevent process termination,  but simply handle
- * the error case for the respective request.
- */
-new ErrorControl();
-
-const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
-
-processPool.init();
-
-
 /**
  * Create the standalone web server instance.
  */
 export async function serveStandalone() {
+    new LogConsole();
+    new LogFile(EmbedContext.global.path);
+    
+    new ErrorControl();
+    
+    
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
+    
+    processPool.on("stdout", (message: string) => console.log(message));
+    processPool.on("stderr", (err: string) => console.error(err));
+    
+    processPool.init();
+
     try {
         await messageProxy(EmbedContext.global.port, "monitor");
 

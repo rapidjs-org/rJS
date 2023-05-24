@@ -13,7 +13,7 @@ export abstract class ALogIntercept {
     private static readonly _stderr: TChannelWrite = process.stdout.write.bind(process.stderr);
     
     public static readonly instances: ALogIntercept[] = [];
-
+    
     private readonly lastMessage: ILastMessage = {
         count: 0,
         message: null,
@@ -21,31 +21,8 @@ export abstract class ALogIntercept {
     };
 
     public static handle(data: unknown, channelName: string) {
-        if(!data) return;
-
-        let message: string = String(data);
-
         ALogIntercept.instances.forEach((instance: ALogIntercept) => {
-            if(message !== instance.lastMessage.message
-            || (Date.now() - instance.lastMessage.timePivot) > 30000) {
-        
-                instance.lastMessage.count = 1;
-                instance.lastMessage.message = message;
-                instance.lastMessage.timePivot = Date.now();
-        
-                return 1;
-            }
-            
-            instance.lastMessage.timePivot = Date.now();
-
-            switch(channelName) {
-                case "stdout":
-                    instance.handleStderr(message);
-                    break;
-                case "stderr":
-                    instance.handleStderr(message);
-                    break;
-            }
+            instance.handle(String(data), channelName);
         });
     }
 
@@ -53,7 +30,7 @@ export abstract class ALogIntercept {
         ALogIntercept._stdout(message);
     }
 
-    protected static writesStderr(message: string) {
+    protected static writeStderr(message: string) {
         ALogIntercept._stderr(message);
     }
     
@@ -61,14 +38,31 @@ export abstract class ALogIntercept {
         ALogIntercept.instances.push(this);
     }
     
+    protected abstract handleStdout(message: string): void;
+    protected abstract handleStderr(message: string): void;
+
     protected getGroupCount(message: string): number {
         return this.lastMessage.message === message
         ? this.lastMessage.count
         : 0;
     }
-
-    protected abstract handleStdout(message: string): void;
-    protected abstract handleStderr(message: string): void;
+    
+    public handle(message: string = "", channelName: string = "stdout") {
+        this.lastMessage.count = (message === this.lastMessage.message
+            && (Date.now() - this.lastMessage.timePivot) <= 30000)
+        ? (this.lastMessage.count + 1) : 1;
+        this.lastMessage.message = message;
+        this.lastMessage.timePivot = Date.now();
+        
+        switch(channelName) {
+            case "stdout":
+                this.handleStdout(message);
+                break;
+            case "stderr":
+                this.handleStderr(message);
+                break;
+        }
+    }
 
 }
 

@@ -1,15 +1,14 @@
-import { readSync as shmReadSync, writeSync as shmWriteSync } from "../shared-memory/api.shared-memory";
+import { EventEmitter } from "stream";
+
+import { readSync as shmReadSync, writeSync as shmWriteSync } from "./shared-memory/api.shared-memory";
 
 
-/**
- * Abstract class representing a dictionary whose entries are
- * existentially bound to a specific limit reference.
- */
 export abstract class ASharedDictionary<K, V> {
     
     private static readonly sharedKeyPrefix: string = "SD:";
-    
     private static instances = 0;
+    
+    protected static shmEnabled: boolean = true;
 
     private readonly normalizeKeyCallback: (key: K) => K;
 
@@ -34,7 +33,11 @@ export abstract class ASharedDictionary<K, V> {
     }
 
     protected readShared(key?: K): V {
-        return shmReadSync<V>(this.getInternalKey(key));
+        const data: V = shmReadSync<V>(this.getInternalKey(key));
+
+        ASharedDictionary.shmEnabled = (data === null);
+        
+        return data;
     }
 
 }

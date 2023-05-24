@@ -6,6 +6,7 @@
  */
 
 
+import { EventEmitter } from "stream";
 import { EmbedContext } from "../EmbedContext";   // Special cross-reference
 
 import * as sharedMemory from "./shared-memory";

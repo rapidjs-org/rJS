@@ -1,4 +1,4 @@
-import { ASharedDictionary } from "./ASharedDictionary";
+import { ASharedDictionary } from "../ASharedDictionary";
 
 
 type TRate<I extends string|number|symbol> = Record<I, number>;
@@ -91,6 +91,8 @@ export class RateLimiter<I extends string|number|symbol> extends ASharedDictiona
 
         this.writeShared(currentLimitData);
 
-        return (weightedHits <= this.limit);
+        const limit: number = this.limit * (RateLimiter.shmEnabled ? 0.5 : 1);    // TODO: Know cluster size
+
+        return (weightedHits <= limit);
     }
 }

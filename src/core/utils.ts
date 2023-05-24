@@ -4,7 +4,7 @@
  */
 
 
-import _config from "../_config.json";
+import _config from "./_config.json";
 
 
 import { join } from "path";

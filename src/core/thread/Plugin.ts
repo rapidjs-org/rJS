@@ -1,4 +1,4 @@
-import _config from "../../_config.json";
+import _config from "../_config.json";
 
 
 import { dirname } from "path";

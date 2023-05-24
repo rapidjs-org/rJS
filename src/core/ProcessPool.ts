@@ -4,9 +4,7 @@ import { Socket } from "net";
 import { IBasicRequest } from "../_interfaces";
 
 import { AWorkerPool } from "./AWorkerPool";
-import { FileLogIntercept } from "./FileLogIntercept";
 import { EmbedContext } from "./EmbedContext";
-import { ErrorControl } from "./ErrorControl";
 
 
 /**
@@ -19,9 +17,6 @@ interface IChildData {
     iReq: IBasicRequest;
     socket: Socket;
 }
-
-
-new ErrorControl();
 
 
 /**
@@ -55,9 +50,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
         });
         
 		childProcess.stdout.on("data", (message: Buffer) => {
-            //new FileLog(embedContext.path, true);
-
-			console.log(String(message));
+            this.emit("stdout", String(message));
 		});
         /*
          * Any error occurring within processes is locally intercepted.
@@ -68,7 +61,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
          * it handled with downwards-inherent cluster termination.
          */
 		childProcess.stderr.on("data", (err: Buffer) => {
-            console.error(String(err));
+            this.emit("stderr", String(err));
 
             this.deactivateWorker(childProcess, null);
 		});
@@ -102,6 +95,12 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      */
     protected activateWorker(childProcess: ChildProcess, childData: IChildData) {
         childProcess.send(childData.iReq, childData.socket);
+
+        //childProcess.on("error", err => console.error(err));
+    }
+
+    public emit(eventName: "stdout"|"stderr", message: string): boolean {
+        return super.emit(eventName, message);
     }
 
 }

@@ -31,7 +31,7 @@ interface IAcceptHeaderPart {
 
 
 // TODO: Implement activeShellApp
-const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"));
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "../thread/api.thread"));
 const rateLimiter: RateLimiter<string> = new RateLimiter(
     EmbedContext.global.mode.DEV
     ? Infinity

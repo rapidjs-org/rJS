@@ -1,13 +1,13 @@
-import _config from "../_config.json";
+import _config from "./_config.json";
 
 import { mkdirSync, appendFile } from "fs";
 import { join } from "path";
 
-import { ALogIntercept } from "./ALogIntercept";
+import { ALogIntercept } from "../ALogIntercept";
 import { AsyncMutex } from "./AsyncMutex";
 
 
-export class FileLogIntercept extends ALogIntercept {
+export class LogFile extends ALogIntercept {
 
     private static writeErrorRetryTimeout: number = 60000 * 60; // 1 hour
 
@@ -46,13 +46,13 @@ export class FileLogIntercept extends ALogIntercept {
 
                 setTimeout(() => {
                     this.hadWriteError = false;
-                }, FileLogIntercept.writeErrorRetryTimeout);
+                }, LogFile.writeErrorRetryTimeout);
 
                 this.handleStderr(`Could not write to log directory. ${err?.message ?? message}`);
             });
         });
     }
-
+    
     protected handleStdout(message: string) {
         if(this.getGroupCount(message) > 1) return;
 

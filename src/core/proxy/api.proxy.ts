@@ -4,22 +4,24 @@
  */
 
 
-import _config from "../../_config.json";
+import _config from "../_config.json";
 
 
 import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
+import { LogConsole } from "../../LogConsole";
+
 import { captionEffectiveHostnames } from "../utils";
-import { ConsoleLogIntercept } from "../ConsoleLogIntercept";
 import { EmbedContext } from "../EmbedContext";
 
 import { messageProxy } from "../utils";
 
 
-new ConsoleLogIntercept();
-
+function installLogConsole() {
+    new LogConsole();
+}
 
 /**
  * Invoke callback for each running proxy instance passing the
@@ -72,6 +74,8 @@ function forEachProxy(callback: ((port: number) => Promise<void>|void)): Promise
  * socket for inter process communication.
  */
 export async function embed() {
+    installLogConsole();
+
     /*
      * Send embed message. Initial message failure to depict proxy
      * does not exist, i.e. a respective process must be started and
@@ -80,11 +84,13 @@ export async function embed() {
     const embedApp = async () => {
         const hostCaption: string = `${captionEffectiveHostnames()}:${EmbedContext.global.port}`;
         
-        await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args)
+        const embedSuccessful = await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
+
+        embedSuccessful
         ? console.log(`Embedded application cluster at ${hostCaption}`)
         : console.error(`Application cluster already running at ${hostCaption}`);
 
-        process.exit(0);
+        process.exit(embedSuccessful ? 0 : 1);
     };
 
     try {
@@ -108,7 +114,7 @@ export async function embed() {
                 
                 return;
             }
-
+            
             try {
                 /*
                  * Definite embedding request to just started proxy process.
@@ -116,6 +122,8 @@ export async function embed() {
                 await embedApp();
             } catch(err) {
                 console.error(`Could not embed application to proxy: ${err.message}`);
+        
+                process.exit(1);
             }
         }); // TODO: DEV MODE live app log / manipulation inerface
     }
@@ -127,6 +135,8 @@ export async function embed() {
  * socket for inter process communication.
  */
 export async function unbed() {
+    installLogConsole();
+    
     // TODO: IDs?
     try {
         if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
@@ -138,6 +148,8 @@ export async function unbed() {
         console.log(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
     } catch(err) {
         console.error(`No server proxy listening on :${EmbedContext.global.port}`);
+
+        process.exit(1);
     }
 }
 
@@ -147,6 +159,8 @@ export async function unbed() {
  * inter process communication.
  */
 export function stop() {
+    installLogConsole();
+    
     forEachProxy(async (port: number) => {
         try {
             await messageProxy(port, "stop");
@@ -162,6 +176,8 @@ export function stop() {
  * the respective UNIX socket for inter process communication.
  */
 export function monitor() {
+    installLogConsole();
+    
     const proxyHosts: string[] = [];
     
     forEachProxy(async (port: number) => {
@@ -170,5 +186,9 @@ export function monitor() {
         proxyHosts.push(`${port}: ${embeddedHostnames}`);   // TODO: "Beautify"
     })
     .then(() => console.log(`Proxies:\n${proxyHosts.join("\n")}`))
-    .catch(() => console.error("No proxies running"));
+    .catch(() => {
+        console.error("No proxies running");
+        
+        process.exit(1);
+    });
 }

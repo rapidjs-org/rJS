@@ -10,8 +10,10 @@ import { Socket } from "net";
 import { join } from "path";
 
 import { IBasicRequest } from "../../_interfaces";
-import { EmbedContext } from "../EmbedContext";
+
+import { LogFile } from "../LogFile";
 import { HTTPServer } from "../HTTPServer";
+import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "../ProcessPool";
 
@@ -100,6 +102,14 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
             
+            const fileLogIntercept: LogFile = new LogFile(embedContext.path);
+            processPool.on("stdout", (message: string) => {
+                fileLogIntercept.handle(message, "stdout");
+            });
+            processPool.on("stderr", (err: string) => {
+                fileLogIntercept.handle(err, "stderr");
+            });
+
             processPool.init();
 
             processPool.on("terminate", () => {

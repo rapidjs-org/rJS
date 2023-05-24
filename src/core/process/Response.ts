@@ -1,7 +1,7 @@
-import _config from "../../_config.json";
+import _config from "../_config.json";
 
 
-import { STATUS_CODES } from "http";
+import { ServerResponse, STATUS_CODES } from "http";
 import { Socket } from "net";
 
 import { THeaders, TResponseOverload } from "../../_types";
@@ -104,12 +104,13 @@ export class Response {
 
         data.push("");
         data.push(sRes.message as string);
+        data.push("");
 
         socket.write(data.join("\r\n"));
 
         // Close socket connection
         socket.end();
-        //socket.destroy();  // TODO: Reuse?
+        socket.destroy();  // TODO: Reuse?
     }
 
     /**

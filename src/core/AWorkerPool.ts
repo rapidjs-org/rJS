@@ -76,7 +76,7 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
         const worker: Worker = this.idleWorkers.shift();
         const workerId: number = this.getWorkerId(worker);
         const assignment: IPendingAssignment<I, O> = this.pendingAssignments.shift();
-
+        
         this.activateWorker(worker, assignment.dataIn);
         
         this.activeWorkers

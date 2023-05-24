@@ -1,6 +1,3 @@
-import _config from "../_config.json";
-
-
 import { ALogIntercept } from "./ALogIntercept";
 
 
@@ -15,7 +12,7 @@ enum EColorMode {
 }
 
 
-export class ConsoleLogIntercept extends ALogIntercept {
+export class LogConsole extends ALogIntercept {
 
     private static color(str: string, color: TColor|TColor[]): string {
         ((!Array.isArray(color[0])
@@ -60,16 +57,15 @@ export class ConsoleLogIntercept extends ALogIntercept {
         // Type based highlighting
         message = noTypeFormatting
         ? message
-        : message.replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${ConsoleLogIntercept.color("$2", [ 0, 167, 225 ])}$4`); // Number
+        : message.replace(/(^|[^0-9])([0-9]+([.,-][0-9]+)*)([^a-z0-9;]|$)/gi, `$1${LogConsole.color("$2", [ 0, 167, 225 ])}$4`); // Number
 
         message = message.trim();
 
         message = `${
-            ConsoleLogIntercept.style(
-                ConsoleLogIntercept.color(` ${
-                    _config.appNameShort
-                    .replace("r", ConsoleLogIntercept.color("r", [ 255, 97, 97 ]))
-                } `, [
+            LogConsole.style(
+                LogConsole.color(` ${
+                    LogConsole.color("r", [ 255, 97, 97 ])
+                }JS `, [
                     [ 54, 48, 48 ], [ 255, 254, 173, EColorMode.BG ]
                 ]),
                 [ 1, 3 ]
@@ -88,17 +84,17 @@ export class ConsoleLogIntercept extends ALogIntercept {
     }
 
     protected handleStdout(message: string) {
-        message = ConsoleLogIntercept.write(message, this.getGroupCount(message), true);
-
-        ConsoleLogIntercept.writeStdout(message);
+        message = LogConsole.write(message, this.getGroupCount(message), true);
+                
+        LogConsole.writeStdout(message);
     }
 
-    protected handleStderr(message: string) {
-        message = ConsoleLogIntercept.color(message, [ 224, 0, 0 ]);
+    protected handleStderr(err: string) {
+        err = LogConsole.color(err.trim(), [ 224, 0, 0 ]);
+        
+        err =  LogConsole.write(err, this.getGroupCount(err), true);
 
-        message =  ConsoleLogIntercept.write(message, this.getGroupCount(message), true);
-
-        ConsoleLogIntercept.writeStdout(message);
+        LogConsole.writeStderr(err);
     }
     
 }
