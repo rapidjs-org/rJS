@@ -1,4 +1,4 @@
-const { ResponsePackage } = require("../../../debug/core/process/thread/ResponsePackage");
+const { ResponsePackage } = require("../../../debug/core/thread/ResponsePackage");
 
 
 const testObject = {

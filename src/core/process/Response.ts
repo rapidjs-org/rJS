@@ -1,7 +1,7 @@
 import _config from "../_config.json";
 
 
-import { ServerResponse, STATUS_CODES } from "http";
+import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
 import { THeaders, TResponseOverload } from "../../_types";
@@ -101,16 +101,18 @@ export class Response {
 
             data.push(`${name}: ${value}`);
         }
+        data.push("", "");
 
-        data.push("");
-        data.push(sRes.message as string);
-        data.push("");
+        const resBuffer: Buffer = Buffer.concat([
+            Buffer.from(data.join("\r\n"), "utf-8"),
+            !Buffer.isBuffer(sRes.message) ? Buffer.from((sRes.message ?? "").toString()) : sRes.message,
+            Buffer.from("\r\n")
+        ]);
 
-        socket.write(data.join("\r\n"));
-
+        socket.write(resBuffer);
+        
         // Close socket connection
-        socket.end();
-        socket.destroy();  // TODO: Reuse?
+        socket.end(() => socket.destroy());
     }
 
     /**

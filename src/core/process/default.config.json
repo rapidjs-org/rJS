@@ -9,6 +9,5 @@
         "requestsPerClient": 50,
         "timeout": 7500,
         "urlLength": 250
-    },
-    "port": 80
+    }
 }

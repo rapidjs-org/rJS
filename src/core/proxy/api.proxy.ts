@@ -11,17 +11,11 @@ import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
-import { LogConsole } from "../../LogConsole";
-
 import { captionEffectiveHostnames } from "../utils";
 import { EmbedContext } from "../EmbedContext";
 
 import { messageProxy } from "../utils";
 
-
-function installLogConsole() {
-    new LogConsole();
-}
 
 /**
  * Invoke callback for each running proxy instance passing the
@@ -73,9 +67,7 @@ function forEachProxy(callback: ((port: number) => Promise<void>|void)): Promise
  * application. Implicitly connects to the respective UNIX
  * socket for inter process communication.
  */
-export async function embed() {
-    installLogConsole();
-
+export async function embed(successCallback: (() => void) = (() => {})) {
     /*
      * Send embed message. Initial message failure to depict proxy
      * does not exist, i.e. a respective process must be started and
@@ -89,6 +81,9 @@ export async function embed() {
         embedSuccessful
         ? console.log(`Embedded application cluster at ${hostCaption}`)
         : console.error(`Application cluster already running at ${hostCaption}`);
+        
+        embedSuccessful
+        && successCallback();
 
         process.exit(embedSuccessful ? 0 : 1);
     };
@@ -135,8 +130,6 @@ export async function embed() {
  * socket for inter process communication.
  */
 export async function unbed() {
-    installLogConsole();
-    
     // TODO: IDs?
     try {
         if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
@@ -159,8 +152,6 @@ export async function unbed() {
  * inter process communication.
  */
 export function stop() {
-    installLogConsole();
-    
     forEachProxy(async (port: number) => {
         try {
             await messageProxy(port, "stop");
@@ -176,8 +167,6 @@ export function stop() {
  * the respective UNIX socket for inter process communication.
  */
 export function monitor() {
-    installLogConsole();
-    
     const proxyHosts: string[] = [];
     
     forEachProxy(async (port: number) => {

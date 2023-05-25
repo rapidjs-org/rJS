@@ -1,4 +1,4 @@
-Usage: rjs <command> [--<arg:key>|-<arg:shorthand>]*
+Usage: rjs <command> [|--<arg:key>|-<arg:shorthand>]*
 
 • Commands:
 
@@ -7,7 +7,11 @@ monitor                         Display status of all running proxies and applic
 start                           Start a new web space with a specific shell application (successive argument at position 1)
 stop                            Stop an existing web space
 
-Optional | start | command arguments:
+Optional atguments > start:
+
+• Positional:
+
+index 1                         Server shell application to execute withtin threads
 
 • Flags:
 
@@ -18,8 +22,9 @@ Optional | start | command arguments:
 • Options:
 
 --hostname, -H                  Specify hostname (defaults to localhost; multiple hostnames as comma delimited list)
---logs, -L                      Declare log file directory (disabled by default)
+--logs, -L                      Specify logs directory path (file logs disabled by default; provide in order to activate)
 --port, -P                      Specify listen port (defaults to 80 (HTTP) / 443 (HTTPS))
+--ssl                           Specify SSL directory path (./ssl by default)
 --wd, -W                        Specify application working directory (defaults to process CWD)
 
 Visit https://rapidjs.org for more information.

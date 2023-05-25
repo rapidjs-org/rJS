@@ -6,6 +6,9 @@
  */
 
 
+import _config from "../_config.json";
+
+
 import { Socket } from "net";
 import { join } from "path";
 
@@ -47,7 +50,7 @@ new ErrorControl();
 /*
  * Create the reverse proxying web server instance.
  */
-new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
+const server: HTTPServer = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
     // Terminate socket handling if hostname is not registered
     // in proxy
     if(!contextPools.has(iReq.hostname)) {
@@ -98,11 +101,24 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
         case "embed": {            
             const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
+            if(embedContext.isSecure) {
+                const sslPath: string = join(embedContext.path, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
+                
+                const keyPath: string = join(sslPath, "key.key");
+                const certPath: string = join(sslPath, "cert.crt");
+                const caPath: string = join(sslPath, "ca.crt"); // TODO: List(?)
+
+                server.setSecureContext(embedContext.hostnames, keyPath, certPath, caPath);
+            }   // TODO: Allow custom names?
+            // TODO: Display secure arg inconsistencies? Or just use initial one?
+
             if(contextPools.has(embedContext.hostnames)) return false;
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
             
-            const fileLogIntercept: LogFile = new LogFile(embedContext.path);
+            const fileLogIntercept: LogFile = new LogFile(
+                join(embedContext.path, embedContext.argsParser.parseOption("logs").string)
+            );
             processPool.on("stdout", (message: string) => {
                 fileLogIntercept.handle(message, "stdout");
             });
@@ -129,11 +145,15 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
          * by other hostnames.
          */
         case "unbed": {
-            contextPools.delete(arg as (string|string[]));
+            const hostnames = arg as string|string[];
+
+            contextPools.delete(hostnames);
             
             !contextPools.size()
             && setImmediate(() => process.exit(0));
 
+            server.removeSecureContext(hostnames);
+            
             return true;
         }
         

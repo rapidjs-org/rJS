@@ -18,9 +18,8 @@ export class EmbedContext { // TODO: Singleton
      */
     public static readonly global = new EmbedContext(process.argv.slice(2));
 
-    private argsParser: Args;
-
     public readonly args: string[];
+    public readonly argsParser: Args;
     public readonly concreteAppModulePath: string;
     public readonly hostnames: string[];
     public readonly isSecure: boolean;
@@ -53,11 +52,13 @@ export class EmbedContext { // TODO: Singleton
             
             try {
                 concreteReference = require.resolve(concreteReference);
-            } catch {
-                concreteReference = null;
-            }
+            } catch {}
         }
-        this.concreteAppModulePath = concreteReference;
+        this.concreteAppModulePath = concreteReference ?? join(__dirname, "../apps/asset/api.app.js");
+
+        if(!this.concreteAppModulePath) {
+            throw new ReferenceError("Missing concrete application module path");
+        }
 
         /*
          * Which hostname(s) to associate with the application and

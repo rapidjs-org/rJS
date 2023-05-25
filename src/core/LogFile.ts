@@ -1,5 +1,3 @@
-import _config from "./_config.json";
-
 import { mkdirSync, appendFile } from "fs";
 import { join } from "path";
 
@@ -18,9 +16,11 @@ export class LogFile extends ALogIntercept {
     constructor(path: string) {
         super();
 
+        if(!path) return;
+
         // TODO: Global log path configuration?
 
-        this.path = join(path, _config.logFileDirName);
+        this.path = path;
 
         mkdirSync(this.path, {
             recursive: true
@@ -28,6 +28,8 @@ export class LogFile extends ALogIntercept {
     }
 
     private writeFile(message: string) {
+        if(!this.path) return;
+        
         message = message
         .replace(/\x1b\[[0-9;]+m/g, "")
         .trim();    // Remove possibly occurring ANSII formatting codes

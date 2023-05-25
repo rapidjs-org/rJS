@@ -1,4 +1,4 @@
-import { ALogIntercept } from "./ALogIntercept";
+import { ALogIntercept } from "../ALogIntercept";
 
 
 /*
@@ -75,7 +75,7 @@ export class LogConsole extends ALogIntercept {
         return (groupCount > 1)
         ? `\x1b[s\x1b[1A\x1b[${
             message
-            .split(/\r\n/g)
+            .split(/\r|\n/g)
             .pop()
             .replace(/\x1b\[[0-9;:]+m/g, "")
             .length

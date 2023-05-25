@@ -1,7 +1,7 @@
 process.argv = process.argv.slice(0, 2).concat([ "test" ]);
 
 
-const { CLI } = require("../../../debug/CLI");
+const { CLI } = require("../../../debug/cli/CLI");
 
 
 let testReference = false;

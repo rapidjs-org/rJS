@@ -1,4 +1,4 @@
-const { Cache } = require("../../../debug/core/process/thread/Cache");
+const { Cache } = require("../../../debug/core/thread/Cache");
 
 
 const testKey = "key";
