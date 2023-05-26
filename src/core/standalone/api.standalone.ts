@@ -5,6 +5,9 @@
  */
 
 
+import _config from "../_config.json";
+
+
 import { Socket } from "net";
 import { join } from "path";
 
@@ -16,22 +19,13 @@ import { LogFile } from "../LogFile";
 import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
 import { ProcessPool } from "../ProcessPool";
-import { captionEffectiveHostnames, messageProxy } from "../utils";
+import { messageProxy } from "../utils";
 
 
 /**
  * Create the standalone web server instance.
  */
-export async function serveStandalone(successCallback: (() => void) = (() => {})) {
-    new LogFile(Args.global.parseOption("logs").string);
-    
-    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
-    
-    processPool.on("stdout", (message: string) => console.log(message));
-    processPool.on("stderr", (err: string) => console.error(err));
-    
-    processPool.init();
-
+export async function serve() {   
     try {
         await messageProxy(EmbedContext.global.port, "monitor");
 
@@ -40,21 +34,31 @@ export async function serveStandalone(successCallback: (() => void) = (() => {})
         // OR: Use standlone always first, but add proxy cluster automatically in case additional app is started
         
         process.exit(1);
-
-        new ErrorControl();
     } catch {}
+    
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
+    
+    processPool.on("stdout", (message: string) => console.log(message));
+    processPool.on("stderr", (err: string) => console.error(err));
+    
+    processPool.init();
+
+    new ErrorControl();
 
     try {
-        new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
+        const server = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
             processPool.assign({
                 iReq, socket
             });
         }, () => {
-            console.log(`Started standalone application cluster at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+            new LogFile(Args.global.parseOption("logs").string);
 
-            successCallback();
+            console.log("Started standalone application cluster");
         });
+
+        EmbedContext.global.isSecure
+        && server.setSecureContext(EmbedContext.global.hostnames, join(EmbedContext.global.path, Args.global.parseOption("ssl").string ?? _config.sslDir));
     } catch(err) {
-        console.error(`Could not embed application to proxy: ${err.message}`);
+        throw new Error(`Could not start application:\n${err.message}`);
     }
 }

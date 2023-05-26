@@ -10,7 +10,16 @@
 export class ErrorControl {
 
     constructor(exceptionCallback: (err: Error) => void = (() => null), keepAliveDelay: number = 30000, suppressErrorLog: boolean = false) {
+        const initErrorHandler = (err: Error) => {
+            console.error(err);
+
+            process.exit(1);
+        };
+        process.once("uncaughtException", initErrorHandler);
+
         setTimeout(() => {
+            process.removeListener("once", initErrorHandler);
+
             process.on("uncaughtException", (err: Error) => {
                 !suppressErrorLog
                 && console.error(err);

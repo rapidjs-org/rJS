@@ -67,24 +67,19 @@ function forEachProxy(callback: ((port: number) => Promise<void>|void)): Promise
  * application. Implicitly connects to the respective UNIX
  * socket for inter process communication.
  */
-export async function embed(successCallback: (() => void) = (() => {})) {
+export async function embed() {
     /*
      * Send embed message. Initial message failure to depict proxy
      * does not exist, i.e. a respective process must be started and
      * detached first. The embed call is repeated in that case.
      */
-    const embedApp = async () => {
-        const hostCaption: string = `${captionEffectiveHostnames()}:${EmbedContext.global.port}`;
-        
+    const embedApp = async () => {        
         const embedSuccessful = await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
-
-        embedSuccessful
-        ? console.log(`Embedded application cluster at ${hostCaption}`)
-        : console.error(`Application cluster already running at ${hostCaption}`);
         
         embedSuccessful
-        && successCallback();
-
+        ? console.log(`Embedded proxied application cluster`)
+        : console.error(`Application cluster already running at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        
         process.exit(embedSuccessful ? 0 : 1);
     };
 
@@ -105,9 +100,7 @@ export async function embed(successCallback: (() => void) = (() => {})) {
 
         proxyProcess.on("message", async (message: string) => {
             if(message !== "listening") {
-                console.error(`Error trying to start server proxy: ${message}`);
-                
-                return;
+                throw new SyntaxError(`Error trying to start server proxy:\n${message}`);    // TODO: Streamline log messages (resource files?)
             }
             
             try {
@@ -116,9 +109,7 @@ export async function embed(successCallback: (() => void) = (() => {})) {
                  */
                 await embedApp();
             } catch(err) {
-                console.error(`Could not embed application to proxy: ${err.message}`);
-        
-                process.exit(1);
+                throw new Error(`Could not embed application to proxy:\n${err.message}`);
             }
         }); // TODO: DEV MODE live app log / manipulation inerface
     }
@@ -133,16 +124,12 @@ export async function unbed() {
     // TODO: IDs?
     try {
         if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
-            console.error(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
-
-            return;
-        }
+            throw new ReferenceError(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        }   // TODO: Remove hostname caption here?
 
         console.log(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
     } catch(err) {
-        console.error(`No server proxy listening on :${EmbedContext.global.port}`);
-
-        process.exit(1);
+        throw new ReferenceError(`No server proxy listening on :${EmbedContext.global.port}`);
     }
 }
 
@@ -176,8 +163,6 @@ export function monitor() {
     })
     .then(() => console.log(`Proxies:\n${proxyHosts.join("\n")}`))
     .catch(() => {
-        console.error("No proxies running");
-        
-        process.exit(1);
+        throw new RangeError("No proxies running");
     });
 }

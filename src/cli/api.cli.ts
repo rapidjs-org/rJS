@@ -14,7 +14,6 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 import { Args } from "../Args";
-import { EmbedContext } from "../core/EmbedContext";
 import * as standalone from "../core/standalone/api.standalone";
 import * as proxy from "../core/proxy/api.proxy";
 
@@ -40,21 +39,9 @@ CLI.registerCommand("help", () => {
  * underlying proxy application.
  */
 CLI.registerCommand("start", () => {
-    const modeLogCallback = () => {
-        const modeDict = EmbedContext.global.mode as Record<string, boolean>;
-        
-        let runningMode: string;
-        for(let mode in modeDict) {
-            runningMode = mode;
-            if(modeDict[mode]) break;
-        }
-        
-        console.log(`Running \x1b[1m${EmbedContext.global.mode.DEV ? "\x1b[31m" : ""}${runningMode} MODE\x1b[0m${EmbedContext.global.isSecure ? ` (secure)` : ""}`);
-    };
-
     Args.global.parseFlag("standalone")
-    ? standalone.serveStandalone(modeLogCallback)
-    : proxy.embed(modeLogCallback);
+    ? standalone.serve()
+    : proxy.embed();
 });
 
 /*

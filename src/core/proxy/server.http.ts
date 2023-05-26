@@ -20,8 +20,9 @@ import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "../ProcessPool";
 
-import { MultiMap } from "./MultiMap";
+import { MultiMap } from "../MultiMap";
 import { create as createUnixServer } from "./server.unix";
+import { LogConsole } from "../../cli/LogConsole";
 
 
 // TODO: Implement HTTP/2 option using proxy mastered streams?
@@ -45,7 +46,9 @@ const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
  * in order to prevent process termination, but simply handle
  * the error case for the respective request.
  */
-new ErrorControl();
+new ErrorControl(); // TODO: How to consume/preserve?
+new LogConsole();   // TODO: Remove
+
 
 /*
  * Create the reverse proxying web server instance.
@@ -101,17 +104,10 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
         case "embed": {            
             const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
-            if(embedContext.isSecure) {
-                const sslPath: string = join(embedContext.path, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
-                
-                const keyPath: string = join(sslPath, "key.key");
-                const certPath: string = join(sslPath, "cert.crt");
-                const caPath: string = join(sslPath, "ca.crt"); // TODO: List(?)
-
-                server.setSecureContext(embedContext.hostnames, keyPath, certPath, caPath);
-            }   // TODO: Allow custom names?
+            embedContext.isSecure
+            && server.setSecureContext(embedContext.hostnames, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
             // TODO: Display secure arg inconsistencies? Or just use initial one?
-
+            
             if(contextPools.has(embedContext.hostnames)) return false;
 
             const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
@@ -133,7 +129,7 @@ createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
 
                 process.exit(1);
             });
-            
+
             contextPools.set(embedContext.hostnames, processPool);
             
             return true;
