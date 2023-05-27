@@ -24,6 +24,14 @@ import { LogConsole } from "./LogConsole";
 new LogConsole();
 
 
+const initErrorHandler = (err: Error) => {
+    console.error(err);
+    
+    process.exit(1);
+};
+process.once("uncaughtException", initErrorHandler);
+
+
 /*
  * Display help text.
  */

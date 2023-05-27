@@ -16,7 +16,7 @@ export default function(apiObj: TConcreteAppAPI) {
      */
     return (sReq: IRequest): IResponse => {
         const reqHandler = new RequestHandler(sReq.ip, sReq.method, sReq.url, sReq.headers, sReq.body, sReq.encoding, sReq.cookies, sReq.locale);
-        console.log( new API.Response(reqHandler.message, reqHandler.status, reqHandler.headers, reqHandler.cookies));
+        
         return new API.Response(reqHandler.message, reqHandler.status, reqHandler.headers, reqHandler.cookies);
     };
 }

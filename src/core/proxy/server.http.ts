@@ -16,13 +16,11 @@ import { IBasicRequest } from "../../_interfaces";
 
 import { LogFile } from "../LogFile";
 import { HTTPServer } from "../HTTPServer";
+import { UnixServer } from "../UnixServer";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "../ProcessPool";
-
 import { MultiMap } from "../MultiMap";
-import { create as createUnixServer } from "./server.unix";
-import { LogConsole } from "../../cli/LogConsole";
 
 
 // TODO: Implement HTTP/2 option using proxy mastered streams?
@@ -47,7 +45,6 @@ const contextPools: MultiMap<string, ProcessPool> = new MultiMap();
  * the error case for the respective request.
  */
 new ErrorControl(); // TODO: How to consume/preserve?
-new LogConsole();   // TODO: Remove
 
 
 /*
@@ -93,83 +90,82 @@ function eventuallyInitNotifyParent() {
  * Create the proxy inherent unix socket server for runtime
  * manipulation inter process communication.
  */
-createUnixServer(EmbedContext.global.port, (command: string, arg: unknown) => {
-    // Differ socket request for proxy manipulation
-    switch(command) {
+const unixServer = new UnixServer(EmbedContext.global.port, eventuallyInitNotifyParent);
 
-        /*
-         * Embed a concrete server application to the proxy associated
-         * with a single or multiple ambiguous hostnames.
-         */
-        case "embed": {            
-            const embedContext: EmbedContext = new EmbedContext(arg as string[]);
+/*
+ * Embed a concrete server application to the proxy associated
+ * with a single or multiple ambiguous hostnames.
+ */
+unixServer.registerCommand("embed", (arg: unknown) => {
+    const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
-            embedContext.isSecure
-            && server.setSecureContext(embedContext.hostnames, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
-            // TODO: Display secure arg inconsistencies? Or just use initial one?
-            
-            if(contextPools.has(embedContext.hostnames)) return false;
+    embedContext.isSecure
+    && server.setSecureContext(embedContext.hostnames, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
+    // TODO: Display secure arg inconsistencies? Or just use initial one?
+    
+    if(contextPools.has(embedContext.hostnames)) return false;
 
-            const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
-            
-            const fileLogIntercept: LogFile = new LogFile(
-                join(embedContext.path, embedContext.argsParser.parseOption("logs").string)
-            );
-            processPool.on("stdout", (message: string) => {
-                fileLogIntercept.handle(message, "stdout");
-            });
-            processPool.on("stderr", (err: string) => {
-                fileLogIntercept.handle(err, "stderr");
-            });
-
-            processPool.init();
-
-            processPool.on("terminate", () => {
-                if(contextPools.size() > 1) return;
-
-                process.exit(1);
-            });
-
-            contextPools.set(embedContext.hostnames, processPool);
-            
-            return true;
-        }
-
-        /*
-         * Unbed a concrete hostname from the proxy and possibly the
-         * associated concrete server application if is not referenced
-         * by other hostnames.
-         */
-        case "unbed": {
-            const hostnames = arg as string|string[];
-
-            contextPools.delete(hostnames);
-            
-            !contextPools.size()
-            && setImmediate(() => process.exit(0));
-
-            server.removeSecureContext(hostnames);
-            
-            return true;
-        }
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
+    
+    const logsDirPath: string = embedContext.argsParser.parseOption("logs").string;
+    if(logsDirPath) {
+        const fileLogIntercept: LogFile = new LogFile(join(embedContext.path, logsDirPath));
         
-        /*
-         * Stop proxy process.
-         */
-        case "stop":
-            setImmediate(() => process.exit(0));
-            
-            return true;
-        
-        /*
-         * Retrieve information about embedded concrete server
-         * applications for monitoring purposes.
-         */
-        case "monitor":
-            return contextPools.keys(); // TODO: Also record start date, etc.
-        
+        processPool.on("stdout", (message: string) => {
+            fileLogIntercept.handle(message, "stdout");
+        });
+        processPool.on("stderr", (err: string) => {
+            fileLogIntercept.handle(err, "stderr");
+        });
     }
-}, eventuallyInitNotifyParent);
+
+    processPool.init();
+
+    processPool.on("terminate", () => {
+        if(contextPools.size() > 1) return;
+
+        process.exit(1);
+    });
+
+    contextPools.set(embedContext.hostnames, processPool);
+    
+    return true;
+});
+
+/*
+ * Unbed a concrete hostname from the proxy and possibly the
+ * associated concrete server application if is not referenced
+ * by other hostnames.
+ */
+unixServer.registerCommand("unbed", (arg: unknown) => {
+    const hostnames = arg as string|string[];
+
+    contextPools.delete(hostnames);
+    
+    !contextPools.size()
+    && setImmediate(() => process.exit(0));
+
+    server.removeSecureContext(hostnames);
+    
+    return true;
+});
+    
+/*
+ * Stop proxy process.
+ */
+unixServer.registerCommand("stop", () => {
+    setImmediate(() => process.exit(0));
+    
+    return true;
+});
+    
+/*
+ * Retrieve information about embedded concrete server
+ * applications for monitoring purposes.
+ */
+unixServer.registerCommand("monitor", () => {
+    return contextPools.keys(); // TODO: Also record start date, etc.
+});
 
 
 // TODO: HTTP:80 to HTTPS:433 redirection server?

@@ -11,10 +11,9 @@ import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
-import { captionEffectiveHostnames } from "../utils";
 import { EmbedContext } from "../EmbedContext";
-
-import { messageProxy } from "../utils";
+import { HTTPServer } from "../HTTPServer";
+import { UnixServer } from "../UnixServer";
 
 
 /**
@@ -74,11 +73,11 @@ export async function embed() {
      * detached first. The embed call is repeated in that case.
      */
     const embedApp = async () => {        
-        const embedSuccessful = await messageProxy(EmbedContext.global.port, "embed", EmbedContext.global.args);
+        const embedSuccessful = await UnixServer.message(EmbedContext.global.port, "embed", EmbedContext.global.args);
         
         embedSuccessful
         ? console.log(`Embedded proxied application cluster`)
-        : console.error(`Application cluster already running at ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        : console.error(`Application cluster already running at ${HTTPServer.captionEffectiveHostnames()}:${EmbedContext.global.port}`);
         
         process.exit(embedSuccessful ? 0 : 1);
     };
@@ -123,11 +122,11 @@ export async function embed() {
 export async function unbed() {
     // TODO: IDs?
     try {
-        if(!await messageProxy(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
-            throw new ReferenceError(`Hostnames not registered at proxy ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        if(!await UnixServer.message(EmbedContext.global.port, "unbed", EmbedContext.global.hostnames)) {
+            throw new ReferenceError(`Hostnames not registered at proxy ${HTTPServer.captionEffectiveHostnames()}:${EmbedContext.global.port}`);
         }   // TODO: Remove hostname caption here?
 
-        console.log(`Unbedded application cluster from ${captionEffectiveHostnames()}:${EmbedContext.global.port}`);
+        console.log(`Unbedded application cluster from ${HTTPServer.captionEffectiveHostnames()}:${EmbedContext.global.port}`);
     } catch(err) {
         throw new ReferenceError(`No server proxy listening on :${EmbedContext.global.port}`);
     }
@@ -141,7 +140,7 @@ export async function unbed() {
 export function stop() {
     forEachProxy(async (port: number) => {
         try {
-            await messageProxy(port, "stop");
+            await UnixServer.message(port, "stop");
         } catch {}
     })
     .then(() => console.log("Stopped all proxies"));
@@ -157,7 +156,7 @@ export function monitor() {
     const proxyHosts: string[] = [];
     
     forEachProxy(async (port: number) => {
-        const embeddedHostnames = await messageProxy(port, "monitor") as string[][];
+        const embeddedHostnames = await UnixServer.message(port, "monitor") as string[][];
         
         proxyHosts.push(`${port}: ${embeddedHostnames}`);   // TODO: "Beautify"
     })

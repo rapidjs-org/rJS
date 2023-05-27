@@ -49,8 +49,8 @@ threadPool.init();
  * this worker process to the idle candidate queue within the
  * parent process.
  */
-new ErrorControl(() => {
-    signalDone();   // TODO: Signal error (or keep "error"?)
+new ErrorControl(null, () => {
+    signalDone();   // TODO: Signal error and terminate upwards (or keep "error"?)
 });
 
 

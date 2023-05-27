@@ -1,3 +1,6 @@
+type TExceptionHandler = ((err: Error) => void);
+
+
 /**
  * Class representing an error controller residing on top
  * of current process' scope in order to intercept any
@@ -9,9 +12,11 @@
  */
 export class ErrorControl {
 
-    constructor(exceptionCallback: (err: Error) => void = (() => null), keepAliveDelay: number = 30000, suppressErrorLog: boolean = false) {
+    constructor(initExCallback?: TExceptionHandler, eventualExCallback?: TExceptionHandler, keepAliveDelay: number = 30000, suppressErrorLog: boolean = false) {
         const initErrorHandler = (err: Error) => {
             console.error(err);
+
+            initExCallback && initExCallback(err);
 
             process.exit(1);
         };
@@ -24,7 +29,7 @@ export class ErrorControl {
                 !suppressErrorLog
                 && console.error(err);
                 
-                exceptionCallback(err);
+                eventualExCallback && eventualExCallback(err);
             });
         }, keepAliveDelay);
     }
