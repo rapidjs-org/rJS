@@ -1,9 +1,8 @@
-[
-    {
-        "name": "test",
-        "path": "./plug-ins/test",
-        "diabled": [
-            "fs", "net"
-        ]
+{
+    "test-plugin": {
+        "test": 123
+    },
+    "ignored": {
+        "test": 456
     }
-]
+}

@@ -7,7 +7,7 @@
 import { EmbedContext } from "../EmbedContext";
 
 
-export { Config } from "../process/Config";
+export { Config } from "../Config";
 
 export { Plugin } from "./Plugin";
 export { Cache } from "./Cache";

@@ -10,6 +10,8 @@ import { IRequest } from "../../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 
+import { Plugin } from "./Plugin";
+
 import * as concreteAPI from "./api.concrete";
 
 
@@ -19,6 +21,8 @@ if(!EmbedContext.global.concreteAppModulePath) {
 
 
 new ErrorControl(); // TODO: Message up?
+
+Plugin.load();
 
 
 /*

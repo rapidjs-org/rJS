@@ -7,7 +7,7 @@ import { Socket } from "net";
 import { THeaders, TResponseOverload } from "../../_types";
 import { IResponse, IHighlevelCookieOut } from "../../_interfaces";
 
-import { Config } from "./Config";
+import { Config } from "../Config";
 
 
 /**

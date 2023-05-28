@@ -1,12 +1,13 @@
-import _config from "../_config.json";
+import _config from "./_config.json";
 
 
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { TJSONObject } from "../../_types";
+import { TJSONObject } from "../_types";
 
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "./EmbedContext";
+
 
 import defaultConfig from "./default.config.json";
 
@@ -23,22 +24,6 @@ interface ITypeResolveInterface {
 }
 
 
-/*
- * List of configuration file specifiers applicable for the
- * read and parse process (merged) in respect to the current
- * runtime context. Specifiers contain the empty word for the
- * default config as well as all active runtime mode names
- * prefixed with a separating dot (mind order).
- * rjs.<config-name>(.<specifier>)?.json
- */
-const applicableSpecifiers: string[] = [ "" ]
-.concat(
-    Object.entries(EmbedContext.global.mode)
-    .filter((entry: [ string, boolean ]) => entry[1])
-    .map((entry: [ string, boolean ]) => `.${entry[0]}`)
-);
-
-
 /**
  * Class representing a concrete server application
  * configuration for a specific purpose based on a
@@ -48,10 +33,25 @@ const applicableSpecifiers: string[] = [ "" ]
 export class Config {
     
     /*
+     * List of configuration file specifiers applicable for the
+     * read and parse process (merged) in respect to the current
+     * runtime context. Specifiers contain the empty word for the
+     * default config as well as all active runtime mode names
+     * prefixed with a separating dot (mind order).
+     * rjs.<config-name>(.<specifier>)?.json
+     */
+    private static applicableSpecifiers: string[] = [ "" ]
+    .concat(
+        Object.entries(EmbedContext.global.mode)
+        .filter((entry: [ string, boolean ]) => entry[1])
+        .map((entry: [ string, boolean ]) => `.${entry[0]}`)
+    );
+    
+    /*
      * Always provide main concrete server application configuration
      * for shorthand access.
      */
-    public static readonly global: Config = new Config("config", "", defaultConfig);
+    public static readonly global: Config = new Config("config", defaultConfig);
 
     /**
      * Deep merge objects for left-associative taget override.
@@ -93,30 +93,36 @@ export class Config {
      */
     private obj: TJSONObject;
 
-    constructor(name: string|string[], subPath: string = "", defaultConfigObj: TJSONObject) {
-        this.obj = defaultConfigObj ?? {};
+    constructor(nameOrDefaultObj: string|string[]|TJSONObject, defaultConfigObj: TJSONObject = {}) {
+        if(Array.isArray(nameOrDefaultObj) || typeof(nameOrDefaultObj) !== "string") {
+            this.obj = nameOrDefaultObj as TJSONObject;
+
+            return;
+        }
+
+        this.obj = defaultConfigObj;
         
-        applicableSpecifiers
+        Config.applicableSpecifiers
         .forEach((specifier: string) => {
-            name = [ name ].flat();
-             
+            const name = [ nameOrDefaultObj as string|string[] ].flat();
+            
             let i = 0;
             let fullName: string,
                 fullPath: string;
             do {
-                fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
-                fullPath = join(EmbedContext.global.path, subPath, `${fullName}`);
-
                 if(i === name.length) return;
+
+                fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
+                fullPath = join(EmbedContext.global.path, `${fullName}`);
             } while(!existsSync(fullPath));
             
             let fileObj;
             try {
                 fileObj = require(fullPath);
             } catch(err) {
-                throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${join(subPath, fullName)}'` : ""}`);
+                throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${fullName}'` : ""}`);
             }
-
+            
             this.obj = Config.deepMergeObj(this.obj, fileObj);
         });
     }

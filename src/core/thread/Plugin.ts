@@ -1,11 +1,13 @@
 import _config from "../_config.json";
 
 
-import { dirname } from "path";
+import { Dirent, existsSync, readdirSync } from "fs";
+import { join } from "path";
 
 import { TJSONObject } from "../../_types";
 
-import { Config } from "../process/Config";
+import { EmbedContext } from "../EmbedContext";
+import { Config } from "../Config";
 
 import { VFS } from "./VFS";
 
@@ -17,11 +19,26 @@ import { VFS } from "./VFS";
  * the conrete server application.
  */
 export class Plugin {
-    
+
+    private static pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
+    private static config: Config = new Config("plugins");
     private static registry: Map<string, Plugin> = new Map();
 
+    public static forEach(loopCallback: ((plugin: Plugin) => void)) {
+        this.registry.forEach(loopCallback);
+    }
+
     public static load() {
-        // TODO: Load all plugins from plugin dir into registry
+        if(!existsSync(Plugin.pluginsDirPath)) return;
+
+        readdirSync(Plugin.pluginsDirPath, {
+            withFileTypes: true
+        })
+        .forEach((file: Dirent) => {
+            if(!file.isDirectory()) return;
+
+            new Plugin(file.name)
+        });
     }
 
     public static iterate(callback: (plugin: Plugin, name?: string) => void) {
@@ -29,25 +46,18 @@ export class Plugin {
     }
 
     private readonly name: string;
-    private readonly config: Config;
 
+    public readonly config: Config;
     public readonly VFS: VFS;
 
-    constructor(path: string) {
-        this.name = dirname(path);
-        this.config = new Config(`${this.name}.config`, _config.pluginDirName, Config.global.get("plugins", this.name).object() ?? {});
+    constructor(name: string) {
+        this.name = name;
 
-        this.VFS = new VFS(path);
+        const subConfigObj: TJSONObject = Plugin.config.get(this.name).object();
+        this.config = subConfigObj ? new Config(subConfigObj) : null;
+        this.VFS = new VFS(join(Plugin.pluginsDirPath, name));
 
         Plugin.registry.set(this.name, this);
-    }
-
-    public readConfig(...args: unknown[]) {
-        return this.config.get.apply(this.config, args);
-    }
-
-    public mergeConfigDefault(defaultConfigObj: TJSONObject) {
-        this.config.mergeDefault(defaultConfigObj);
     }
 
 }

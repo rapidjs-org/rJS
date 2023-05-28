@@ -1,7 +1,7 @@
 {
     "appNameShort": "rJS",
     "appNameLong": "rapidJS",
-    "pluginDirName": "plugins",
+    "pluginsDir": "./plugins",
     "socketDir": "/tmp",
     "socketNamePrefix": "rjs.proxy.",
     "sslDir": "./ssl"

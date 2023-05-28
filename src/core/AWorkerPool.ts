@@ -48,7 +48,7 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
         this.timeout = timeout;
         this.maxPending = maxPending;
     }
-
+    
     /**
      * Methods expected to implement the creation / destruction
      * of a worker entity to be returned.
