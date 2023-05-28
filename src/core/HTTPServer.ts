@@ -69,7 +69,7 @@ export class HTTPServer {
             console.log(`Listening HTTP${EmbedContext.global.isSecure ? "S" : ""} at \x1b[36m${HTTPServer.captionEffectiveHostnames()}\x1b[1m:${EmbedContext.global.port}\x1b[0m`);
             console.log(`Running \x1b[1m${EmbedContext.global.mode.DEV ? "\x1b[31m" : ""}${runningMode} MODE\x1b[0m`);
         });
-
+        
         server.on("error", (err: { code: string }) => {
             errorCallback
             && errorCallback(err);

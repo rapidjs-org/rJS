@@ -34,10 +34,10 @@ export class Plugin {
         readdirSync(Plugin.pluginsDirPath, {
             withFileTypes: true
         })
-        .forEach((file: Dirent) => {
-            if(!file.isDirectory()) return;
+        .forEach((dirent: Dirent) => {
+            if(!dirent.isDirectory()) return;
 
-            new Plugin(file.name)
+            new Plugin(dirent.name)
         });
     }
 

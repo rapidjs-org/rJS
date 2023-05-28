@@ -1,4 +1,5 @@
-import { mkdirSync, appendFile } from "fs";
+import { mkdirSync, appendFile, readdirSync, rmSync } from "fs";
+import { freemem } from "os";
 import { join } from "path";
 
 import { ALogIntercept } from "../ALogIntercept";
@@ -29,6 +30,19 @@ export class LogFile extends ALogIntercept {
 
     private writeFile(message: string) {
         if(!this.path) return;
+
+        const freeMemInB: number = freemem();
+        if(freeMemInB < message.length || freeMemInB < 1024) {  // Rotate files if free memory does not suffice or is below 1 KiB
+            for(let dirent of readdirSync(this.path, {
+                withFileTypes: true
+            })) {
+                if(!dirent.isFile()) continue;
+
+                rmSync(join(this.path, dirent.name));
+
+                break;
+            }
+        }
         
         message = message
         .replace(/\x1b\[[0-9;]+m/g, "")

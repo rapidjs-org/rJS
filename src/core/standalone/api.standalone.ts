@@ -58,7 +58,7 @@ export async function serve() {
     
     try {
         const server = new HTTPServer(handle, () => {
-            const logsDirPath: string = Args.global.parseOption("logs").string;
+            const logsDirPath: string = Args.global.parseOption("logs", "L").string;
             logsDirPath
             && new LogFile(join(EmbedContext.global.path, logsDirPath));
 
