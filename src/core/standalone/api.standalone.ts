@@ -11,7 +11,7 @@ import _config from "../_config.json";
 import { Socket } from "net";
 import { join } from "path";
 
-import { IBasicRequest } from "../../_interfaces";
+import { IBasicRequest } from "../../interfaces";
 import { Args } from "../../Args";
 
 import { HTTPServer } from "../HTTPServer";

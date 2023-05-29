@@ -4,9 +4,8 @@ import _config from "../_config.json";
 import { STATUS_CODES } from "http";
 import { Socket } from "net";
 
-import { THeaders, TResponseOverload } from "../../_types";
-import { IResponse, IHighlevelCookieOut } from "../../_interfaces";
-
+import { THeaders, TResponseOverload } from "../../types";
+import { IResponse, IHighlevelCookie } from "../../interfaces";
 import { Config } from "../Config";
 
 
@@ -64,7 +63,7 @@ export class Response {
         
         // Set cookie header
         for(const name in sRes.cookies) {
-            const cookie: IHighlevelCookieOut = sRes.cookies[name];
+            const cookie: IHighlevelCookie = sRes.cookies[name];
             
             this.setHeader("Set-Cookie", `${name}=${cookie.value}${
                 cookie.maxAge ? `; Max-Age: ${cookie.maxAge}`: ""

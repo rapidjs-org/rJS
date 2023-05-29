@@ -5,8 +5,7 @@ const { join } = require("path");
 const { existsSync, statSync, readFileSync, readdirSync, writeFileSync } = require("fs");
 const { execSync } = require("child_process");
 
-const compile = require("./compile");
-const createTypes = require("./create-types");
+const compile = require("./framework");
 
 
 const signatureFilePath = join(process.cwd(), process.argv.slice(2)[0] ?? "./signature.txt");
@@ -40,21 +39,7 @@ try {
 
     buildDir(distPath);
 
-    console.log("\x1b[2mTypeScript compilations have created with success.\n\x1b[0m");
-} catch(err) {
-    console.error(err);
-
-    terminateWithError();
-}
-
-
-// Typings
-try {
-    createTypes.create();
-
-    console.log("\x1b[2mTypeScript typinsgs have created with success.\n\x1b[0m");
-
-    buildDir(join(process.cwd(), "./types/"));
+    console.log("\x1b[2mTypeScript files have successfully compiled.\n\x1b[0m");
 } catch(err) {
     console.error(err);
 

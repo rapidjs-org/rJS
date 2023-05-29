@@ -5,7 +5,7 @@ import { createServer as createHTTPSServer } from "https";
 import { SecureContext, createSecureContext } from "tls";
 import { join } from "path";
 
-import { IBasicRequest } from "../_interfaces";
+import { IBasicRequest } from "../interfaces";
 
 import { MultiMap } from "./MultiMap";
 import { EmbedContext } from "./EmbedContext";
@@ -64,7 +64,7 @@ export class HTTPServer {
         .listen(EmbedContext.global.port, () => {
             listensCallback();
             
-            const modeDict = EmbedContext.global.mode as Record<string, boolean>;
+            const modeDict = EmbedContext.global.mode as unknown as Record<string, boolean>;
             
             let runningMode: string;
             for(let mode in modeDict) {

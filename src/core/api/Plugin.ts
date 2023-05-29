@@ -4,7 +4,7 @@ import _config from "../_config.json";
 import { Dirent, existsSync, readdirSync } from "fs";
 import { join } from "path";
 
-import { TJSONObject } from "../../_types";
+import { TJSONObject } from "../../types";
 
 import { EmbedContext } from "../EmbedContext";
 import { Config } from "../Config";
@@ -39,10 +39,6 @@ export class Plugin {
 
             new Plugin(dirent.name)
         });
-    }
-
-    public static iterate(callback: (plugin: Plugin, name?: string) => void) {
-        Plugin.registry.forEach(callback);
     }
 
     private readonly name: string;

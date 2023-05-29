@@ -2,17 +2,22 @@
   "name": "@rapidjs.org/core",
   "version": "0.0.1",
   "description": "",
-  "author": "Thassilo Martin Schiepanski",
+  "author": {
+    "name": "Thassilo Martin Schiepanski",
+    "url": "https://github.com/t-ski",
+    "githubUsername": "t-ski"
+  },
+  "main": "./dist/core/thread/api.core.js",
+  "types": "./types/api.core.d.ts",
   "bin": {
     "rjs": "./dist/cli/api.cli.js"
   },
-  "types": "./types/index.d.ts",
   "scripts": {
     "setup": "npm i && cd ./src/core/shared-memory/ && node-gyp configure",
     "debug": "./scripts/debug.sh",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
-    "compile:dist": "node --no-deprecation ./scripts/compile.dist.js && chmod +x ./dist/cli/api.cli.js",
-    "compile:watch": "node --no-deprecation ./scripts/compile.watch.js",
+    "compile:dist": "node --no-deprecation ./scripts/compile/compile.dist.js && chmod +x ./dist/cli/api.cli.js",
+    "compile:watch": "node --no-deprecation ./scripts/compile/compile.watch.js",
     "compile:watch:cpp": "node ./scripts/compile.watch.js --cpp",
     "start:core": "./scripts/debug.sh start:proxy core.integration",
     "start:core:standalone": "./scripts/debug.sh start:standalone core.integration",
@@ -31,7 +36,8 @@
     "release": "npm run test && npm run compile:dist"
   },
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "keywords": [
     "rapidjs",

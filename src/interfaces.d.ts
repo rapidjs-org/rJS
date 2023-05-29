@@ -3,7 +3,13 @@
  */
 
 
-import { TCookies, THeaders, THighlevelCookieIn } from "./_types";
+import { TCookies, TEncoding, THeaders, TLocale } from "./types";
+
+
+export interface IRuntimeMode {
+    DEV: boolean;
+    PROD: boolean;
+}
 
 
 export interface IBasicRequest {
@@ -20,9 +26,9 @@ export interface IRequest {
     ip: string;
     
     body?: unknown
-    cookies?: THighlevelCookieIn;
-    encoding: IHighlevelEncoding[];
-    locale?: IHighlevelLocale[];
+    cookies?: TCookies;
+    encoding: TEncoding;
+    locale?: TLocale;
 }
 
 export interface IResponse {
@@ -61,7 +67,7 @@ export interface IHighlevelLocale {
     region?: string;
 }
 
-export interface IHighlevelCookieOut {
+export interface IHighlevelCookie {
     value: string|number|boolean;
     
     maxAge?: number;

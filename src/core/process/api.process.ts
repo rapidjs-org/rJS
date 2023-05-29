@@ -7,9 +7,8 @@ import { Socket } from "net";
 import { join } from "path";
 import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
-import { THeaders, TJSONObject, TResponseOverload, THighlevelCookieIn } from "../../_types";
-import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../_interfaces";
-
+import { THeaders, TJSONObject, TResponseOverload, TCookies } from "../../types";
+import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 
@@ -128,6 +127,7 @@ function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders
 async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     const clientIP: string = socket.remoteAddress;
 
+    // TODO: MOVE ALL WORK TO THREAD?
     // TODO: Benchmark rate limiter location/process level for
     // asssessing the different and thus an optimum performance
     // measure
@@ -197,7 +197,7 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
         }
     });   // TODO: Streamline accept header parsed types ("quality header"?)
 
-    const highlevelCookies: THighlevelCookieIn = {};
+    const highlevelCookies: TCookies = {};
     [ iReq.headers["cookie"] ].flat()[0]
     ?.split(/;/g)
     .forEach((cookie: string) => {
@@ -211,7 +211,9 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
             value = parts[1];
         }
 
-        highlevelCookies[parts[0].trim()] = value;
+        highlevelCookies[parts[0].trim()] = {
+            value
+        };
     });
 
     // Construct high-level thread provision request object

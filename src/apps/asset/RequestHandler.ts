@@ -1,10 +1,12 @@
 import _config from "./_config.json";
 
 
-import { THeaders, TCookies, THighlevelCookieIn } from "../../_types";
-import { IHighlevelURL, IHighlevelEncoding, IHighlevelLocale } from "../../_interfaces";
-
 import { extname } from "path";
+
+import { IHighlevelURL } from "../../interfaces";
+import { THeaders, TCookies, TEncoding, TLocale } from "../../types";
+
+import { WEB_VFS } from "./WEB_VFS";
 
 
 export class RequestHandler {
@@ -14,7 +16,7 @@ export class RequestHandler {
     public headers: THeaders;
     public cookies: TCookies;
 
-    constructor(ip: string, method: string, url: IHighlevelURL, headers: THeaders, body: unknown, encoding: IHighlevelEncoding[], cookies?: THighlevelCookieIn, locale?: IHighlevelLocale[]) {
+    constructor(ip: string, method: string, url: IHighlevelURL, body: unknown, headers: THeaders, encoding: TEncoding, cookies?: TCookies, locale?: TLocale) {
         this.headers = {};
         this.cookies = {};
 
@@ -44,7 +46,7 @@ export class RequestHandler {
     private file(url: IHighlevelURL) {
         this.headers["Content-Encoding"] = "text/html";
         this.status = 200;
-
-        this.message = VFS.read(url.pathname)?.data ?? "Not Found";
+        
+        this.message = WEB_VFS.read(url.pathname)?.data ?? "Not Found";
     }
 }

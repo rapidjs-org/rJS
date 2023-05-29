@@ -1,5 +1,6 @@
 import { join, isAbsolute, normalize } from "path";
 
+import { IRuntimeMode } from "../interfaces";
 import { Args } from "../Args";
 
 
@@ -25,10 +26,7 @@ export class EmbedContext { // TODO: Singleton
     public readonly isSecure: boolean;
     public readonly port: number;
     public readonly path: string;
-    public readonly mode: {
-        DEV: boolean;
-        PROD: boolean;
-    };
+    public readonly mode: IRuntimeMode;
 
     constructor(relatedArgs: string[]) {
         /*

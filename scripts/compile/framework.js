@@ -30,24 +30,18 @@ module.exports.logBadge = function(message, colorRgb) {
 module.exports.getSHMPath = function(dirName) {
     return {
         source: join(process.cwd(), "./src/core/shared-memory"),
-        debug: join(process.cwd(), dirName, "./core/shared-memory")
+        destination: join(process.cwd(), dirName, "./core/shared-memory")
     };
 };
 
 module.exports.compile = function(dirName) {
     const shmPath = module.exports.getSHMPath(dirName);
+    makeDir(shmPath.destination);
 
-    makeDir(shmPath.debug);
-
-    const helpTextPath = {
-        source: join(process.cwd(), "./src/cli/_help.txt"),
-        debug: join(process.cwd(), dirName, "/cli/_help.txt")
-    };
-
-    makeDir(dirname(helpTextPath.debug));
-    !existsSync(helpTextPath.debug)
-    && linkSync(helpTextPath.source, helpTextPath.debug);
-
+    const helpPath = join(process.cwd(), dirName, "/cli/_help.txt");
+    makeDir(dirname(helpPath));
+    copyFileSync(join(process.cwd(), "./src/cli/_help.txt"), helpPath);
+    
     return module.exports.compileCPP(dirName);
 };
 
@@ -63,7 +57,7 @@ module.exports.compileCPP = function(dirName) {
             stdio: "inherit"
         });
         
-        const destPath = join(shmPath.debug, "./shared-memory.node");
+        const destPath = join(shmPath.destination, "./shared-memory.node");
         rmSync(destPath, {
             force: true
         });

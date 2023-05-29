@@ -5,14 +5,9 @@
 
 import { parentPort } from "worker_threads";
 
-import { TConcreteAppHandler } from "../../_types";
-import { IRequest } from "../../_interfaces";
+import { IRequest, IResponse } from "../../interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
-
-import { Plugin } from "./Plugin";
-
-import * as concreteAPI from "./api.concrete";
 
 
 if(!EmbedContext.global.concreteAppModulePath) {
@@ -21,8 +16,6 @@ if(!EmbedContext.global.concreteAppModulePath) {
 
 
 new ErrorControl(); // TODO: Message up?
-
-Plugin.load();
 
 
 /*
@@ -34,23 +27,20 @@ Plugin.load();
  * respective response package send over the parental process
  * controlled socket connection.
  */
-let concreteAppHandler: TConcreteAppHandler;
 import(EmbedContext.global.concreteAppModulePath)
 .then((api: {
-    default: (concreteAPI: concreteAPI.TConcreteAppAPI) => TConcreteAppHandler
+    default: (req: IRequest) => IResponse
 }) => {
-    concreteAppHandler = api.default(concreteAPI);
+    /*
+     * Listen for incoming requests to handle with specified routine.
+     */
+    parentPort.on("message", (sReq: IRequest) => {    
+        parentPort.postMessage(
+            api.default(sReq)
+        );
+    });
     
     // Signal parent process the thread is ready for being
     // assigned request data
     parentPort.postMessage(true);
-});
-
-/*
- * Listen for incoming requests to handle with specified routine.
- */
-parentPort.on("message", (sReq: IRequest) => {    
-    parentPort.postMessage(
-        concreteAppHandler(sReq)
-    );
 });

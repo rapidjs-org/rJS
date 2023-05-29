@@ -5,8 +5,7 @@ const { statSync, readdirSync } = require("fs");
 const { join } = require("path");
 const { exec } = require("child_process");
 
-const compile = require("./compile");
-const createTypes = require("./create-types");
+const compile = require("./framework");
 
 
 const compileCPP = process.argv.slice(2).includes("--cpp");
@@ -45,8 +44,6 @@ child.stdout.on("data", data => {
 
     tsLogGroupOpen = true;
 });
-
-setImmediate(() => createTypes.create());
 
 
 // Set up shared memory files / C++ source modification watch
