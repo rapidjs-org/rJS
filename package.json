@@ -6,15 +6,14 @@
   "bin": {
     "rjs": "./dist/cli/api.cli.js"
   },
-  "types": "./types/core/thread/api.concrete.d.ts",
+  "types": "./types/index.d.ts",
   "scripts": {
     "setup": "npm i && cd ./src/core/shared-memory/ && node-gyp configure",
     "debug": "./scripts/debug.sh",
     "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
-    "compile:dist": "node ./scripts/compile.dist.js && chmod +x ./dist/cli/api.cli.js",
-    "compile:watch": "node ./scripts/compile.watch.js",
+    "compile:dist": "node --no-deprecation ./scripts/compile.dist.js && chmod +x ./dist/cli/api.cli.js",
+    "compile:watch": "node --no-deprecation ./scripts/compile.watch.js",
     "compile:watch:cpp": "node ./scripts/compile.watch.js --cpp",
-    "type": "npm run compile:dist && tsc ./dist/core/thread/api.concrete.js --declaration --allowJs --emitDeclarationOnly --outDir ./types/index.d.ts",
     "start:core": "./scripts/debug.sh start:proxy core.integration",
     "start:core:standalone": "./scripts/debug.sh start:standalone core.integration",
     "start:app": "./scripts/debug.sh start:proxy",

@@ -5,7 +5,7 @@
 
 import { parentPort } from "worker_threads";
 
-import { TConcreteAppAPI, TConcreteAppHandler } from "../../_types";
+import { TConcreteAppHandler } from "../../_types";
 import { IRequest } from "../../_interfaces";
 import { EmbedContext } from "../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
@@ -37,7 +37,7 @@ Plugin.load();
 let concreteAppHandler: TConcreteAppHandler;
 import(EmbedContext.global.concreteAppModulePath)
 .then((api: {
-    default: (concreteAPI: TConcreteAppAPI) => TConcreteAppHandler
+    default: (concreteAPI: concreteAPI.TConcreteAppAPI) => TConcreteAppHandler
 }) => {
     concreteAppHandler = api.default(concreteAPI);
     

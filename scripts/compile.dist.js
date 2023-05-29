@@ -1,8 +1,12 @@
+"use strict";
+
+
 const { join } = require("path");
-const { existsSync, statSync, readFileSync, readdirSync, writeFileSync, rmSync } = require("fs");
+const { existsSync, statSync, readFileSync, readdirSync, writeFileSync } = require("fs");
 const { execSync } = require("child_process");
 
 const compile = require("./compile");
+const createTypes = require("./create-types");
 
 
 const signatureFilePath = join(process.cwd(), process.argv.slice(2)[0] ?? "./signature.txt");
@@ -13,7 +17,6 @@ if(!statSync(signatureFilePath).isFile()) {
     throw new ReferenceError(`Referenced signature file is not a file '${signatureFilePath}'`);
 }
 const signature = String(readFileSync(signatureFilePath));
-const distPath = join(__dirname, "../dist/");
 let counter = {
     dirs: 0,
     files: 0
@@ -28,18 +31,35 @@ compile.compile("./dist/")
 
 try {
     compile.logBadge("TypeScript", [ 23, 155, 231 ]);
+    
+    const distPath = join(process.cwd(), "./dist/");
+
     execSync(`tsc --outDir ${distPath}`, {
         stdio: "inherit"
     });
+
+    buildDir(distPath);
+
+    console.log("\x1b[2mTypeScript compilations have created with success.\n\x1b[0m");
 } catch(err) {
-    console.log("");
+    console.error(err);
 
     terminateWithError();
 }
 
 
-// Prepare individual files (signature injection, ...)
-buildDir(distPath);
+// Typings
+try {
+    createTypes.create();
+
+    console.log("\x1b[2mTypeScript typinsgs have created with success.\n\x1b[0m");
+
+    buildDir(join(process.cwd(), "./types/"));
+} catch(err) {
+    console.error(err);
+
+    terminateWithError();
+}
 
 
 console.log(`\x1b[2m•\x1b[0m Project has \x1b[32msuccessfully\x1b[0m built (\x1b[34m${counter.files}\x1b[0m files in \x1b[34m${counter.dirs}\x1b[0m directories)\n`);
@@ -68,7 +88,7 @@ function buildDir(path) {
 }
 
 function terminateWithError() {
-    console.error(`\x1b[2m•\x1b[0m Project has \x1b[31mfailed\x1b[0m to built\n`);
+    console.error(`\n\x1b[2m•\x1b[0m Project has \x1b[31mfailed\x1b[0m to built\n`);
 
     process.exit(1);
 }

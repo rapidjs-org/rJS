@@ -1,3 +1,6 @@
+"use strict";
+
+
 const { loadTest } = require("loadtest");
 
 

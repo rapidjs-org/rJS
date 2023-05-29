@@ -8,6 +8,9 @@ import { EmbedContext } from "../EmbedContext";
 import { Config } from "../Config";
 
 
+export type TConcreteAppAPI = typeof import("./api.concrete");
+
+
 export { Plugin } from "./Plugin";
 export { Cache } from "./Cache";
 export { VFS } from "./VFS";

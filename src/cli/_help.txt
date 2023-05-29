@@ -3,6 +3,96 @@
  * 
  * (c) Thassilo Martin Schiepanski
  */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
+/**
+ * rapidJS: Blazing fast web server framework.
+ * 
+ * (c) Thassilo Martin Schiepanski
+ */
 Usage: rjs <command> [|--<arg:key>|-<arg:shorthand>]*
 
 • Commands:

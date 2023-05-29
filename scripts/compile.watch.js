@@ -6,6 +6,7 @@ const { join } = require("path");
 const { exec } = require("child_process");
 
 const compile = require("./compile");
+const createTypes = require("./create-types");
 
 
 const compileCPP = process.argv.slice(2).includes("--cpp");
@@ -19,7 +20,7 @@ compile.log(`• WATCH COMPILE { ${
 
 let tsLogGroupOpen;
 // Start TypeScript compiler (sub-)process in background
-const child = exec(`tsc -w --preserveWatchOutput --outDir ${join(__dirname, "../debug/")}`);
+const child = exec(`tsc -w --preserveWatchOutput --outDir ${join(process.cwd(), "./debug/")}`);
 // Adopt TypeScript compiler output
 child.stdout.on("data", data => {
     if(/[0-9]{2}:[0-9]{2}:[0-9]{2} \- File change detected\. Starting incremental compilation\.\.\./.test(data)
@@ -44,6 +45,8 @@ child.stdout.on("data", data => {
 
     tsLogGroupOpen = true;
 });
+
+setImmediate(() => createTypes.create());
 
 
 // Set up shared memory files / C++ source modification watch

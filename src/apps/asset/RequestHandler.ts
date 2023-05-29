@@ -4,7 +4,6 @@ import _config from "./_config.json";
 import { THeaders, TCookies, THighlevelCookieIn } from "../../_types";
 import { IHighlevelURL, IHighlevelEncoding, IHighlevelLocale } from "../../_interfaces";
 
-import { VFS } from "./api.core";
 import { extname } from "path";
 
 

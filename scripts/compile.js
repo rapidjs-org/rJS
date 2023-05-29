@@ -1,11 +1,18 @@
-const { existsSync, mkdirSync, linkSync, copyFileSync, rmSync } = require("fs");
+"use strict";
+
+
+const { existsSync, mkdirSync, linkSync, copyFileSync, rmdirSync, rmSync } = require("fs");
 const { join, dirname } = require("path");
 const { execSync } = require("child_process");
 
 
 function makeDir(path) {
-    !existsSync(path)
-    && mkdirSync(path, {
+    existsSync(path)
+    && rmdirSync(path, {
+        force: true,
+        recursive: true
+    });
+    mkdirSync(path, {
         force: true,
         recursive: true
     });
@@ -22,8 +29,8 @@ module.exports.logBadge = function(message, colorRgb) {
 
 module.exports.getSHMPath = function(dirName) {
     return {
-        source: join(__dirname, "../src/core/shared-memory"),
-        debug: join(__dirname, "../", dirName, "./core/shared-memory")
+        source: join(process.cwd(), "./src/core/shared-memory"),
+        debug: join(process.cwd(), dirName, "./core/shared-memory")
     };
 };
 
@@ -33,8 +40,8 @@ module.exports.compile = function(dirName) {
     makeDir(shmPath.debug);
 
     const helpTextPath = {
-        source: join(__dirname, "../src/cli/_help.txt"),
-        debug: join(__dirname, join("../", dirName, "/cli/_help.txt"))
+        source: join(process.cwd(), "./src/cli/_help.txt"),
+        debug: join(process.cwd(), dirName, "/cli/_help.txt")
     };
 
     makeDir(dirname(helpTextPath.debug));
