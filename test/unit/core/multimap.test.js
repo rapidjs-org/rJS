@@ -1,4 +1,4 @@
-const { MultiMap } = require("../../../debug/core/proxy/MultiMap");
+const { MultiMap } = require("../../../debug/core/MultiMap");
 
 
 const testKeys = [ "key1", "key2" ];

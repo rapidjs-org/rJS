@@ -1,8 +1,3 @@
-import { VFS as CoreVFS } from "../../core/thread/VFS"; // TODO: s.b.
-
-import { TConcreteAppAPI } from "../../_types";
-
-
 export let API: TConcreteAppAPI = null;
 
 export let VFS: CoreVFS = null; // TODO: Typings

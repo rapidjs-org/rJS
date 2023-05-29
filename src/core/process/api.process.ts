@@ -125,7 +125,7 @@ function end(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders
  * processing complexity is distributed to the threads favoring
  * maximum throughput performance.
  */
-export async function handleRequest(iReq: IBasicRequest, socket: Socket) {
+async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     const clientIP: string = socket.remoteAddress;
 
     // TODO: Benchmark rate limiter location/process level for

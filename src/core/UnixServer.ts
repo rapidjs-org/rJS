@@ -5,10 +5,13 @@ import { Socket, createConnection, createServer } from "net";
 import { rmSync } from "fs";
 import { join } from "path";
 
-import { IProxyIPCPackage } from "../_interfaces";
-
 
 type TCommandHandler = (data: unknown) => unknown;
+
+interface IProxyIPCPackage {
+    command: string;
+    arg: unknown;
+}
 
 
 export class UnixServer {

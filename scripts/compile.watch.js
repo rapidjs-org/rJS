@@ -1,39 +1,23 @@
 "use strict";
 
 
-const { existsSync, mkdirSync, linkSync, copyFileSync, statSync, readdirSync, rmSync } = require("fs");
-const { join, dirname } = require("path");
-const { exec, execSync } = require("child_process");
+const { statSync, readdirSync } = require("fs");
+const { join } = require("path");
+const { exec } = require("child_process");
+
+const compile = require("./compile");
 
 
-const activeLangs = [ "TypeScript" ];
-process.argv.slice(2).includes("--cpp")
-&& activeLangs.push("C++");
+const compileCPP = process.argv.slice(2).includes("--cpp");
 
-
-log(`• WATCH COMPILE { ${activeLangs.join(", ")} }`);
-
-
-// Create /debug files directory
-const shmPath = {
-    source: join(__dirname, "../src/core/shared-memory"),
-    debug: join(__dirname, "../debug/core/shared-memory")
-};
-
-makeDir(shmPath.debug);
-
-const helpTextPath = {
-    source: join(__dirname, "../src/cli/_help.txt"),
-    debug: join(__dirname, "../debug/cli/_help.txt")
-};
-
-makeDir(dirname(helpTextPath.debug));
-!existsSync(helpTextPath.debug)
-&& linkSync(helpTextPath.source, helpTextPath.debug);
+compile.log(`• WATCH COMPILE { ${
+    [ "TypeScript" ]
+    .concat(compileCPP ? ["C++"] : [])
+    .join(", ")
+} }`);
 
 
 let tsLogGroupOpen;
-
 // Start TypeScript compiler (sub-)process in background
 const child = exec(`tsc -w --preserveWatchOutput --outDir ${join(__dirname, "../debug/")}`);
 // Adopt TypeScript compiler output
@@ -44,7 +28,7 @@ child.stdout.on("data", data => {
     }
     
     !tsLogGroupOpen
-    && logBadge("TypeScript", [ 23, 155, 231 ]);
+    && compile.logBadge("TypeScript", [ 23, 155, 231 ]);
     console.log(`${
         (tsLogGroupOpen && !/^[0-9]{2}:[0-9]{2}:[0-9]{2} \-/.test(data))
         ? "\n" : ""
@@ -63,61 +47,32 @@ child.stdout.on("data", data => {
 
 
 // Set up shared memory files / C++ source modification watch
-const detectionFrequency = 2500;;
+const shmPath = compile.getSHMPath("./debug/");
+const detectionFrequency = 2500;
 const shmDirents = readdirSync(shmPath.source, {
     withFileTypes: true
 })
 .filter(dirent => dirent.isFile())
 .filter(dirent => !/\.ts$/.test(dirent.name));
 
-activeLangs.includes("C++")
+compileCPP
 && setInterval(_ => {
     for(const dirent of shmDirents) {
         if(!shmFileModified(join(shmPath.source, dirent.name))) {
             continue;
         }
 
-        compileCPP();
+        compile.compileCPP("./debug/");
+
+        tsLogGroupOpen = false;
 
         return;
 	}
 }, detectionFrequency);
 
-// Initially compile C++ source
-compileCPP();
+// Initially compile
+compile.compile("./debug/");
 
-
-function log(message) {
-    process.stdout.write(`\x1b[2m${message}\n${Array.from({ length: message.length }, _ => "‾").join("")}\x1b[0m`);
-}
-
-function logBadge(message, colorRgb) {
-    console.log(`\n\x1b[1m\x1b[48;2;${colorRgb[0]};${colorRgb[1]};${colorRgb[2]}m\x1b[38;2;255;255;255m ${message} \x1b[0m\n`);
-}
-
-
-function compileCPP() {
-    logBadge("C++", [ 220, 65, 127 ]);
-
-    try {
-        console.log(join(shmPath.source))
-        execSync("node-gyp build", {
-            cwd: join(shmPath.source),
-            stdio: "inherit"
-        });
-        
-        const destPath = join(shmPath.debug, "./shared-memory.node");
-        rmSync(destPath, {
-            force: true
-        });
-        copyFileSync(join(shmPath.source, "./build/Release/shared_memory.node"),
-                     destPath);
-    } catch(err) {
-        console.log(err);
-    }
-
-    tsLogGroupOpen = false;
-}
 
 function shmFileModified(path) {
     const fileModified = time => {
@@ -127,12 +82,4 @@ function shmFileModified(path) {
     const stats = statSync(path);
 
     return (fileModified(stats.birthtime) || fileModified(stats.mtimeMs));
-}
-
-function makeDir(path) {
-    !existsSync(path)
-    && mkdirSync(path, {
-        force: true,
-        recursive: true
-    });
 }

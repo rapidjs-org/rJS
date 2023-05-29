@@ -1,12 +1,7 @@
-import { TConcreteAppAPI } from "../../_types";
-import { IRequest, IResponse } from "../../_interfaces";
-
 import { API, define as defineAPI } from "./api.core";
 import { RequestHandler } from "./RequestHandler";
 
-
-
-
+import * as TConcreteAppAPIT from "../../../types/core/thread/api.concrete";
 
 export default function(apiObj: TConcreteAppAPI) {
     defineAPI(apiObj);

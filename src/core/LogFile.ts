@@ -18,9 +18,7 @@ export class LogFile extends ALogIntercept {
         super();
 
         if(!path) return;
-
-        // TODO: Global log path configuration?
-
+        
         this.path = path;
 
         mkdirSync(this.path, {

@@ -5,6 +5,7 @@ package-lock.json
 node_modules/
 
 debug/
+dist/
 
 src/core/shared-memory/build/
 

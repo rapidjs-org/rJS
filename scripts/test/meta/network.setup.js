@@ -16,5 +16,5 @@ global.TEST_SERVER = http
 .listen(8080, () => {
     console.log("Start test server");
 
-    global.SETUP();
+    global.COMPLETE();
 }); 

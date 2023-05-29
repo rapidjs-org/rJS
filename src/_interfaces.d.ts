@@ -6,12 +6,6 @@
 import { TCookies, THeaders, THighlevelCookieIn } from "./_types";
 
 
-export interface IProxyIPCPackage {
-    command: string;
-    arg: unknown;
-}
-
-
 export interface IBasicRequest {
     headers: THeaders;
     hostname: string;

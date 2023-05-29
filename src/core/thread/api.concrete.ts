@@ -5,9 +5,8 @@
 
 
 import { EmbedContext } from "../EmbedContext";
+import { Config } from "../Config";
 
-
-export { Config } from "../Config";
 
 export { Plugin } from "./Plugin";
 export { Cache } from "./Cache";
@@ -15,4 +14,5 @@ export { VFS } from "./VFS";
 export { ResponsePackage as Response } from "./ResponsePackage";
 
 
+export const config = Config.global;
 export const mode = EmbedContext.global.mode;

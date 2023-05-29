@@ -12,7 +12,7 @@ type TExceptionHandler = ((err: Error) => void);
  */
 export class ErrorControl {
 
-    constructor(initExCallback?: TExceptionHandler, eventualExCallback?: TExceptionHandler, keepAliveDelay: number = 30000, suppressErrorLog: boolean = false) {
+    constructor(initExCallback?: TExceptionHandler, eventualExCallback?: TExceptionHandler, keepAliveDelay: number = 30000) {
         const initErrorHandler = (err: Error) => {
             console.error(err);
 
@@ -26,8 +26,7 @@ export class ErrorControl {
             process.removeListener("once", initErrorHandler);
 
             process.on("uncaughtException", (err: Error) => {
-                !suppressErrorLog
-                && console.error(err);
+                console.error(err);
                 
                 eventualExCallback && eventualExCallback(err);
             });

@@ -9,7 +9,7 @@ const { TestFramework } = require("./framework");
 process.on("exit", async () => {
     console.log();
 
-    evalEnvScript("cleanup");
+    await evalEnvScript("cleanup");
 });
 
 
@@ -45,24 +45,17 @@ TestFramework.defineEquals((actual, expected, origEquals) => {
 });
 
 
-evalEnvScript("setup", (hasSetup) => {
-    (!hasSetup
-    ? new Promise(resolve => resolve())
-    : new Promise(resolve => {
-        global.SETUP = () => resolve();
-    }))
-    .then(() => {
-        process.stdout.write("\x1b[0m");
-
-        TestFramework.init({
-            name: "Network",
-            badgeColorBg: [ 220, 220, 255 ]
-        });
+evalEnvScript("setup", () => {
+    process.stdout.write("\x1b[0m");
+    
+    TestFramework.init({
+        name: "Network",
+        badgeColorBg: [ 220, 220, 255 ]
     });
 });
 
 
-async function evalEnvScript(label, proceedCallback) {
+async function evalEnvScript(label, proceedCallback = (() => {})) {
     const envScriptPath = join(
         !lstatSync(TestFramework.testPath).isDirectory() ? dirname(TestFramework.testPath) : TestFramework.testPath
     , `network.${label}.js`);
@@ -71,20 +64,24 @@ async function evalEnvScript(label, proceedCallback) {
     
     console.log(`\x1b[1m\x1b[2m\x1b[4m⁞ ENVIRONMENT ${label.toUpperCase()}\x1b[0m\x1b[2m\x1b[74m`);
     
-    require(envScriptPath);
-    
-    proceedCallback(true);
+    new Promise(resolve => {
+        global.COMPLETE = (() => resolve());
+
+        require(envScriptPath);
+
+        setTimeout(resolve, 5000);
+    }).then(proceedCallback);
 }
 
 function performRequest(endpoint) {
     return new Promise((resolve, reject) => {
         const url = new URL(endpoint.url);
-        
+                
         const req = ((url.protocol.toLowerCase() === "https") ? https : http)
         .request({
             hostname: url.hostname,
             port: url.port,
-            path: url.href,
+            pathname: url.pathname,
             method: endpoint.method || "GET",
             headers: endpoint.headers || {}
         }, res => {

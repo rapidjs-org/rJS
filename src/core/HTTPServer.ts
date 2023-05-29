@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { Socket } from "net";
-import { Server, ServerOptions, RequestListener, IncomingMessage, createServer as createHTTPServer } from "http";
+import { Server, ServerOptions, RequestListener, IncomingMessage, ServerResponse, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 import { SecureContext, createSecureContext } from "tls";
 import { join } from "path";
@@ -39,21 +39,27 @@ export class HTTPServer {
                     return this.getSecureContext(hostname);
                 }
             } : {}),
-        }, (req: IncomingMessage) => {
-            let hostname: string = [ req.headers["host"] ?? "localhost" ]
-            .flat()[0]
-            .replace(/:[0-9]+$/, "");
-            
-            const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}:${EmbedContext.global.port}${req.url}`;
-            
-            const iReq: IBasicRequest = {
-                headers: req.headers,
-                hostname: hostname,
-                method: req.method,
-                url: url
-            };
-            
-            requestHandlerCallback(iReq, req.socket);
+        }, (req: IncomingMessage, res: ServerResponse) => {
+            try {
+                let hostname: string = [ req.headers["host"] ?? "localhost" ]
+                .flat()[0]
+                .replace(/:[0-9]+$/, "");
+                const url: string = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}:${EmbedContext.global.port}${req.url}`;
+                
+                const iReq: IBasicRequest = {
+                    headers: req.headers,
+                    hostname: hostname,
+                    method: req.method,
+                    url: url
+                };
+                
+                requestHandlerCallback(iReq, req.socket);
+            } catch(err) {
+                res.statusCode = 500;
+                res.end();
+                
+                throw err;
+            }
         })
         .listen(EmbedContext.global.port, () => {
             listensCallback();

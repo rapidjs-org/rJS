@@ -10,7 +10,6 @@ import _config from "../_config.json";
 
 import { Socket } from "net";
 import { join } from "path";
-import { cpus } from "os";
 
 import { IBasicRequest } from "../../_interfaces";
 import { Args } from "../../Args";
@@ -21,7 +20,6 @@ import { LogFile } from "../LogFile";
 import { ErrorControl } from "../ErrorControl";
 import { EmbedContext } from "../EmbedContext";
 import { ProcessPool } from "../ProcessPool";
-import { handleRequest } from "../process/api.process";
 
 
 /**
@@ -38,26 +36,19 @@ export async function serve() {
         // OR: Use standlone always first, but add proxy cluster automatically in case additional app is started???
     } catch {}
 
-    let handle: ((iReq: IBasicRequest, socket: Socket) => void);
-    if(cpus().length > 1) {
-        const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
-        
-        processPool.on("stdout", (message: string) => console.log(message));
-        processPool.on("stderr", (err: string) => console.error(err));
-        
-        processPool.init();
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
+    
+    processPool.on("stdout", (message: string) => console.log(message));
+    processPool.on("stderr", (err: string) => console.error(err));
+    
+    processPool.init();
 
-        handle = (iReq, socket) => {
+    try {
+        const server = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
             processPool.assign({
                 iReq, socket
             });
-        };
-    } else {
-        handle = handleRequest;
-    }
-    
-    try {
-        const server = new HTTPServer(handle, () => {
+        }, () => {
             const logsDirPath: string = Args.global.parseOption("logs", "L").string;
             logsDirPath
             && new LogFile(join(EmbedContext.global.path, logsDirPath));
