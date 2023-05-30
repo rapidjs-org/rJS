@@ -1,7 +1,7 @@
 import _config from "../_config.json";
 
 
-import { Dirent, existsSync, readdirSync } from "fs";
+import { Dirent, existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 
 import { TJSONObject } from "../../types";
@@ -10,6 +10,7 @@ import { EmbedContext } from "../EmbedContext";
 import { Config } from "../Config";
 
 import { VFS } from "./VFS";
+import { PLUGIN_NAME_REGEX } from "./PLUGIN_NAME_REGEX";
 
 
 /**
@@ -20,9 +21,9 @@ import { VFS } from "./VFS";
  */
 export class Plugin {
 
-    private static pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
-    private static config: Config = new Config("plugins");
-    private static registry: Map<string, Plugin> = new Map();
+    private static readonly pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
+    private static readonly config: Config = new Config("plugins");
+    private static readonly registry: Map<string, Plugin> = new Map();
 
     public static forEach(loopCallback: ((plugin: Plugin) => void)) {
         this.registry.forEach(loopCallback);
@@ -37,21 +38,24 @@ export class Plugin {
         .forEach((dirent: Dirent) => {
             if(!dirent.isDirectory()) return;
 
+            if(!PLUGIN_NAME_REGEX.test(dirent.name)) {
+                throw new SyntaxError(`Invalid plug-in name '${dirent.name}'`);
+            }   // TODO: From package, too
+
             new Plugin(dirent.name)
         });
     }
 
-    private readonly name: string;
-
+    public readonly name: string;
     public readonly config: Config;
-    public readonly VFS: VFS;
+    public readonly vfs: VFS;
 
     constructor(name: string) {
         this.name = name;
 
         const subConfigObj: TJSONObject = Plugin.config.get(this.name).object();
         this.config = subConfigObj ? new Config(subConfigObj) : null;
-        this.VFS = new VFS(join(Plugin.pluginsDirPath, name));
+        this.vfs = new VFS(join(Plugin.pluginsDirPath, name));
 
         Plugin.registry.set(this.name, this);
     }

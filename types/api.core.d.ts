@@ -30,10 +30,6 @@ interface IHighlevelLocale {
 
     region?: string;
 }
-interface IFileStamp {
-    ETag: string;
-    data: string;
-}
 
 
 export type THeaders = Record<string, string>;
@@ -46,9 +42,8 @@ export type TCookies = Record<string, {
     httpOnly?: boolean;
     sameSite?: string;
 }>;
-export type TEncoding = IHighlevelEncoding[];
 export type TLocale = IHighlevelLocale[];
-export type TURL = IHighlevelURL;
+export type TUrl = IHighlevelURL;
 
 
 export interface IRuntimeMode {
@@ -58,12 +53,11 @@ export interface IRuntimeMode {
 export interface IRequest {
     method: string;
     headers: THeaders;
-    url: IHighlevelURL;
+    url: TLocale;
     ip: string;
     
     body?: unknown
     cookies?: TCookies;
-    encoding: TEncoding;
     locale?: TLocale;
 }
 export interface IResponse {
@@ -83,13 +77,14 @@ export class Config {
     public static readonly global: Config;
     constructor(nameOrDefaultObj: string|string[]|TJSONObject, defaultConfigObj: TJSONObject);
     private createResolveInterface(value: unknown): ITypeResolveInterface;
-    public mergeDefault(defaultConfigObj: TJSONObject): void;
     public get(...nestedKey: string[]): ITypeResolveInterface;
+    public mergeDefault(defaultConfigObj: TJSONObject): void;
 }
 export class Plugin {
     public static forEach(loopCallback: ((plugin: Plugin) => void)): void;
     public readonly config: Config;
-    public readonly VFS: VFS;
+    public readonly name: string;
+    public readonly vfs: VFS;
     constructor(name: string);
 }
 export class Cache<K, V> {
@@ -101,10 +96,10 @@ export class Cache<K, V> {
 }
 export class VFS {
     constructor(root: string);
-    public read(path: string): IFileStamp;
-    public writeVirtual(path: string, data: string): void;
-    public writeDisc(path: string, data: string): void;
     public exists(path: string): boolean;
+    public read(path: string): IFileStamp;
+    public writeDisc(path: string, data: string): void;
+    public writeVirtual(path: string, data: string): void;
 }
 export class Response {
     constructor(message: string, status: number, headers: Record<string, string>, cookies: TCookies);

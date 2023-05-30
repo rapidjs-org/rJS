@@ -2,6 +2,8 @@
     "compoundPageIndicator": "#",
     "defaultFileExtension": "html",
     "defaultFileName": "index",
+    "pluginReferenceConcatenator": "+",
+    "pluginReferenceIndicator": "plug-in::",
     "privateFileIndicator": "_",
     "webDirName": "web"
 }

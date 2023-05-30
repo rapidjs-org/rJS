@@ -49,7 +49,7 @@ export class Response {
 
         // Apply high level headers
         for(const name in sRes.headers) {
-            this.headers[name] , sRes.headers[name];
+            this.headers[name] = sRes.headers[name];
         }
         
         // Default headers (prioritized)

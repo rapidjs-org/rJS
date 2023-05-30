@@ -3,7 +3,7 @@
  */
 
 
-import { TCookies, TEncoding, THeaders, TLocale } from "./types";
+import { TCookies, THeaders, TLocale, TUrl } from "./types";
 
 
 export interface IRuntimeMode {
@@ -22,12 +22,11 @@ export interface IBasicRequest {
 export interface IRequest {
     method: string;
     headers: THeaders;
-    url: IHighlevelURL;
+    url: TUrl;
     ip: string;
     
     body?: unknown
     cookies?: TCookies;
-    encoding: TEncoding;
     locale?: TLocale;
 }
 

@@ -222,7 +222,6 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
         method: method,
         url: highlevelURL,
         cookies: highlevelCookies,
-        encoding: highlevelEncoding,
         locale: highlevelLocale,
         headers: iReq.headers,  // TODO: High-level headers interface?
         
@@ -262,7 +261,7 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
         console.log(sReq.url.pathname)
         console.log(sResOverload.message)
 
-        let acceptedEncoding: string = sReq.encoding
+        let acceptedEncoding: string = highlevelEncoding
         .shift()?.type
         .replace(/^\*$/, "gzip");
         
