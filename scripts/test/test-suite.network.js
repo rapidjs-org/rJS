@@ -13,9 +13,7 @@ process.on("exit", async () => {
 });
 
 
-TestFramework.definePrepare(endpoint => {
-    return performRequest(endpoint);
-});
+TestFramework.definePrepare(performRequest);
 
 TestFramework.defineEquals((actual, expected, origEquals) => {
     const isAtomic = value => [ "string", "number", "boolean" ].includes(typeof(value));
@@ -50,7 +48,8 @@ evalEnvScript("setup", () => {
     
     TestFramework.init({
         name: "Network",
-        badgeColorBg: [ 220, 220, 255 ]
+        badgeColorBg: [ 220, 220, 255 ],
+        testCaseTimeout: 5000
     });
 });
 

@@ -13,7 +13,7 @@ export class ResponsePackage implements IResponse {
     public readonly headers?: THeaders;
     public readonly message?: string|number|boolean|Buffer;
     
-    constructor(message: string, status: number = 200, headers: THeaders = {}, cookies: TCookies = {}) {
+    constructor(message: string|number|boolean|Buffer, status: number = 200, headers: THeaders = {}, cookies: TCookies = {}) {
         this.message = message;
         this.status = status;
         this.headers = headers;

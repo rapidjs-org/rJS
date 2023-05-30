@@ -80,7 +80,7 @@ export class HTTPServer {
             errorCallback
             && errorCallback(err);
 
-            console.error(`HTTP/TCP server startup error: ${err.code}`);
+            throw new Error(`HTTP/TCP server startup error: ${err.code}`);
         });
     }
 

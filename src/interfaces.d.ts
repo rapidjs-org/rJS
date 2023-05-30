@@ -76,3 +76,9 @@ export interface IHighlevelCookie {
     httpOnly?: boolean;
     sameSite?: string;
 }
+
+
+export interface IFileStamp {
+    ETag: string;
+    data: string|Buffer;
+}

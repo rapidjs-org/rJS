@@ -51,13 +51,16 @@ class TestFramework {
     static exitTimeout;
     static customEquals;
     static customPrepare;
+    static testCaseTimeout;
 
-    static init(config = {}) {
+    static init(config = {}, testCaseTimeout = 3000) {
         if(!existsSync(TestFramework.testPath)) throw new ReferenceError(`Test target not found '${TestFramework.testPath}'`);
         
         console.log(`\n\x1b[1m\x1b[48;2;${config.badgeColorBg.join(";")}m${config.badgeFgLight ? "\x1b[97m" : ""} ${config.name.toUpperCase()} TESTS \x1b[0m`);
         
         TestFramework.scanDir(TestFramework.testPath);
+
+        TestFramework.testCaseTimeout = testCaseTimeout;
     }
 
     static serialize(value) {
@@ -191,7 +194,7 @@ class TestFramework {
                         console.error(`\x1b[31m${err.stack ? err.stack : `${err.name}: ${err.message}`}\x1b[0m\n`);
 
                         process.exit(1);
-                    }, 3000);
+                    }, TestFramework.testCaseTimeout);
                     
                     actual = TestFramework.customPrepare(actual);
 

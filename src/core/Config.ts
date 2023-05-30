@@ -143,7 +143,7 @@ export class Config {
                 return +value.toString();
             },
             string: () => {
-                return value.toString();
+                return value?.toString();
             },
             object: () => {
                 return value as TJSONObject
@@ -172,7 +172,7 @@ export class Config {
         } catch {
             throw new SyntaxError(`Required configuration missing '${nestedKey.join(".")}'`);    // TODO: To resolve interface to depict required type?
         }
-
+        
         return this.createResolveInterface(value);
     }
 

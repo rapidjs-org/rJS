@@ -1,7 +1,5 @@
+import * as CoreAPI from "../../core/api/api.core";
 import { IRequest } from "../../interfaces";
-
-import CoreAPI from "../api.core";
-
 
 import { RequestHandler } from "./RequestHandler";
 

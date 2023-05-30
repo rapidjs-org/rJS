@@ -1,6 +1,8 @@
 import { statSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, normalize } from "path";
 
+import { IFileStamp } from "../../interfaces";
+
 import { EmbedContext } from "../EmbedContext";
 
 import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
@@ -13,15 +15,6 @@ import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 interface IFileReference {
     ctime: number;
     mtime: number;
-}
-
-/**
- * Interface encoding a file stamp containing information
- * relevant for file system abstraction implementations.
- */
-interface IFileStamp {
-    ETag: string;
-    data: string;
 }
 
 
@@ -62,7 +55,7 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
         };
     }
 
-    private getFileStamp(path: string, data: string): IFileStamp {
+    private getFileStamp(path: string, data: string|Buffer): IFileStamp {
         const fileReference: IFileReference = this.getFileReference(path);
         
         const eTag = `${fileReference.ctime}${fileReference.mtime}`;  // Quick time stats value (inconsistent in multi-machine setups)
@@ -109,13 +102,20 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
             return true;
         }
         
-        const pathOnDisc = this.getAbsolutePath(path);
+        const pathOnDisc: string = this.getAbsolutePath(path);
         
         if(!existsSync(pathOnDisc)) {
             return false;
         }
 
-        const fileContents = String(readFileSync(pathOnDisc));
+        let fileContents: string|Buffer = readFileSync(pathOnDisc);
+        try {
+            fileContents = new TextDecoder("utf8", {
+                fatal: true
+            })
+            .decode(fileContents);
+        } catch {}
+                
         const fileStamp: IFileStamp = this.getFileStamp(path, fileContents);
         
         super.write(path, fileStamp);

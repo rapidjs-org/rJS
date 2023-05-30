@@ -1,6 +1,7 @@
 {
+    "compoundPageIndicator": "#",
     "defaultFileExtension": "html",
-    "indexName": "index",
+    "defaultFileName": "index",
     "privateFileIndicator": "_",
     "webDirName": "web"
 }

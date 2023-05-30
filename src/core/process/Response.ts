@@ -15,6 +15,8 @@ import { Config } from "../Config";
  */
 export class Response {
 
+    private static readonly staticHeaders = Config.global.get("headers").object() as THeaders;
+
     private readonly headers: THeaders;
 
     constructor(socket: Socket, sResOverload: TResponseOverload, prioritizedHeaders?: THeaders) {
@@ -40,32 +42,32 @@ export class Response {
         ? String(sRes.message).length
         : 0;
         
-        // Default headers (overridable)
-        this.setHeader("Server", _config.appNameLong);
-        this.setHeader("X-XSS-Protection", "1; mode=block");
-        this.setHeader("Connection", "keep-alive");
-        this.setHeader("Keep-Alive", "timeout=5");
-        
+        // Static headers (overridable)
+        for(const name in Response.staticHeaders) {
+            this.headers[name] = Response.staticHeaders[name];
+        }
+
         // Apply high level headers
         for(const name in sRes.headers) {
-            this.setHeader(name, sRes.headers[name]);
+            this.headers[name] , sRes.headers[name];
         }
         
         // Default headers (prioritized)
-        this.setHeader("Cache-Control", `public, max-age=${Config.global.get("cache", "client").number()}, must-revalidate`);
-        // this.setHeader("Strict-Transport-Security", runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null); // TODO: How to infere TLS status?
-        this.setHeader("Content-Length", String(contentLength));
-        this.hasHeader("Content-Type")
-        && this.setHeader("X-Content-Type-Options", "nosniff");
+        this.headers["Cache-Control"] = `public, max-age=${Config.global.get("cache", "client").number()}, must-revalidate`;
+        // this.headers["Strict-Transport-Security"] = runsSecure ? `max-age=${CONFIG.data.cache.client}; includeSubDomains` : null; // TODO: How to infere TLS status?
+        this.headers["Content-Length"] = String(contentLength);
+        !!this.headers["Content-Type"]
+        && (this.headers["X-Content-Type-Options"] = "nosniff");
+
         for(const name in prioritizedHeaders) {
-            this.setHeader(name, prioritizedHeaders[name]);
+            this.headers[name] = prioritizedHeaders[name];
         }
         
         // Set cookie header
         for(const name in sRes.cookies) {
             const cookie: IHighlevelCookie = sRes.cookies[name];
             
-            this.setHeader("Set-Cookie", `${name}=${cookie.value}${
+            this.headers["Set-Cookie"] = `${name}=${cookie.value}${
                 cookie.maxAge ? `; Max-Age: ${cookie.maxAge}`: ""
             }${
                 cookie.domain ? `; Domain: ${cookie.domain}`: ""
@@ -77,7 +79,7 @@ export class Response {
                 cookie.httpOnly ? "; HttpOnly" : ""
             }${
                 ""// runsSecure ? "; Secure" : "" // TODO: TLS status (s.a.)?
-            }`);
+            }`;
         }
         
         // TODO: Note that string messages are compressed
@@ -101,10 +103,10 @@ export class Response {
             data.push(`${name}: ${value}`);
         }
         data.push("", "");
-
+        
         const resBuffer: Buffer = Buffer.concat([
             Buffer.from(data.join("\r\n"), "utf-8"),
-            !Buffer.isBuffer(sRes.message) ? Buffer.from((sRes.message ?? "").toString()) : sRes.message,
+            !Buffer.isBuffer(sRes.message) ? Buffer.from((String(sRes.message ?? ""))) : sRes.message,
             Buffer.from("\r\n")
         ]);
 
@@ -114,23 +116,4 @@ export class Response {
         socket.end(() => socket.destroy());
     }
 
-    /**
-     * Set a specific header for the response.
-     * @param name Header name
-     * @param value Header value
-     */
-    private setHeader(name: string, value: string|string[]) {
-        this.headers[name] = value;
-    }
-
-    /**
-     * Check whether a specific header for the response has
-     * been set.
-     * @param name Header name
-     * @returns Whether the header is set
-     */
-    private hasHeader(name: string) {
-        return !!this.headers[name];
-    }
-    
 }

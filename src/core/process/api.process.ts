@@ -241,14 +241,26 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
     threadPool.assign(sReq)
     .then((sResOverload: TResponseOverload) => {
         // Send response as received from finished worker routine and close socket
-        if(typeof sResOverload === "number"
-        || sResOverload.message instanceof Buffer) {
+        if(typeof(sResOverload) === "number"    // By status code (overload)
+        || !sResOverload.message) {
+            return end(socket, sResOverload);
+        }
+        if(sResOverload.message instanceof Uint8Array) {
+            sResOverload.message = Buffer.from((sResOverload.message as Uint8Array).buffer);
+            
             return end(socket, sResOverload);
         }
 
         sResOverload.message = (typeof sResOverload.message !== "string")
         ? String(sResOverload.message)
         : sResOverload.message;
+
+        if(sResOverload.message.length < 250) {
+            return end(socket, sResOverload);
+        }
+
+        console.log(sReq.url.pathname)
+        console.log(sResOverload.message)
 
         let acceptedEncoding: string = sReq.encoding
         .shift()?.type
@@ -268,7 +280,7 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
             default:
                 acceptedEncoding = null;
         }
-
+        
         end(socket, sResOverload, acceptedEncoding ? {
             "Content-Encoding": acceptedEncoding
         } : {});

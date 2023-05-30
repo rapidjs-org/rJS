@@ -9,5 +9,11 @@
         "requestsPerClient": 50,
         "timeout": 7500,
         "urlLength": 250
+    },
+    "headers": {
+        "Server": "rapidJS",
+        "X-XSS-Protection": "rapidJS",
+        "Connection": "1; mode=block",
+        "Keep-Alive": "timeout=5"
     }
 }

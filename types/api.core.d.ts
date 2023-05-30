@@ -48,6 +48,7 @@ export type TCookies = Record<string, {
 }>;
 export type TEncoding = IHighlevelEncoding[];
 export type TLocale = IHighlevelLocale[];
+export type TURL = IHighlevelURL;
 
 
 export interface IRuntimeMode {
@@ -71,6 +72,10 @@ export interface IResponse {
     cookies?: TCookies;
     headers?: THeaders;
     message?: string|number|boolean|Buffer;
+}
+export interface IFileStamp {
+    ETag: string;
+    data: string|Buffer;
 }
 
 
