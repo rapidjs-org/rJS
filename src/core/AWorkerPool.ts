@@ -41,10 +41,10 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
     private readonly idleWorkers: Worker[] = [];
     private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
-    constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
+    constructor(baseSize: number, timeout: number = 30000, maxPending: number = Infinity) {
         super();
 
-        this.baseSize = baseSize;
+        this.baseSize = baseSize ?? cpus().length;
         this.timeout = timeout;
         this.maxPending = maxPending;
     }

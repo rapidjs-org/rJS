@@ -1,7 +1,7 @@
 "use strict";
 
 
-const { existsSync, mkdirSync, linkSync, copyFileSync, rmdirSync, rmSync } = require("fs");
+const { existsSync, mkdirSync, copyFileSync, rmdirSync, rmSync, readdirSync } = require("fs");
 const { join, dirname } = require("path");
 const { execSync } = require("child_process");
 
@@ -38,9 +38,23 @@ module.exports.compile = function(dirName) {
     const shmPath = module.exports.getSHMPath(dirName);
     makeDir(shmPath.destination);
 
-    const helpPath = join(process.cwd(), dirName, "/cli/_help.txt");
+    const helpPath = join(process.cwd(), dirName, "./cli/_help.txt");
     makeDir(dirname(helpPath));
     copyFileSync(join(process.cwd(), "./src/cli/_help.txt"), helpPath);
+
+    const appsAssetPluginModulesPath = {
+        source: join(process.cwd(), "./src/apps/asset/plugin-modules"),
+        destination: join(process.cwd(), dirName, "./apps/asset/plugin-modules")
+    };
+    makeDir(appsAssetPluginModulesPath.destination);
+    readdirSync(appsAssetPluginModulesPath.source, {
+        withFileTypes: true
+    })
+    .filter(dirent => dirent.isFile())
+    .forEach(dirent => {
+        appsAssetPluginModulesPath
+        copyFileSync(join(appsAssetPluginModulesPath.source, dirent.name), join(appsAssetPluginModulesPath.destination, dirent.name));
+    });
     
     return module.exports.compileCPP(dirName);
 };

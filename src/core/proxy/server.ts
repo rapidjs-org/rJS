@@ -105,7 +105,7 @@ unixServer.registerCommand("embed", (arg: unknown) => {
     
     if(contextPools.has(embedContext.hostnames)) return false;
 
-    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext);
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext, EmbedContext.global.mode.DEV ? 1 : null);
     
     const logsDirPath: string = embedContext.argsParser.parseOption("logs").string;
     if(logsDirPath) {

@@ -21,7 +21,6 @@ import { PLUGIN_NAME_REGEX } from "./PLUGIN_NAME_REGEX";
  */
 export class Plugin {
 
-    private static readonly pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
     private static readonly config: Config = new Config("plugins");
     private static readonly registry: Map<string, Plugin> = new Map();
 
@@ -30,14 +29,16 @@ export class Plugin {
     }
 
     public static load() {
-        if(!existsSync(Plugin.pluginsDirPath)) return;
+        const pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
 
-        readdirSync(Plugin.pluginsDirPath, {
+        if(!existsSync(pluginsDirPath)) return;
+
+        readdirSync(pluginsDirPath, {
             withFileTypes: true
         })
         .forEach((dirent: Dirent) => {
             if(!dirent.isDirectory()) return;
-
+            
             if(!PLUGIN_NAME_REGEX.test(dirent.name)) {
                 throw new SyntaxError(`Invalid plug-in name '${dirent.name}'`);
             }   // TODO: From package, too
@@ -55,7 +56,7 @@ export class Plugin {
 
         const subConfigObj: TJSONObject = Plugin.config.get(this.name).object();
         this.config = subConfigObj ? new Config(subConfigObj) : null;
-        this.vfs = new VFS(join(Plugin.pluginsDirPath, name));
+        this.vfs = new VFS(join(_config.pluginsDir, name));
 
         Plugin.registry.set(this.name, this);
     }

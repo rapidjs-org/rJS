@@ -36,7 +36,7 @@ export async function serve() {
         // OR: Use standlone always first, but add proxy cluster automatically in case additional app is started???
     } catch {}
 
-    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
+    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), EmbedContext.global, EmbedContext.global.mode.DEV ? 1 : null);
     
     processPool.on("stdout", (message: string) => console.log(message));
     processPool.on("stderr", (err: string) => console.error(err));

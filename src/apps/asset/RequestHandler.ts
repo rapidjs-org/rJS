@@ -10,14 +10,17 @@ import { PLUGIN_NAME_REGEX } from "../../core/api/PLUGIN_NAME_REGEX";
 
 import { join } from "path";
 
-import "./Plugin";
+import "./PluginRegistry";
+
+
+type TPluginEndpointHandler = (body: unknown) => unknown;
 
 
 export class RequestHandler {
 
     private static readonly pluginReferenceRegex: RegExp = new RegExp(`\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
     private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS("./web/");
-
+    
     private readonly reqUrl: TUrl;
     private readonly reqHeaders: THeaders;
 
@@ -89,7 +92,7 @@ export class RequestHandler {
     }
 
     private handlePOST() {
-
+        
     }
 
     private redirect(redirectUrl: IHighlevelURL) {

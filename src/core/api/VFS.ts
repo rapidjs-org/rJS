@@ -103,7 +103,6 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
         }
         
         const pathOnDisc: string = this.getAbsolutePath(path);
-        
         if(!existsSync(pathOnDisc)) {
             return false;
         }

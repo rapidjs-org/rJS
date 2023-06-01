@@ -92,7 +92,7 @@ export async function embed() {
          * Start proxy process as initial embedding has failed and proxy
          * process is thus assumed to be missing.
          */
-        const proxyProcess = fork(join(__dirname, "./server.http"), EmbedContext.global.args, {
+        const proxyProcess = fork(join(__dirname, "./server"), EmbedContext.global.args, {
             cwd: process.cwd(),
             detached: true
         });
