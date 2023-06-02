@@ -2,10 +2,10 @@
     "compoundPageIndicator": "#",
     "defaultFileExtension": "html",
     "defaultFileName": "index",
-    "pluginClientModuleName": "client.js",
+    "pluginClientModuleName": "rjs.client.js",
     "pluginReferenceConcatenator": "+",
     "pluginReferenceIndicator": "plug-in::",
-    "pluginServerModuleName": "server.js",
+    "pluginServerModuleName": "rjs.server.js",
     "privateFileIndicator": "_",
     "webDirName": "web"
 }

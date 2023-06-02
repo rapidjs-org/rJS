@@ -13,9 +13,6 @@ import { join } from "path";
 import "./PluginRegistry";
 
 
-type TPluginEndpointHandler = (body: unknown) => unknown;
-
-
 export class RequestHandler {
 
     private static readonly pluginReferenceRegex: RegExp = new RegExp(`\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
@@ -92,7 +89,7 @@ export class RequestHandler {
     }
 
     private handlePOST() {
-        
+
     }
 
     private redirect(redirectUrl: IHighlevelURL) {

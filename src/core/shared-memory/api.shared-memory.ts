@@ -28,7 +28,7 @@ const reactivateTimeoutValue: number = 1000 * 60 * 5;
  * Register whether shared memory ca be accessed in order to
  * circumvent repeated failing low-level memory access approaches.
  */
-let isActive: boolean = true;
+let isActive: boolean = false;  // TODO: Set 'true' once SHM implementation is ready
 
 
 /*

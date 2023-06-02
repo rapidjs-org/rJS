@@ -11,7 +11,8 @@ import { join } from "path";
 
 interface IPlugin {
     serverModuleReference: Module;
-    clientModuleText: string;
+
+    clientModuleText?: string;
 }
 
 
@@ -26,23 +27,36 @@ export class PluginRegistry {
     private static readonly registry: Map<string, IPlugin> = new Map();
 
     public static register(plugin: CoreAPI.Plugin) {
-        this.registry.set(plugin.name, {
-            serverModuleReference: this.requireServerModule(plugin.vfs),
-            clientModuleText: this.constructClientModule(plugin.name, plugin.vfs)
-        });
+        this.registry.set(plugin.name, this.requireModules(plugin.name, plugin.vfs));
     }
 
-    private static constructClientModule(pluginName: string, pluginVfs: CoreAPI.VFS): string {
-        if(!pluginVfs.exists(_config.pluginClientModuleName)) return null;
+    private static requireModules(pluginName: string, pluginVfs: CoreAPI.VFS): IPlugin {
+        if(!pluginVfs.exists(_config.pluginServerModuleName)) return null;
         
+        const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
+        console.log(serverModuleText)
+        
+        const moduleReference: Module = new Module("", require.main);
+        // @ts-ignore
+        moduleReference._compile(serverModuleText, "");
+
+        const serverModuleReference: Module = moduleReference.exports;
+
+        if(!pluginVfs.exists(_config.pluginClientModuleName)) return {
+            serverModuleReference
+        };
+
         let clientModuleText: string = pluginVfs.read(_config.pluginClientModuleName).data as string;
         
         clientModuleText = this.produceModuleText("client.plugin", {
             "NAME": pluginName,
-            "SCRIPT": clientModuleText
+            "SCRIPT": `${clientModuleText}`
         });
         console.log(clientModuleText)
-        return clientModuleText;
+        
+        return {
+            serverModuleReference, clientModuleText
+        };
     }
 
     private static produceModuleText(bareModuleFileName: string, substitutes: Record<string, string>): string {
@@ -54,19 +68,6 @@ export class PluginRegistry {
         }
 
         return moduleText;
-    }
-
-    private static requireServerModule(pluginVfs: CoreAPI.VFS): Module {
-        if(!pluginVfs.exists(_config.pluginServerModuleName)) return null;
-        
-        const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
-        console.log(serverModuleText)
-        
-        const moduleReference: Module = new Module("", require.main);
-        // @ts-ignore
-        moduleReference._compile(serverModuleText, "");
-
-        return moduleReference.exports;
     }
 
     public static getClientModuleText(name: string): string {
