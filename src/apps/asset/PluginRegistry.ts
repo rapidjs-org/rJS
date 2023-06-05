@@ -9,8 +9,11 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 
+type TModuleExports = Record<string, (...args: unknown[]) => unknown>;
+
+
 interface IPlugin {
-    serverModuleReference: Module;
+    serverModuleReference: TModuleExports;
 
     clientModuleText?: string;
 }
@@ -40,16 +43,22 @@ export class PluginRegistry {
         // @ts-ignore
         moduleReference._compile(serverModuleText, "");
 
-        const serverModuleReference: Module = moduleReference.exports;
+        const serverModuleReference: TModuleExports = moduleReference.exports;
 
         if(!pluginVfs.exists(_config.pluginClientModuleName)) return {
             serverModuleReference
         };
-
+        
         let clientModuleText: string = pluginVfs.read(_config.pluginClientModuleName).data as string;
         
         clientModuleText = this.produceModuleText("client.plugin", {
             "NAME": pluginName,
+            "THIS_BODY": `${
+                Object.keys(serverModuleReference)
+                .map((methodName: string) => `"${methodName}": (...args) => {}`)
+                .join(", ")
+            }`,
+            "REQUEST_METHOD_ID": "",
             "SCRIPT": `${clientModuleText}`
         });
         console.log(clientModuleText)
