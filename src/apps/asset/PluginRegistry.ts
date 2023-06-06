@@ -83,7 +83,7 @@ export class PluginRegistry {
         return this.registry.get(name).clientModuleText;
     }
 
-    public static getServerModuleReference(name: string): Module {
+    public static getServerModuleReference(name: string): TModuleExports {
         return this.registry.get(name).serverModuleReference;
     }
 
