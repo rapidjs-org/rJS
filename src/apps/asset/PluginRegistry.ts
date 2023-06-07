@@ -51,6 +51,11 @@ export class PluginRegistry {
         
         let clientModuleText: string = pluginVfs.read(_config.pluginClientModuleName).data as string;
         
+        let localRequestMethodId = "req";
+        while(clientModuleText.indexOf(localRequestMethodId) >= 0) {
+            localRequestMethodId = "_" + localRequestMethodId;
+        }
+
         clientModuleText = this.produceModuleText("client.plugin", {
             "NAME": pluginName,
             "THIS_BODY": `${
@@ -58,7 +63,7 @@ export class PluginRegistry {
                 .map((methodName: string) => `"${methodName}": (...args) => {}`)
                 .join(", ")
             }`,
-            "REQUEST_METHOD_ID": "",
+            "REQUEST_METHOD_ID": localRequestMethodId,
             "SCRIPT": `${clientModuleText}`
         });
         console.log(clientModuleText)

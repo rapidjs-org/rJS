@@ -29,4 +29,4 @@ const rJS = {};
 
 })();
 
-const rapidJS = rJS
+const rapidJS = rJS;
