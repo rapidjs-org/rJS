@@ -8,8 +8,11 @@ export class CLI {
 
     private static commandHandlers: Map<string, TCommandHandler> = new Map();
 
-    public static registerCommand(name: string, commandHandler: TCommandHandler) {
-        this.commandHandlers.set(name, commandHandler);
+    public static registerCommand(nameOrNames: string|string[], commandHandler: TCommandHandler) {
+        [ nameOrNames ].flat()
+        .forEach((name: string) => {
+            this.commandHandlers.set(name, commandHandler);
+        });
     }
 
     public static eval() {

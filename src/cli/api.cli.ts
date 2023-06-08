@@ -14,8 +14,11 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 import { Args } from "../Args";
+
 import * as standalone from "../core/standalone/api.standalone";
 import * as proxy from "../core/proxy/api.proxy";
+
+import * as pluginManager from "../plugin-manager/api.plugin-manager";
 
 import { CLI } from "./CLI";
 import { LogConsole } from "./LogConsole";
@@ -74,6 +77,14 @@ CLI.registerCommand("stopall", () => {
  */
 CLI.registerCommand("monitor", () => {
     proxy.monitor();
+});
+
+
+/*
+ * 
+ */
+CLI.registerCommand("install", () => {
+    pluginManager.install();
 });
 
 
