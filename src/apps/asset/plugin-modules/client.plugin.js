@@ -8,9 +8,13 @@ rJS[ "/*** @NAME ***/"  ] = ((/*** @REQUEST_METHOD_ID ***/) => {
             /*** @REQUEST_METHOD_ID ***/(prop);
         }
     });
+
+    const module = {
+        exports: {}
+    };
     
     /*** @SCRIPT ***/
 
-    return $this;
+    return module;
 
 })(performRequest);
