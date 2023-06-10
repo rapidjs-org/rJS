@@ -58,11 +58,13 @@ export class PluginRegistry {
 
         clientModuleText = this.produceModuleText("client.plugin", {
             "NAME": pluginName,
-            "THIS_BODY": `${
+            "CHANNELED_METHODS": `${
                 Object.keys(serverModuleReference)
-                .map((methodName: string) => `"${methodName}": (...args) => {}`)
-                .join(", ")
-            }`,
+                .map((methodName: string) => `function ${methodName} = (...args) => {${
+                    "..."
+                }}`)
+                .join("\n")
+            }\n`,
             "REQUEST_METHOD_ID": localRequestMethodId,
             "SCRIPT": `${clientModuleText}`
         });
