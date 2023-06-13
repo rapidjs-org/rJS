@@ -11,7 +11,7 @@ import { fork } from "child_process";
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { HTTPServer } from "../HTTPServer";
 import { UnixServer } from "../UnixServer";
 

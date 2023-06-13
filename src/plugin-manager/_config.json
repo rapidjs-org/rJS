@@ -1,3 +1,4 @@
 {
-    "downloadEndpoint": "todo"
+    "downloadEndpoint": "todo",
+    "packagePluginsKey": "rjs-plugins"
 }

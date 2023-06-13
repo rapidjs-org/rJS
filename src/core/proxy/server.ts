@@ -17,7 +17,7 @@ import { IBasicRequest } from "../../interfaces";
 import { LogFile } from "../LogFile";
 import { HTTPServer } from "../HTTPServer";
 import { UnixServer } from "../UnixServer";
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 import { ProcessPool } from "../ProcessPool";
 import { MultiMap } from "../MultiMap";

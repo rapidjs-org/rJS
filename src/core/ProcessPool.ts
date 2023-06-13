@@ -4,7 +4,7 @@ import { Socket } from "net";
 import { IBasicRequest } from "../interfaces";
 
 import { AWorkerPool } from "./AWorkerPool";
-import { EmbedContext } from "./EmbedContext";
+import { EmbedContext } from "../EmbedContext";
 
 
 /**

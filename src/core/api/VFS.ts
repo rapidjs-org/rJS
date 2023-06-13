@@ -3,7 +3,7 @@ import { join, normalize } from "path";
 
 import { IFileStamp } from "../../interfaces";
 
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 
 import { ASharedLimitDictionary } from "./ASharedLimitDictionary";
 

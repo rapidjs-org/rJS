@@ -8,7 +8,7 @@ import { join } from "path";
 import { IBasicRequest } from "../interfaces";
 
 import { MultiMap } from "./MultiMap";
-import { EmbedContext } from "./EmbedContext";
+import { EmbedContext } from "../EmbedContext";
 
 
 export class HTTPServer {

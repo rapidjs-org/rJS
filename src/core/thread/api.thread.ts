@@ -6,7 +6,7 @@
 import { parentPort } from "worker_threads";
 
 import { IRequest, IResponse } from "../../interfaces";
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 
 

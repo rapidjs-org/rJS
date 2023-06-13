@@ -6,7 +6,7 @@ import { join } from "path";
 
 import { TJSONObject } from "../../types";
 
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { Config } from "../Config";
 
 import { VFS } from "./VFS";

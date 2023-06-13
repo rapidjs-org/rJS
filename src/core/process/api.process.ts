@@ -9,7 +9,7 @@ import { gzipSync, brotliCompressSync, deflateSync } from "zlib";
 
 import { THeaders, TJSONObject, TResponseOverload, TCookies } from "../../types";
 import { IBasicRequest, IRequest, IHighlevelURL, IHighlevelLocale, IHighlevelEncoding } from "../../interfaces";
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { ErrorControl } from "../ErrorControl";
 
 import { ThreadPool } from "./ThreadPool";  // TODO: Dynamically retrieve context

@@ -1,7 +1,7 @@
 import { join, isAbsolute, normalize } from "path";
 
-import { IRuntimeMode } from "../interfaces";
-import { Args } from "../Args";
+import { IRuntimeMode } from "./interfaces";
+import { Args } from "./Args";
 
 
 /**

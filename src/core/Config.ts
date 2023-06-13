@@ -6,7 +6,7 @@ import { existsSync } from "fs";
 
 import { TJSONObject } from "../types";
 
-import { EmbedContext } from "./EmbedContext";
+import { EmbedContext } from "../EmbedContext";
 
 
 import defaultConfig from "./default.config.json";

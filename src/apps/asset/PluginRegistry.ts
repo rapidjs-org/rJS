@@ -60,9 +60,9 @@ export class PluginRegistry {
             "NAME": pluginName,
             "CHANNELED_METHODS": `${
                 Object.keys(serverModuleReference)
-                .map((methodName: string) => `function ${methodName} = (...args) => {${
-                    "..."
-                }}`)
+                .map((methodName: string) => `function ${methodName} = (...args) => {
+                    return ${localRequestMethodId}.apply(null, args);
+                }`)
                 .join("\n")
             }\n`,
             "REQUEST_METHOD_ID": localRequestMethodId,

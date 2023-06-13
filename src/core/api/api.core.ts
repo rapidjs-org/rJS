@@ -6,7 +6,7 @@
 
 import { IRuntimeMode } from "../../interfaces";
 
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { Config } from "../Config";
 
 import { Plugin } from "./Plugin";

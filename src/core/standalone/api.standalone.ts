@@ -18,7 +18,7 @@ import { HTTPServer } from "../HTTPServer";
 import { UnixServer } from "../UnixServer";
 import { LogFile } from "../LogFile";
 import { ErrorControl } from "../ErrorControl";
-import { EmbedContext } from "../EmbedContext";
+import { EmbedContext } from "../../EmbedContext";
 import { ProcessPool } from "../ProcessPool";
 
 
