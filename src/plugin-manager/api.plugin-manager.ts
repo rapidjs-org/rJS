@@ -10,7 +10,7 @@ import _config from "./_config.json";
 
 
 import { join } from "path";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 
 import { TJSONObject } from "../types";
 import { Args } from "../Args";
@@ -27,15 +27,28 @@ export function install() {
 
 
 function writePluginToPackageJSON(pluginName: string, version: string) {
-    const packageJSONPath: string = join(EmbedContext.global.path, "package.json");
-    const packageJSONObj: TJSONObject = existsSync(packageJSONPath)
-    ? JSON.parse(String(readFileSync(packageJSONPath)))
-    : {};
+    const packageJSONObj: TJSONObject = readPackageJSON();
 
     const subObj = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
-    packageJSONObj[_config.packagePluginsKey] = {
-        ...subObj,
+    subObj[pluginName] = version;
+    packageJSONObj[_config.packagePluginsKey] = subObj;
 
-        
-    };
+    writeFileSync(join(EmbedContext.global.path, "package.json"), JSON.stringify(packageJSONObj));
+}
+
+function installPluginsFromPackageJSON() {
+    const packageJSONObj: TJSONObject = readPackageJSON();
+    
+    const installationDict: TJSONObject = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
+    for(let plugin in installationDict) {
+        // TODO: Install 'installationDict[plugin]'
+    }
+}
+
+function readPackageJSON(): TJSONObject {
+    const packageJSONPath: string = join(EmbedContext.global.path, "package.json");
+
+    return existsSync(packageJSONPath)
+    ? JSON.parse(String(readFileSync(packageJSONPath)))
+    : {};
 }
