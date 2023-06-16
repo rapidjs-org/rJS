@@ -39,7 +39,7 @@ export class Plugin {
         .forEach((dirent: Dirent) => {
             if(!dirent.isDirectory()) return;
             
-            if(!PLUGIN_NAME_REGEX.test(dirent.name)) {
+            if(!new RegExp(`^${PLUGIN_NAME_REGEX.source}$`).test(dirent.name)) {
                 throw new SyntaxError(`Invalid plug-in name '${dirent.name}'`);
             }   // TODO: From package, too
 

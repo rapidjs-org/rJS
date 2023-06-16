@@ -1,3 +1,0 @@
-/*** @SCRIPT ***/
-
-module.exports = $this;

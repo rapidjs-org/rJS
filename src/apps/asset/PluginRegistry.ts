@@ -28,6 +28,7 @@ setImmediate(() => {
 export class PluginRegistry {
     
     private static readonly registry: Map<string, IPlugin> = new Map();
+    private static readonly bareModules: Map<string, string> = new Map();
 
     public static register(plugin: CoreAPI.Plugin) {
         this.registry.set(plugin.name, this.requireModules(plugin.name, plugin.vfs));
@@ -37,8 +38,7 @@ export class PluginRegistry {
         if(!pluginVfs.exists(_config.pluginServerModuleName)) return null;
         
         const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
-        console.log(serverModuleText)
-        
+                
         const moduleReference: Module = new Module("", require.main);
         // @ts-ignore
         moduleReference._compile(serverModuleText, "");
@@ -68,30 +68,37 @@ export class PluginRegistry {
             "REQUEST_METHOD_ID": localRequestMethodId,
             "SCRIPT": `${clientModuleText}`
         });
-        console.log(clientModuleText)
-        
+
         return {
             serverModuleReference, clientModuleText
         };
     }
 
-    private static produceModuleText(bareModuleFileName: string, substitutes: Record<string, string>): string {
-        let moduleText: string = String(readFileSync(join(__dirname, "./plugin-modules/", bareModuleFileName.replace(/(\.js)?$/, ".js"))));
+    public static produceModuleText(bareModuleFileName: string, substitutes: Record<string, string>): string {
+        let moduleText: string = PluginRegistry.bareModules.has(bareModuleFileName)
+        ? PluginRegistry.bareModules.get(bareModuleFileName)
+        : String(readFileSync(join(__dirname, "./plugin-modules/", bareModuleFileName.replace(/(\.js)?$/, ".js"))));
 
         for(let substitute in substitutes) {
             moduleText = moduleText
             .replace(new RegExp(`\\/\\*\\*\\* *@${substitute.toUpperCase()} *\\*\\*\\*\\/`, "g"), substitutes[substitute]);
         }
+        
+        PluginRegistry.bareModules.set(bareModuleFileName, moduleText);
 
         return moduleText;
     }
 
     public static getClientModuleText(name: string): string {
-        return this.registry.get(name).clientModuleText;
+        return this.registry.has(name)
+        ? this.registry.get(name).clientModuleText
+        : null;
     }
 
     public static getServerModuleReference(name: string): TModuleExports {
-        return this.registry.get(name).serverModuleReference;
+        return this.registry.has(name)
+        ? this.registry.get(name).serverModuleReference
+        : null;
     }
 
 }

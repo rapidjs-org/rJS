@@ -10,7 +10,7 @@ import { PLUGIN_NAME_REGEX } from "../../core/api/PLUGIN_NAME_REGEX";
 
 import { join } from "path";
 
-import "./PluginRegistry";
+import { PluginRegistry } from "./PluginRegistry";
 
 
 export class RequestHandler {
@@ -105,7 +105,27 @@ export class RequestHandler {
         .split(new RegExp(`\\${_config.pluginReferenceConcatenator}`, "g"))
         .filter((name: string) => name.trim().length);
         
-        console.log(effectivePluginNames)
+        let concatenatedModules: string[] = [];
+        effectivePluginNames
+        .forEach((pluginName: string) => {
+            concatenatedModules.push(PluginRegistry.getClientModuleText(pluginName));
+        });
+        
+        const requestedUndefined: boolean = concatenatedModules.includes(null);
+        concatenatedModules = concatenatedModules
+        .filter(moduleText => moduleText)
+        
+        if(!concatenatedModules.length) {
+            this.status = 404;
+
+            return;
+        }
+
+        this.status = requestedUndefined ? 207 : 200;
+
+        this.message = PluginRegistry.produceModuleText("client.wrapper", {
+            "PLUGINS": concatenatedModules.join("\n")
+        });
     }
 
     private fileHTMLRaw() {
