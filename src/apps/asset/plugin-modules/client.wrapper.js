@@ -19,7 +19,7 @@ const rJS = {};
                 });
             };
             xhr.onerror = () => {
-                reject(xhr.status ?? 500);
+                reject(xhr.status || 500);
             }
             xhr.send();
         });

@@ -31,7 +31,7 @@ import { MultiMap } from "../MultiMap";
  * each server { web, unix } initialization in order to
  * send notification to parent once the value is zero.
  */
-let parentNotificationReference: number = 2;
+let parentNotificationReference = 2;
 
 /*
  * Map of embedded contexts ...
@@ -51,26 +51,26 @@ new ErrorControl(); // TODO: How to consume/preserve?
  * Create the reverse proxying web server instance.
  */
 const server: HTTPServer = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
-    // Terminate socket handling if hostname is not registered
-    // in proxy
-    if(!contextPools.has(iReq.hostname)) {
-        socket.end();
-        socket.destroy();
+	// Terminate socket handling if hostname is not registered
+	// in proxy
+	if(!contextPools.has(iReq.hostname)) {
+		socket.end();
+		socket.destroy();
 
-        return;
-    }
+		return;
+	}
     
-    // Assign the basic request alongside the socket connection
-    // to the next worker handler candidate for hostname
-    contextPools
-    .get(iReq.hostname)
-    .assign({
-        iReq, socket
-    });
+	// Assign the basic request alongside the socket connection
+	// to the next worker handler candidate for hostname
+	contextPools
+	.get(iReq.hostname)
+	.assign({
+		iReq, socket
+	});
 }, eventuallyInitNotifyParent, err => {
-    process.send(err.code);
+	process.send(err.code);
 
-    process.exit(0);
+	process.exit(0);
 });
 
 
@@ -81,7 +81,7 @@ const server: HTTPServer = new HTTPServer((iReq: IBasicRequest, socket: Socket) 
  * notified sending a specific message code.
  */
 function eventuallyInitNotifyParent() {
-    (--parentNotificationReference === 0)
+	(--parentNotificationReference === 0)
     && process.send("listening");        // TODO: Notify up
 }
 
@@ -97,39 +97,39 @@ const unixServer = new UnixServer(EmbedContext.global.port, eventuallyInitNotify
  * with a single or multiple ambiguous hostnames.
  */
 unixServer.registerCommand("embed", (arg: unknown) => {
-    const embedContext: EmbedContext = new EmbedContext(arg as string[]);
+	const embedContext: EmbedContext = new EmbedContext(arg as string[]);
 
-    embedContext.isSecure
+	embedContext.isSecure
     && server.setSecureContext(embedContext.hostnames, join(embedContext.path, embedContext.argsParser.parseOption("ssl").string ?? _config.sslDir));
-    // TODO: Display secure arg inconsistencies? Or just use initial one?
+	// TODO: Display secure arg inconsistencies? Or just use initial one?
     
-    if(contextPools.has(embedContext.hostnames)) return false;
+	if(contextPools.has(embedContext.hostnames)) return false;
 
-    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext, EmbedContext.global.mode.DEV ? 1 : null);
+	const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), embedContext, EmbedContext.global.mode.DEV ? 1 : null);
     
-    const logsDirPath: string = embedContext.argsParser.parseOption("logs").string;
-    if(logsDirPath) {
-        const fileLogIntercept: LogFile = new LogFile(join(embedContext.path, logsDirPath));
+	const logsDirPath: string = embedContext.argsParser.parseOption("logs").string;
+	if(logsDirPath) {
+		const fileLogIntercept: LogFile = new LogFile(join(embedContext.path, logsDirPath));
         
-        processPool.on("stdout", (message: string) => {
-            fileLogIntercept.handle(message, "stdout");
-        });
-        processPool.on("stderr", (err: string) => {
-            fileLogIntercept.handle(err, "stderr");
-        });
-    }
+		processPool.on("stdout", (message: string) => {
+			fileLogIntercept.handle(message, "stdout");
+		});
+		processPool.on("stderr", (err: string) => {
+			fileLogIntercept.handle(err, "stderr");
+		});
+	}
 
-    processPool.init();
+	processPool.init();
 
-    processPool.on("terminate", () => {
-        if(contextPools.size() > 1) return;
+	processPool.on("terminate", () => {
+		if(contextPools.size() > 1) return;
 
-        process.exit(1);
-    });
+		process.exit(1);
+	});
 
-    contextPools.set(embedContext.hostnames, processPool);
+	contextPools.set(embedContext.hostnames, processPool);
     
-    return true;
+	return true;
 });
 
 /*
@@ -138,25 +138,25 @@ unixServer.registerCommand("embed", (arg: unknown) => {
  * by other hostnames.
  */
 unixServer.registerCommand("unbed", (arg: unknown) => {
-    const hostnames = arg as string|string[];
+	const hostnames = arg as string|string[];
 
-    contextPools.delete(hostnames);
+	contextPools.delete(hostnames);
     
-    !contextPools.size()
+	!contextPools.size()
     && setImmediate(() => process.exit(0));
 
-    server.removeSecureContext(hostnames);
+	server.removeSecureContext(hostnames);
     
-    return true;
+	return true;
 });
     
 /*
  * Stop proxy process.
  */
 unixServer.registerCommand("stop", () => {
-    setImmediate(() => process.exit(0));
+	setImmediate(() => process.exit(0));
     
-    return true;
+	return true;
 });
     
 /*
@@ -164,7 +164,7 @@ unixServer.registerCommand("stop", () => {
  * applications for monitoring purposes.
  */
 unixServer.registerCommand("monitor", () => {
-    return contextPools.keys(); // TODO: Also record start date, etc.
+	return contextPools.keys(); // TODO: Also record start date, etc.
 });
 
 

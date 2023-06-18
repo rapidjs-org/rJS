@@ -13,9 +13,9 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
     private readonly threadModulePath: string;
 
     constructor(threadModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
-        super(baseSize, timeout, maxPending);
+    	super(baseSize, timeout, maxPending);
 
-        this.threadModulePath = threadModulePath;
+    	this.threadModulePath = threadModulePath;
     }
 
     /**
@@ -25,16 +25,16 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
      * @returns Thread handle
      */
     protected createWorker(): Promise<Thread> {
-        const thread = new Thread(this.threadModulePath, {
-            argv: process.argv.slice(2),
-            env: SHARE_ENV,
-            workerData: {
+    	const thread = new Thread(this.threadModulePath, {
+    		argv: process.argv.slice(2),
+    		env: SHARE_ENV,
+    		workerData: {
                 
-            }    // TODO: How to utilize?
-        });
+    		}    // TODO: How to utilize?
+    	});
         
-        return new Promise((resolve) => {
-            /*
+    	return new Promise((resolve) => {
+    		/*
              * Any error occurring within threads is locally intercepted.
              * Hence, any error bubbling up is due to explicit pass
              * through behavior motivated by error control instances.
@@ -42,18 +42,18 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
              * Pass through error to parent process at this level to have
              * it handled with downwards-inherent cluster termination.
              */
-            thread.on("error", err => {
-                throw err;
-            });
+    		thread.on("error", err => {
+    			throw err;
+    		});
 
-            thread.once("message", () => {
-                thread.on("message", (sRes: IResponse) => {
-                    this.deactivateWorker(thread, sRes); 
-                });
+    		thread.once("message", () => {
+    			thread.on("message", (sRes: IResponse) => {
+    				this.deactivateWorker(thread, sRes); 
+    			});
 
-                resolve(thread);
-            });
-        });
+    			resolve(thread);
+    		});
+    	});
     }
     
     /**
@@ -62,7 +62,7 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
      * @param thread Thread handle
      */
     protected destroyWorker(thread: Thread) {
-        thread.terminate();
+    	thread.terminate();
     }
 
     /**
@@ -73,7 +73,7 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
      * @param sReq Serial request
      */
     protected activateWorker(thread: Thread, sReq: IRequest) {
-        thread.postMessage(sReq);
+    	thread.postMessage(sReq);
     }
 
 }

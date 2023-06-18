@@ -14,18 +14,18 @@ export class MultiMap<K, T> {
      * internal association reference. Multi map usage
      * presumed in low capacity scenarios.
      */
-    private entryCounter: number = 0;
+    private entryCounter = 0;
 
     private normalizeKeyArgument(keyArgument: K|K[]): K[] {
-        return [ keyArgument ].flat() as K[];
+    	return [ keyArgument ].flat() as K[];
     }
 
     private cleanValues() {
-        this.valueMap
-        .forEach((_, key: number) => {
-            !Array.from(this.associationMap.values()).includes(key)
+    	this.valueMap
+    	.forEach((_, key: number) => {
+    		!Array.from(this.associationMap.values()).includes(key)
             && this.valueMap.delete(key);
-        });
+    	});
     }
     
     /**
@@ -35,15 +35,15 @@ export class MultiMap<K, T> {
      * @param value Common value
      */
     public set(keyArgument: K|K[], value: T) {
-        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+    	const keys: K[] = this.normalizeKeyArgument(keyArgument);
         
-        this.valueMap.set(++this.entryCounter, value);
+    	this.valueMap.set(++this.entryCounter, value);
         
-        keys.forEach((key: K) => {
-            this.associationMap.set(key, this.entryCounter);
-        });
+    	keys.forEach((key: K) => {
+    		this.associationMap.set(key, this.entryCounter);
+    	});
 
-        this.cleanValues();
+    	this.cleanValues();
     }
 
     /**
@@ -52,15 +52,15 @@ export class MultiMap<K, T> {
      * @returns Associated value
      */
     public get(keyArgument: K|K[]): T {
-        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+    	const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
-        for(let key of keys) {
-            const association: number = this.associationMap.get(key);
+    	for(const key of keys) {
+    		const association: number = this.associationMap.get(key);
 
-            if(association) return this.valueMap.get(association);
-        }
+    		if(association) return this.valueMap.get(association);
+    	}
 
-        return undefined;
+    	return undefined;
     }
 
     /**
@@ -68,15 +68,15 @@ export class MultiMap<K, T> {
      * @param key Atomic key associated with value
      */
     public delete(keyArgument: K|K[]) {
-        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+    	const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
-        keys.forEach((key: K) => {
-            if(!this.associationMap.has(key)) return;
+    	keys.forEach((key: K) => {
+    		if(!this.associationMap.has(key)) return;
 
-            this.associationMap.delete(key);
-        });
+    		this.associationMap.delete(key);
+    	});
         
-        this.cleanValues();
+    	this.cleanValues();
     }
 
     /**
@@ -86,13 +86,13 @@ export class MultiMap<K, T> {
      * @returns Whether an associated value exists
      */
     public has(keyArgument: K|K[]): boolean {
-        const keys: K[] = this.normalizeKeyArgument(keyArgument);
+    	const keys: K[] = this.normalizeKeyArgument(keyArgument);
 
-        for(let key of keys) {
-            if(this.associationMap.has(key)) return true;
-        }
+    	for(const key of keys) {
+    		if(this.associationMap.has(key)) return true;
+    	}
 
-        return false;
+    	return false;
     }
 
     /**
@@ -101,7 +101,7 @@ export class MultiMap<K, T> {
      * @returns Size
      */
     public size(): number {
-        return this.valueMap.size;
+    	return this.valueMap.size;
     }
 
     /**
@@ -110,18 +110,18 @@ export class MultiMap<K, T> {
      * @returns Array of related key arrays
      */
     public keys(): K[][] {
-        const consolidatedMap: Map<number, K[]> = new Map();
+    	const consolidatedMap: Map<number, K[]> = new Map();
 
-        this.associationMap
-        .forEach((internalReference: number, key: K) => {
-            const keyArray: K[] = consolidatedMap.get(internalReference) ?? [];
+    	this.associationMap
+    	.forEach((internalReference: number, key: K) => {
+    		const keyArray: K[] = consolidatedMap.get(internalReference) ?? [];
 
-            keyArray.push(key);
+    		keyArray.push(key);
 
-            consolidatedMap.set(internalReference, keyArray);
-        });
+    		consolidatedMap.set(internalReference, keyArray);
+    	});
 
-        return Array.from(consolidatedMap.values());
+    	return Array.from(consolidatedMap.values());
     }
 
 }

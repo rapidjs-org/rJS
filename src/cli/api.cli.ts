@@ -28,9 +28,9 @@ new LogConsole();
 
 
 const initErrorHandler = (err: Error) => {
-    console.error(err);
+	console.error(err);
     
-    process.exit(1);
+	process.exit(1);
 };
 process.once("uncaughtException", initErrorHandler);
 
@@ -39,10 +39,10 @@ process.once("uncaughtException", initErrorHandler);
  * Display help text.
  */
 CLI.registerCommand("help", () => {
-    console.log(
-        String(readFileSync(join(__dirname, "./_help.txt")))
-        .replace(/(https?:\/\/[a-z0-9/._-]+)/ig, "\x1b[38;2;255;71;71m$1\x1b[0m")
-    );
+	console.log(
+		String(readFileSync(join(__dirname, "./_help.txt")))
+		.replace(/(https?:\/\/[a-z0-9/._-]+)/ig, "\x1b[38;2;255;71;71m$1\x1b[0m")
+	);
 });
 
 /*
@@ -50,9 +50,9 @@ CLI.registerCommand("help", () => {
  * underlying proxy application.
  */
 CLI.registerCommand("start", () => {
-    Args.global.parseFlag("standalone")
-    ? standalone.serve()
-    : proxy.embed();
+	Args.global.parseFlag("standalone")
+		? standalone.serve()
+		: proxy.embed();
 });
 
 /*
@@ -60,7 +60,7 @@ CLI.registerCommand("start", () => {
  * from the underlying proxy application.
  */
 CLI.registerCommand("stop", () => {
-    proxy.unbed();
+	proxy.unbed();
 });
 
 /*
@@ -68,7 +68,7 @@ CLI.registerCommand("stop", () => {
  * application inherently.
  */
 CLI.registerCommand("stopall", () => {
-    proxy.stop();
+	proxy.stop();
 });
 
 /*
@@ -76,7 +76,7 @@ CLI.registerCommand("stopall", () => {
  * and any concrete server application inherently.
  */
 CLI.registerCommand("monitor", () => {
-    proxy.monitor();
+	proxy.monitor();
 });
 
 
@@ -84,7 +84,7 @@ CLI.registerCommand("monitor", () => {
  * 
  */
 CLI.registerCommand("install", () => {
-    pluginManager.install();
+	pluginManager.install();
 });
 
 

@@ -27,65 +27,65 @@ export class RequestHandler {
     public cookies: TCookies;
 
     constructor(ip: string, method: string, url: TUrl, body: unknown, headers: THeaders, cookies?: TCookies, locale?: TLocale) {
-        this.reqUrl = url;
-        this.reqHeaders = headers;
+    	this.reqUrl = url;
+    	this.reqHeaders = headers;
         
-        this.headers = {};
-        this.cookies = {};
+    	this.headers = {};
+    	this.cookies = {};
 
-        switch(method.toUpperCase()) {
-            case "GET":
-                this.handleGET();
-                break;
-            case "POST":
-                this.handlePOST();
-                break;
-            default:
-                this.status = 406;
-        }
+    	switch(method.toUpperCase()) {
+    	case "GET":
+    		this.handleGET();
+    		break;
+    	case "POST":
+    		this.handlePOST();
+    		break;
+    	default:
+    		this.status = 406;
+    	}
     }
 
     private handleGET() {
-        if(RequestHandler.pluginReferenceRegex.test(this.reqUrl.pathname)) {
-            this.filePlugin();
+    	if(RequestHandler.pluginReferenceRegex.test(this.reqUrl.pathname)) {
+    		this.filePlugin();
 
-            return;
-        }
+    		return;
+    	}
 
-        const fileExtension: string = this.reqUrl.pathname.match(/(\.[^./]+)?$/)[0].toLowerCase()
-        .slice(1);
-        const fileName: string = this.reqUrl.pathname.match(/[^/]*$/)[0].toLowerCase()
-        .replace(new RegExp(`\\.${fileExtension}$`), "");
+    	const fileExtension: string = this.reqUrl.pathname.match(/(\.[^./]+)?$/)[0].toLowerCase()
+    	.slice(1);
+    	const fileName: string = this.reqUrl.pathname.match(/[^/]*$/)[0].toLowerCase()
+    	.replace(new RegExp(`\\.${fileExtension}$`), "");
         
-        if(fileExtension === _config.defaultFileExtension
+    	if(fileExtension === _config.defaultFileExtension
         || fileName === _config.defaultFileName) {
-            this.reqUrl.pathname = this.reqUrl.pathname
-            .replace(new RegExp(`\\.${_config.defaultFileExtension}$`), "")
-            .replace(new RegExp(`\\/${_config.defaultFileName}$`), "/");
+    		this.reqUrl.pathname = this.reqUrl.pathname
+    		.replace(new RegExp(`\\.${_config.defaultFileExtension}$`), "")
+    		.replace(new RegExp(`\\/${_config.defaultFileName}$`), "/");
             
-            this.redirect(this.reqUrl);
+    		this.redirect(this.reqUrl);
 
-            return;
-        }
+    		return;
+    	}
 
-        if(fileName.charAt(0) === _config.privateFileIndicator) {
-            !fileExtension
-            ? this.fileHTMLError(403)
-            : (this.status = 403);
+    	if(fileName.charAt(0) === _config.privateFileIndicator) {
+    		!fileExtension
+    			? this.fileHTMLError(403)
+    			: (this.status = 403);
 
-            return;
-        }
+    		return;
+    	}
 
-        this.reqUrl.pathname += !fileName ? _config.defaultFileName : "";
-        this.reqUrl.pathname += !fileExtension ? `.${_config.defaultFileExtension}` : "";
+    	this.reqUrl.pathname += !fileName ? _config.defaultFileName : "";
+    	this.reqUrl.pathname += !fileExtension ? `.${_config.defaultFileExtension}` : "";
         
-        const mime: string = CoreAPI.config.get("mimes", fileExtension).string();
-        mime
-        && (this.headers["Content-Encoding"] = mime);
+    	const mime: string = CoreAPI.config.get("mimes", fileExtension).string();
+    	mime
+        && (this.headers["Content-Type"] = mime);
 
-        (!fileExtension)
-        ? this.fileHTMLRaw()
-        : this.fileArbitrary();
+    	(!fileExtension)
+    		? this.fileHTMLRaw()
+    		: this.fileArbitrary();
     }
 
     private handlePOST() {
@@ -93,116 +93,122 @@ export class RequestHandler {
     }
 
     private redirect(redirectUrl: IHighlevelURL) {
-        this.status = 301;
+    	this.status = 301;
 
-        this.headers["Location"] = `${redirectUrl.protocol}//${redirectUrl.host}${redirectUrl.pathname}${redirectUrl.search ? `?${redirectUrl.search}`: ""}${redirectUrl.hash ? `#${redirectUrl.hash}`: ""}`;
+    	this.headers["Location"] = `${redirectUrl.protocol}//${redirectUrl.host}${redirectUrl.pathname}${redirectUrl.search ? `?${redirectUrl.search}`: ""}${redirectUrl.hash ? `#${redirectUrl.hash}`: ""}`;
     }
 
     private filePlugin() {
-        const effectivePluginNames: string[] = this.reqUrl.pathname
-        .match(RequestHandler.pluginReferenceRegex)[0]
-        .slice(_config.pluginReferenceIndicator.length + 1)
-        .split(new RegExp(`\\${_config.pluginReferenceConcatenator}`, "g"))
-        .filter((name: string) => name.trim().length);
+    	const effectivePluginNames: string[] = this.reqUrl.pathname
+    	.match(RequestHandler.pluginReferenceRegex)[0]
+    	.slice(_config.pluginReferenceIndicator.length + 1)
+    	.split(new RegExp(`\\${_config.pluginReferenceConcatenator}`, "g"))
+    	.filter((name: string) => name.trim().length);
         
-        let concatenatedModules: string[] = [];
-        effectivePluginNames
-        .forEach((pluginName: string) => {
-            concatenatedModules.push(PluginRegistry.getClientModuleText(pluginName));
-        });
+    	let concatenatedModules: string[] = [];
+    	effectivePluginNames
+    	.forEach((pluginName: string) => {
+    		concatenatedModules.push(PluginRegistry.getClientModuleText(pluginName));
+    	});
+
+    	const requestedUndefined: boolean = concatenatedModules.includes(null);
+    	concatenatedModules = concatenatedModules
+    	.filter(moduleText => moduleText);
         
-        const requestedUndefined: boolean = concatenatedModules.includes(null);
-        concatenatedModules = concatenatedModules
-        .filter(moduleText => moduleText)
-        
-        if(!concatenatedModules.length) {
-            this.status = 404;
+    	if(!concatenatedModules.length) {
+    		this.status = 404;
 
-            return;
-        }
+    		return;
+    	}
 
-        this.status = requestedUndefined ? 207 : 200;
+    	this.headers["Content-Type"] = "text/javascript";
 
-        this.message = PluginRegistry.produceModuleText("client.wrapper", {
-            "PLUGINS": concatenatedModules.join("\n")
-        });
+    	this.status = requestedUndefined ? 207 : 200;
+
+    	this.message = PluginRegistry.produceModuleText("client.wrapper", {
+    		"PLUGINS": concatenatedModules.join("\n")
+    	});
     }
 
     private fileHTMLRaw() {
-        let internalPath: string = this.reqUrl.pathname;
-        let fileExists: boolean = RequestHandler.webVfs.exists(internalPath);
+    	let internalPath: string = this.reqUrl.pathname;
+    	let fileExists: boolean = RequestHandler.webVfs.exists(internalPath);
 
-        if(!fileExists) {
-            const pathLevels: string[] = internalPath
-            .replace(/(\.[^./]+)?$/, "")
-            .split(/\//g)
-            .filter((p: string) => p.trim());
+    	if(!fileExists) {
+    		const pathLevels: string[] = internalPath
+    		.replace(/(\.[^./]+)?$/, "")
+    		.split(/\//g)
+    		.filter((p: string) => p.trim());
 
-            while(!fileExists && pathLevels.length) {
-                const curFileName: string = pathLevels.pop();
+    		while(!fileExists && pathLevels.length) {
+    			const curFileName: string = pathLevels.pop();
 
-                internalPath = join(pathLevels.join("/"), `${_config.compoundPageIndicator}${curFileName}`, `${curFileName}.${_config.defaultFileExtension}`);
+    			internalPath = join(pathLevels.join("/"), `${_config.compoundPageIndicator}${curFileName}`, `${curFileName}.${_config.defaultFileExtension}`);
                 
-                fileExists = RequestHandler.webVfs.exists(internalPath);
-            }
+    			fileExists = RequestHandler.webVfs.exists(internalPath);
+    		}
 
-            if(!fileExists) {
-                this.fileHTMLError(404);
+    		if(!fileExists) {
+    			this.fileHTMLError(404);
 
-                return;
-            }
-        }
+    			return;
+    		}
+    	}
 
-        this.fileHTML(internalPath);
+    	this.fileHTML(internalPath);
     }
 
     private fileHTMLError(status: number) {
-        this.status = status;
+    	this.status = status;
 
-        const pathLevels: string[] = this.reqUrl.pathname
-        .replace(/(\.[^./]+)?$/, "")
-        .split(/\//g)
-        .filter((p: string) => p.trim());
+    	const pathLevels: string[] = this.reqUrl.pathname
+    	.replace(/(\.[^./]+)?$/, "")
+    	.split(/\//g)
+    	.filter((p: string) => p.trim());
 
-        while(pathLevels.length) {
-            pathLevels.pop();
+    	while(pathLevels.length) {
+    		pathLevels.pop();
 
-            const errorFilePath: string = join(pathLevels.join("/"), `${_config.privateFileIndicator}${status}.${_config.defaultFileExtension}`);
+    		const errorFilePath: string = join(pathLevels.join("/"), `${_config.privateFileIndicator}${status}.${_config.defaultFileExtension}`);
             
-            if(RequestHandler.webVfs.exists(errorFilePath)) {
-                this.fileHTML(errorFilePath);
+    		if(RequestHandler.webVfs.exists(errorFilePath)) {
+    			this.fileHTML(errorFilePath);
 
-                return;
-            }
-        }
+    			return;
+    		}
+    	}
     }
 
     private fileHTML(pathname: string) {
-        this.file(pathname);
+    	this.file(pathname);
 
-        // TODO: Plugin integration
+    	const pluginReferenceTag = `<script src="/${_config.pluginReferenceIndicator}${PluginRegistry.getRegistered().join(_config.pluginReferenceConcatenator)}"></script>`;   // TODO: Dir local plugins?
+
+    	this.message = /<\s*head(\s|>).*>.*<\s\/head\s*>/i.test(this.message as string)
+    		? (this.message as string).replace(/(<\s*head(\s|>)[^>]*>)/, `$1${pluginReferenceTag}`) // TODO: Strengthen regexes
+    		: (this.message as string).replace(/((<\s*html(\s|>)[^>]*>)|^)/, `$1${pluginReferenceTag}`);
     }
 
     private fileArbitrary() {
-        const arbitraryExists: boolean = RequestHandler.webVfs.exists(this.reqUrl.pathname);
+    	const arbitraryExists: boolean = RequestHandler.webVfs.exists(this.reqUrl.pathname);
 
-        this.status = arbitraryExists ? 200 : 404;
+    	this.status = arbitraryExists ? 200 : 404;
 
-        arbitraryExists
+    	arbitraryExists
         && this.file(this.reqUrl.pathname);
     }
 
     private file(pathname: string) {
-        const fileStamp: IFileStamp = RequestHandler.webVfs.read(pathname);
+    	const fileStamp: IFileStamp = RequestHandler.webVfs.read(pathname);
 
-        if(this.reqHeaders["If-None-Match"] === fileStamp.ETag) {
-            this.status = 304;
+    	if(this.reqHeaders["If-None-Match"] === fileStamp.ETag) {
+    		this.status = 304;
 
-            return;
-        }
+    		return;
+    	}
 
-        this.headers["ETag"] = fileStamp.ETag;
+    	this.headers["ETag"] = fileStamp.ETag;
 
-        this.message = fileStamp.data;
+    	this.message = fileStamp.data;
     }
 }

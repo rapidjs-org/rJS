@@ -26,39 +26,39 @@ import { ProcessPool } from "../ProcessPool";
  * Create the standalone web server instance.
  */
 export async function serve() {   
-    new ErrorControl();
+	new ErrorControl();
     
-    try {
-        await UnixServer.message(EmbedContext.global.port, "monitor");
+	try {
+		await UnixServer.message(EmbedContext.global.port, "monitor");
 
-        throw new RangeError(`Port is occupied by proxy :${EmbedContext.global.port}`);
-        // TODO: Prompt if to embed into proxy (and vice versa: exisiting standlone into new proxy)???
-        // OR: Use standlone always first, but add proxy cluster automatically in case additional app is started???
-    } catch {}
+		throw new RangeError(`Port is occupied by proxy :${EmbedContext.global.port}`);
+		// TODO: Prompt if to embed into proxy (and vice versa: exisiting standlone into new proxy)???
+		// OR: Use standlone always first, but add proxy cluster automatically in case additional app is started???
+	} catch {}	// eslint-disable-line
 
-    const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), EmbedContext.global, EmbedContext.global.mode.DEV ? 1 : null);
+	const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"), EmbedContext.global, EmbedContext.global.mode.DEV ? 1 : null);
     
-    processPool.on("stdout", (message: string) => console.log(message));
-    processPool.on("stderr", (err: string) => console.error(err));
+	processPool.on("stdout", (message: string) => console.log(message));
+	processPool.on("stderr", (err: string) => console.error(err));
     
-    processPool.init();
+	processPool.init();
 
-    try {
-        const server = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
-            processPool.assign({
-                iReq, socket
-            });
-        }, () => {
-            const logsDirPath: string = Args.global.parseOption("logs", "L").string;
-            logsDirPath
+	try {
+		const server = new HTTPServer((iReq: IBasicRequest, socket: Socket) => {
+			processPool.assign({
+				iReq, socket
+			});
+		}, () => {
+			const logsDirPath: string = Args.global.parseOption("logs", "L").string;
+			logsDirPath
             && new LogFile(join(EmbedContext.global.path, logsDirPath));
 
-            console.log("Started standalone application cluster");
-        });
+			console.log("Started standalone application cluster");
+		});
 
-        EmbedContext.global.isSecure
+		EmbedContext.global.isSecure
         && server.setSecureContext(EmbedContext.global.hostnames, join(EmbedContext.global.path, Args.global.parseOption("ssl").string ?? _config.sslDir));
-    } catch(err) {
-        throw new Error(`Could not start application:\n${err.message}`);
-    }
+	} catch(err) {
+		throw new Error(`Could not start application:\n${err.message}`);
+	}
 }

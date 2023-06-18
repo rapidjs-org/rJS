@@ -27,103 +27,103 @@ export class VFS extends ASharedLimitDictionary<string, IFileStamp, IFileReferen
     private readonly root: string;
 
     constructor(root: string) { // TODO: Default from config
-        super((path: string) => {
-            return normalize(path);
-        });
+    	super((path: string) => {
+    		return normalize(path);
+    	});
 
-        this.root = normalize(join(EmbedContext.global.path, root));
+    	this.root = normalize(join(EmbedContext.global.path, root));
             
-        // Error if out of process.cwd() (information hiding / security)
-        if(this.root.slice(0, EmbedContext.global.path.length) !== EmbedContext.global.path) {
-            throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${process.cwd()}...',\ngiven\t\t'${this.root}'.`);
-        }
-        // TODO: Generic out of PATH utility (reuse e.g. for log dir)
+    	// Error if out of process.cwd() (information hiding / security)
+    	if(this.root.slice(0, EmbedContext.global.path.length) !== EmbedContext.global.path) {
+    		throw new RangeError(`VFS root directory must not point outwards of the application working directory.\nExpecting\t'${process.cwd()}...',\ngiven\t\t'${this.root}'.`);
+    	}
+    	// TODO: Generic out of PATH utility (reuse e.g. for log dir)
     }
     
     private getAbsolutePath(path: string): string {
-        return join(this.root, path);
+    	return join(this.root, path);
     }
 
     private getFileReference(path: string): IFileReference {
-        const {
-            ctimeMs, mtimeMs    // ns for precision ?
-        } = statSync(this.getAbsolutePath(path));
+    	const {
+    		ctimeMs, mtimeMs    // ns for precision ?
+    	} = statSync(this.getAbsolutePath(path));
 
-        return {
-            ctime: ctimeMs,
-            mtime: mtimeMs
-        };
+    	return {
+    		ctime: ctimeMs,
+    		mtime: mtimeMs
+    	};
     }
 
     private getFileStamp(path: string, data: string|Buffer): IFileStamp {
-        const fileReference: IFileReference = this.getFileReference(path);
+    	const fileReference: IFileReference = this.getFileReference(path);
         
-        const eTag = `${fileReference.ctime}${fileReference.mtime}`;  // Quick time stats value (inconsistent in multi-machine setups)
-        // TODO: Provide different ETag calculation algorithms / custom interface ?
+    	const eTag = `${fileReference.ctime}${fileReference.mtime}`;  // Quick time stats value (inconsistent in multi-machine setups)
+    	// TODO: Provide different ETag calculation algorithms / custom interface ?
         
-        const fileStamp: IFileStamp = {
-            ETag: eTag,
-            data: data
-        };
+    	const fileStamp: IFileStamp = {
+    		ETag: eTag,
+    		data: data
+    	};
 
-        return fileStamp;
+    	return fileStamp;
     }
 
     protected retrieveReferenceCallback(path: string): IFileReference {
-        return this.getFileReference(path);
+    	return this.getFileReference(path);
     }
 
     protected validateLimitCallback(reference: IFileReference, current: IFileReference): boolean {
-        return (reference.ctime === current.ctime
+    	return (reference.ctime === current.ctime
             && reference.mtime === current.mtime);
     }
 
     public write(): Promise<void> {
-        throw new SyntaxError("write() is not a member of VFS, use writeDisc() or writeVirtual() instead");
+    	throw new SyntaxError("write() is not a member of VFS, use writeDisc() or writeVirtual() instead");
     }
 
     public writeVirtual(path: string, data: string) {
-        // TODO: Sync and / or async interface ???
-        const fileStamp: IFileStamp = this.getFileStamp(path, data);
+    	// TODO: Sync and / or async interface ???
+    	const fileStamp: IFileStamp = this.getFileStamp(path, data);
         
-       super.write(path, fileStamp);
+    	super.write(path, fileStamp);
     }
 
     public writeDisc(path: string, data: string) {
-        // TODO: Sync and / or async interface ???
-        writeFileSync(this.getAbsolutePath(path), data);
+    	// TODO: Sync and / or async interface ???
+    	writeFileSync(this.getAbsolutePath(path), data);
 
-        this.writeVirtual(path, data);
+    	this.writeVirtual(path, data);
     }
 
     public exists(path: string): boolean {
-        const exists: boolean = super.exists(path);
-        if(exists) {
-            return true;
-        }
+    	const exists: boolean = super.exists(path);
+    	if(exists) {
+    		return true;
+    	}
         
-        const pathOnDisc: string = this.getAbsolutePath(path);
-        if(!existsSync(pathOnDisc)) {
-            return false;
-        }
+    	const pathOnDisc: string = this.getAbsolutePath(path);
+    	if(!existsSync(pathOnDisc)) {
+    		return false;
+    	}
 
-        let fileContents: string|Buffer = readFileSync(pathOnDisc);
-        try {
-            fileContents = new TextDecoder("utf8", {
-                fatal: true
-            })
-            .decode(fileContents);
-        } catch {}
+    	let fileContents: string|Buffer = readFileSync(pathOnDisc);
+    	try {
+    		fileContents = new TextDecoder("utf8", {
+    			fatal: true
+    		})
+    		.decode(fileContents);
+    	} catch {}	// eslint-disable-line
                 
-        const fileStamp: IFileStamp = this.getFileStamp(path, fileContents);
+    	const fileStamp: IFileStamp = this.getFileStamp(path, fileContents);
         
-        super.write(path, fileStamp);
+    	super.write(path, fileStamp);
 
-        this.setExistenceLookup(path, fileStamp);
+    	this.setExistenceLookup(path, fileStamp);
         
-        return true;
+    	return true;
     }
 
-    // TODO: Delete method?
+	// TODO: Delete method?
     
 }

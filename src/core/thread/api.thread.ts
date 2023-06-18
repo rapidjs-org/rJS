@@ -11,7 +11,7 @@ import { ErrorControl } from "../ErrorControl";
 
 
 if(!EmbedContext.global.concreteAppModulePath) {
-    throw new ReferenceError("Missing concrete application module path");
+	throw new ReferenceError("Missing concrete application module path");
 }
 
 
@@ -31,16 +31,16 @@ import(EmbedContext.global.concreteAppModulePath)
 .then((api: {
     default: (req: IRequest) => IResponse
 }) => {
-    /*
+	/*
      * Listen for incoming requests to handle with specified routine.
      */
-    parentPort.on("message", (sReq: IRequest) => {    
-        parentPort.postMessage(
-            api.default(sReq)
-        );
-    });
+	parentPort.on("message", (sReq: IRequest) => {    
+		parentPort.postMessage(
+			api.default(sReq)
+		);
+	});
     
-    // Signal parent process the thread is ready for being
-    // assigned request data
-    parentPort.postMessage(true);
+	// Signal parent process the thread is ready for being
+	// assigned request data
+	parentPort.postMessage(true);
 });

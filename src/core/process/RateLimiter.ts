@@ -28,16 +28,16 @@ interface ILimiterData<I extends string|number|symbol> {
  * rates and validated for their weighted sliding window
  * total as a reference.
  */
-export class RateLimiter<I extends string|number|symbol> extends ASharedDictionary<I, ILimiterData<any>> {
+export class RateLimiter<I extends string|number|symbol> extends ASharedDictionary<I, ILimiterData<string|number|symbol>> {
 
     private readonly limit: number;
     private readonly windowSize: number;
     
     constructor(limit: number, windowSize = 60000) {
-        super();
+    	super();
 
-        this.limit = limit;
-        this.windowSize = windowSize;
+    	this.limit = limit;
+    	this.windowSize = windowSize;
     }
     
     /**
@@ -47,28 +47,28 @@ export class RateLimiter<I extends string|number|symbol> extends ASharedDictiona
      * the then coded current window.
      */
     private updateLimitData(): ILimiterData<I> {
-        const currentLimitData: ILimiterData<I> = this.readShared()
+    	const currentLimitData: ILimiterData<I> = this.readShared()
         ?? {
-            timePivot: Date.now(),
-            previousWindow: {} as TRate<I>,
-            currentWindow: {} as TRate<I>
+        	timePivot: Date.now(),
+        	previousWindow: {} as TRate<I>,
+        	currentWindow: {} as TRate<I>
         };
         
-        const now: number = Date.now();
-        const delta: number = now - currentLimitData.timePivot;
+    	const now: number = Date.now();
+    	const delta: number = now - currentLimitData.timePivot;
 
-        if(delta <= this.windowSize) return currentLimitData;
+    	if(delta <= this.windowSize) return currentLimitData;
 
-        currentLimitData.currentWindow = (delta <= (2 * this.windowSize))
-        ? currentLimitData.currentWindow
-        : {} as TRate<I>;
+    	currentLimitData.currentWindow = (delta <= (2 * this.windowSize))
+    		? currentLimitData.currentWindow
+    		: {} as TRate<I>;
         
-        currentLimitData.previousWindow = currentLimitData.currentWindow;
-        currentLimitData.currentWindow = {} as TRate<I>;
+    	currentLimitData.previousWindow = currentLimitData.currentWindow;
+    	currentLimitData.currentWindow = {} as TRate<I>;
 
-        currentLimitData.timePivot = now;
+    	currentLimitData.timePivot = now;
 
-        return currentLimitData;
+    	return currentLimitData;
     }
 
     /**
@@ -78,21 +78,21 @@ export class RateLimiter<I extends string|number|symbol> extends ASharedDictiona
      * @returns Whether access is granted (the limit has not been exceeded yet)
      */
     public grantsAccess(entityIdentifier: I): boolean {
-        const currentLimitData: ILimiterData<I> = this.updateLimitData();
+    	const currentLimitData: ILimiterData<I> = this.updateLimitData();
         
-        const currentHits: number = (currentLimitData.currentWindow[entityIdentifier] ?? 0) + 1;
+    	const currentHits: number = (currentLimitData.currentWindow[entityIdentifier] ?? 0) + 1;
         
-        currentLimitData.currentWindow[entityIdentifier] = currentHits;
+    	currentLimitData.currentWindow[entityIdentifier] = currentHits;
         
-        const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / this.windowSize, 1);
-        const weightedHits: number
+    	const currentWindowWeight: number = Math.min((Date.now() - currentLimitData.timePivot) / this.windowSize, 1);
+    	const weightedHits: number
         = ((currentLimitData.previousWindow[entityIdentifier] ?? 0) * (1 - currentWindowWeight))
         + (currentHits * currentWindowWeight);
 
-        this.writeShared(currentLimitData);
+    	this.writeShared(currentLimitData);
 
-        const limit: number = this.limit * (RateLimiter.shmEnabled ? 0.5 : 1);    // TODO: Know cluster size
+    	const limit: number = this.limit * (RateLimiter.shmEnabled ? 0.5 : 1);    // TODO: Know cluster size
 
-        return (weightedHits <= limit);
+    	return (weightedHits <= limit);
     }
 }

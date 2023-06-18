@@ -3,7 +3,7 @@
  */
 
 
-import { IResponse, IHighlevelCookie, IHighlevelEncoding, IHighlevelLocale, IHighlevelURL } from "./interfaces";
+import { IResponse, IHighlevelCookie, IHighlevelLocale, IHighlevelURL } from "./interfaces";
 
 
 export type TJSONObject = { [ key: string ]: TJSONObject|string|number|boolean };

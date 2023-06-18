@@ -19,79 +19,79 @@ export abstract class ASharedLimitDictionary<K, V, L> extends ASharedDictionary<
     };
 
     constructor(normalizeKeyCallback?: (key: K) => K) {
-        super(normalizeKeyCallback);
+    	super(normalizeKeyCallback);
     }
     
     protected abstract retrieveReferenceCallback(key: K): L;
     protected abstract validateLimitCallback(reference: L, current: L): boolean;
 
     protected setExistenceLookup(key: K, value: V) {
-        this.existenceLookupValue = {
-            key: this.normalizeKey(key),
-            value: value,
-            timestamp: Date.now()
-        };
+    	this.existenceLookupValue = {
+    		key: this.normalizeKey(key),
+    		value: value,
+    		timestamp: Date.now()
+    	};
     }
 
     public write(key: K, value: V) {
-        const limitValue: ILimitValue<V, L> = {
-            value: value,
-            limitReference: this.retrieveReferenceCallback(key)
-        };
+    	const limitValue: ILimitValue<V, L> = {
+    		value: value,
+    		limitReference: this.retrieveReferenceCallback(key)
+    	};
         
-        // TODO: Benchmark w and w/o enabled top layer intermediate memory (-> Dict <-> intermediate <-> SHM)
+    	// TODO: Benchmark w and w/o enabled top layer intermediate memory (-> Dict <-> intermediate <-> SHM)
 
-        this.writeShared(limitValue, key);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
+    	this.writeShared(limitValue, key);   // TODO: Note key is stringified implicitly (requires unambiguos serialization)
     }
 
     public read(key: K): V {
-        // TODO: Implement intermediate
+    	// TODO: Implement intermediate
 
-        if((this.existenceLookupValue || {}).key !== this.normalizeKey(key)
+    	if((this.existenceLookupValue || {}).key !== this.normalizeKey(key)
         || (Date.now() - ((this.existenceLookupValue || {}).timestamp || 0)) > 250) {    // TODO: Define timeout threshold (from config?)
-            const exists: boolean = this.exists(key);
+    		const exists: boolean = this.exists(key);
             
-            if(!exists) {
-                return null;
-            }
-        }
+    		if(!exists) {
+    			return null;
+    		}
+    	}
         
-        const retrievedValue: V = this.existenceLookupValue.value;
+    	const retrievedValue: V = this.existenceLookupValue.value;
         
-        this.existenceLookupValue = null;
+    	this.existenceLookupValue = null;
 
-        return retrievedValue;  
+    	return retrievedValue;  
     }   // Async interface { read, readSync } ?
 
     public exists(key: K): boolean {
-        // TODO: Implement intermediate
+    	// TODO: Implement intermediate
 
-        let limitValue: ILimitValue<V, L> = this.readShared(key);
+    	const limitValue: ILimitValue<V, L> = this.readShared(key);
         
-        if(!limitValue) {
-            this.setExistenceLookup(key, null);
+    	if(!limitValue) {
+    		this.setExistenceLookup(key, null);
 
-            return false;
-        }
+    		return false;
+    	}
         
-        let reference: L;
-        try {
-            reference = this.retrieveReferenceCallback(key);
-        } catch {
-            this.setExistenceLookup(key, null);
+    	let reference: L;
+    	try {
+    		reference = this.retrieveReferenceCallback(key);
+    	} catch {
+    		this.setExistenceLookup(key, null);
 
-            return false;
-        }
+    		return false;
+    	}
         
-        if(!limitValue.limitReference || !this.validateLimitCallback(limitValue.limitReference, reference)) {
-            this.setExistenceLookup(key, null);
+    	if(!limitValue.limitReference || !this.validateLimitCallback(limitValue.limitReference, reference)) {
+    		this.setExistenceLookup(key, null);
             
-            return false;
-        }
+    		return false;
+    	}
         
-        this.setExistenceLookup(key, limitValue.value); // Already store to reduce repeated SHM access on subsequent read
+    	this.setExistenceLookup(key, limitValue.value); // Already store to reduce repeated SHM access on subsequent read
        
-        return true;
+    	return true;
     }
 
 }

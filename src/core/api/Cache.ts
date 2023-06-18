@@ -12,9 +12,9 @@ export class Cache<K, V> extends ASharedLimitDictionary<K, V, number> {
     private readonly duration: number;
     
     constructor(duration: number = Config.global.get("cache", "server").number(), normalizeKeyCallback?: (key: K) => K) {
-        super(normalizeKeyCallback);
+    	super(normalizeKeyCallback);
         
-        this.duration = duration;
+    	this.duration = duration;
     }
 
     /**
@@ -23,7 +23,7 @@ export class Cache<K, V> extends ASharedLimitDictionary<K, V, number> {
      * @returns Current UNIX timestamp (ms)
      */
     protected retrieveReferenceCallback(): number {
-        return Date.now();
+    	return Date.now();
     }
 
     /**
@@ -32,7 +32,7 @@ export class Cache<K, V> extends ASharedLimitDictionary<K, V, number> {
      * @returns Current UNIX timestamp (ms)
      */
     protected validateLimitCallback(reference: number, current: number): boolean {
-        return ((current - reference) <= this.duration);
+    	return ((current - reference) <= this.duration);
     }
 
 }

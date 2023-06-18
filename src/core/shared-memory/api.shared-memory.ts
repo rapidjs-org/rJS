@@ -6,7 +6,6 @@
  */
 
 
-import { EventEmitter } from "stream";
 import { EmbedContext } from "../../EmbedContext";   // Special cross-reference
 
 import * as sharedMemory from "./shared-memory";
@@ -28,7 +27,7 @@ const reactivateTimeoutValue: number = 1000 * 60 * 5;
  * Register whether shared memory ca be accessed in order to
  * circumvent repeated failing low-level memory access approaches.
  */
-let isActive: boolean = false;  // TODO: Set 'true' once SHM implementation is ready
+let isActive = false;  // TODO: Set 'true' once SHM implementation is ready
 
 
 /*
@@ -47,20 +46,20 @@ sharedMemory.init(concreteAppKey);
  * @returns Numerical application key
  */
 function generateConcreteAppKey(): number { // uint32_t (MAX: 4294967296)
-    return parseInt(`rapidJS:${EmbedContext.global.path}`  // TODO: Check if process CWD is consistent among related contexts
-    .split("")
-    .map((char: string) => char.charCodeAt(0).toString(16))
-    .join("")) % 4294967296;
+	return parseInt(`rapidJS:${EmbedContext.global.path}`  // TODO: Check if process CWD is consistent among related contexts
+	.split("")
+	.map((char: string) => char.charCodeAt(0).toString(16))
+	.join("")) % 4294967296;
 }
 
 function deactivate() {
-    console.log(`Shared memory unavailable: Process-local store intermediate for ${reactivateTimeoutValue / 60000} m`);
+	console.log(`Shared memory unavailable: Process-local store intermediate for ${reactivateTimeoutValue / 60000} m`);
     
-    isActive = false; // TODO: Distinguish errors?
+	isActive = false; // TODO: Distinguish errors?
 
-    setTimeout(() => {
-        isActive = true;
-    }, reactivateTimeoutValue);
+	setTimeout(() => {
+		isActive = true;
+	}, reactivateTimeoutValue);
 }
 
 
@@ -72,20 +71,20 @@ function deactivate() {
  * @param purposeData Data stored for specific purpose
  */
 export async function writeSync(purposeKey: string, purposeData: unknown) {
-    const serial: string = (!(typeof(purposeData) === "string")
-    ? JSON.stringify(purposeData)
-    : purposeData);
+	const serial: string = (!(typeof(purposeData) === "string")
+		? JSON.stringify(purposeData)
+		: purposeData);
     
-    if(isActive) {
-        try {
-            sharedMemory.write(purposeKey, Buffer.from(serial, "utf-8"));
-            return;
-        } catch(err) {
-            deactivate();
-        }
-    }
+	if(isActive) {
+		try {
+			sharedMemory.write(purposeKey, Buffer.from(serial, "utf-8"));
+			return;
+		} catch(err) {
+			deactivate();
+		}
+	}
 
-    intermediateMemory.set(purposeKey, serial);
+	intermediateMemory.set(purposeKey, serial);
 }
 
 /**
@@ -93,15 +92,15 @@ export async function writeSync(purposeKey: string, purposeData: unknown) {
  * @returns Promise resolving once the data has been written to shared memory
  */
 export async function write(purposeKey: string, purposeData: unknown): Promise<void> {
-    return new Promise((resolve, reject) => {
-        try {
-            writeSync(purposeKey, purposeData);
+	return new Promise((resolve, reject) => {
+		try {
+			writeSync(purposeKey, purposeData);
 
-            resolve();
-        } catch(err) {
-            reject(err);
-        }
-    });
+			resolve();
+		} catch(err) {
+			reject(err);
+		}
+	});
 }
 
 /**
@@ -112,27 +111,27 @@ export async function write(purposeKey: string, purposeData: unknown): Promise<v
  * @returns Data stored for specific purpose
  */
 export function readSync<T>(purposeKey: string): T {
-    let serial;
-    if(isActive) {
-        try {
-            const buffer: Buffer = sharedMemory.read(purposeKey);
+	let serial;
+	if(isActive) {
+		try {
+			const buffer: Buffer = sharedMemory.read(purposeKey);
 
-            serial = String(buffer);
-        } catch {
-            deactivate();
-        }
-    }
+			serial = String(buffer);
+		} catch {
+			deactivate();
+		}
+	}
     
-    serial = serial ?? intermediateMemory.get(purposeKey);
+	serial = serial ?? intermediateMemory.get(purposeKey);
 
-    let data: T;
-    try {
-        data = JSON.parse(serial);
-    } catch {
-        data = serial as unknown as T;
-    }
+	let data: T;
+	try {
+		data = JSON.parse(serial);
+	} catch {
+		data = serial as unknown as T;
+	}
 
-    return (data || null) as T;
+	return (data || null) as T;
 }
 
 /**
@@ -140,11 +139,11 @@ export function readSync<T>(purposeKey: string): T {
  * @returns Promise resolving to the data read from shared memory
  */
 export function read<T>(purposeKey: string): Promise<T> {
-    return new Promise(resolve => {
-        const data: T = readSync<T>(purposeKey);
+	return new Promise(resolve => {
+		const data: T = readSync<T>(purposeKey);
         
-        resolve(data);
-    });
+		resolve(data);
+	});
 }
 
 /**
@@ -154,10 +153,10 @@ export function read<T>(purposeKey: string): Promise<T> {
  * @param event Event name(s) to bind free call to
  */
 export function registerFree(event: string|string[]) {
-    [ event ].flat()
-    .forEach((event: string) => {
-        process.on(event, () => sharedMemory.free());
-    });
+	[ event ].flat()
+	.forEach((event: string) => {
+		process.on(event, () => sharedMemory.free());
+	});
 }   // TODO: Implement at unbed (consistent among runs otherwise as long as heap is maintained)
 
 
@@ -167,5 +166,5 @@ export function registerFree(event: string|string[]) {
  * @returns Numerical application key
 */
 export function getConcreteAppKey(): number {
-    return concreteAppKey;
+	return concreteAppKey;
 }

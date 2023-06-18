@@ -41,12 +41,12 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
     private readonly idleWorkers: Worker[] = [];
     private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
-    constructor(baseSize: number, timeout: number = 30000, maxPending: number = Infinity) {
-        super();
+    constructor(baseSize: number, timeout = 30000, maxPending = Infinity) {
+    	super();
 
-        this.baseSize = baseSize ?? cpus().length;
-        this.timeout = timeout;
-        this.maxPending = maxPending;
+    	this.baseSize = baseSize ?? cpus().length;
+    	this.timeout = timeout;
+    	this.maxPending = maxPending;
     }
     
     /**
@@ -69,23 +69,23 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * with respectively assigned data.
      */
     private activate() {
-        if(!this.pendingAssignments.length || !this.idleWorkers.length) {
-            return;
-        }
+    	if(!this.pendingAssignments.length || !this.idleWorkers.length) {
+    		return;
+    	}
 
-        const worker: Worker = this.idleWorkers.shift();
-        const workerId: number = this.getWorkerId(worker);
-        const assignment: IPendingAssignment<I, O> = this.pendingAssignments.shift();
+    	const worker: Worker = this.idleWorkers.shift();
+    	const workerId: number = this.getWorkerId(worker);
+    	const assignment: IPendingAssignment<I, O> = this.pendingAssignments.shift();
         
-        this.activateWorker(worker, assignment.dataIn);
+    	this.activateWorker(worker, assignment.dataIn);
         
-        this.activeWorkers
-        .set(workerId, {
-            resolve: assignment.resolve,
-            timeout: setTimeout(() => {
-                this.deactivateWorker(worker, new Error(""));    // TODO: How to signal timeout?
-            }, this.timeout)
-        });
+    	this.activeWorkers
+    	.set(workerId, {
+    		resolve: assignment.resolve,
+    		timeout: setTimeout(() => {
+    			this.deactivateWorker(worker, new Error(""));    // TODO: How to signal timeout?
+    		}, this.timeout)
+    	});
     }
 
     /**
@@ -95,9 +95,9 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * @param workerId Worker entity identifier
      */
     private deactivate(workerId: number) {
-        this.activeWorkers.delete(workerId);
+    	this.activeWorkers.delete(workerId);
 
-        this.activate();
+    	this.activate();
     }
 
     /**
@@ -106,12 +106,12 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * @returns Numeric identifier
      */
     protected getWorkerId(worker: Worker): number {
-        const optimisticWorkerCast = worker as unknown as {
+    	const optimisticWorkerCast = worker as unknown as {
             threadId: number;
             pid: number;
         };
         
-        return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
+    	return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
     }
 
     /**
@@ -120,20 +120,20 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * @param dataOut Data to write out to the assignment context
      */
     public deactivateWorker(worker: Worker, dataOut: O|Error) {
-        const workerId: number = this.getWorkerId(worker);
+    	const workerId: number = this.getWorkerId(worker);
 
-        const activeWorker: IActiveWorker<O> = this.activeWorkers.get(workerId);
+    	const activeWorker: IActiveWorker<O> = this.activeWorkers.get(workerId);
 
-        if(!activeWorker) return;
+    	if(!activeWorker) return;
 
-        clearTimeout(activeWorker.timeout);
+    	clearTimeout(activeWorker.timeout);
 
-        activeWorker
-        .resolve((dataOut instanceof Error) ? null : dataOut);  // TODO: How tohandle errors specifically?
+    	activeWorker
+    	.resolve((dataOut instanceof Error) ? null : dataOut);  // TODO: How tohandle errors specifically?
 
-        this.idleWorkers.push(worker);
+    	this.idleWorkers.push(worker);
         
-        this.deactivate(workerId);
+    	this.deactivate(workerId);
     }
 
     /**
@@ -143,18 +143,18 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * @returns Promise resolving with worker results once done handling
      */
     public assign(dataIn: I): Promise<O> {
-        return new Promise((resolve: (dataOut: O) => void, reject) => {
-            if(this.pendingAssignments.length >= this.maxPending) {
-                reject();
+    	return new Promise((resolve: (dataOut: O) => void, reject) => {
+    		if(this.pendingAssignments.length >= this.maxPending) {
+    			reject();
 
-                return;
-            }
+    			return;
+    		}
             
-            this.pendingAssignments
-            .push({ dataIn, resolve });
+    		this.pendingAssignments
+    		.push({ dataIn, resolve });
             
-            this.activate();
-        });
+    		this.activate();
+    	});
     }
 
     /**
@@ -163,18 +163,18 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * candidate queue waiting for work.
      */
     public init() {
-        Array.from({ length: this.baseSize }, async () => {
-            const worker: Worker = await this.createWorker();
+    	Array.from({ length: this.baseSize }, async () => {
+    		const worker: Worker = await this.createWorker();
 
-            this.registeredWorkers.push(worker);
-            this.idleWorkers.push(worker);
-        });
+    		this.registeredWorkers.push(worker);
+    		this.idleWorkers.push(worker);
+    	});
 
-        /*
+    	/*
          * Enforce singleton usage of initialization method by
          * deleting the method member once called.
          */
-        delete this.init;   // Singleton usage
+    	delete this.init;   // Singleton usage
     }
     
     /**
@@ -183,19 +183,19 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * respective factory method.
      */
     public clear() {
-        delete this.createWorker;
+    	delete this.createWorker;
 
-        this.registeredWorkers.forEach((worker: Worker) => {
-            this.destroyWorker(worker);
-        });
+    	this.registeredWorkers.forEach((worker: Worker) => {
+    		this.destroyWorker(worker);
+    	});
     }
 
-    // TODO: Elastic size
+	// TODO: Elastic size
 
-    /* public getCurrentSize(): number {
+	/* public getCurrentSize(): number {
         return this.activeWorkers.size + this.idleWorkers.length;
     } */
 
-    // TODO: Dynamic sizing
+	// TODO: Dynamic sizing
 
 }

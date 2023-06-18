@@ -15,64 +15,66 @@ export abstract class ALogIntercept {
     public static readonly instances: ALogIntercept[] = [];
     
     private readonly lastMessage: ILastMessage = {
-        count: 0,
-        message: null,
-        timePivot: 0
+    	count: 0,
+    	message: null,
+    	timePivot: 0
     };
 
     public static handle(data: unknown, channelName: string) {
-        ALogIntercept.instances.forEach((instance: ALogIntercept) => {
-            instance.handle(String(data), channelName);
-        });
+    	ALogIntercept.instances.forEach((instance: ALogIntercept) => {
+    		instance.handle(String(data), channelName);
+    	});
     }
 
     protected static writeStdout(message: string) {
-        ALogIntercept._stdout(message);
+    	ALogIntercept._stdout(message);
     }
 
     protected static writeStderr(message: string) {
-        ALogIntercept._stderr(message);
+    	ALogIntercept._stderr(message);
     }
     
     constructor() {
-        ALogIntercept.instances.push(this);
+    	ALogIntercept.instances.push(this);
     }
     
     protected abstract handleStdout(message: string): void;
     protected abstract handleStderr(message: string): void;
 
     protected getGroupCount(message: string): number {
-        return this.lastMessage.message === message
-        ? this.lastMessage.count
-        : 0;
+    	return this.lastMessage.message === message
+    		? this.lastMessage.count
+    		: 0;
     }
     
-    public handle(message: string = "", channelName: string = "stdout") {
-        this.lastMessage.count = (message === this.lastMessage.message
+    public handle(message = "", channelName = "stdout") {
+    	this.lastMessage.count = (message === this.lastMessage.message
             && (Date.now() - this.lastMessage.timePivot) <= 30000)
-        ? (this.lastMessage.count + 1) : 1;
-        this.lastMessage.message = message;
-        this.lastMessage.timePivot = Date.now();
+    		? (this.lastMessage.count + 1) : 1;
+    	this.lastMessage.message = message;
+    	this.lastMessage.timePivot = Date.now();
         
-        switch(channelName) {
-            case "stdout":
-                this.handleStdout(message);
-                break;
-            case "stderr":
-                this.handleStderr(message);
-                break;
-        }
+    	switch(channelName) {
+    	case "stdout":
+    		this.handleStdout(message);
+    		break;
+    	case "stderr":
+    		this.handleStderr(message);
+    		break;
+    	}
     }
 
 }
 
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-process.stdout.write = (data, callback?) => {
-    ALogIntercept.handle(data, "stdout");
+process.stdout.write = (data, _?) => {
+	ALogIntercept.handle(data, "stdout");
 };
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-process.stderr.write = (data, callback?) => {
-    ALogIntercept.handle(data, "stderr");
+process.stderr.write = (data, _?) => {
+	ALogIntercept.handle(data, "stderr");
 };

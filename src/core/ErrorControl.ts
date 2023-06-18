@@ -12,25 +12,25 @@ type TExceptionHandler = ((err: Error) => void);
  */
 export class ErrorControl {
 
-    constructor(initExCallback?: TExceptionHandler, eventualExCallback?: TExceptionHandler, keepAliveDelay: number = 30000) {
-        const initErrorHandler = (err: Error) => {
-            console.error(err);
+	constructor(initExCallback?: TExceptionHandler, eventualExCallback?: TExceptionHandler, keepAliveDelay = 30000) {
+		const initErrorHandler = (err: Error) => {
+			console.error(err);
 
-            initExCallback && initExCallback(err);
+			initExCallback && initExCallback(err);
 
-            process.exit(1);
-        };
-        process.once("uncaughtException", initErrorHandler);
+			process.exit(1);
+		};
+		process.once("uncaughtException", initErrorHandler);
 
-        setTimeout(() => {
-            process.removeListener("once", initErrorHandler);
+		setTimeout(() => {
+			process.removeListener("once", initErrorHandler);
 
-            process.on("uncaughtException", (err: Error) => {
-                console.error(err);
+			process.on("uncaughtException", (err: Error) => {
+				console.error(err);
                 
-                eventualExCallback && eventualExCallback(err);
-            });
-        }, keepAliveDelay);
-    }
+				eventualExCallback && eventualExCallback(err);
+			});
+		}, keepAliveDelay);
+	}
 
 }

@@ -42,14 +42,14 @@ export class AsyncMutex<T> {
 			this.acquire(prioritize)
 			.then(() => {
 				(!(instructions instanceof Promise)
-				? new Promise<unknown>(r => r(instructions()))
-				: instructions)
-                .then((result: T) => resolve(result))
+					? new Promise<unknown>(r => r(instructions()))
+					: instructions)
+				.then((result: T) => resolve(result))
 				.catch((err: Error) => reject(err))
 				.finally(() => {
 					this.acquireQueue.length
-					? this.acquireQueue.shift()()
-					: (this.isLocked = false);
+						? this.acquireQueue.shift()()
+						: (this.isLocked = false);
 				});
 			});
 		});

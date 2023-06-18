@@ -7,5 +7,6 @@
     "pluginReferenceIndicator": "plug-in::",
     "pluginServerModuleName": "rjs.server.js",
     "privateFileIndicator": "_",
+    "specificIntegrationConfigKey": "specific",
     "webDirName": "web"
 }

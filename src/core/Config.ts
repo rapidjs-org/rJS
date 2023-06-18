@@ -42,9 +42,9 @@ export class Config {
      */
     private static applicableSpecifiers: string[] = [ "" ]
     .concat(
-        Object.entries(EmbedContext.global.mode)
-        .filter((entry: [ string, boolean ]) => entry[1])
-        .map((entry: [ string, boolean ]) => `.${entry[0]}`)
+    	Object.entries(EmbedContext.global.mode)
+    	.filter((entry: [ string, boolean ]) => entry[1])
+    	.map((entry: [ string, boolean ]) => `.${entry[0]}`)
     );
     
     /*
@@ -59,32 +59,32 @@ export class Config {
      * @returns 
      */
     private static deepMergeObj(...objs: TJSONObject[]): TJSONObject {
-        if(!objs.length) return null;
+    	if(!objs.length) return null;
 
-        if(objs.length === 1) return objs[0];
+    	if(objs.length === 1) return objs[0];
         
-        const source = objs.pop() || {};
-        let target = objs.pop() || {};
+    	const source = objs.pop() || {};
+    	let target = objs.pop() || {};
     
-        for(const key of (Object.keys(target).concat(Object.keys(source)))) {
-            if((target[key] || {}).constructor.name !== "Object"
+    	for(const key of (Object.keys(target).concat(Object.keys(source)))) {
+    		if((target[key] || {}).constructor.name !== "Object"
             || (source[key] || {}).constructor.name !== "Object") {
-                // Leaf
-                target[key] = source[key] || target[key];
+    			// Leaf
+    			target[key] = source[key] || target[key];
                 
-                continue;
-            }
+    			continue;
+    		}
             
-            // Recursive
-            source[key] = Config.deepMergeObj(target[key] as TJSONObject, source[key] as TJSONObject);
-        }
+    		// Recursive
+    		source[key] = Config.deepMergeObj(target[key] as TJSONObject, source[key] as TJSONObject);
+    	}
     
-        target = {
-            ...target,
-            ...source
-        };
+    	target = {
+    		...target,
+    		...source
+    	};
     
-        return Config.deepMergeObj(...objs, target);
+    	return Config.deepMergeObj(...objs, target);
     }
 
     /*
@@ -94,37 +94,37 @@ export class Config {
     private obj: TJSONObject;
 
     constructor(nameOrDefaultObj: string|string[]|TJSONObject, defaultConfigObj: TJSONObject = {}) {
-        if(Array.isArray(nameOrDefaultObj) || typeof(nameOrDefaultObj) !== "string") {
-            this.obj = nameOrDefaultObj as TJSONObject;
+    	if(Array.isArray(nameOrDefaultObj) || typeof(nameOrDefaultObj) !== "string") {
+    		this.obj = nameOrDefaultObj as TJSONObject;
 
-            return;
-        }
+    		return;
+    	}
 
-        this.obj = defaultConfigObj;
+    	this.obj = defaultConfigObj;
         
-        Config.applicableSpecifiers
-        .forEach((specifier: string) => {
-            const name = [ nameOrDefaultObj as string|string[] ].flat();
+    	Config.applicableSpecifiers
+    	.forEach((specifier: string) => {
+    		const name = [ nameOrDefaultObj as string|string[] ].flat();
             
-            let i = 0;
-            let fullName: string,
-                fullPath: string;
-            do {
-                if(i === name.length) return;
+    		let i = 0;
+    		let fullName: string,
+    			fullPath: string;
+    		do {
+    			if(i === name.length) return;
 
-                fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
-                fullPath = join(EmbedContext.global.path, `${fullName}`);
-            } while(!existsSync(fullPath));
+    			fullName = `${_config.appNameShort.toLowerCase()}.${name[i++]}${specifier}.json`; // TODO: More config formats?
+    			fullPath = join(EmbedContext.global.path, `${fullName}`);
+    		} while(!existsSync(fullPath));
             
-            let fileObj;
-            try {
-                fileObj = require(fullPath);
-            } catch(err) {
-                throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${fullName}'` : ""}`);
-            }
+    		let fileObj;
+    		try {
+    			fileObj = require(fullPath);
+    		} catch(err) {
+    			throw SyntaxError(`Configuration file could not be parsed:\n${err.message}${fullName ? ` '${fullName}'` : ""}`);
+    		}
             
-            this.obj = Config.deepMergeObj(this.obj, fileObj);
-        });
+    		this.obj = Config.deepMergeObj(this.obj, fileObj);
+    	});
     }
 
     /**
@@ -135,24 +135,24 @@ export class Config {
      * @returns Optional type resolve function object
      */
     private createResolveInterface(value: unknown): ITypeResolveInterface {
-        return {
-            bool: () => {
-                return (value && value !== "false");
-            },
-            number: () => {
-                return +value.toString();
-            },
-            string: () => {
-                return value?.toString();
-            },
-            object: () => {
-                return value as TJSONObject
-            }
-        };
+    	return {
+    		bool: () => {
+    			return (value && value !== "false");
+    		},
+    		number: () => {
+    			return +value.toString();
+    		},
+    		string: () => {
+    			return value?.toString();
+    		},
+    		object: () => {
+    			return value as TJSONObject;
+    		}
+    	};
     }
 
     public mergeDefault(defaultConfigObj: TJSONObject) {
-        this.obj = Config.deepMergeObj(defaultConfigObj, this.obj);
+    	this.obj = Config.deepMergeObj(defaultConfigObj, this.obj);
     }
 
     /**
@@ -162,18 +162,18 @@ export class Config {
      * @returns Type resolve interface
      */
     public get(...nestedKey: string[]): ITypeResolveInterface {
-        let value: string|number|boolean|TJSONObject = this.obj[nestedKey.shift()];
+    	let value: string|number|boolean|TJSONObject = this.obj[nestedKey.shift()];
 
-        try {
-            nestedKey
-            .forEach((key: string) => {
-                value = (value as TJSONObject)[key];
-            });
-        } catch {
-            throw new SyntaxError(`Required configuration missing '${nestedKey.join(".")}'`);    // TODO: To resolve interface to depict required type?
-        }
+    	try {
+    		nestedKey
+    		.forEach((key: string) => {
+    			value = (value as TJSONObject)[key];
+    		});
+    	} catch {
+    		throw new SyntaxError(`Required configuration missing '${nestedKey.join(".")}'`);    // TODO: To resolve interface to depict required type?
+    	}
         
-        return this.createResolveInterface(value);
+    	return this.createResolveInterface(value);
     }
 
 }

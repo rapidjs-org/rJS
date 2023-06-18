@@ -30,10 +30,10 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
     private readonly embedContext: EmbedContext;
 
     constructor(childProcessModulePath: string, embedContext: EmbedContext = EmbedContext.global, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
-        super(baseSize, timeout, maxPending);
+    	super(baseSize, timeout, maxPending);
 
-        this.embedContext = embedContext;
-        this.childProcessModulePath = childProcessModulePath;
+    	this.embedContext = embedContext;
+    	this.childProcessModulePath = childProcessModulePath;
     }
     
     /**
@@ -43,16 +43,16 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      * @returns Child process handle
      */
     protected createWorker(): ChildProcess {        
-        const childProcess = fork(this.childProcessModulePath, this.embedContext.args, {
-            cwd: process.cwd(),
-            detached: false,
-            silent: true
-        });
+    	const childProcess = fork(this.childProcessModulePath, this.embedContext.args, {
+    		cwd: process.cwd(),
+    		detached: false,
+    		silent: true
+    	});
         
-		childProcess.stdout.on("data", (message: Buffer) => {
-            this.emit("stdout", String(message));
-		});
-        /*
+    	childProcess.stdout.on("data", (message: Buffer) => {
+    		this.emit("stdout", String(message));
+    	});
+    	/*
          * Any error occurring within processes is locally intercepted.
          * Hence, any error bubbling up is due to explicit pass through
          * behavior motivated by error control instances.
@@ -60,21 +60,21 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
          * Terminate any running clustered sub-process and 
          * it handled with downwards-inherent cluster termination.
          */
-		childProcess.stderr.on("data", (err: Buffer) => {
-            this.emit("stderr", String(err));
+    	childProcess.stderr.on("data", (err: Buffer) => {
+    		this.emit("stderr", String(err));
 
-            this.deactivateWorker(childProcess, null);
-		});
+    		this.deactivateWorker(childProcess, null);
+    	});
         
-        childProcess.on("message", (message: string) => {
-            if(message !== "done") {
-                return;
-            }
+    	childProcess.on("message", (message: string) => {
+    		if(message !== "done") {
+    			return;
+    		}
 
-            this.deactivateWorker(childProcess, null);
-        });
+    		this.deactivateWorker(childProcess, null);
+    	});
         
-        return childProcess;
+    	return childProcess;
     }
     
     /**
@@ -83,7 +83,7 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      * @param childProcess Child process handle
      */
     protected destroyWorker(childProcess: ChildProcess) {
-        childProcess.kill();
+    	childProcess.kill();
     }
 
     /**
@@ -94,13 +94,13 @@ export class ProcessPool extends AWorkerPool<IChildData, void> {
      * @param childData Child data package
      */
     protected activateWorker(childProcess: ChildProcess, childData: IChildData) {
-        childProcess.send(childData.iReq, childData.socket);
+    	childProcess.send(childData.iReq, childData.socket);
 
-        //childProcess.on("error", err => console.error(err));
+    	//childProcess.on("error", err => console.error(err));
     }
 
     public emit(eventName: "stdout"|"stderr", message: string): boolean {
-        return super.emit(eventName, message);
+    	return super.emit(eventName, message);
     }
 
 }

@@ -18,37 +18,37 @@ import { EmbedContext } from "../EmbedContext";
 
 
 export function install() {
-    const pluginReference = Args.global.parsePositional(1);
+	const pluginReference = Args.global.parsePositional(1);
 
-    if(!pluginReference) throw new ReferenceError("Missing plug-in reference (arg pos 1)");
+	if(!pluginReference) throw new ReferenceError("Missing plug-in reference (arg pos 1)");
 
-    // TODO: Implement
+	// TODO: Implement
 }
 
 
 function writePluginToPackageJSON(pluginName: string, version: string) {
-    const packageJSONObj: TJSONObject = readPackageJSON();
+	const packageJSONObj: TJSONObject = readPackageJSON();
 
-    const subObj = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
-    subObj[pluginName] = version;
-    packageJSONObj[_config.packagePluginsKey] = subObj;
+	const subObj = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
+	subObj[pluginName] = version;
+	packageJSONObj[_config.packagePluginsKey] = subObj;
 
-    writeFileSync(join(EmbedContext.global.path, "package.json"), JSON.stringify(packageJSONObj));
+	writeFileSync(join(EmbedContext.global.path, "package.json"), JSON.stringify(packageJSONObj));
 }
 
 function installPluginsFromPackageJSON() {
-    const packageJSONObj: TJSONObject = readPackageJSON();
+	const packageJSONObj: TJSONObject = readPackageJSON();
     
-    const installationDict: TJSONObject = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
-    for(let plugin in installationDict) {
-        // TODO: Install 'installationDict[plugin]'
-    }
+	const installationDict: TJSONObject = packageJSONObj[_config.packagePluginsKey] as TJSONObject;
+	for(const plugin in installationDict) {
+		// TODO: Install 'installationDict[plugin]'
+	}
 }
 
 function readPackageJSON(): TJSONObject {
-    const packageJSONPath: string = join(EmbedContext.global.path, "package.json");
+	const packageJSONPath: string = join(EmbedContext.global.path, "package.json");
 
-    return existsSync(packageJSONPath)
-    ? JSON.parse(String(readFileSync(packageJSONPath)))
-    : {};
+	return existsSync(packageJSONPath)
+		? JSON.parse(String(readFileSync(packageJSONPath)))
+		: {};
 }

@@ -9,15 +9,15 @@ export class Args {
     private designated: string[] = [];
 
     constructor(array: string[]) {
-        for(let i = 0; i < array.length; i++) {
-            if(/^-/.test(array[i])) {
-                this.designated = array.slice(i);
+    	for(let i = 0; i < array.length; i++) {
+    		if(/^-/.test(array[i])) {
+    			this.designated = array.slice(i);
 
-                break;
-            }
+    			break;
+    		}
             
-            this.positionals.push(array[i]);
-        }
+    		this.positionals.push(array[i]);
+    	}
     }
 
     /**
@@ -27,7 +27,7 @@ export class Args {
      * @returns Value type resolve interface
      */
     private retrieveKeyIndex(name: string, shorthand?: string): number {
-        return Math.max(this.designated.indexOf(`--${name}`), shorthand ? this.designated.indexOf(`-${shorthand}`) : -1);
+    	return Math.max(this.designated.indexOf(`--${name}`), shorthand ? this.designated.indexOf(`-${shorthand}`) : -1);
     }
 
     /**
@@ -36,8 +36,8 @@ export class Args {
      * @param index Position key
      * @returns The name of the positional argument if provided at index (no indicating dash)
      */
-    public parsePositional(index: number = 0): string {
-        return this.positionals[index];
+    public parsePositional(index = 0): string {
+    	return this.positionals[index];
     }
 
     /**
@@ -47,7 +47,7 @@ export class Args {
      * @returns Whether the flag is set
      */
     public parseFlag(key: string, shorthand?: string): boolean {
-        return (this.retrieveKeyIndex(key, shorthand) >= 0);
+    	return (this.retrieveKeyIndex(key, shorthand) >= 0);
     }
 
     /**
@@ -60,22 +60,22 @@ export class Args {
         string: string;
         number: number;
     } {
-        let index: number = this.retrieveKeyIndex(key, shorthand);
-        if(index < 0 || ++index >= this.designated.length) {
-            return {
-                string: undefined,
-                number: undefined
-            };
-        }
+    	let index: number = this.retrieveKeyIndex(key, shorthand);
+    	if(index < 0 || ++index >= this.designated.length) {
+    		return {
+    			string: undefined,
+    			number: undefined
+    		};
+    	}
 
-        /*
+    	/*
         * Create an object from a value with type specific properties.
         * Utilize after parsing an option in order to fit type.
         */
-        return {
-            string: this.designated[index],
-            number: +this.designated[index]
-        };
+    	return {
+    		string: this.designated[index],
+    		number: +this.designated[index]
+    	};
     }
 
 }

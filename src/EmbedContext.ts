@@ -29,82 +29,84 @@ export class EmbedContext { // TODO: Singleton
     public readonly mode: IRuntimeMode;
 
     constructor(relatedArgs: string[]) {
-        /*
+    	/*
          * Arguments provided for context resembling process argv
          * without the leading exec and file path information.
          */
-        this.args = relatedArgs;
+    	this.args = relatedArgs;
         
-        this.argsParser = new Args(relatedArgs);
+    	this.argsParser = new Args(relatedArgs);
 
-        /*
+    	/*
          * Which concrete server application the core is supposed
          * to interpret within the related cluster threads.
          */
-        // TODO: Provide positional-only aliases for known |start| <concrete> combinations
-        let concreteReference: string = this.argsParser.parsePositional(1);
-        if(concreteReference) {
-            concreteReference = (!/^(@?[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(concreteReference))
-            ? join(process.cwd(), concreteReference)
-            : concreteReference;
+    	// TODO: Provide positional-only aliases for known |start| <concrete> combinations
+    	let concreteReference: string = this.argsParser.parsePositional(1);
+    	if(concreteReference) {
+    		concreteReference = (!/^(@?[a-z0-9_-]+\/)?[a-z0-9_-]+/i.test(concreteReference))
+    			? join(process.cwd(), concreteReference)
+    			: concreteReference;
             
-            try {
-                concreteReference = require.resolve(concreteReference);
-            } catch {}
-        }
-        this.concreteAppModulePath = concreteReference ?? join(__dirname, "../apps/asset/api.app.js");
+    		try {
+    			concreteReference = require.resolve(concreteReference);
+    		} catch {
+    			throw new ReferenceError(`Could not find concrete application module '${concreteReference}'`);
+    		}
+    	}
+    	this.concreteAppModulePath = concreteReference ?? join(__dirname, "../apps/asset/api.app.js");
 
-        if(!this.concreteAppModulePath) {
-            throw new ReferenceError("Missing concrete application module path");
-        }
+    	if(!this.concreteAppModulePath) {
+    		throw new ReferenceError("Missing concrete application module path");
+    	}
 
-        /*
+    	/*
          * Which hostname(s) to associate with the application and
          * therefore reverse-proxy accordingly.
          */
-        this.hostnames = (this.argsParser.parseOption("hostname", "H").string ?? "localhost")
-        .split(/,/g);
-        // TODO: Check hostnames syntax validity
+    	this.hostnames = (this.argsParser.parseOption("hostname", "H").string ?? "localhost")
+    	.split(/,/g);
+    	// TODO: Check hostnames syntax validity
 
-        /*
+    	/*
          * Whether to require HTTPS to be used (instead of bare HTTP).
          */
-        this.isSecure = this.argsParser.parseFlag("secure", "S") || /^https:\/\//i.test(this.hostnames[0]);
+    	this.isSecure = this.argsParser.parseFlag("secure", "S") || /^https:\/\//i.test(this.hostnames[0]);
         
-        /*
+    	/*
          * Which port to embed application to. Embeds to the related
          * proxy process if already exists, or spins up a process
          * first otherwise.
          */
-        this.port = this.argsParser.parseOption("port", "P").number ?? (this.isSecure ? 443 : 80);
+    	this.port = this.argsParser.parseOption("port", "P").number ?? (this.isSecure ? 443 : 80);
         
-        /*
+    	/*
          * Working directory of the embedded application. Uses the
          * commanding CWD by default.
          */
-        const wdPath: string = process.cwd();
-        const argPath: string = this.argsParser.parseOption("wd", "W").string;
+    	const wdPath: string = process.cwd();
+    	const argPath: string = this.argsParser.parseOption("wd", "W").string;
         
-        this.path = normalize(
-            argPath
-            ? (!isAbsolute(argPath)
-                ? join(wdPath, argPath)
-                : argPath)
-            : wdPath
-        );
+    	this.path = normalize(
+    		argPath
+    			? (!isAbsolute(argPath)
+    				? join(wdPath, argPath)
+    				: argPath)
+    			: wdPath
+    	);
         
-        /*
+    	/*
          * Encode the runtime mode representing a dictionary with
          * all existing modes mapped to their respective activation
          * state boolean. Enables multiple concurrent modes and a
          * simple access usage.
          */
-        const devFlagSet: boolean = this.argsParser.parseFlag("dev", "D");
+    	const devFlagSet: boolean = this.argsParser.parseFlag("dev", "D");
         
-        this.mode = {
-            DEV: devFlagSet,
-            PROD: !devFlagSet
-        };
+    	this.mode = {
+    		DEV: devFlagSet,
+    		PROD: !devFlagSet
+    	};
     }
 
 }
