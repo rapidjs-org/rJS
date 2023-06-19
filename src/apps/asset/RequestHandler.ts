@@ -182,7 +182,7 @@ export class RequestHandler {
     private fileHTML(pathname: string) {
     	this.file(pathname);
 
-    	const pluginReferenceTag = `<script src="/${_config.pluginReferenceIndicator}${PluginRegistry.getRegistered().join(_config.pluginReferenceConcatenator)}"></script>`;   // TODO: Dir local plugins?
+    	const pluginReferenceTag = `<script src="/${_config.pluginReferenceIndicator}${PluginRegistry.getGloballyEffective().join(_config.pluginReferenceConcatenator)}"></script>`;   // TODO: Dir local plugins?
 
     	this.message = /<\s*head(\s|>).*>.*<\s\/head\s*>/i.test(this.message as string)
     		? (this.message as string).replace(/(<\s*head(\s|>)[^>]*>)/, `$1${pluginReferenceTag}`) // TODO: Strengthen regexes

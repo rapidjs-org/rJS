@@ -32,9 +32,12 @@ export class PluginRegistry {
     private static readonly globallyEffectivePluginNames: string[] = [];
 
     public static register(plugin: CoreAPI.Plugin) {
-    	this.moduleRegistry.set(plugin.name, this.requireModules(plugin.name, plugin.vfs));
+		const moduleObj: IPlugin = this.requireModules(plugin.name, plugin.vfs);
+
+    	this.moduleRegistry.set(plugin.name, moduleObj);
 
 		plugin.config.get(_config.specificIntegrationConfigKey).bool
+		&& moduleObj.clientModuleText
 		&& PluginRegistry.globallyEffectivePluginNames.push(plugin.name);
     }
 
@@ -55,6 +58,10 @@ export class PluginRegistry {
     	};
         
     	let clientModuleText: string = pluginVfs.read(_config.pluginClientModuleName).data as string;
+
+		if(!clientModuleText.trim().length) return {
+			serverModuleReference
+		};
         
     	let localRequestMethodId = "req";
     	while(clientModuleText.indexOf(localRequestMethodId) >= 0) {
