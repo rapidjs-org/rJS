@@ -86,9 +86,9 @@ export class PluginRegistry {
 
     public static produceModuleText(bareModuleFileName: string, substitutes: Record<string, string>): string {
     	let moduleText: string = PluginRegistry.bareModules.has(bareModuleFileName)
-    		? PluginRegistry.bareModules.get(bareModuleFileName)
-    		: String(readFileSync(join(__dirname, "./plugin-modules/", bareModuleFileName.replace(/(\.js)?$/, ".js"))));
-
+		? PluginRegistry.bareModules.get(bareModuleFileName)
+		: String(readFileSync(join(__dirname, "./plugin-modules/", bareModuleFileName.replace(/(\.js)?$/, ".js"))));
+		
     	for(const substitute in substitutes) {
     		moduleText = moduleText
     		.replace(new RegExp(`\\/\\*\\*\\* *@${substitute.toUpperCase()} *\\*\\*\\*\\/`, "g"), substitutes[substitute]);

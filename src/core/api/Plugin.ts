@@ -24,12 +24,8 @@ export class Plugin {
     private static readonly config: Config = new Config("plugins");
     private static readonly registry: Map<string, Plugin> = new Map();
 
-    public static forEach(loopCallback: ((plugin: Plugin) => void)) {
-    	this.registry.forEach(loopCallback);
-    }
-
-    public static load() {
-    	const pluginsDirPath: string = join(EmbedContext.global.path, _config.pluginsDir);
+	private static loadFromPath(path: string, includeIdentifierLevels: boolean = true) {
+    	const pluginsDirPath: string = join(EmbedContext.global.path, path);
 
     	if(!existsSync(pluginsDirPath)) return;
 
@@ -37,11 +33,25 @@ export class Plugin {
     		withFileTypes: true
     	})
     	.forEach((dirent: Dirent) => {
-    		if(!dirent.isDirectory()) return;
+    		if(dirent.isDirectory()) {
+				(includeIdentifierLevels && /^@[a-z0-9-][a-z0-9_-]{0,213}$/.test(dirent.name))
+				&& Plugin.loadFromPath(join(path, dirent.name), false);
+				
+				return;
+			}
 
     		new Plugin(dirent.name);
     	});
+	}
+	
+    public static forEach(loopCallback: ((plugin: Plugin) => void)) {
+    	this.registry.forEach(loopCallback);
+    }
+
+    public static load() {
     	// TODO: From package, too
+		Plugin.loadFromPath(_config.installedPluginsPath);
+		Plugin.loadFromPath(_config.localPluginsPath);
     }
 
     public readonly name: string;
