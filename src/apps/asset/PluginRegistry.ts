@@ -35,49 +35,45 @@ export class PluginRegistry {
 		const moduleObj: IPlugin = this.requireModules(plugin.name, plugin.vfs);
 
     	this.moduleRegistry.set(plugin.name, moduleObj);
-
+		
 		plugin.config.get(_config.specificIntegrationConfigKey).bool
 		&& moduleObj.clientModuleText
 		&& PluginRegistry.globallyEffectivePluginNames.push(plugin.name);
     }
 
     private static requireModules(pluginName: string, pluginVfs: CoreAPI.VFS): IPlugin {
-    	if(!pluginVfs.exists(_config.pluginServerModuleName)) return null;
-        
-    	const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
+		let serverModuleReference: TModuleExports;
+		if(pluginVfs.exists(_config.pluginServerModuleName)) {
+			const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
 
-    	const moduleReference: Module = new Module("", require.main);
-    	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    	// @ts-ignore
-    	moduleReference._compile(serverModuleText, "");
+			const moduleReference: Module = new Module("", require.main);
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			moduleReference._compile(serverModuleText, "");
 
-    	const serverModuleReference: TModuleExports = moduleReference.exports;
+			serverModuleReference = moduleReference.exports;
+		}
 
-    	if(!pluginVfs.exists(_config.pluginClientModuleName)) return {
-    		serverModuleReference
-    	};
-        
-    	let clientModuleText: string = pluginVfs.read(_config.pluginClientModuleName).data as string;
+    	let clientModuleText: string;
+		if(pluginVfs.exists(_config.pluginClientModuleName)) {
+			clientModuleText = pluginVfs.read(_config.pluginClientModuleName).data as string;
+			
+			let localRequestMethodId = "req";
+			while(clientModuleText.indexOf(localRequestMethodId) >= 0) {
+				localRequestMethodId = "_" + localRequestMethodId;
+			}
 
-		if(!clientModuleText.trim().length) return {
-			serverModuleReference
-		};
-        
-    	let localRequestMethodId = "req";
-    	while(clientModuleText.indexOf(localRequestMethodId) >= 0) {
-    		localRequestMethodId = "_" + localRequestMethodId;
-    	}
-
-    	clientModuleText = this.produceModuleText("client.plugin", {
-    		"NAME": pluginName,
-    		"CHANNELED_METHODS": Object.keys(serverModuleReference)
-			.map((methodName: string) => `const ${methodName} = (...args) => {
-				return ${localRequestMethodId}.apply(null, args);
-			}`)
-			.join("\n"),
-    		"REQUEST_METHOD_ID": localRequestMethodId,
-    		"SCRIPT": `${clientModuleText}`
-    	});
+			clientModuleText = this.produceModuleText("client.plugin", {
+				"NAME": pluginName,
+				"CHANNELED_METHODS": Object.keys(serverModuleReference)
+				.map((methodName: string) => `const ${methodName} = (...args) => {
+					return ${localRequestMethodId}.apply(null, args);
+				}`)
+				.join("\n"),
+				"REQUEST_METHOD_ID": localRequestMethodId,
+				"SCRIPT": `${clientModuleText}`
+			});
+		}
 
     	return {
     		serverModuleReference, clientModuleText

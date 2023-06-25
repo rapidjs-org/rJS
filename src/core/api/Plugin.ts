@@ -2,7 +2,7 @@ import _config from "../_config.json";
 
 
 import { Dirent, existsSync, readdirSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 
 import { TJSONObject } from "../../types";
 
@@ -33,14 +33,17 @@ export class Plugin {
     		withFileTypes: true
     	})
     	.forEach((dirent: Dirent) => {
-    		if(dirent.isDirectory()) {
-				(includeIdentifierLevels && /^@[a-z0-9-][a-z0-9_-]{0,213}$/.test(dirent.name))
-				&& Plugin.loadFromPath(join(path, dirent.name), false);
+    		if(!dirent.isDirectory()) return;
+			
+			const subPath: string = join(path, dirent.name);
+			
+			if(includeIdentifierLevels && /^@[a-z0-9-][a-z0-9_-]{0,213}$/.test(dirent.name)) {
+				Plugin.loadFromPath(subPath, false);
 				
 				return;
 			}
-
-    		new Plugin(dirent.name);
+			
+    		new Plugin(!includeIdentifierLevels ? `${basename(path)}/${dirent.name}` : dirent.name, subPath);
     	});
 	}
 	
@@ -49,7 +52,6 @@ export class Plugin {
     }
 
     public static load() {
-    	// TODO: From package, too
 		Plugin.loadFromPath(_config.installedPluginsPath);
 		Plugin.loadFromPath(_config.localPluginsPath);
     }
@@ -58,7 +60,7 @@ export class Plugin {
     public readonly config: Config;
     public readonly vfs: VFS;
 
-    constructor(name: string) {
+    constructor(name: string, path: string) {
     	if(!new RegExp(`^${PLUGIN_NAME_REGEX.source}$`).test(name)) {
     		throw new SyntaxError(`Invalid plug-in name '${name}'`);
     	}
@@ -66,8 +68,8 @@ export class Plugin {
     	this.name = name;
 
     	const subConfigObj: TJSONObject = Plugin.config.get(this.name).object();
-    	this.config = subConfigObj ? new Config(subConfigObj) : null;
-    	this.vfs = new VFS(join(_config.pluginsDir, name));
+    	this.config = new Config(subConfigObj ?? {});
+    	this.vfs = new VFS(path);
 
     	Plugin.registry.set(this.name, this);
     }

@@ -15,7 +15,7 @@ import { PluginRegistry } from "./PluginRegistry";
 
 export class RequestHandler {
 
-    private static readonly pluginReferenceRegex: RegExp = new RegExp(`\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
+    private static readonly pluginReferenceRegex: RegExp = new RegExp(`^\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
     private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS("./web/");
     
     private readonly reqUrl: TUrl;
@@ -89,7 +89,7 @@ export class RequestHandler {
     }
 
     private handlePOST() {
-		
+		console.log(this.reqUrl.pathname);
     }
 
     private redirect(redirectUrl: IHighlevelURL) {
