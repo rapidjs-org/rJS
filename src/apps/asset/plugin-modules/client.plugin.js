@@ -1,4 +1,4 @@
-rJS[ "/*** @NAME ***/"  ] = ((/*** @REQUEST_METHOD_ID ***/) => {
+rJS["/*** @NAME ***/"] = ((/*** @REQUEST_METHOD_ID ***/) => {
 
     /*** @CHANNELED_METHODS ***/
 
@@ -8,6 +8,6 @@ rJS[ "/*** @NAME ***/"  ] = ((/*** @REQUEST_METHOD_ID ***/) => {
     
     /*** @SCRIPT ***/
 
-    return module;
+    return module.exports;
 
 })(performRequest);

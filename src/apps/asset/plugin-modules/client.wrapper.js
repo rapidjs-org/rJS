@@ -2,7 +2,7 @@ const rJS = {};
 
 (() => {
 
-    function performRequest(pluginName, endpointName) {
+    function performRequest(pluginName, endpointName, ...args) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", `/${pluginName}/${endpointName}`);
@@ -21,7 +21,7 @@ const rJS = {};
             xhr.onerror = () => {
                 reject(xhr.status || 500);
             }
-            xhr.send();
+            xhr.send(JSON.stringify(args));
         });
     }
 

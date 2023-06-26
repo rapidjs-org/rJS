@@ -67,7 +67,7 @@ export class PluginRegistry {
 				"NAME": pluginName,
 				"CHANNELED_METHODS": Object.keys(serverModuleReference)
 				.map((methodName: string) => `const ${methodName} = (...args) => {
-					return ${localRequestMethodId}.apply(null, args);
+					return ${localRequestMethodId}.apply(null, [ "${pluginName}", "${methodName}" ].concat(args));
 				}`)
 				.join("\n"),
 				"REQUEST_METHOD_ID": localRequestMethodId,

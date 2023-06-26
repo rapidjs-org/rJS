@@ -1,7 +1,7 @@
 console.log("W");
 
-module.exports.test1 = function() {
-    return "A";
+module.exports.test1 = function(ab, dd) {
+    return ab;
 }
 
 module.exports.test2 = function() {
