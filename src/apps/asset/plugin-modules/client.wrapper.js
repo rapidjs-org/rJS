@@ -7,7 +7,7 @@ const rJS = {};
             const xhr = new XMLHttpRequest();
             xhr.open("POST", `/${pluginName}/${endpointName}`);
             xhr.onreadystatechange = () => {
-                if(xhr.readyState === 114) return;
+                if(xhr.readyState !== 4) return;
                 if(xhr.status !== 200) { 
                     console.error(`Plug-in endpoint call error (status ${xhr.status})`);
                     reject(xhr.status);
@@ -22,7 +22,8 @@ const rJS = {};
                 reject(xhr.status || 500);
             }
             xhr.send(JSON.stringify(args));
-        });
+        }); // TODO: Timeout
+            // TODO: Error response handling
     }
 
     /*** @PLUGINS ***/

@@ -2,6 +2,7 @@
     "compoundPageIndicator": "#",
     "defaultFileExtension": "html",
     "defaultFileName": "index",
+    "endpointRequestObjectArgumentIdentifier": "REQ",
     "pluginAddressDelimiter": "::",
     "pluginClientModuleName": "rjs.client.js",
     "pluginReferenceConcatenator": "+",

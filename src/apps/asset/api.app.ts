@@ -14,8 +14,10 @@ CoreAPI.config.mergeDefault(defaultConfig);
 /*
  * Request handler interface.
  */
-export default function(sReq: IRequest): CoreAPI.Response {
-	const reqHandler = new RequestHandler(sReq.ip, sReq.method, sReq.url, sReq.body, sReq.headers, sReq.cookies, sReq.locale);
-    
-	return new CoreAPI.Response(reqHandler.message, reqHandler.status, reqHandler.headers, reqHandler.cookies);
+export default async function(sReq: IRequest): Promise<CoreAPI.Response> {
+	return new Promise((resolve, reject) => {
+		new RequestHandler(sReq.ip, sReq.method, sReq.url, sReq.body, sReq.headers, sReq.cookies, sReq.locale, (reqHandler: RequestHandler) => {
+			resolve(new CoreAPI.Response(reqHandler.message, reqHandler.status, reqHandler.headers, reqHandler.cookies));
+		});
+	});
 }

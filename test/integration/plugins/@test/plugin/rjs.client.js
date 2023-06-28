@@ -1,3 +1,4 @@
 module.exports.test = async function() {
-    return await (await test1(224, 827)).text();
+    const t1 = await test1(224, 827);
+    return (await t1.text());
 };

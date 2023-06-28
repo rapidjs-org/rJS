@@ -13,37 +13,65 @@ import { join } from "path";
 import { PluginRegistry } from "./PluginRegistry";
 
 
+interface IEndpointReqObj {
+	auth: string|string[];
+	ip: string;
+	locale: TLocale;
+
+	compoundVFS?: CoreAPI.VFS;
+}
+
+
 export class RequestHandler {
 
     private static readonly pluginReferenceRegex: RegExp = new RegExp(`^\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
     private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS("./web/");
+	private static readonly endpointSignatureReqIndexes: Map<string[], number> = new Map();
     
+	private readonly reqIp: string;
     private readonly reqUrl: TUrl;
+    private readonly reqBody: unknown;
     private readonly reqHeaders: THeaders;
+	private readonly reqLocale: TLocale;
 
     public message: string|Buffer;
     public status: number;
     public headers: THeaders;
     public cookies: TCookies;
 
-    constructor(ip: string, method: string, url: TUrl, body: unknown, headers: THeaders, cookies?: TCookies, locale?: TLocale) {
+    constructor(ip: string, method: string, url: TUrl, body: unknown, headers: THeaders, cookies?: TCookies, locale?: TLocale, asyncResolveCallback: ((reqHandler?: RequestHandler) => void) = (() => {})) {
+    	this.reqIp = ip;
     	this.reqUrl = url;
+    	this.reqBody = body;
     	this.reqHeaders = headers;
-        
+    	this.reqLocale = locale;
+		
     	this.headers = {};
     	this.cookies = {};
 
-    	switch(method.toUpperCase()) {
+    	switch(method) {
     	case "GET":
     		this.handleGET();
     		break;
     	case "POST":
-    		this.handlePOST();
-    		break;
+    		this.handlePOST(asyncResolveCallback);
+    		return;
     	default:
     		this.status = 406;
     	}
+		
+		asyncResolveCallback(this);
     }
+
+	private produceEndpointRequestObj(): IEndpointReqObj {
+		return {
+			auth: this.reqHeaders["Authorization"],
+			ip: this.reqIp,
+			locale: this.reqLocale,
+
+
+		};
+	}
 
     private handleGET() {
     	if(RequestHandler.pluginReferenceRegex.test(this.reqUrl.pathname)) {
@@ -88,8 +116,66 @@ export class RequestHandler {
     		: this.fileArbitrary();
     }
 
-    private handlePOST() {
-		console.log(this.reqUrl.pathname);
+    private async handlePOST(asyncResolveCallback: ((reqHandler: RequestHandler) => void)) {
+		const pluginName: string = this.reqUrl.pathname.match(PLUGIN_NAME_REGEX)[0];
+		const endpointName: string = this.reqUrl.pathname.slice(pluginName.length + 2);
+
+		const serverModuleReference = PluginRegistry.getServerModuleReference(pluginName);
+		
+		if(!serverModuleReference || !serverModuleReference[endpointName]) {
+			this.status = 404;
+
+			asyncResolveCallback(this);
+
+			return;
+		}
+
+		let endpointMember: unknown = serverModuleReference[endpointName];
+
+		let argValueList = this.reqBody as unknown[];
+		let reqIndex: number;
+		if(!RequestHandler.endpointSignatureReqIndexes.has([ pluginName, endpointName ])) {
+			const argNameList: string[] = (endpointMember as Function).toString()
+			.replace(/\\["'`]/g, "")
+			.replace(/(["'`])((?!\1)(\s|.))*\1/g, "")
+			.match(/\(((?!\))(\s|.))*\)/)[0]
+			.slice(1, -1).split(/,/g)
+			.map((arg: string) => arg.trim().split(" ")[0]);
+
+			reqIndex = argNameList.indexOf(_config.endpointRequestObjectArgumentIdentifier);
+
+			RequestHandler.endpointSignatureReqIndexes.set([ pluginName, endpointName ], reqIndex);
+		} else {
+			reqIndex = RequestHandler.endpointSignatureReqIndexes.get([ pluginName, endpointName ]);
+		}
+
+		argValueList = (reqIndex >= 0)
+		? argValueList
+			.slice(0, reqIndex)
+			.concat([ this.produceEndpointRequestObj() ], argValueList.slice(reqIndex))
+		: argValueList;
+
+		try {
+			endpointMember = (endpointMember instanceof Function)
+			? endpointMember.apply(null, argValueList)
+			: endpointMember;
+
+			this.message = (endpointMember instanceof Promise)
+			? await endpointMember
+			: endpointMember;
+		} catch(errOrStatusCode: unknown) {
+			const isStatusCode: boolean = (errOrStatusCode instanceof Number) || typeof(errOrStatusCode) == "number";
+
+			this.status = isStatusCode
+			? errOrStatusCode as number
+			: 500;
+			
+			this.message = !isStatusCode
+			? errOrStatusCode.toString()
+			: null;
+		}
+
+		asyncResolveCallback(this);
     }
 
     private redirect(redirectUrl: IHighlevelURL) {

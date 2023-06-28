@@ -17,6 +17,7 @@ export interface IBasicRequest {
     hostname: string;
     method: string;
     url: string;
+    body: unknown;
 }
 
 export interface IRequest {
@@ -25,7 +26,7 @@ export interface IRequest {
     url: TUrl;
     ip: string;
     
-    body?: unknown
+    body?: unknown;
     cookies?: TCookies;
     locale?: TLocale;
 }

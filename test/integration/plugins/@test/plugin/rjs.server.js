@@ -1,7 +1,8 @@
 console.log("W");
 
-module.exports.test1 = function(ab, dd) {
-    return ab;
+module.exports.test1 = function(ab, REQ, dd = "awd w \" awdaw") {
+    console.log(REQ);
+    return String(ab) + (dd ?? "");
 }
 
 module.exports.test2 = function() {

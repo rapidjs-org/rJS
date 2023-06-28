@@ -140,20 +140,6 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
 	// Parse body if is payload effective method
 	const method: string = iReq.method.toUpperCase();
     
-	let body: TJSONObject;
-	if([ "POST", "PUT", "OPTIONS" ].includes(method)) {
-		let bodyBuffer = "";
-		let chunk: Buffer = socket.read();
-		
-		while(chunk) {
-			bodyBuffer += chunk.toString();
-
-			if(bodyBuffer.length > Config.global.get("limit", "payloadSize").number()) return end(socket, 413);
-
-			chunk = socket.read();
-		}
-	}
-    
 	// Construct remaining relevant request information
 	const dynamicURL: URL = new URL(iReq.url);
 	const highlevelURL: IHighlevelURL = {
@@ -217,7 +203,7 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
 			value
 		};
 	});
-
+	
 	// Construct high-level thread provision request object
 	const sReq: IRequest = {
 		ip: clientIP,
@@ -227,7 +213,9 @@ async function handleRequest(iReq: IBasicRequest, socket: Socket) {
 		locale: highlevelLocale,
 		headers: iReq.headers,  // TODO: High-level headers interface?
         
-		...(body ?? {})
+		...(iReq.body ? {
+			body: iReq.body
+		} : {})
 	};
     
 	// Remove auto-processed headers from high-level request

@@ -34,9 +34,15 @@ import(EmbedContext.global.concreteAppModulePath)
 	/*
      * Listen for incoming requests to handle with specified routine.
      */
-	parentPort.on("message", (sReq: IRequest) => {    
+	parentPort.on("message", async (sReq: IRequest) => {    
+		let response: IResponse|Promise<IResponse> = api.default(sReq);
+
+		response = (response instanceof Promise)
+		? await response
+		: response;
+		
 		parentPort.postMessage(
-			api.default(sReq)
+			response
 		);
 	});
     

@@ -46,14 +46,28 @@ export class HTTPServer {
     			.replace(/:[0-9]+$/, "");
     			const url = `http${EmbedContext.global.isSecure ? "s" : ""}://${hostname}:${EmbedContext.global.port}${req.url}`;
                 
-    			const iReq: IBasicRequest = {
-    				headers: req.headers,
-    				hostname: hostname,
-    				method: req.method,
-    				url: url
-    			};
-                
-    			requestHandlerCallback(iReq, req.socket);
+				var bodyChunks: string[] = [];
+				req.on("readable", function() {
+					bodyChunks.push(req.read());
+				});
+				req.on("end", function() {
+					let body: unknown;
+					try {
+						body = JSON.parse(bodyChunks.join(""));
+					} catch {
+						body = bodyChunks.join("");
+					}
+
+					const iReq: IBasicRequest = {
+						headers: req.headers,
+						hostname: hostname,
+						method: req.method,
+						url: url,
+						body: body
+					};
+					
+					requestHandlerCallback(iReq, req.socket);
+				});
     		} catch(err) {
     			res.statusCode = 500;
     			res.end();
