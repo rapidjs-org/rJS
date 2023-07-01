@@ -16,6 +16,7 @@ import { PluginRegistry } from "./PluginRegistry";
 interface IEndpointReqObj {
 	auth: string|string[];
 	ip: string;
+	cookies: TCookies;
 	locale: TLocale;
 
 	compoundVFS?: CoreAPI.VFS;
@@ -32,7 +33,10 @@ export class RequestHandler {
     private readonly reqUrl: TUrl;
     private readonly reqBody: unknown;
     private readonly reqHeaders: THeaders;
+    private readonly reqCookies: TCookies;
 	private readonly reqLocale: TLocale;
+
+	private endpointRequestObj: IEndpointReqObj;
 
     public message: string|Buffer;
     public status: number;
@@ -44,6 +48,7 @@ export class RequestHandler {
     	this.reqUrl = url;
     	this.reqBody = body;
     	this.reqHeaders = headers;
+    	this.reqCookies = cookies;
     	this.reqLocale = locale;
 		
     	this.headers = {};
@@ -64,13 +69,14 @@ export class RequestHandler {
     }
 
 	private produceEndpointRequestObj(): IEndpointReqObj {
-		return {
+		this.endpointRequestObj = {
 			auth: this.reqHeaders["Authorization"],
 			ip: this.reqIp,
-			locale: this.reqLocale,
-
-
+			cookies: this.reqCookies,
+			locale: this.reqLocale
 		};
+
+		return this.endpointRequestObj;
 	}
 
     private handleGET() {
@@ -174,7 +180,7 @@ export class RequestHandler {
 			? errOrStatusCode.toString()
 			: null;
 		}
-
+		console.log(this.endpointRequestObj)
 		asyncResolveCallback(this);
     }
 
