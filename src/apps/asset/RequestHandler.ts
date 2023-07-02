@@ -16,7 +16,7 @@ import { PluginRegistry } from "./PluginRegistry";
 interface IEndpointReqObj {
 	auth: string|string[];
 	ip: string;
-	cookies: TCookies;
+	cookies: unknown;
 	locale: TLocale;
 
 	compoundVFS?: CoreAPI.VFS;
@@ -72,8 +72,20 @@ export class RequestHandler {
 		this.endpointRequestObj = {
 			auth: this.reqHeaders["Authorization"],
 			ip: this.reqIp,
-			cookies: this.reqCookies,
-			locale: this.reqLocale
+			locale: this.reqLocale,
+			cookies: {
+				get: (name: string) => this.reqCookies[name],
+				set: (name: string, value: string|number|boolean, options: {
+					maxAge?: number;
+					domain?: string;
+					path?: string;
+					httpOnly?: boolean;
+					sameSite?: string;
+				}) => (this.reqCookies[name] = {
+					value,
+					...options
+				}),
+			},
 		};
 
 		return this.endpointRequestObj;
