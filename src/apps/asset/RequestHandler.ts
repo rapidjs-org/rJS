@@ -25,6 +25,7 @@ interface IEndpointReqObj {
 
 export class RequestHandler {
 
+	private static readonly supportedLocale = CoreAPI.config.get("locale").object() as Record<string, string[]>;
     private static readonly pluginReferenceRegex: RegExp = new RegExp(`^\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
     private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS("./web/");
 	private static readonly endpointSignatureReqIndexes: Map<string[], number> = new Map();
@@ -35,6 +36,7 @@ export class RequestHandler {
     private readonly reqHeaders: THeaders;
     private readonly reqCookies: TCookies;
 	private readonly reqLocale: TLocale;
+	private readonly reqLocaleUrl: [ string, string ];
 
 	private endpointRequestObj: IEndpointReqObj;
 
@@ -53,7 +55,22 @@ export class RequestHandler {
 		
     	this.headers = {};
     	this.cookies = {};
+		
+		if(RequestHandler.supportedLocale) {
+			const potentialLocalePrefix: RegExpMatchArray = this.reqUrl.pathname.match(/^\/[a-z]{2}(-[A-Z]{2})?\//);
 
+			if(potentialLocalePrefix) {
+				const localeParts: string[] = potentialLocalePrefix[0].slice(1, -1).split("-");
+				console.log(RequestHandler.supportedLocale)
+				if(localeParts[1]
+				? (RequestHandler.supportedLocale[localeParts[0]] ?? []).includes(localeParts[1])
+				: RequestHandler.supportedLocale[localeParts[0]]) {
+					this.reqLocaleUrl = [ localeParts[0], localeParts[1] ];
+					this.reqUrl.pathname = this.reqUrl.pathname.slice(potentialLocalePrefix[0].length - 1);
+				}
+			}
+		}
+		
     	switch(method) {
     	case "GET":
     		this.handleGET();
