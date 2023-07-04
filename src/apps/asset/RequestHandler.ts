@@ -13,6 +13,8 @@ import { join } from "path";
 import { PluginRegistry } from "./PluginRegistry";
 
 
+type TLocale = [ string, string ];
+
 interface IEndpointReqObj {
 	auth: string|string[];
 	ip: string;
@@ -25,9 +27,9 @@ interface IEndpointReqObj {
 
 export class RequestHandler {
 
-	private static readonly supportedLocale = CoreAPI.config.get("locale").object() as Record<string, string[]>;
+	private static readonly supportedLocale = CoreAPI.config.get("locale").object() as unknown as Record<string, string[]>;
     private static readonly pluginReferenceRegex: RegExp = new RegExp(`^\\/${_config.pluginReferenceIndicator}${PLUGIN_NAME_REGEX.source}(\\${_config.pluginReferenceConcatenator}${PLUGIN_NAME_REGEX.source})*$`);
-    private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS("./web/");
+    private static readonly webVfs: CoreAPI.VFS = new CoreAPI.VFS(_config.webDirName);
 	private static readonly endpointSignatureReqIndexes: Map<string[], number> = new Map();
     
 	private readonly reqIp: string;
@@ -36,7 +38,6 @@ export class RequestHandler {
     private readonly reqHeaders: THeaders;
     private readonly reqCookies: TCookies;
 	private readonly reqLocale: TLocale;
-	private readonly reqLocaleUrl: [ string, string ];
 
 	private endpointRequestObj: IEndpointReqObj;
 
@@ -51,7 +52,6 @@ export class RequestHandler {
     	this.reqBody = body;
     	this.reqHeaders = headers;
     	this.reqCookies = cookies;
-    	this.reqLocale = locale;
 		
     	this.headers = {};
     	this.cookies = {};
@@ -61,12 +61,34 @@ export class RequestHandler {
 
 			if(potentialLocalePrefix) {
 				const localeParts: string[] = potentialLocalePrefix[0].slice(1, -1).split("-");
-				console.log(RequestHandler.supportedLocale)
+				
 				if(localeParts[1]
 				? (RequestHandler.supportedLocale[localeParts[0]] ?? []).includes(localeParts[1])
 				: RequestHandler.supportedLocale[localeParts[0]]) {
-					this.reqLocaleUrl = [ localeParts[0], localeParts[1] ];
+					this.reqLocale = [ localeParts[0], localeParts[1] ];
 					this.reqUrl.pathname = this.reqUrl.pathname.slice(potentialLocalePrefix[0].length - 1);
+				}
+			}
+			
+			if(!this.reqLocale) {
+				for(let localeItem of (locale as unknown as { quality: number; }[]).sort((a, b) => a.quality - b.quality)) {
+					const item = localeItem as unknown as { language: string; };
+
+					if(!RequestHandler.supportedLocale[item.language]) continue;
+
+					if(method !== "GET") {
+						this.reqLocale = [ item.language, null ];
+
+						continue;
+					}
+
+					this.reqUrl.pathname = `/${item.language}${this.reqUrl.pathname}`;
+
+					this.redirect();
+					
+					asyncResolveCallback(this);
+
+					return;
 				}
 			}
 		}
@@ -101,7 +123,7 @@ export class RequestHandler {
 				}) => (this.reqCookies[name] = {
 					value,
 					...options
-				}),
+				})
 			},
 		};
 
@@ -125,9 +147,9 @@ export class RequestHandler {
     		this.reqUrl.pathname = this.reqUrl.pathname
     		.replace(new RegExp(`\\.${_config.defaultFileExtension}$`), "")
     		.replace(new RegExp(`\\/${_config.defaultFileName}$`), "/");
-            
-    		this.redirect(this.reqUrl);
-
+			
+    		this.redirect();
+			
     		return;
     	}
 
@@ -209,14 +231,14 @@ export class RequestHandler {
 			? errOrStatusCode.toString()
 			: null;
 		}
-		console.log(this.endpointRequestObj)
+		
 		asyncResolveCallback(this);
     }
 
-    private redirect(redirectUrl: IHighlevelURL) {
+    private redirect() {
     	this.status = 301;
 
-    	this.headers["Location"] = `${redirectUrl.protocol}//${redirectUrl.host}${redirectUrl.pathname}${redirectUrl.search ? `?${redirectUrl.search}`: ""}${redirectUrl.hash ? `#${redirectUrl.hash}`: ""}`;
+    	this.headers["Location"] = `${this.reqUrl.protocol}//${this.reqUrl.host}${this.reqUrl.pathname}${this.reqUrl.search ? `?${this.reqUrl.search}`: ""}${this.reqUrl.hash ? `#${this.reqUrl.hash}`: ""}`;
     }
 
     private filePlugin() {
