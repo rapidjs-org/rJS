@@ -72,17 +72,22 @@ export class RequestHandler {
 			
 			if(!this.reqLocale) {
 				for(let localeItem of (locale as unknown as { quality: number; }[]).sort((a, b) => a.quality - b.quality)) {
-					const item = localeItem as unknown as { language: string; };
+					const item = localeItem as unknown as { language: string; region: string; };
 
 					if(!RequestHandler.supportedLocale[item.language]) continue;
 
+					const country: string = RequestHandler.supportedLocale[item.language].includes(item.region) ? item.region : null;
+
 					if(method !== "GET") {
-						this.reqLocale = [ item.language, null ];
+						this.reqLocale = [
+							item.language,
+							country
+						];
 
 						continue;
 					}
 
-					this.reqUrl.pathname = `/${item.language}${this.reqUrl.pathname}`;
+					this.reqUrl.pathname = `/${item.language}${country ? `-${country}` : ""}${this.reqUrl.pathname}`;
 
 					this.redirect();
 					
