@@ -13,13 +13,13 @@ import { join } from "path";
 import { PluginRegistry } from "./PluginRegistry";
 
 
-type TLocale = [ string, string ];
+type TAbstractLocale = [ string, string ];
 
 interface IEndpointReqObj {
 	auth: string|string[];
 	ip: string;
 	cookies: unknown;
-	locale: TLocale;
+	locale: TAbstractLocale;
 
 	compoundVFS?: CoreAPI.VFS;
 }
@@ -37,7 +37,7 @@ export class RequestHandler {
     private readonly reqBody: unknown;
     private readonly reqHeaders: THeaders;
     private readonly reqCookies: TCookies;
-	private readonly reqLocale: TLocale;
+	private readonly reqLocale: TAbstractLocale;
 
 	private endpointRequestObj: IEndpointReqObj;
 

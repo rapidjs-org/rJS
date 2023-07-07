@@ -5,6 +5,8 @@
     "endpointRequestObjectArgumentIdentifier": "REQ",
     "pluginAddressDelimiter": "::",
     "pluginClientModuleName": "rjs.client.js",
+    "pluginDisabledFeaturesKey": "disabled",
+    "pluginDisabledFeatureEndpointsKey": "endpoints",
     "pluginReferenceConcatenator": "+",
     "pluginReferenceIndicator": "plug-in::",
     "pluginServerModuleName": "rjs.server.js",

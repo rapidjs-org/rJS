@@ -32,7 +32,15 @@ export class PluginRegistry {
     private static readonly globallyEffectivePluginNames: string[] = [];
 
     public static register(plugin: CoreAPI.Plugin) {
-		const moduleObj: IPlugin = this.requireModules(plugin.name, plugin.vfs);
+		const pluginFeaturesDisabledObj: unknown = plugin.config.get(_config.pluginDisabledFeaturesKey).object();
+		const pluginFeaturesDisabled: string[] = !Array.isArray(pluginFeaturesDisabledObj)
+		? Object.keys(
+			Object.entries(pluginFeaturesDisabledObj)
+			.filter((entry: [string, boolean]) => entry[1])
+		)
+		: pluginFeaturesDisabledObj;
+		
+		const moduleObj: IPlugin = this.requireModules(plugin.name, plugin.vfs, pluginFeaturesDisabled);
 
     	this.moduleRegistry.set(plugin.name, moduleObj);
 		
@@ -41,9 +49,10 @@ export class PluginRegistry {
 		&& PluginRegistry.globallyEffectivePluginNames.push(plugin.name);
     }
 
-    private static requireModules(pluginName: string, pluginVfs: CoreAPI.VFS): IPlugin {
+    private static requireModules(pluginName: string, pluginVfs: CoreAPI.VFS, pluginDisabledFeatures: string[] = []): IPlugin {
 		let serverModuleReference: TModuleExports;
-		if(pluginVfs.exists(_config.pluginServerModuleName)) {
+		if(!pluginDisabledFeatures.includes(_config.pluginDisabledFeatureEndpointsKey)
+		&& pluginVfs.exists(_config.pluginServerModuleName)) {
 			const serverModuleText: string = pluginVfs.read(_config.pluginServerModuleName).data as string;
 
 			const moduleReference: Module = new Module("", require.main);
