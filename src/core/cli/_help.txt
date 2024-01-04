@@ -1,0 +1,24 @@
+Usage: rjs <command> [--<arg:key>|-<arg:shorthand>]*
+
+• Commands:
+
+help                            Display help text
+monitor                         Display status of all running proxies and applications
+start                           Start a new web space with a specific shell application (successive argument at position 1)
+stop                            Stop an existing web space
+
+Optional | start | command arguments:
+
+• Flags:
+
+--dev, -D                       Run DEV MODE (PROD MODE otherwise)
+--secure, -S                    Whether to use HTTPS (false by default)
+
+• Options:
+
+--hostname, -H                  Specify hostname (defaults to localhost; multiple hostnames as comma delimited list)
+--logs, -L                      Declare log file directory (disabled by default)
+--port, -P                      Specify listen port (defaults to 80 (HTTP) / 443 (HTTPS))
+--wd, -W                        Specify application working directory (defaults to process CWD)
+
+Visit https://rapidjs.org for more information.
