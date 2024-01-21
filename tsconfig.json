@@ -6,7 +6,8 @@
         "moduleResolution": "node",
         "noImplicitAny": true,
         "resolveJsonModule": true,
-        "allowJs": true
+        "allowJs": true,
+        "outDir": "./debug/"
     },
     "include": [
         "./src/**/*.ts",

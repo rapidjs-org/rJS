@@ -1,4 +1,4 @@
-import { Args } from "../Args";
+import { Args } from "../common/Args";
 
 
 type TCommandHandler = () => void;
@@ -20,7 +20,7 @@ export class CLI {
         * Interpret first positional argument as execution command.
         * Command to depict which functional aspect to perform.
         */
-    	const commandName: string = Args.global.parsePositional(0);
+    	const commandName: string = Args.parsePositional(0);
     	const commandHandler: TCommandHandler = this.commandHandlers.get(commandName);
         
     	if(commandHandler) {

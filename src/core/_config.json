@@ -1,8 +1,0 @@
-{
-    "appNameShort": "rJS",
-    "installedPluginsPath": "./.plugins",
-    "localPluginsPath": "./plugins",
-    "socketDir": "/tmp",
-    "socketNamePrefix": "rjs.proxy.",
-    "sslDir": "./ssl"
-}

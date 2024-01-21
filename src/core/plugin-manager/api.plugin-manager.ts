@@ -1,1 +1,0 @@
-// TODO: Plug-in manager application

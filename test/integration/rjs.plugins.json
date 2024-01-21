@@ -1,8 +1,0 @@
-{
-    "test-plugin": {
-        "test": 123
-    },
-    "ignored": {
-        "test": 456
-    }
-}

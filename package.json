@@ -9,35 +9,16 @@
   },
   "main": "./dist/core/thread/api.core.js",
   "types": "./types/api.core.d.ts",
-  "bin": {
-    "rjs": "./dist/cli/api.cli.js"
-  },
   "scripts": {
-    "setup": "npm i && cd ./src/core/shared-memory/ && node-gyp configure",
-    "debug": "./scripts/debug.sh",
-    "lint": "./node_modules/.bin/eslint --ext .ts --fix ./src",
-    "compile:dist": "node --no-deprecation ./scripts/compile/compile.dist.js && chmod +x ./dist/cli/api.cli.js",
-    "compile:watch": "node --no-deprecation ./scripts/compile/compile.watch.js",
-    "compile:watch:cpp": "node ./scripts/compile.watch.js --cpp",
-    "start:core": "./scripts/debug.sh start:proxy core.integration",
-    "start:core:standalone": "./scripts/debug.sh start:standalone core.integration",
-    "start:app": "./scripts/debug.sh start:proxy",
-    "start:app:standalone": "./scripts/debug.sh start:standalone",
-    "stop": "./scripts/debug.sh stop",
-    "test:shm": "node ./scripts/test/test.shm.js",
-    "test:unit": "node ./scripts/test/test-suite.unit.js ./test/unit/",
-    "test:network": "npm run start:app && node ./scripts/test/test-suite.network.js ./test/network/ && npm run stop",
-    "test": "npm run test:shm && npm run test:unit && npm run test:network",
-    "metatest:unit": "node ./scripts/test/test-suite.unit.js ./scripts/test/meta/meta.unit.test.js",
-    "metatest:network": "node ./scripts/test/test-suite.network.js ./scripts/test/meta/meta.network.test.js",
-    "benchmark:s": "node ./scripts/benchmark.js -s",
-    "benchmark:m": "node ./scripts/benchmark.js -m",
-    "benchmark:l": "node ./scripts/benchmark.js -l",
-    "release": "npm run test && npm run compile:dist"
+    "configure": "./scripts/debug-shm.sh configure --debug",
+    "compile:cpp": "./scripts/debug-shm.sh build --debug",
+    "compile:ts": "tsc",
+    "compile:ts:watch": "tsc --watch",
+    "compile": "npm run compile:ts:watch",
+    "debug": "node ./debug/app.js"
   },
   "files": [
-    "dist",
-    "types"
+    "dist"
   ],
   "keywords": [
     "rapidjs",
@@ -52,14 +33,8 @@
   },
   "homepage": "https://rapidjs.org",
   "devDependencies": {
-    "@types/node": "^16.11.39",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
-    "eslint": "^7.26.0",
-    "eslint-plugin-typescript": "^0.14.0",
-    "loadtest": "^5.2.0",
-    "node-addon-api": "^5.0.0",
-    "node-gyp": "^9.1.0",
-    "typescript": "^4.5.2"
+    "@types/node": "^20.10.6",
+    "node-gyp": "^10.0.1",
+    "typescript": "^5.3.3"
   }
 }

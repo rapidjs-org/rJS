@@ -1,5 +1,3 @@
 /**
- * rapidJS: Blazing fast web server framework.
- * 
- * (c) Thassilo Martin Schiepanski
+ * rapidJS (c) Thassilo Martin Schiepanski
  */

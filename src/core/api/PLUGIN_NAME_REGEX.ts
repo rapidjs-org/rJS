@@ -1,1 +1,0 @@
-export const PLUGIN_NAME_REGEX = new RegExp("(@[a-z0-9-][a-z0-9_-]{0,213}\\/)?[a-z0-9-][a-z0-9_-]{0,213}");

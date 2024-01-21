@@ -7,7 +7,4 @@ node_modules/
 debug/
 dist/
 
-src/core/shared-memory/build/
-
-test/integration/logs/
-test/integration/ssl/
+build/
