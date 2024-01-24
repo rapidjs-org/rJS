@@ -1,4 +1,4 @@
-import { ASharedMemory } from "./shared-memory/ASharedMemory";
+import { ASharedMemory } from "./sharedmemory/ASharedMemory";
 
 
 const _config = {
@@ -16,6 +16,8 @@ export class Cache<T> extends ASharedMemory<T> {
         super(uniqueKey);
 
         this.duration = duration;
+
+        console.log(this.readSHM("adaw"));
     }
 
     public get(key: string): T {

@@ -1,3 +1,6 @@
+import * as sharedMemory from "./sharedmemory";
+
+
 const _config = {
     exclusiveKeyDelimiter: ":",
     keyRegex: /^[^:]*$/i
@@ -19,11 +22,10 @@ export abstract class ASharedMemory<T> {
             this.activeKeys
             .forEach((key: string) => this.freeSHM(key));
         };
-        process.on("exit", freeAllHandler);
-        process.on("SIGINT", freeAllHandler);
-        process.on("SIGUSR1", freeAllHandler);
-        process.on("SIGUSR2", freeAllHandler);
-        process.on("uncaughtException", freeAllHandler);
+        [ "exit", "SIGINT", "SIGTERM", "SIGQUIT", "SIGUSR1", "SIGUSR2", "uncaughtException" ]
+        .forEach(signal => {
+            process.on(signal, freeAllHandler);
+        });
     }
 
     private validateKey(key: string) {
@@ -39,13 +41,16 @@ export abstract class ASharedMemory<T> {
     }
 
     protected readSHM(itemKey: string): T {
-        return null;
-        //return sharedMemory.read<T>(this.getUniqueItemKey(itemKey));
+        const data: Buffer = sharedMemory.read(this.getUniqueItemKey(itemKey));
+        
+        return data as T;   // TODO: Conversion
     }
 
     protected writeSHM(itemKey: string, itemValue: T) {
-        //sharedMemory.write<T>(this.getUniqueItemKey(itemKey), itemValue);
+        const bufferedItemValue: Buffer = Buffer.from(itemValue.toString(), "utf-8");
 
+        sharedMemory.write(this.getUniqueItemKey(itemKey), bufferedItemValue);
+        
         this.activeKeys.add(itemKey);
 
         return this;

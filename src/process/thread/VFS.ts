@@ -1,7 +1,7 @@
 import { statSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join, normalize } from "path";
 import { IFilestamp } from "../interfaces";
-import { ASharedMemory } from "./shared-memory/ASharedMemory";
+import { ASharedMemory } from "./sharedmemory/ASharedMemory";
 
 
 export class VFS extends ASharedMemory<IFilestamp> {
