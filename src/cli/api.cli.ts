@@ -4,7 +4,6 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { Args } from "../common/Args";
 import { CLI } from "./CLI";
 
 

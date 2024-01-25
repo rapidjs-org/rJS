@@ -33,30 +33,30 @@ interface IPendingAssignment<I, O> {
  */
 export abstract class AWorkerPool<I, O> extends EventEmitter {
 
-    private readonly baseSize: number;
-    private readonly timeout: number;
-    private readonly maxPending: number;
-    private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
-    private readonly registeredWorkers: Worker[] = [];
-    private readonly idleWorkers: Worker[] = [];
-    private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
+	private readonly baseSize: number;
+	private readonly timeout: number;
+	private readonly maxPending: number;
+	private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
+	private readonly registeredWorkers: Worker[] = [];
+	private readonly idleWorkers: Worker[] = [];
+	private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
-    constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
+	constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
     	super();
 
     	this.baseSize = baseSize;
     	this.timeout = timeout;
     	this.maxPending = maxPending;
         
-        setImmediate(() => {
-            Array.from({ length: this.baseSize }, async () => {
-                const worker: Worker = await this.createWorker();
+		setImmediate(() => {
+			Array.from({ length: this.baseSize }, async () => {
+				const worker: Worker = await this.createWorker();
     
-                this.registeredWorkers.push(worker);
-                this.idleWorkers.push(worker);
-            });
-        });
-    }
+				this.registeredWorkers.push(worker);
+				this.idleWorkers.push(worker);
+			});
+		});
+	}
     
     /**
      * Methods expected to implement the creation / destruction

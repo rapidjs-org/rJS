@@ -82,23 +82,34 @@ process.on("exit", async code => {
         counter.failure += instance.records.filter(record => record.isMismatch).length;
         
         writeOrig(() => {
-            (instance.records.length > 1)
-            && console.log(`\n• ${instance.label}\x1b[0m`);
+            console.log(`\n• ${instance.label}\x1b[0m`);
 
             instance.records
             .forEach((record, index) => {
-                const label = (instance.records.length > 1) ? `∟ ${index}` : instance.label;
-
                 if(!record.isMismatch) {
-                    console.log(`\x1b[32m✔ ${label}\x1b[0m`);
+                    console.log(`\x1b[32m✔ ∟ ${index}\x1b[0m`);
                     return;
                 }
 
-                console.log(`\x1b[31m✘ \x1b[1m${label}\x1b[0m${record.position ? ` \x1b[2m(${record.position})\x1b[0m` : ""}\n`);
+                const printObj = (obj) => {
+                    if([ "string", "number", "boolean" ].includes(typeof(obj))){
+                        return `\x1b[34m${obj}\x1b[0m`;
+                    }
+                    const color = (code, str) => `\x1b[0m\x1b[${code}m${str}\x1b[0m\x1b[2m`;
+                    return `\x1b[2m${
+                        JSON.stringify(obj, null, 2)
+                        .replace(/:( *("|').*\2 *)(,?\n)/g, `:${color(34, "$1")}$3`)
+                        .replace(/:( *[0-9]+(\.[0-9]+)? *)(,?\n)/g, `:${color(33, "$1")}$3`)
+                        .replace(/:( *(true|false) *)(,?\n)/g, `:${color(33, "$1")}$3`)
+                        .replace(/(\n *("|')*.*\2):/g, `${color(35, "$1")}:`)
+                    }\x1b[0m`;
+                };
+
+                console.log(`\x1b[31m✘ \x1b[1m∟ ${index}\x1b[0m${record.position ? ` \x1b[2m(${record.position})\x1b[0m` : ""}\n`);
                 console.log("\x1b[1m\x1b[2mEXPECTED:\x1b[0m\n");
-                console.log(record.expected);
+                console.log(printObj(record.expected));
                 console.log("\n\x1b[1m\x1b[2mACTUAL:\x1b[0m\n");
-                console.log(record.actual);
+                console.log(printObj(record.actual));
                 console.log(`\x1b[0m\x1b[2m${Array.from({ length: instance.label.length + 2 }, () => "–").join("")}\x1b[0m`);
             });
         });
@@ -237,9 +248,9 @@ module.exports.init = function(title, badgeColorRGB) {
             i = ++i % (maxLength + (2 * symLength));
             
             writeOrig(() => {
-                process.stdout.write("\x1b[?25l");
                 process.stdout.clearLine(1);
                 process.stdout.cursorTo(0);
+                process.stdout.write("\x1b[?25l");
                 process.stdout.write(`\x1b[1m\x1b[38;2;200;180;0m${
                     `${
                         Array.from({ length: i }, () => " ").join("")

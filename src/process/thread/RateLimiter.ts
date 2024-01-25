@@ -30,23 +30,23 @@ interface ILimiterData<I extends string|number|symbol> {
  */
 export class RateLimiter<I extends string|number|symbol>/*  extends ASharedDictionary<I, ILimiterData<string|number|symbol>> */ {
 
-    private readonly limit: number;
-    private readonly windowSize: number;
+	private readonly limit: number;
+	private readonly windowSize: number;
     
-    constructor(limit: number, windowSize = 60000) {
+	constructor(limit: number, windowSize = 60000) {
     	//super();
 
     	this.limit = limit;
     	this.windowSize = windowSize;
-    }
+	}
     
-    /**
+	/**
      * Update limit data according to the carreid pivot timestamp.
      * I.e. windows are retained, shifted or all-new created.
      * Subsequently, the given identity entry is incremented for
      * the then coded current window.
      */
-    private updateLimitData()/* : ILimiterData<I> */ {
+	private updateLimitData()/* : ILimiterData<I> */ {
     	/* const currentLimitData: ILimiterData<I> = this.readShared()
         ?? {
         	timePivot: Date.now(),
@@ -69,15 +69,15 @@ export class RateLimiter<I extends string|number|symbol>/*  extends ASharedDicti
     	currentLimitData.timePivot = now;
 
     	return currentLimitData; */
-    }
+	}
 
-    /**
+	/**
      * Check whether the rate has not yet been exceeded for a
      * given client (by consistent identifier).
      * @param entityIdentifier Unique client entity identifier
      * @returns Whether access is granted (the limit has not been exceeded yet)
      */
-    public grantsAccess(entityIdentifier: I)/* : boolean */ {
+	public grantsAccess(entityIdentifier: I)/* : boolean */ {
     	/* const currentLimitData: ILimiterData<I> = this.updateLimitData();
         
     	const currentHits: number = (currentLimitData.currentWindow[entityIdentifier] ?? 0) + 1;
@@ -94,5 +94,5 @@ export class RateLimiter<I extends string|number|symbol>/*  extends ASharedDicti
     	const limit: number = this.limit * (RateLimiter.shmEnabled ? 0.5 : 1);    // TODO: Know cluster size
 
     	return (weightedHits <= limit); */
-    }
+	}
 }

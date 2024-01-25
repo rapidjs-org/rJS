@@ -3,12 +3,12 @@ import { Request } from "./Request";
 
 
 export class PluginHandler extends AHandler {
-    constructor(req: Request) {
-        super(req);
-    }
+	constructor(req: Request) {
+		super(req);
+	}
 
-    public activate() {
+	public activate() {
 
-        this.respond();
-    }
+		this.respond();
+	}
 }

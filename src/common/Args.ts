@@ -1,43 +1,43 @@
 export class Args {
-    private static readonly raw: string[] = process.argv.slice(2);
+	private static readonly raw: string[] = process.argv.slice(2);
 
-    /**
+	/**
      * Retrieve the index of a key in the arguments array.
      * @param name Full key (without indicating double dashes)
      * @param shorthand Shorthand key (without indicating single dash)
      * @returns Value type resolve interface
      */
-    private static retrieveKeyIndex(name: string, shorthand?: string): number {
+	private static retrieveKeyIndex(name: string, shorthand?: string): number {
     	return Math.max(Args.raw.indexOf(`--${name.toLowerCase()}`), shorthand ? Args.raw.indexOf(`-${shorthand.toUpperCase()}`) : -1);
-    }
+	}
 
-    /**
+	/**
      * Parse a specific positional argument from the given command
      * line arguments.
      * @param index Position key
      * @returns The name of the positional argument if provided at index (no indicating dash)
      */
-    public static parsePositional(index = 0): string {
+	public static parsePositional(index = 0): string {
     	return Args.raw[index];
-    }
+	}
 
-    /**
+	/**
      * Parse a specific flag from the given command line arguments.
      * @param key Flag key (without indicating double dashes)
      * @param shorthand Flag shorthand (without indicating single dash)
      * @returns Whether the flag is set
      */
-    public static parseFlag(key: string, shorthand?: string): boolean {
+	public static parseFlag(key: string, shorthand?: string): boolean {
     	return (this.retrieveKeyIndex(key, shorthand) >= 0);
-    }
+	}
 
-    /**
+	/**
      * Parse a specific option from the given command line arguments.
      * @param key Option key (without indicating double dashes)
      * @param [shorthand] Option shorthand (without indicating single dash)
      * @returns Value type resolve interface
      */
-    public static parseOption(key: string, shorthand?: string): {
+	public static parseOption(key: string, shorthand?: string): {
         string: string;
         number: number;
     } {
@@ -57,5 +57,5 @@ export class Args {
     		string: Args.raw[index],
     		number: +Args.raw[index]
     	};
-    }
+	}
 }

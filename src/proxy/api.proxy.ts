@@ -14,8 +14,8 @@ const port: number = Context.CONFIG.get<number>("port");
 
 const server = createServer({ pauseOnConnect: true });
 server.on("connection", (socket: Socket) => {
-    child.send("socket", socket);
+	child.send("socket", socket);
 });
 server.listen(port, () => {
-    console.log(`Server listening on port ${port} [${Context.MODE} mode]`);
+	console.log(`Server listening on port ${port} [${Context.MODE} mode]`);
 }); 

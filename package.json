@@ -7,7 +7,6 @@
     "url": "https://github.com/t-ski",
     "githubUsername": "t-ski"
   },
-  "main": "./dist/core/thread/api.core.js",
   "types": "./types/api.core.d.ts",
   "scripts": {
     "configure": "./scripts/shm-gyp.sh configure --debug",
@@ -16,9 +15,12 @@
     "compile:ts:watch": "tsc --watch",
     "compile": "npm run compile:ts:watch",
     "debug": "node ./debug/app.js",
+    "test:shm": "node ./scripts/test-shm.js ./test/shm/",
     "test:unit": "node ./scripts/test-unit.js ./test/unit/",
     "test:request": "node ./scripts/test-request.js ./test/request/",
-    "test": "npm run test:unit && npm run test:request"
+    "test": "npm run test:shm && npm run test:unit && npm run test:request",
+    "lint": "npx eslint --ext .ts --fix ./src",
+    "assess": "npm run test && npm run lint"
   },
   "files": [
     "dist"
@@ -37,6 +39,10 @@
   "homepage": "https://rapidjs.org",
   "devDependencies": {
     "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-typescript": "^0.14.0",
     "node-addon-api": "^7.1.0",
     "node-gyp": "^10.0.1",
     "typescript": "^5.3.3"

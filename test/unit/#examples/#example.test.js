@@ -3,7 +3,10 @@ new UnitTest("Example Sync")
 .actual({
     foo: "bar"
 }).expected({
-    foo: "baz"
+    foo: "baz",
+    hh: 213,
+    awdwad: 2312.34,
+    rtgt: true
 })
 .actual(() => "Hello world!").expected("Hello world!");
 

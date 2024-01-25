@@ -2,7 +2,7 @@
 
 
 export class Plugin {
-    constructor() {
+	constructor() {
         
-    }
+	}
 }
