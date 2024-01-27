@@ -9,18 +9,20 @@
   },
   "types": "./types/api.core.d.ts",
   "scripts": {
-    "configure": "./scripts/shm-gyp.sh configure --debug",
-    "compile:cpp": "./scripts/shm-gyp.sh build --debug && ./scripts/shm-copy.sh Debug",
-    "compile:ts": "tsc",
-    "compile:ts:watch": "tsc --watch",
+    "configure": "./scripts/shm-gyp.sh configure --debug && npm run compile:ts && npm run compile:cpp",
+    "compile:cpp": "./scripts/shm-gyp.sh build --debug && ./scripts/shm-copy.sh ./debug Debug",
+    "compile:ts": "npx tsc",
+    "compile:ts:watch": "npx tsc --watch",
     "compile": "npm run compile:ts:watch",
     "debug": "node ./debug/app.js",
     "test:shm": "node ./scripts/test-shm.js ./test/shm/",
+    "test:cpp:shm": "npm run compile:cpp && npm run test:shm",
     "test:unit": "node ./scripts/test-unit.js ./test/unit/",
     "test:request": "node ./scripts/test-request.js ./test/request/",
     "test": "npm run test:shm && npm run test:unit && npm run test:request",
     "lint": "npx eslint --ext .ts --fix ./src",
-    "assess": "npm run test && npm run lint"
+    "assess": "npm run test && npm run lint",
+    "build": "npm run assess && node ./scripts/build.js"
   },
   "files": [
     "dist"

@@ -9,6 +9,7 @@ const TEST_PATH = join(process.cwd(), process.argv.slice(2)[0] || "");
 if(!existsSync(TEST_PATH)) throw new ReferenceError(`ATest directory not found '${TEST_PATH}'`);
 const BEFORE_SCRIPT_FILENAME = "_before.js";
 const AFTER_SCRIPT_FILENAME = "_after.js";
+const UNWRAP_TIMEOUT = 5000;
 const START_TIME = Date.now();
 
 
@@ -95,6 +96,9 @@ process.on("exit", async code => {
                     if([ "string", "number", "boolean" ].includes(typeof(obj))){
                         return `\x1b[34m${obj}\x1b[0m`;
                     }
+                    if([ undefined, null ].includes(obj)){
+                        return `\x1b[2m\x1b[31m${obj}\x1b[0m`;
+                    }
                     const color = (code, str) => `\x1b[0m\x1b[${code}m${str}\x1b[0m\x1b[2m`;
                     return `\x1b[2m${
                         JSON.stringify(obj, null, 2)
@@ -143,6 +147,54 @@ process.on("uncaughtException", err => {
 });
 
 
+function unwrapValue(value) {
+    return new Promise(resolve => {
+        let unwrapTimeout = setTimeout(() => {
+            throw new RangeError("Unwrapping of promise value timed out");
+        }, UNWRAP_TIMEOUT);
+        (!(value instanceof Promise)
+        ? new Promise(r => r(value))
+        : value)
+        .then(value => {
+            clearTimeout(unwrapTimeout);
+            resolve(value);
+        });
+    });
+}
+
+
+class AsyncMutex {
+    static acquireQueue = [];
+    static isLocked = false;
+    
+    static lock(callback) {
+        return new Promise((resolve, reject) => {
+            new Promise(resolve => {
+                if(AsyncMutex.isLocked) {
+                    AsyncMutex.acquireQueue.push(resolve);
+
+                    return;
+                }
+                
+                AsyncMutex.isLocked = true;
+                
+                resolve();
+            })
+            .then(() => {
+                (!(callback instanceof Promise)
+                ? new Promise(r => r(callback()))
+                : callback)
+                .then(result => resolve(result))
+                .catch(err => reject(err))
+                .finally(() => {
+                    AsyncMutex.isLocked = !!AsyncMutex.acquireQueue.length;
+                    (AsyncMutex.acquireQueue.shift() || (() => {}))();
+                });
+            });
+        });
+    }
+}
+
 class ATest {
     static instances = [];
     static openTestCases = 0;
@@ -182,32 +234,38 @@ class ATest {
             } catch {}
         }
 
-        const actual = this.eval(...args);
-
         return {
             expected: (expected) => {
-                (!(actual instanceof Promise)
-                ? new Promise(r => r(actual))
-                : actual)
-                .then(actual => {
-                    if(!--ATest.openTestCases) {
-                        clearTimeout(ATest.endTimeout);
-                        ATest.endTimeout = setTimeout(() => {
-                            if(ATest.openTestCases) return;
-                            process.exit(0);
-                        }, this.endTimeout);
-                    }
-                    
-                    const comparison = this.compare(actual, expected);
-                    this.records.push({
-                        position,
+                AsyncMutex.lock(() => new Promise(resolve => {
+                    const actual = this.eval(...args);
 
-                        isMismatch: comparison.isMismatch,
+                    unwrapValue(actual)
+                    .then(actual => {
+                        if(!ATest.openTestCases) {
+                            clearTimeout(ATest.endTimeout);
+                            ATest.endTimeout = setTimeout(() => {
+                                if(ATest.openTestCases) return;
+                                process.exit(0);
+                            }, this.endTimeout);
+                        }
+                        
+                        unwrapValue(expected)
+                        .then(expected => {
+                            const comparison = this.compare(actual, expected);
+                            this.records.push({
+                                position,
+                                
+                                isMismatch: comparison.isMismatch,
+                                
+                                actual: comparison.actual || actual,
+                                expected: comparison.expected || expected
+                            });
+                            ATest.openTestCases--;
 
-                        actual: comparison.actual || actual,
-                        expected: comparison.expected || expected
+                            resolve();
+                        });
                     });
-                });
+                }));
 
                 return this;
             }

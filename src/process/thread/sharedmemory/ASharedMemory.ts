@@ -1,4 +1,4 @@
-import * as sharedMemory from "./sharedmemory";
+import * as sharedmemoryAPI from "./api.sharedmemory";
 
 
 const _config = {
@@ -16,7 +16,7 @@ export abstract class ASharedMemory<T> {
 	constructor(uniqueKey: string = (ASharedMemory.deterministicIncrementalKey++).toString()) {
 		this.validateKey(uniqueKey);
 
-		this.uniqueKey = uniqueKey;
+		this.uniqueKey = `${process.cwd()}${_config.exclusiveKeyDelimiter}${uniqueKey}`;
 
 		const freeAllHandler = () => {
 			this.activeKeys
@@ -41,7 +41,7 @@ export abstract class ASharedMemory<T> {
 	}
 
 	protected readSHM(itemKey: string): T {
-		const data: Buffer = sharedMemory.read(this.getUniqueItemKey(itemKey));
+		const data: Buffer = sharedmemoryAPI.read(this.getUniqueItemKey(itemKey));
         
 		return data as T;   // TODO: Conversion
 	}
@@ -49,7 +49,7 @@ export abstract class ASharedMemory<T> {
 	protected writeSHM(itemKey: string, itemValue: T) {
 		const bufferedItemValue: Buffer = Buffer.from(itemValue.toString(), "utf-8");
 
-		sharedMemory.write(this.getUniqueItemKey(itemKey), bufferedItemValue);
+		sharedmemoryAPI.write(this.getUniqueItemKey(itemKey), bufferedItemValue);
         
 		this.activeKeys.add(itemKey);
 
@@ -57,7 +57,7 @@ export abstract class ASharedMemory<T> {
 	}
 
 	protected freeSHM(itemKey: string) {
-		// TODO: ... this.getUniqueItemKey(itemKey)
+		sharedmemoryAPI.free(itemKey)
 
 		this.activeKeys.delete(itemKey);
 	}

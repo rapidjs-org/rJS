@@ -1,62 +1,77 @@
-const { fork } = require('node:child_process');
+const { fork } = require("child_process");
 const { deepStrictEqual } = require("assert");
 const { EventEmitter } = require("events");
 
-const SHARED_MEMORY = require("../debug/process/thread/sharedmemory/sharedmemory");
+const sharedmemory = require("../debug/process/thread/sharedmemory/api.sharedmemory");
 
 
 if(!process.argv.slice(2).includes("child")) {
+
     // TEST
 
     const testFramework = require("./test");
 
-    const inChildResponseEmitter = new EventEmitter();
-    const inChild = fork(__filename, [ "child" ]);
-    inChild.on("error", err => {
+    const childResponseEmitter = new EventEmitter();
+    const child = fork(__filename, [ "child" ]);
+    child.on("error", err => {
         throw err;
     });
-    inChild.on("message", value => {
-        inChildResponseEmitter.emit("respond", value);
+    child.on("message", value => {
+        childResponseEmitter.emit("respond", value);
     });
+    process.on("exit", () => child.kill());
     
     global.SharedMemoryTest = class extends testFramework.ATest {
         constructor(label) {
             super(label);
         }
         
-        eval(expression) {
-            return (expression instanceof Function) ? expression() : expression;
+        eval(command, key, value = null) {
+            switch(command) {
+                case "write":
+                    sharedmemory.write(key, value);
+                    break;
+                case "free":
+                    sharedmemory.free(key);
+                    break;
+                default:
+                    throw new SyntaxError(`Invalid shared memory command '${command}'`);
+            }
+
+            return new Promise(resolve => {
+                childResponseEmitter.once("respond", value => {
+                    resolve({
+                        intraProcess: sharedmemory.read(key),
+                        interProcess: value
+                    });
+                });
+                child.send(key);
+            })
         }
         
         compare(actual, expected) {
-            try {
-                deepStrictEqual(actual, expected);
-            } catch {
-                return {
-                    isMismatch: true
-                };
+            const filteredActual = Object.assign({}, actual);
+            if(actual.intraProcess === expected) {
+                delete filteredActual.intraProcess;
             }
+            if(actual.interProcess === expected) {
+                delete filteredActual.interProcess;
+            }
+
             return {
-                isMismatch: false
+                isMismatch: !!Object.keys(filteredActual).length,
+                actual: filteredActual
             };
         }
-        
-        io(key, value) {
-            SHARED_MEMORY.write(key, value);
-            inChildResponseEmitter.once("respond", value => {
-                this.actual(SHARED_MEMORY.read(key)).expected(value);
-            });
-            inChild.send(key);
-        }
     }
-    
+
 
     testFramework.init("Shared Memory Tests", [ 4, 150, 255 ]);
 } else {
     // CHILD
 
     process.on("message", key => {
-        process.send(SHARED_MEMORY.read(key));
+        process.send(sharedmemory.read(key) || null);
     });
 
     setInterval(() => {}, 1 << 30);
