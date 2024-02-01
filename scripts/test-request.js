@@ -4,8 +4,8 @@ const { deepStrictEqual } = require("assert");
 const testFramework = require("./test");
 
 
-const END_TIMEOUT = 3000;
-const REQUEST_TIMEOUT = 5000;
+const END_TIMEOUT = 1500;
+const REQUEST_TIMEOUT = 3000;
 
 
 class RequestTest extends testFramework.ATest {
@@ -22,25 +22,29 @@ class RequestTest extends testFramework.ATest {
         };
     }
 
-    constructor(label) {
-        super(label, END_TIMEOUT);
+    constructor(title) {
+        super(title, END_TIMEOUT);
     }
 
-    eval(path, options = {}) {
+    eval(pathOrCallback, options = {}) {
         return new Promise((resolve, reject) => {
-            const method = options.method || "GET";
-            
-            setTimeout(() => reject(
-                new RangeError(`Request timeout ${method}:'${path}'`)
-            ), REQUEST_TIMEOUT);
-            
-            http.get({
+            const reqOptions = {
                 ...RequestTest.commonHost,
-
-                path: path,
-                method: method,
-                headers: options.headers || {}
-            }, res => {
+                
+                method: "GET",
+                headers: {},
+    
+                ...((pathOrCallback instanceof Function)
+                    ? pathOrCallback()
+                    : { path: pathOrCallback }),
+                ...options
+            };
+            
+            const requestTimeout = setTimeout(() => {
+                reject(new RangeError(`Request timeout on \x1b[2m'${JSON.stringify(reqOptions, null, 2)}'\x1b[22m`));
+            }, REQUEST_TIMEOUT);
+            
+            http.get(reqOptions, res => {
                 const expected = {
                     status: res.statusCode,
                     headers: res.headers
@@ -50,9 +54,11 @@ class RequestTest extends testFramework.ATest {
                     message.push(chunk);
                 });
                 res.on("end", () => {
+                    clearTimeout(requestTimeout);
+                    
                     let parsedMessage = Buffer.concat(message).toString();
                     try { parsedMessage = JSON.parse(parsedMessage); } catch {}
-
+                    
                     resolve({
                         ...expected,
 

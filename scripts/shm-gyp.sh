@@ -1,6 +1,8 @@
 #! /bin/bash
 
-cd "$(dirname "$0")/../src/process/thread/sharedmemory/"
+SHM_PATH=$(<"$(dirname "$0")/.shmpath")
+
+cd "$(dirname "$0")/../src/${SHM_PATH}"
 
 if [ -z "$1" ]; then
     echo "Missing node-gyp command"

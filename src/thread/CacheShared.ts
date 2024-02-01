@@ -6,18 +6,18 @@ const _config = {
 };
 
 
-// Mastering cache instance process must free shared memory in order
-// to use a single process visible timeout. 
+/* 
+ * Mastering cache instance process must free shared memory in order
+ * to use a single process visible timeout.
+ */
 export class Cache<T> extends ASharedMemory<T> {
 	private readonly keyStoreTimestamps: Map<string, number> = new Map();
 	private readonly duration: number;
 
 	constructor(uniqueKey: string, duration: number = _config.defaultCacheDuration) {
-		super(uniqueKey);
-
+		super(`cache:${uniqueKey}`);
+		
 		this.duration = duration;
-
-		console.log(this.readSHM("adaw"));
 	}
 
 	public get(key: string): T {

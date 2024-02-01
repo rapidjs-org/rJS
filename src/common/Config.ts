@@ -34,10 +34,10 @@ export class Config {
 		}
 	}
 
-	private raiseSyntaxError(key: string, message: string) {
+	private raiseSyntaxError(message: string, ...keys: string[]) {
 		clearImmediate(this.errorImmediate);
 
-		this.cumulatedErrorMessages.push(`'${key}': ${message}`);
+		this.cumulatedErrorMessages.push(`'${keys.join(".")}': ${message}`);
 
 		this.errorImmediate = setImmediate(() => {
 			throw new SyntaxError(`Failed to parse configuration file:\n${
@@ -46,27 +46,33 @@ export class Config {
 		});
 	}
 
-	public addTypeConstraint(key: string, typeConstraint: string|string[]): this {
+	public addTypeConstraint(keys: string|string[], typeConstraint: string|string[]): this {
+		const keysArray: string[] = [ keys ].flat();
+
 		const typeConstraintArray: string[] = [ typeConstraint ]
 		.flat()
 		.map((type: string) => type.toLowerCase());
-		const type: string = typeof(this.obj[key]);
+		const type: string = typeof(this.get(...keysArray));
 
 		(!typeConstraintArray.includes(type))
-        && this.raiseSyntaxError(key, `Invalid type '${type}' (expected )`);
-
+        && this.raiseSyntaxError(`Invalid type '${type}' (expected '${typeConstraintArray.join(", ")}')`, ...keysArray);
+		
 		return this;
 	}
 
-	public addDefinedConstraint(key: string): this {
-		if(![ undefined, null ].includes(this.obj[key])) return this;
+	public addDefinedConstraint(...keys: string[]): this {
+		if(![ undefined, null ].includes(this.get(...keys))) return this;
         
-		this.raiseSyntaxError(key, "Required, but not defined");
+		this.raiseSyntaxError("Required, but not defined", ...keys);
 
 		return this;
 	}
     
-	public get<T>(key: string): T {
-		return this.obj[key] as unknown as T;
+	public get<T>(...keys: string[]): T {
+		let intermediate = this.obj;
+		for(let key of keys) {
+			intermediate = intermediate[key] as TJSON;
+		}
+		return intermediate as T;
 	}
 }

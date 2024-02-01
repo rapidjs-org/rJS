@@ -14,6 +14,7 @@ const START_TIME = Date.now();
 
 
 let progressInterval;
+let lastErrorTestFilePosition;
 
 const _stdoutWrite = {
     origMethod: process.stdout.write.bind(process.stdout),
@@ -43,17 +44,12 @@ const evalIntermediateScript = (scriptFilename) => {
     if(!existsSync(join(TEST_PATH, scriptFilename))) return Promise.resolve();
 
     writeOrig(`\n\x1b[2m→ \x1b[1mINTERMEDIATE SCRIPT\x1b[22m\x1b[2m ${scriptFilename}\x1b[0m\n\n`);
-        
-    return new Promise(resolve => {
-        let exp = require(join(TEST_PATH, scriptFilename));
-        exp = (exp instanceof Function) ? exp() : exp;
-        return (!(exp instanceof Promise)
-        ? Promise.resolve()
-        : exp)
-        .then(() => {
-            resolve();
-        });
-    });
+    
+    let exp = require(join(TEST_PATH, scriptFilename));
+    exp = (exp instanceof Function) ? exp() : exp;
+    return ((exp instanceof Promise)
+    ? exp
+    : Promise.resolve())
 };
 const clearProgressLog = () => {
     writeOrig(() => {
@@ -66,7 +62,7 @@ process.on("exit", async code => {
     clearInterval(progressInterval);
     clearProgressLog();
 
-    if(code !== 0) {
+    if(code === 2) {
         evalIntermediateScript(AFTER_SCRIPT_FILENAME);
 
         return code;
@@ -83,12 +79,13 @@ process.on("exit", async code => {
         counter.failure += instance.records.filter(record => record.isMismatch).length;
         
         writeOrig(() => {
-            console.log(`\n• ${instance.label}\x1b[0m`);
+            console.log(`\n• ${instance.title}\x1b[0m`);
 
             instance.records
             .forEach((record, index) => {
+                const label = record.label ? `${index}: ${record.label}` : index;
                 if(!record.isMismatch) {
-                    console.log(`\x1b[32m✔ ∟ ${index}\x1b[0m`);
+                    console.log(`\x1b[32m✔ ∟ ${label}\x1b[0m`);
                     return;
                 }
 
@@ -109,18 +106,22 @@ process.on("exit", async code => {
                     }\x1b[0m`;
                 };
 
-                console.log(`\x1b[31m✘ \x1b[1m∟ ${index}\x1b[0m${record.position ? ` \x1b[2m(${record.position})\x1b[0m` : ""}\n`);
+                console.log(`\x1b[31m✘ \x1b[1m∟ ${label}\x1b[0m${
+                    record.position ? ` \x1b[2m(${record.position})\x1b[0m` : ""
+                }\n`);
                 console.log("\x1b[1m\x1b[2mEXPECTED:\x1b[0m\n");
                 console.log(printObj(record.expected));
                 console.log("\n\x1b[1m\x1b[2mACTUAL:\x1b[0m\n");
                 console.log(printObj(record.actual));
-                console.log(`\x1b[0m\x1b[2m${Array.from({ length: instance.label.length + 2 }, () => "–").join("")}\x1b[0m`);
+                console.log(`\x1b[0m\x1b[2m${
+                    Array.from({ length: instance.title.length + 2 }, () => "–").join("")
+                }\x1b[0m`);
             });
         });
     });
 
     writeOrig(`\n${
-        !counter.failure
+        !ATest.suiteFailed
         ? `\x1b[32m✔ Test suite \x1b[1msucceeded\x1b[22m`
         : `\x1b[31m✘ Test suite \x1b[1mfailed\x1b[22m`
     } (${
@@ -130,21 +131,23 @@ process.on("exit", async code => {
     }s)\x1b[0m\n`);
 
     await evalIntermediateScript(AFTER_SCRIPT_FILENAME);
-
-    return counter.failure ? 1 : 0;
 });
-[ "SIGINT", "SIGTERM", "SIGQUIT", "SIGUSR1", "SIGUSR2" ]
+/* [ "SIGINT", "SIGTERM", "SIGQUIT", "SIGUSR1", "SIGUSR2" ]
 .forEach(signal => {
     process.on(signal, () => process.exit(1));
-});
-process.on("uncaughtException", err => {
+}); */
+const handleBubblingError = err => {
     clearProgressLog();
     writeOrig(() => {
-        console.error(`\n\x1b[31m\x1b[1m${err.name}\x1b[22m: ${err.message}\n\n${err.stack}\x1b[0m\n`);
+        console.error(`\n\x1b[31m${err.stack ?? `${err.name}: ${err.message}`}${
+            lastErrorTestFilePosition ? `\n    \x1b[1mat ${lastErrorTestFilePosition}\x1b[22m` : ""
+        }\x1b[0m\n`);
     });
 
-    process.exit(1);
-});
+    process.exit(2);
+};
+process.on("uncaughtException", handleBubblingError);
+process.on("unhandledRejection", handleBubblingError);
 
 
 function unwrapValue(value) {
@@ -152,9 +155,7 @@ function unwrapValue(value) {
         let unwrapTimeout = setTimeout(() => {
             throw new RangeError("Unwrapping of promise value timed out");
         }, UNWRAP_TIMEOUT);
-        (!(value instanceof Promise)
-        ? new Promise(r => r(value))
-        : value)
+        ((value instanceof Promise) ? value : Promise.resolve(value))
         .then(value => {
             clearTimeout(unwrapTimeout);
             resolve(value);
@@ -168,28 +169,19 @@ class AsyncMutex {
     static isLocked = false;
     
     static lock(callback) {
-        return new Promise((resolve, reject) => {
-            new Promise(resolve => {
-                if(AsyncMutex.isLocked) {
-                    AsyncMutex.acquireQueue.push(resolve);
-
-                    return;
-                }
-                
-                AsyncMutex.isLocked = true;
-                
-                resolve();
-            })
+        new Promise(resolve => {
+            if(AsyncMutex.isLocked) {
+                AsyncMutex.acquireQueue.push(resolve);
+                return;
+            }
+            AsyncMutex.isLocked = true;
+            resolve();
+        })
+        .then(() => {
+            unwrapValue(callback())
             .then(() => {
-                (!(callback instanceof Promise)
-                ? new Promise(r => r(callback()))
-                : callback)
-                .then(result => resolve(result))
-                .catch(err => reject(err))
-                .finally(() => {
-                    AsyncMutex.isLocked = !!AsyncMutex.acquireQueue.length;
-                    (AsyncMutex.acquireQueue.shift() || (() => {}))();
-                });
+                AsyncMutex.isLocked = !!AsyncMutex.acquireQueue.length;
+                (AsyncMutex.acquireQueue.shift() || (() => {}))();
             });
         });
     }
@@ -198,17 +190,23 @@ class AsyncMutex {
 class ATest {
     static instances = [];
     static openTestCases = 0;
-    static endTimeout = setTimeout(() => {
-        if(ATest.openTestCases) return;
-        process.exit(0);
-    }, 500);
+    static endTimeout;
+    static suiteFailed = false;
 
-    constructor(label, endTimeout = 0) {
-        this.label = label;
-        this.endTimeout = endTimeout;
+    static scope(namespaceCallback) {
+        namespaceCallback();
+    }
+
+    constructor(title, endTimeout = 0, evalAsync = false) {
+        this.title = title;
+        this.endTimeoutDuration = endTimeout;
+        this.evalAsync = evalAsync;
         this.records = [];
+        this.openLabel = null;
         
         ATest.instances.push(this);
+        
+        return this;
     }
 
     eval(...args) {
@@ -219,7 +217,16 @@ class ATest {
         throw new SyntaxError("Missing implementation of abstract method 'compare()'");
     }
 
+    label(label) {
+        this.openLabel = label;
+        
+        return this;
+    }
+
     actual(...args) {
+        let label = this.openLabel;
+        this.openLabel = null;
+        
         ATest.openTestCases++;
 
         let position;
@@ -233,26 +240,30 @@ class ATest {
                 .slice(0, -1);
             } catch {}
         }
+        lastErrorTestFilePosition = position;
 
         return {
             expected: (expected) => {
-                AsyncMutex.lock(() => new Promise(resolve => {
+                const evalCase = () => new Promise(resolve => {
                     const actual = this.eval(...args);
-
+                    
                     unwrapValue(actual)
                     .then(actual => {
-                        if(!ATest.openTestCases) {
-                            clearTimeout(ATest.endTimeout);
-                            ATest.endTimeout = setTimeout(() => {
-                                if(ATest.openTestCases) return;
-                                process.exit(0);
-                            }, this.endTimeout);
-                        }
+                        clearTimeout(ATest.endTimeout);
+                        ATest.endTimeout = setTimeout(() => {
+                            if(ATest.openTestCases) return;
+                            process.exit(ATest.suiteFailed);
+                        }, this.endTimeoutDuration);
                         
-                        unwrapValue(expected)
+                        const expectedValue = (expected instanceof Function)
+                        ? expected(actual)
+                        : expected;
+                        
+                        unwrapValue(expectedValue)
                         .then(expected => {
                             const comparison = this.compare(actual, expected);
                             this.records.push({
+                                label,
                                 position,
                                 
                                 isMismatch: comparison.isMismatch,
@@ -262,10 +273,16 @@ class ATest {
                             });
                             ATest.openTestCases--;
 
+                            ATest.suiteFailed = ATest.suiteFailed || comparison.isMismatch;
+                            
                             resolve();
                         });
                     });
-                }));
+                });
+                
+                !this.evalAsync
+                ? AsyncMutex.lock(evalCase)
+                : evalCase();
 
                 return this;
             }
@@ -297,6 +314,7 @@ module.exports.init = function(title, badgeColorRGB) {
             });
         });
     };
+    
     evalIntermediateScript(BEFORE_SCRIPT_FILENAME)
     .then(() => {
         const symLength = 3;

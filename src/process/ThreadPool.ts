@@ -26,19 +26,18 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
 	protected createWorker(): Promise<Thread> {
     	const thread = new Thread(this.threadModulePath, {
     		argv: process.argv.slice(2),
-    		env: SHARE_ENV,
-    		workerData: {
-                
-    		}    // TODO: How to utilize?
+    		env: SHARE_ENV
     	});
+
+		thread.on("message", (sRes: IResponse) => {
+			this.deactivateWorker(thread, sRes); 
+		});
+		/* thread.on("error", (err: Error) => {
+			// TODO: Spin up new
+			throw err;
+		}); */
         
     	return new Promise((resolve) => {
-    		/* thread.on("error", (err: Error) => {
-    			throw err;
-    		}); */
-			thread.on("message", (sRes: IResponse) => {
-				this.deactivateWorker(thread, sRes); 
-			});
     		thread.once("online", () => resolve(thread));
     	});
 	}

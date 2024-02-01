@@ -2,8 +2,8 @@ import * as sharedmemoryAPI from "./api.sharedmemory";
 
 
 const _config = {
-	exclusiveKeyDelimiter: ":",
-	keyRegex: /^[^:]*$/i
+	exclusiveKeyDelimiter: "|",
+	keyRegex: /^[^|]*$/i
 };
 
 
@@ -17,21 +17,12 @@ export abstract class ASharedMemory<T> {
 		this.validateKey(uniqueKey);
 
 		this.uniqueKey = `${process.cwd()}${_config.exclusiveKeyDelimiter}${uniqueKey}`;
-
-		const freeAllHandler = () => {
-			this.activeKeys
-			.forEach((key: string) => this.freeSHM(key));
-		};
-		[ "exit", "SIGINT", "SIGTERM", "SIGQUIT", "SIGUSR1", "SIGUSR2", "uncaughtException" ]
-		.forEach(signal => {
-			process.on(signal, freeAllHandler);
-		});
 	}
 
 	private validateKey(key: string) {
-		if(_config.keyRegex.test(this.uniqueKey)) return;
-        
-		throw new SyntaxError(`Invalid shared map key name "${key}"`);
+		if(_config.keyRegex.test(key)) return;
+
+		throw new SyntaxError(`Invalid shared memory key name "${key}"`);
 	}
 
 	private getUniqueItemKey(itemKey: string): string {
@@ -41,24 +32,22 @@ export abstract class ASharedMemory<T> {
 	}
 
 	protected readSHM(itemKey: string): T {
-		const data: Buffer = sharedmemoryAPI.read(this.getUniqueItemKey(itemKey));
-        
-		return data as T;   // TODO: Conversion
+		return sharedmemoryAPI.read(this.getUniqueItemKey(itemKey));
 	}
 
 	protected writeSHM(itemKey: string, itemValue: T) {
-		const bufferedItemValue: Buffer = Buffer.from(itemValue.toString(), "utf-8");
-
-		sharedmemoryAPI.write(this.getUniqueItemKey(itemKey), bufferedItemValue);
-        
+		sharedmemoryAPI.write(this.getUniqueItemKey(itemKey), itemValue);
+		
 		this.activeKeys.add(itemKey);
 
 		return this;
 	}
 
 	protected freeSHM(itemKey: string) {
-		sharedmemoryAPI.free(itemKey)
+		sharedmemoryAPI.free(this.getUniqueItemKey(itemKey));
 
 		this.activeKeys.delete(itemKey);
 	}
 }
+
+// TODO: Implement local cache to reduce SHM operations?

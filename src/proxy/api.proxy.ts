@@ -1,21 +1,43 @@
 import { join } from "path";
-import { fork } from "child_process";
 import { Socket } from "net";
 import { createServer } from "net";
+
+import "./logs";
 import { Context } from "../common/Context";
+import { ProcessPool } from "./ProcessPool";
+
+import __config from "../__config.json";
 
 
-const child = fork(join(__dirname, "../process/api.process"));
-const port: number = Context.CONFIG.get<number>("port");
+process.title = `${__config.appNameShort} proxy`;
+
+
+const processPool: ProcessPool = new ProcessPool(join(__dirname, "../process/api.process"));
 
 // TODO: Pool
 // TODO: One core trap
 
 
-const server = createServer({ pauseOnConnect: true });
-server.on("connection", (socket: Socket) => {
-	child.send("socket", socket);
+process.on("exit", () => processPool.clear());
+[ "SIGINT", "SIGTERM", "SIGQUIT", "SIGUSR1", "SIGUSR2", "uncaughtException" ]
+.forEach(signal => {
+	process.on(signal, (code: number) => {
+		process.stdout.write("\n");
+		process.exit(code);
+	});
 });
-server.listen(port, () => {
-	console.log(`Server listening on port ${port} [${Context.MODE} mode]`);
-}); 
+
+
+createServer({ pauseOnConnect: true })
+.on("connection", (socket: Socket) => {
+	// Assign accordingly prepared request data to worker thread
+	processPool.assign(socket)
+	.catch((err: Error) => {
+		console.error(err);
+	});
+})
+.listen(Context.CONFIG.get<number>("port"), () => {
+	console.log(`Listening on #b{localhost}:${Context.CONFIG.get<number>("port")}`);
+	(Context.MODE === "DEV")
+	&& console.log(`Application runs #Br{${Context.MODE} mode}`);
+});

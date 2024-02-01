@@ -5,6 +5,7 @@ export interface IRequest {
     method: string;
     url: string;
     headers: THeaders;
+    clientIP: string;
 
     body?: string;
 }
@@ -18,6 +19,6 @@ export interface IResponse {
 
 
 export interface IFilestamp {
-	data: Buffer;
+	data: string;
 	eTag: string;
 }

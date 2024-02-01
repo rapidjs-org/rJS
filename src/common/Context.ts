@@ -12,6 +12,11 @@ export class Context {
 		? "DEV"
 		: "PROD";
 	public static readonly CONFIG: Config = new Config("./", DEFAULT_CONFIG)
-	.addDefinedConstraint("port")
-	.addTypeConstraint("port", "number");
+	.addTypeConstraint("clientCache", "number")
+	.addTypeConstraint("maxClientRequests", "number")
+	.addTypeConstraint("maxHeadersSize", "number")
+	.addTypeConstraint("maxPayloadSize", "number")
+	.addTypeConstraint("maxURILength", "number")
+	.addTypeConstraint("port", "number")
+	.addTypeConstraint("timeout", "number");
 }

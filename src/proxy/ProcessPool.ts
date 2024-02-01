@@ -9,8 +9,6 @@ import { AWorkerPool } from "../common/AWorkerPool";
  * build around forked and traced child processes.
  */
 export class ProcessPool extends AWorkerPool<Socket, void> {
-
-	//private readonly logDir: string;
 	private readonly childProcessModulePath: string;
 
 	constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) {
@@ -26,29 +24,23 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
      * @returns Child process handle
      */
 	protected createWorker(): ChildProcess {        
-    	const childProcess = fork(this.childProcessModulePath, /* this.embedContext.args */[], {
-    		cwd: process.cwd(), // TODO: APP RELATED! optional arg override?
-    		detached: false,
-    		silent: true
+    	const childProcess = fork(this.childProcessModulePath, process.argv.slice(2), {
+			cwd: process.cwd(),
+			silent: true
+    		// TODO: APP RELATED! optional arg override?
     	});
-        
-    	childProcess.stdout.on("data", (message: Buffer) => {
-    		this.emit("stdout", String(message));
-    	});
-    	
-    	/* childProcess.stderr.on("data", (err: Buffer) => {
-    		this.emit("stderr", String(err));
+		childProcess.stdout.on("data", (message: Buffer) => process.stdout.write(message.toString()));
+		childProcess.stderr.on("data", (err: Buffer) => process.stderr.write(err.toString()));
 
-    		this.deactivateWorker(childProcess, null);
-    	}); */
-        
     	childProcess.on("message", (message: string) => {
-    		if(message !== "done") {
-    			return;
-    		}
-
+    		if(message !== "done") return;
+    		
     		this.deactivateWorker(childProcess, null);
     	});
+    	/* childProcess.on("error", (err: Error) => {
+			// TODO: Spin up new
+			throw err;
+		}); */
         
     	return childProcess;
 	}
@@ -59,6 +51,8 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
      * @param childProcess Child process handle
      */
 	protected destroyWorker(childProcess: ChildProcess) {
+    	childProcess.send("terminate");	// TODO: Fix
+		
     	childProcess.kill();
 	}
 
@@ -70,13 +64,7 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
      * @param childData Child data package
      */
 	protected activateWorker(childProcess: ChildProcess, socket: Socket) {
-    	childProcess.send(socket);
-
-    	//childProcess.on("error", err => console.error(err));
-	}
-
-	public emit(eventName: "stdout"|"stderr", message: string): boolean {
-    	return super.emit(eventName, message);
+    	childProcess.send("socket", socket);
 	}
 
 }

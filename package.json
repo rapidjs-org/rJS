@@ -14,7 +14,7 @@
     "compile:ts": "npx tsc",
     "compile:ts:watch": "npx tsc --watch",
     "compile": "npm run compile:ts:watch",
-    "debug": "node ./debug/app.js",
+    "debug": "cd ./test-app/ && node ../debug/app.js",
     "test:shm": "node ./scripts/test-shm.js ./test/shm/",
     "test:cpp:shm": "npm run compile:cpp && npm run test:shm",
     "test:unit": "node ./scripts/test-unit.js ./test/unit/",

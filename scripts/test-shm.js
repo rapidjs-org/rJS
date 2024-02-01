@@ -1,12 +1,12 @@
+const { join } = require("path");
+const { readFileSync } = require("fs");
 const { fork } = require("child_process");
-const { deepStrictEqual } = require("assert");
 const { EventEmitter } = require("events");
 
-const sharedmemory = require("../debug/process/thread/sharedmemory/api.sharedmemory");
-
+const sharedmemory = require(join("../debug/", readFileSync(join(__dirname, ".shmpath")).toString(), "./api.sharedmemory"));
+//console.log(sharedmemory.read("foo"))
 
 if(!process.argv.slice(2).includes("child")) {
-
     // TEST
 
     const testFramework = require("./test");
@@ -17,13 +17,13 @@ if(!process.argv.slice(2).includes("child")) {
         throw err;
     });
     child.on("message", value => {
-        childResponseEmitter.emit("respond", value);
+        childResponseEmitter.emit("respond", (value === null) ? undefined : value);
     });
     process.on("exit", () => child.kill());
     
     global.SharedMemoryTest = class extends testFramework.ATest {
-        constructor(label) {
-            super(label);
+        constructor(title) {
+            super(title);
         }
         
         eval(command, key, value = null) {
@@ -51,10 +51,10 @@ if(!process.argv.slice(2).includes("child")) {
         
         compare(actual, expected) {
             const filteredActual = Object.assign({}, actual);
-            if(actual.intraProcess === expected) {
+            if(actual.intraProcess == expected) {
                 delete filteredActual.intraProcess;
             }
-            if(actual.interProcess === expected) {
+            if(actual.interProcess == expected) {
                 delete filteredActual.interProcess;
             }
 

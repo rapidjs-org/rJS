@@ -8,7 +8,7 @@ export class PluginHandler extends AHandler {
 	}
 
 	public activate() {
-
+		// TODO: Catch error status
 		this.respond();
 	}
 }

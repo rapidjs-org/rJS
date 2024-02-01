@@ -3,16 +3,15 @@
 #include <napi.h>
 #include <node_buffer.h>
 #include <semaphore.h>
+#include <sys/types.h>
 #include <sys/shm.h>
 
 #include <iostream>
-#include <unistd.h>
+
 
 typedef uint32_t t_key;
 
 sem_t* sem;
-
-pid_t random_value = getpid();
 
 
 void throw_error(Napi::Env env, std::string message) {
@@ -21,26 +20,15 @@ void throw_error(Napi::Env env, std::string message) {
     Napi::Error::New(env, message).ThrowAsJavaScriptException();
 }
 
-t_key numerate_unique_key(std::string unique_key) {
-    const int p = 128;
-    const int m = 1e9 + 9;
-
-    t_key hash_key = 0;
-    t_key p_pow = 1;
-
-    for (char c : unique_key) {
-        hash_key = (hash_key + (c + 1) * p_pow) % m;
-        p_pow = (p_pow * p) % m;
-    }
-
-    return hash_key;
+t_key hash_unique_key(std::string unique_key) {
+    return static_cast<key_t>(std::hash<std::string>{}(unique_key));
 }
 
 
 void write_shm(const Napi::CallbackInfo& args) {
 	Napi::Env env = args.Env();
 
-	t_key unique_key = numerate_unique_key(args[0].ToString().Utf8Value());
+	t_key unique_key = hash_unique_key(args[0].ToString().Utf8Value());
 
 	const Napi::Uint8Array buffer_array = args[1].As<Napi::Uint8Array>();
 	const size_t length = buffer_array.ElementLength();
@@ -65,7 +53,7 @@ void write_shm(const Napi::CallbackInfo& args) {
         segment[i] = buffer[i];
     }
     segment[i] = '\0';
-    
+
     shmdt(segment);
 
     sem_post(sem);
@@ -74,7 +62,7 @@ void write_shm(const Napi::CallbackInfo& args) {
 Napi::Buffer<uint8_t> read_shm(const Napi::CallbackInfo& args) {
 	Napi::Env env = args.Env();
 	
-	t_key unique_key = numerate_unique_key(args[0].ToString().Utf8Value());
+	t_key unique_key = hash_unique_key(args[0].ToString().Utf8Value());
 
 	sem = sem_open((char*)(unique_key), O_CREAT, 0644, 0);
 
@@ -103,7 +91,7 @@ Napi::Buffer<uint8_t> read_shm(const Napi::CallbackInfo& args) {
 void free_shm(const Napi::CallbackInfo& args) {
     Napi::Env env = args.Env();
 
-	t_key unique_key = numerate_unique_key(args[0].ToString().Utf8Value());
+	t_key unique_key = hash_unique_key(args[0].ToString().Utf8Value());
 
     sem = sem_open((char*)(unique_key), O_CREAT, 0644, 0);
 	

@@ -1,5 +1,7 @@
-import { EventEmitter, EventEmitter as Worker } from "events";
+import { EventEmitter as Worker } from "events";
 import { cpus } from "os";
+
+import { Context } from "./Context";
 
 
 /**
@@ -31,8 +33,7 @@ interface IPendingAssignment<I, O> {
  * Abstract class representing the foundation for concrete
  * descriptions of worker entity pools.
  */
-export abstract class AWorkerPool<I, O> extends EventEmitter {
-
+export abstract class AWorkerPool<I, O> {
 	private readonly baseSize: number;
 	private readonly timeout: number;
 	private readonly maxPending: number;
@@ -42,12 +43,10 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
 	private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
 	constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
-    	super();
-
-    	this.baseSize = baseSize;
+    	this.baseSize = Context.MODE == "DEV" ? 1 : baseSize;
     	this.timeout = timeout;
     	this.maxPending = maxPending;
-        
+		
 		setImmediate(() => {
 			Array.from({ length: this.baseSize }, async () => {
 				const worker: Worker = await this.createWorker();
@@ -166,11 +165,6 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
     	});
     }
 
-    /**
-     * Clear cluster by terminating all workers and preventing
-     * new workers from being created through deletion of the
-     * respective factory method.
-     */
     public clear() {
     	delete this.createWorker;
 

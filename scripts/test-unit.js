@@ -4,8 +4,8 @@ const testFramework = require("./test");
 
 
 global.UnitTest = class extends testFramework.ATest {
-    constructor(label) {
-        super(label);
+    constructor(title) {
+        super(title, 0, true);
     }
     
     eval(expression) {

@@ -1,5 +1,5 @@
-import { IResponse } from "../interfaces";
-import { THeaders, TStatusCode } from "../types";
+import { IResponse } from "../process/interfaces";
+import { THeaders, TStatusCode } from "../process/types";
 
 
 export class Response {
@@ -8,8 +8,8 @@ export class Response {
 
 	public message: string|Buffer;
 
-	public setHeader(name: string, value: string) {
-		this.headers[name] = value;
+	public setHeader(name: string, value: unknown) {
+		this.headers[name] = value.toString();
 	}
 
 	public setStatus(status: TStatusCode) {
