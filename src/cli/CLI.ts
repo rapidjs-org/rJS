@@ -5,7 +5,6 @@ type TCommandHandler = () => void;
 
 
 export class CLI {
-
 	private static commandHandlers: Map<string, TCommandHandler> = new Map();
 
 	public static registerCommand(nameOrNames: string|string[], commandHandler: TCommandHandler) {
@@ -15,28 +14,24 @@ export class CLI {
     	});
 	}
 
-	public static eval() {
-    	/*
-        * Interpret first positional argument as execution command.
-        * Command to depict which functional aspect to perform.
-        */
+	public static eval(defaultCommandName?: string) {
     	const commandName: string = Args.parsePositional(0);
-    	const commandHandler: TCommandHandler = this.commandHandlers.get(commandName);
-        
+
+		const commandHandler: TCommandHandler = this.commandHandlers.get(commandName ?? defaultCommandName);
     	if(commandHandler) {
     		commandHandler();
-
+			
     		return;
     	}
 
     	// Handle undefined command
-    	console.log(
+    	console.error(
     		commandName
-    			? `Unknown command '${commandName}'`
-    			: "No command provided"
+			? `Unknown command '${commandName}'`
+			: "No command provided"
     	);
 
-    	process.exit(1);
+    	setImmediate(() => process.exit(1));
 	}
 
 }

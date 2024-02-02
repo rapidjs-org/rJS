@@ -5,8 +5,9 @@ new SharedMemoryTest("Write key A")
 new SharedMemoryTest("Write key B")
 .actual("write", "bar", "baz").expected("baz");
 
-/* new SharedMemoryTest("Free key A")
-.actual("free", "foo").expected(null);
+new SharedMemoryTest("Free key A")
+.actual("free", "foo").expected(null)
+.actual("read", "foo").expected(null);
 
 new SharedMemoryTest("Free key B")
-.actual("free", "bar").expected(null); */
+.actual("free", "bar").expected(null);

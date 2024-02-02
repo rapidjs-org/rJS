@@ -1,7 +1,7 @@
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { TJSON } from "../process/types";
+import { TJSON } from "../types";
 import { Context } from "./Context";
 
 

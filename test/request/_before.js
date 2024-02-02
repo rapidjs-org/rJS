@@ -1,6 +1,4 @@
-process.chdir(require("path").join(__dirname, "../../test-app/"));
-
-require("../../debug/app");
+const { join } = require("path");
 
 
 RequestTest.setCommonHost({
@@ -8,7 +6,17 @@ RequestTest.setCommonHost({
 });
 
 
-module.exports = new Promise(resolve => {
-	// TODO: Initialized notifier
-	setTimeout(() => resolve(), 1500);
-});
+module.exports = () => {
+	return new Promise(resolve => {
+		global.appChild = require("child_process")
+		.fork(join(__dirname, "../../debug/api/api"), {
+			cwd: join(__dirname, "../../test-app/")
+		});
+
+		global.appChild.on("message", message => {
+			if(message !== "online") return;
+			
+			resolve();
+		});
+	});
+};

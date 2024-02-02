@@ -1,3 +1,5 @@
+import { join, isAbsolute } from "path";
+
 import { Args } from "./Args";
 import { Config } from "./Config";
 

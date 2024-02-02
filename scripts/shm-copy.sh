@@ -12,6 +12,6 @@ fi
 SHM_PATH=$(<"$(dirname "$0")/.shmpath")
 ADDON_MODULE_FILENAME="sharedmemory.node"
 SRC_PATH="$(dirname "$0")/../src/${SHM_PATH}/build/$2/${ADDON_MODULE_FILENAME}"
-DEST_PATH="$(dirname "$0")/../$1/${SHM_PATH}/${ADDON_MODULE_FILENAME}";
+DEST_PATH="$(dirname "$0")/../$1/${SHM_PATH}/${ADDON_MODULE_FILENAME}"
 
 cp "${SRC_PATH}" "${DEST_PATH}"

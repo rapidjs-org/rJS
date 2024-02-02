@@ -1,9 +1,3 @@
-import { ASharedMemory } from "./sharedmemory/ASharedMemory";
-
-
-type TRate = Record<string, number>;
-
-
 interface ILimitData {
     timePivot: number;
     previousWindow: number;
@@ -12,20 +6,21 @@ interface ILimitData {
 
 
 // TODO: Periodic check for whether entry needs to be freed (+ max size)
-export class RateLimiter extends ASharedMemory<ILimitData> {
+export class RateLimiter {
+	private readonly limits: Map<string, ILimitData> = new Map();
 	private readonly limit: number;
 	private readonly windowSize: number;
+
+	// TODO: Period for close by after requests to not lookup
 	
 	constructor(limit: number, windowSize = 60000) {
-    	super("rate-limiter");
-
     	this.limit = limit;
     	this.windowSize = windowSize;
 	}
 
 	public grantsAccess(clientIdentifier: string): boolean {
     	const now: number = Date.now();
-		const limitData: ILimitData = this.readSHM(clientIdentifier) ?? {
+		const limitData: ILimitData = this.limits.get(clientIdentifier) ?? {
         	timePivot: now,
         	previousWindow: 0,
         	currentWindow: 0
@@ -40,20 +35,13 @@ export class RateLimiter extends ASharedMemory<ILimitData> {
 				limitData.previousWindow = 0;
 			}
 		}
-		/* 
-		console.log("d: " + delta)
-		console.log(clientIdentifier)
-		console.log(limitData)
-		console.log("–––––––––––––")
-		limitData.currentWindow += 1;
-		 */
-		this.writeSHM(clientIdentifier, limitData);
+		
+		this.limits.set(clientIdentifier, limitData);
 
 		const currentWeight: number = Math.max(0, this.windowSize - delta);
 		const weightedTotal: number = (limitData.previousWindow * (1 - currentWeight))
 									+ (limitData.currentWindow * currentWeight);
 
-    	return weightedTotal <= this.limit;
+    	return weightedTotal <= this.limit /* / ThreadPool.size() ??? */;	// Optimistic; i.e. assume even distribution across worker processes
 	}
 }
-// TODO: Reduce required SHM access; use fixed hash client to process assignment etc. (?)

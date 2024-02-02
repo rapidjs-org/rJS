@@ -4,8 +4,8 @@ import { Socket } from "net";
 import { BroadcastChannel } from "worker_threads";
 
 import { ThreadPool } from "./ThreadPool";
-import { IRequest, IResponse } from "./interfaces";
-import { THeaders, TStatusCode } from "./types";
+import { IRequest, IResponse } from "../interfaces";
+import { THeaders, TStatusCode } from "../types";
 import { Context } from "../common/Context";
 
 import __config from "../__config.json";
@@ -20,7 +20,10 @@ process.title = `${__config.appNameShort} process`;
 
 
 const workerBroadcastChannel = new BroadcastChannel("worker-broadcast-channel");
-const threadPool: ThreadPool = new ThreadPool(join(__dirname, "../thread/api.thread"));
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "../thread/api.thread"))
+.on("online", () => {
+	process.send("online");
+});
 
 
 process.on("exit", () => console.log(789))

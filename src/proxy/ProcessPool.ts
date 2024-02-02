@@ -23,7 +23,7 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
      * module.
      * @returns Child process handle
      */
-	protected createWorker(): ChildProcess {        
+	protected createWorker(): Promise<ChildProcess> {        
     	const childProcess = fork(this.childProcessModulePath, process.argv.slice(2), {
 			cwd: process.cwd(),
 			silent: true
@@ -31,18 +31,24 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
     	});
 		childProcess.stdout.on("data", (message: Buffer) => process.stdout.write(message.toString()));
 		childProcess.stderr.on("data", (err: Buffer) => process.stderr.write(err.toString()));
-
-    	childProcess.on("message", (message: string) => {
-    		if(message !== "done") return;
-    		
-    		this.deactivateWorker(childProcess, null);
-    	});
-    	/* childProcess.on("error", (err: Error) => {
-			// TODO: Spin up new
-			throw err;
-		}); */
-        
-    	return childProcess;
+		
+    	return new Promise((resolve) => {
+			childProcess.on("message", (message: string) => {
+				switch(message) {
+					case "online":
+						resolve(childProcess);
+						break;
+					case "done":
+						this.deactivateWorker(childProcess, null);
+						break;
+				}
+				
+			});
+			/* childProcess.on("error", (err: Error) => {
+				// TODO: Spin up new
+				throw err;
+			}); */
+		});
 	}
     
 	/**

@@ -18,7 +18,9 @@ export class Args {
      * @returns The name of the positional argument if provided at index (no indicating dash)
      */
 	public static parsePositional(index = 0): string {
-    	return Args.raw[index];
+		const positional: string = Args.raw[index];
+
+    	return !/^\-/.test(positional) ? positional : null;
 	}
 
 	/**

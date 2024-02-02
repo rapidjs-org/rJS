@@ -7,14 +7,20 @@
     "url": "https://github.com/t-ski",
     "githubUsername": "t-ski"
   },
+  "bin": {
+    "rjs": "./dist/cli/api.cli.js",
+    "rapidjs": "./dist/cli/api.cli.js"
+  },
+  "main": "./dist/api/api.js",
   "types": "./types/api.core.d.ts",
   "scripts": {
-    "configure": "./scripts/shm-gyp.sh configure --debug && npm run compile:ts && npm run compile:cpp",
+    "configure": "npm i && ./scripts/shm-gyp.sh configure --debug",
     "compile:cpp": "./scripts/shm-gyp.sh build --debug && ./scripts/shm-copy.sh ./debug Debug",
-    "compile:ts": "npx tsc",
-    "compile:ts:watch": "npx tsc --watch",
+    "compile:ts": "./scripts/help-copy.sh ./debug && npx tsc",
+    "compile:ts:watch": "./scripts/help-copy.sh ./debug && npx tsc --watch",
     "compile": "npm run compile:ts:watch",
-    "debug": "cd ./test-app/ && node ../debug/app.js",
+    "debug": "./rjs.sh start -W ./test-app/",
+    "debug:dev": "./rjs.sh start -W ./test-app/ -D",
     "test:shm": "node ./scripts/test-shm.js ./test/shm/",
     "test:cpp:shm": "npm run compile:cpp && npm run test:shm",
     "test:unit": "node ./scripts/test-unit.js ./test/unit/",

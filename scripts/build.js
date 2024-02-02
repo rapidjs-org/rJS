@@ -29,6 +29,9 @@ execSync(`./scripts/shm-gyp.sh build --release`, {
 execSync(`./scripts/shm-copy.sh ${DIST_DIR_NAME} Release`, {
     cwd: CWD
 });
+execSync(`./scripts/help-copy.sh ${DIST_DIR_NAME}`, {
+    cwd: CWD
+});
 
 process.on("exit", () => {
     console.log(`\x1b[32mBuild process \x1b[1msucceeded\x1b[22m (${

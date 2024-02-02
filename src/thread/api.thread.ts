@@ -1,12 +1,12 @@
 import { parentPort, BroadcastChannel } from "worker_threads";
 
-import { TStatusCode } from "../process/types";
-import { IRequest, IResponse } from "../process/interfaces";
+import { TStatusCode } from "../types";
+import { IRequest, IResponse } from "../interfaces";
 import { Request } from "./Request";
 import { AHandler } from "./AHandler";
 import { FileHandler } from "./FileHandler";
 import { PluginHandler } from "./PluginHandler";
-import { RateLimiter } from "./RateLimiter";
+import { RateLimiter } from "./_RateLimiterShared";
 import { Context } from "../common/Context";
 import { freeAll } from "./sharedmemory/api.sharedmemory";
 
@@ -19,9 +19,6 @@ new BroadcastChannel("worker-broadcast-channel")
 };
 
 const rateLimiter: RateLimiter = new RateLimiter(Context.CONFIG.get<number>("maxClientRequests"));
-
-
-console.log("Thread message");
 
 
 parentPort.on("message", async (sReq: IRequest) => {

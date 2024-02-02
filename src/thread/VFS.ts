@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, rmSync, statSync } from "fs";
 import { join, normalize } from "path";
-import { IFilestamp } from "../process/interfaces";
+import { IFilestamp } from "../interfaces";
 import { ASharedMemory } from "./sharedmemory/ASharedMemory";
 
 

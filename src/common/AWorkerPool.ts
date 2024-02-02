@@ -1,4 +1,4 @@
-import { EventEmitter as Worker } from "events";
+import { EventEmitter as Worker, EventEmitter } from "events";
 import { cpus } from "os";
 
 import { Context } from "./Context";
@@ -33,7 +33,7 @@ interface IPendingAssignment<I, O> {
  * Abstract class representing the foundation for concrete
  * descriptions of worker entity pools.
  */
-export abstract class AWorkerPool<I, O> {
+export abstract class AWorkerPool<I, O> extends EventEmitter {
 	private readonly baseSize: number;
 	private readonly timeout: number;
 	private readonly maxPending: number;
@@ -43,17 +43,21 @@ export abstract class AWorkerPool<I, O> {
 	private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
 	constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
+		super();
+
     	this.baseSize = Context.MODE == "DEV" ? 1 : baseSize;
     	this.timeout = timeout;
     	this.maxPending = maxPending;
 		
-		setImmediate(() => {
-			Array.from({ length: this.baseSize }, async () => {
+		setImmediate(async () => {
+			for(let i = 0; i < this.baseSize; i++) {
 				const worker: Worker = await this.createWorker();
     
 				this.registeredWorkers.push(worker);
 				this.idleWorkers.push(worker);
-			});
+			}
+			
+			this.emit("online");
 		});
 	}
     

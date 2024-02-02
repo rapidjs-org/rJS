@@ -28,6 +28,8 @@ if(!process.argv.slice(2).includes("child")) {
         
         eval(command, key, value = null) {
             switch(command) {
+                case "read":
+                    break;
                 case "write":
                     sharedmemory.write(key, value);
                     break;

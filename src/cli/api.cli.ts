@@ -2,10 +2,23 @@
 
 
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, isAbsolute } from "path";
 
-import "./logs";
+import "./badge-logs";
+import { Args } from "../common/Args";
 import { CLI } from "./CLI";
+import { ProgressLine } from "./ProgressLine";
+
+
+let workingDir: string = Args.parseOption("working-dir", "W").string ?? "./";
+workingDir = join(isAbsolute(workingDir) ? workingDir : process.cwd(), workingDir);
+try {
+	process.chdir(workingDir);
+} catch(err) {
+	console.error(new ReferenceError(`Specified application working directory does not exist at path '${workingDir}'`));
+
+	setImmediate(() => process.exit(1));
+}
 
 
 /*
@@ -20,4 +33,22 @@ CLI.registerCommand("help", () => {
 });
 
 
-CLI.eval();
+CLI.registerCommand("start", async () => {
+	const progressLine: ProgressLine = new ProgressLine("Starting application").activate();
+
+	const { Context } = await import("../common/Context");
+	const proxy = await import("../proxy/api.proxy");
+	
+	proxy
+	.default
+	.on("online", () => {
+		progressLine.deactivate();
+		
+		console.log(`Listening on #b{localhost:${Context.CONFIG.get<number>("port")}}`);
+		(Context.MODE === "DEV")
+		&& console.log(`Application runs #Br{${Context.MODE} mode}`);
+	});
+});
+
+
+CLI.eval("help");
