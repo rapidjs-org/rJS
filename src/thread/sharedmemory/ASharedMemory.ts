@@ -6,6 +6,7 @@ const _config = {
 	keyRegex: /^[^|]*$/i
 };
 
+// TODO: Single core/io trap
 
 export abstract class ASharedMemory<T> {
 	private static deterministicIncrementalKey: number = 0;

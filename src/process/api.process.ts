@@ -1,23 +1,24 @@
-import { STATUS_CODES } from "http";
 import { join } from "path";
 import { Socket } from "net";
 import { BroadcastChannel } from "worker_threads";
 
+import "./file-logs";
 import { ThreadPool } from "./ThreadPool";
 import { IRequest, IResponse } from "../interfaces";
-import { THeaders, TStatusCode } from "../types";
 import { Context } from "../common/Context";
+import { socketRespond } from "../common/socket-respond";
 
 import __config from "../__config.json";
 
 
-const _config = {
-	httpVersion: "1.1"
-};
-
-
 process.title = `${__config.appNameShort} process`;
 
+
+const MAX_CONFIG: Record<string, number> = {
+	payloadSize: Context.CONFIG.get<number>("maxPayloadSize") || Infinity,
+	uriLength: Context.CONFIG.get<number>("maxURILength") || Infinity,
+	headersSize: Context.CONFIG.get<number>("maxHeadersSize") || Infinity
+};
 
 const workerBroadcastChannel = new BroadcastChannel("worker-broadcast-channel");
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "../thread/api.thread"))
@@ -49,15 +50,15 @@ function handleSocket(socket: Socket) {
 		const url: string = protocol[1];
 		//const version: string = protocol[2];
 		
-		if(messageBody.length > Context.CONFIG.get<number>("maxPayloadSize")) {
+		if(messageBody.length > MAX_CONFIG.payloadSize) {
 			respond(socket, 413);
 			return;
 		}
-		if(url.length > Context.CONFIG.get<number>("maxURILength")) {
+		if(url.length > MAX_CONFIG.uriLength) {
 			respond(socket, 414);
 			return;
 		}
-		if(messageHead.length > Context.CONFIG.get<number>("maxHeadersSize")) {
+		if(messageHead.length > MAX_CONFIG.headersSize) {
 			respond(socket, 431);
 			return;
 		}
@@ -89,19 +90,8 @@ function handleSocket(socket: Socket) {
 }
 
 
-function respond(socket: Socket, status: TStatusCode, headers: THeaders = {}, message?: Uint8Array) {
-	const CRLF = "\r\n";
-	socket.write(`${
-		`HTTP/${_config.httpVersion} ${status} ${STATUS_CODES[status]}`
-	}${CRLF}${
-		Object.entries(headers)
-		.map((value: [ string, string ]) => `${value[0]}: ${value[1]}`)
-		.join(CRLF)
-	}${CRLF}${message ? CRLF : ""}`);
+function respond(...args: unknown[]) {
+	socketRespond.apply(null, args);
 	
-	socket.write(message ?? "");
-	
-	socket.end();
-
 	process.send("done");
 }

@@ -8,7 +8,7 @@ import { IRequest, IResponse } from "../interfaces";
  * Class representing a concrete server thread worker pool
  * build around instanciated and traced worker threads.
  */
-export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
+export class ThreadPool extends AWorkerPool<Thread, IRequest, IResponse> {
 	private readonly threadModulePath: string;
 
 	constructor(threadModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) { // TODO: Define
@@ -61,5 +61,4 @@ export class ThreadPool extends AWorkerPool<IRequest, IResponse> {
 	protected activateWorker(thread: Thread, sReq: IRequest) {
     	thread.postMessage(sReq);
 	}
-
 }

@@ -6,8 +6,6 @@ import { Request } from "./Request";
 import { AHandler } from "./AHandler";
 import { FileHandler } from "./FileHandler";
 import { PluginHandler } from "./PluginHandler";
-import { RateLimiter } from "./_RateLimiterShared";
-import { Context } from "../common/Context";
 import { freeAll } from "./sharedmemory/api.sharedmemory";
 
 
@@ -18,16 +16,8 @@ new BroadcastChannel("worker-broadcast-channel")
 	freeAll();
 };
 
-const rateLimiter: RateLimiter = new RateLimiter(Context.CONFIG.get<number>("maxClientRequests"));
-
 
 parentPort.on("message", async (sReq: IRequest) => {
-	/* if(!rateLimiter.grantsAccess(sReq.clientIP)) {
-		respondError(429);
-		
-		return;
-	} */
-	
 	const req: Request = new Request(sReq.method.toUpperCase(), sReq.url, sReq.headers, sReq.body);
 	
 	let handler: AHandler;

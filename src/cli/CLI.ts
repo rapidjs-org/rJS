@@ -1,8 +1,10 @@
 import { Args } from "../common/Args";
+import { SerialMemory } from "../common/SerialMemory";
 
 
 type TCommandHandler = () => void;
 
+new SerialMemory();
 
 export class CLI {
 	private static commandHandlers: Map<string, TCommandHandler> = new Map();

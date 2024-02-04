@@ -13,7 +13,7 @@ const ENCODERS: { [ key: string ]: ((data: unknown) => Buffer) } = Object.freeze
 	"deflate": deflateSync,
 	"br": brotliCompressSync
 });
-
+const REQUEST_TIMEOUT: number = Context.CONFIG.get<number>("timeout");
 
 
 export abstract class AHandler extends EventEmitter {
@@ -27,9 +27,10 @@ export abstract class AHandler extends EventEmitter {
 
 		this.req = req;
 		
-		setTimeout(() => {
+		REQUEST_TIMEOUT
+		&& setTimeout(() => {
 			this.emit("timeout");
-		}, 1000 ?? Context.CONFIG.get<number>("timeout"));
+		}, REQUEST_TIMEOUT);
 	}
 
 	protected respond() {

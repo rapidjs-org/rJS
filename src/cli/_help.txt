@@ -1,21 +1,14 @@
-Usage: rjs <command> [|--<arg:key>|-<arg:shorthand>]*
+Usage: rjs <command> [ --<arg:key>|-<arg:shorthand> [ <arg-option> ]? ]*
 
-• Commands:
+→ help                          Display help text
 
-help                            Display help text
-monitor                         Display status of all running proxies and applications
-start                           Start a new web space with a specific shell application (successive argument at position 1)
-stop                            Stop an existing web space
+→ start                         Start a new web space with a specific shell application (successive argument at position 1)
 
-Optional atguments > start:
-
-• Positional:
-
-index 1                         Server shell application to execute withtin threads
+Optional arguments:
 
 • Flags:
 
---dev, -D                       Run DEV MODE (PROD MODE otherwise)
+--dev, -D                       Run DEV Context.MODE (PROD Context.MODE otherwise)
 --secure, -S                    Use HTTPS (HTTP by default)
 --standalone                    Ininitalize in standlone environment (reverse proxied by default)
 
@@ -25,6 +18,8 @@ index 1                         Server shell application to execute withtin thre
 --logs, -L                      Specify logs directory path (file logs disabled by default; provide in order to activate)
 --port, -P                      Specify listen port (defaults to 80 (HTTP) / 443 (HTTPS))
 --ssl                           Specify SSL directory path (./ssl by default)
---wd, -W                        Specify application working directory (defaults to process CWD)
+--working-dir, -W               Specify application working directory (defaults to process CWD)
+
+→ stop                          Stop an existing web space
 
 Visit https://rapidjs.org for more information.

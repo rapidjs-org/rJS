@@ -7,6 +7,9 @@ import { LogIntercept } from "../common/LogIntercept";
 import __config from "../__config.json";
 
 
+// TODO: Not valid in proxy
+
+
 const _config = {
     logFileRotationMemoryThreshold: 1000000000
 };
@@ -18,40 +21,9 @@ const logDirPath = join(process.cwd(), __config.logsDirName);
 && mkdirSync(logDirPath);
 
 
-function formatMarkSyntax(message: string, formatter: (code: string, formatMessage: string) => string): string {
-    return message
-    .replace(/#([a-z]+)\{([^}]*)\}/i, (_, code: string, formatMessage: string) => {
-        return formatter(code, formatMessage);
-    })
-}
-
-
 new LogIntercept()
-.onOut((message: string) => {
-	const modifiedMessage: string = formatMarkSyntax(message, (code: string, formattedMessage: string) => {
-        const ansii: Record<string, number> = {
-            "B": 1,
-            "I": 3,
-            "r": 31,    
-            "g": 32,
-            "b": 36
-        };
-        return `${
-            Array.from({ length: code.length }, (_, i: number) => {
-                return `\x1b[${ansii[code.split("")[i]] ?? 0}m`;
-            }).join("")
-        }${formattedMessage}\x1b[0m`;
-    })
-    .replace(/(^| )([0-9]+(\.[0-9]+)?)([.)} ]|$)/gi, "$1\x1b[33m$2\x1b[0m$4");
-
-	return modifiedMessage;
-})
 .on("write", (_, rawMessage: string) => {
-    const cleanMessage: string = formatMarkSyntax(rawMessage, (_, formatMessage: string) => formatMessage)
-    .replace(/\x1b\[\??[0-9]{1,2}([a-z]|(;[0-9]{3}){0,3}m)/gi, "")
-    .trim();
-    
-    if(!cleanMessage.length) return;
+    if(!rawMessage.trim().length) return;
 
     const nowDate: Date = new Date();
     const wrapValue = (value: unknown): string => {
@@ -88,7 +60,7 @@ new LogIntercept()
     }
 
 	appendFile(join(logDirPath, `${date}.log`), `${timePrefix}\t${
-		cleanMessage
+		rawMessage
         .replace(/\n?$/g, "")
         .replace(/\n/g, `\n${Array.from({ length: timePrefix.length }, () => " ").join("")}\t`)
 	}\n`, (err: Error) => {});

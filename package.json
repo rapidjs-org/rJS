@@ -28,7 +28,8 @@
     "test": "npm run test:shm && npm run test:unit && npm run test:request",
     "lint": "npx eslint --ext .ts --fix ./src",
     "assess": "npm run test && npm run lint",
-    "build": "npm run assess && node ./scripts/build.js"
+    "build": "npm run assess && node ./scripts/build.js",
+    "print-used-args": "node ./scripts/print-used-args.js"
   },
   "files": [
     "dist"

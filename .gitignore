@@ -2,6 +2,7 @@
 
 .vscode/
 .logs/
+.config/
 
 package-lock.json
 
@@ -11,3 +12,5 @@ debug/
 dist/
 
 build/
+
+src/thread/distributed-sharedmemory

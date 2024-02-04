@@ -27,20 +27,41 @@ function bindWrite(streamIdentifier: TStreamIdentifier) {
 
     return (message: string, ...args: unknown[]): boolean => {
         logMutex.lock(() => {
-            let modifiedMessage: string = LogIntercept.applyAll(streamIdentifier, message);
+            const formattedMessage: string = message
+            .replace(/#([a-z]+)\{([^}]*)\}/i, (_, code: string, formatMessage: string) => {
+                const ansii: Record<string, number> = {
+                    "B": 1,
+                    "I": 3,
+                    "r": 31,    
+                    "g": 32,
+                    "b": 36
+                };
+                return `${
+                    Array.from({ length: code.length }, (_, i: number) => {
+                        return `\x1b[${ansii[code.split("")[i]] ?? 0}m`;
+                    }).join("")
+                }${formatMessage}\x1b[0m`;
+            })
+            .replace(/(^| )([0-9]+(\.[0-9]+)?)([.)} ]|$)/gi, "$1\x1b[33m$2\x1b[0m$4");
+            
+            const modifiedMessage: string = LogIntercept.applyAll(streamIdentifier, formattedMessage);
 
             if(lastMessagestamp?.message != message) {
                 lastMessagestamp = {
-                    message,
+                    message: formattedMessage,
 
                     count: 1
                 };
                 
                 stream(modifiedMessage, ...args);
 
+                const cleanMessage = (encodedMessage: string) => {
+                    return encodedMessage
+                    .replace(/\x1b\[\??[0-9]{1,2}([a-z]|(;[0-9]{3}){0,3}m)/gi, "");
+                };
                 LogIntercept.instances
                 .forEach((instance: LogIntercept) => {
-                    instance.emit("write", modifiedMessage, message);
+                    instance.emit("write", cleanMessage(modifiedMessage), cleanMessage(formattedMessage));
                 });
 
                 return;
@@ -55,10 +76,7 @@ function bindWrite(streamIdentifier: TStreamIdentifier) {
             }`, () => {
                 lastMessagestamp.count++;
 
-                modifiedMessage = `${modifiedMessage}`
-                .replace(/(\n?)$/, createIndexer());
-
-                stream(modifiedMessage, ...args);
+                stream(`${modifiedMessage}`.replace(/(\n?)$/, createIndexer()), ...args);
             });
         });
 
@@ -66,7 +84,7 @@ function bindWrite(streamIdentifier: TStreamIdentifier) {
     };
 }
 
-
+// TODO: Split joined messages (?)
 export class LogIntercept extends EventEmitter {
     public static instances: LogIntercept[] = [];
 

@@ -1,7 +1,5 @@
-import { EventEmitter as Worker, EventEmitter } from "events";
+import { EventEmitter } from "events";
 import { cpus } from "os";
-
-import { Context } from "./Context";
 
 
 /**
@@ -33,19 +31,18 @@ interface IPendingAssignment<I, O> {
  * Abstract class representing the foundation for concrete
  * descriptions of worker entity pools.
  */
-export abstract class AWorkerPool<I, O> extends EventEmitter {
+export abstract class AWorkerPool<Worker extends EventEmitter, I, O> extends EventEmitter {
 	private readonly baseSize: number;
 	private readonly timeout: number;
 	private readonly maxPending: number;
-	private readonly activeWorkers: Map<number, IActiveWorker<O>> = new Map();
-	private readonly registeredWorkers: Worker[] = [];
+	private readonly activeWorkers: Map<Worker, IActiveWorker<O>> = new Map();
 	private readonly idleWorkers: Worker[] = [];
 	private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
 
 	constructor(baseSize: number = cpus().length, timeout: number = 30000, maxPending: number = Infinity) {
 		super();
-
-    	this.baseSize = Context.MODE == "DEV" ? 1 : baseSize;
+		
+    	this.baseSize = baseSize ?? cpus().length;
     	this.timeout = timeout;
     	this.maxPending = maxPending;
 		
@@ -53,7 +50,6 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
 			for(let i = 0; i < this.baseSize; i++) {
 				const worker: Worker = await this.createWorker();
     
-				this.registeredWorkers.push(worker);
 				this.idleWorkers.push(worker);
 			}
 			
@@ -86,30 +82,16 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
     	}
 
     	const worker: Worker = this.idleWorkers.shift();
-    	const workerId: number = this.getWorkerId(worker);
     	const assignment: IPendingAssignment<I, O> = this.pendingAssignments.shift();
         
     	this.activateWorker(worker, assignment.dataIn);
         
-    	this.activeWorkers
-    	.set(workerId, {
+    	this.activeWorkers.set(worker, {
     		resolve: assignment.resolve,
     		timeout: setTimeout(() => {
     			this.deactivateWorker(worker, new Error(""));    // TODO: How to signal timeout?
     		}, this.timeout)
     	});
-    }
-
-    /**
-     * Internally deactivate a worker entity by registering
-     * it back to the candidate queue and motivating possibly
-     * pending input data handling.
-     * @param workerId Worker entity identifier
-     */
-    private deactivate(workerId: number) {
-    	this.activeWorkers.delete(workerId);
-
-    	this.activate();
     }
 
     /**
@@ -132,9 +114,7 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
      * @param dataOut Data to write out to the assignment context
      */
     public deactivateWorker(worker: Worker, dataOut: O|Error) {
-    	const workerId: number = this.getWorkerId(worker);
-
-    	const activeWorker: IActiveWorker<O> = this.activeWorkers.get(workerId);
+    	const activeWorker: IActiveWorker<O> = this.activeWorkers.get(worker);
 
     	if(!activeWorker) return;
 
@@ -145,7 +125,7 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
 
     	this.idleWorkers.push(worker);
         
-    	this.deactivate(workerId);
+    	this.activeWorkers.delete(worker);
     }
 
     /**
@@ -172,7 +152,9 @@ export abstract class AWorkerPool<I, O> extends EventEmitter {
     public clear() {
     	delete this.createWorker;
 
-    	this.registeredWorkers.forEach((worker: Worker) => {
+    	Array.from(this.activeWorkers.keys())
+		.concat(this.idleWorkers)
+		.forEach((worker: Worker) => {
     		this.destroyWorker(worker);
     	});
     }

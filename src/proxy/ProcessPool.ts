@@ -8,12 +8,12 @@ import { AWorkerPool } from "../common/AWorkerPool";
  * Class representing a concrete server process worker pool
  * build around forked and traced child processes.
  */
-export class ProcessPool extends AWorkerPool<Socket, void> {
+export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
 	private readonly childProcessModulePath: string;
 
 	constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) {
     	super(baseSize, timeout, maxPending);
-
+		
     	this.childProcessModulePath = childProcessModulePath;
 	}
     
@@ -72,5 +72,4 @@ export class ProcessPool extends AWorkerPool<Socket, void> {
 	protected activateWorker(childProcess: ChildProcess, socket: Socket) {
     	childProcess.send("socket", socket);
 	}
-
 }

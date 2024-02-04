@@ -1,7 +1,5 @@
-import proxy from "../proxy/api.proxy";
+import { Context } from "../common/Context";
+import { start } from "../proxy/api.proxy";
 
 
-export { default as default } from "../proxy/api.proxy";
-
-
-proxy.on("online", () => process.send("online"));
+export default start(Context.CONFIG.get<number>("port"));

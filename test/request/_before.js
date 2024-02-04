@@ -1,8 +1,11 @@
 const { join } = require("path");
 
 
+const PORT = 7999;
+
+
 RequestTest.setCommonHost({
-	port: 7999
+	port: PORT
 });
 
 
