@@ -1,1 +1,1 @@
-global.appChild.kill();
+// TODO: Use API.unbed() at port 7999

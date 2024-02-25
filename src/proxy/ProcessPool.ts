@@ -1,20 +1,33 @@
-import { ChildProcess, fork } from "child_process";
+import { cpus } from "os";
 import { Socket } from "net";
+import { ChildProcess, fork } from "child_process";
 
 import { AWorkerPool } from "../common/AWorkerPool";
+import { IHTTPMessage } from "../interfaces";
+import { Args } from "../common/Args";
+
+
+export interface IClientPackage {
+	socket: Socket;
+	message: IHTTPMessage;
+}
 
 
 /**
  * Class representing a concrete server process worker pool
  * build around forked and traced child processes.
  */
-export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
+export class ProcessPool extends AWorkerPool<ChildProcess, IClientPackage, void> {
 	private readonly childProcessModulePath: string;
+	private readonly cwd: string;
+	private readonly args: string[];
 
-	constructor(childProcessModulePath: string, baseSize?: number, timeout?: number, maxPending?: number) {
-    	super(baseSize, timeout, maxPending);
+	constructor(childProcessModulePath: string, cwd: string, args: string[], baseSize?: number, timeout?: number, maxPending?: number) {
+		super(baseSize || (new Args(args).parseOption("max-cores").number || cpus().length), timeout, maxPending);
 		
     	this.childProcessModulePath = childProcessModulePath;
+    	this.cwd = cwd;
+    	this.args = args;
 	}
     
 	/**
@@ -24,8 +37,8 @@ export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
      * @returns Child process handle
      */
 	protected createWorker(): Promise<ChildProcess> {        
-    	const childProcess = fork(this.childProcessModulePath, process.argv.slice(2), {
-			cwd: process.cwd(),
+    	const childProcess = fork(this.childProcessModulePath, this.args, {
+			cwd: this.cwd,
 			silent: true
     		// TODO: APP RELATED! optional arg override?
     	});
@@ -33,7 +46,8 @@ export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
 		childProcess.stderr.on("data", (err: Buffer) => process.stderr.write(err.toString()));
 		
     	return new Promise((resolve) => {
-			childProcess.on("message", (message: string) => {
+			childProcess
+			.on("message", (message: string) => {
 				switch(message) {
 					case "online":
 						resolve(childProcess);
@@ -42,12 +56,11 @@ export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
 						this.deactivateWorker(childProcess, null);
 						break;
 				}
-				
-			});
-			/* childProcess.on("error", (err: Error) => {
+			})
+			.on("error", (err: Error) => {
 				// TODO: Spin up new
 				throw err;
-			}); */
+			});
 		});
 	}
     
@@ -57,7 +70,7 @@ export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
      * @param childProcess Child process handle
      */
 	protected destroyWorker(childProcess: ChildProcess) {
-    	childProcess.send("terminate");	// TODO: Fix
+    	childProcess.send("terminate");
 		
     	childProcess.kill();
 	}
@@ -69,7 +82,7 @@ export class ProcessPool extends AWorkerPool<ChildProcess, Socket, void> {
      * @param childProcess Candidate child process
      * @param childData Child data package
      */
-	protected activateWorker(childProcess: ChildProcess, socket: Socket) {
-    	childProcess.send("socket", socket);
+	protected activateWorker(childProcess: ChildProcess, clientPackage: IClientPackage) {
+    	childProcess.send(clientPackage.message, clientPackage.socket);
 	}
 }

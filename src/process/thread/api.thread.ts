@@ -1,7 +1,7 @@
 import { parentPort, BroadcastChannel } from "worker_threads";
 
-import { TStatusCode } from "../types";
-import { IRequest, IResponse } from "../interfaces";
+import { TStatusCode } from "../../types";
+import { IRequest, IResponse } from "../../interfaces";
 import { Request } from "./Request";
 import { AHandler } from "./AHandler";
 import { FileHandler } from "./FileHandler";
@@ -61,3 +61,6 @@ function respondError(errorStatus: TStatusCode) {
 		headers: {}
 	});
 }
+
+
+// console.log("TEST TEST TEST 123")	// TODO: Fix log intercept (global)

@@ -7,7 +7,7 @@ export class ProgressLine {
     private i: number = 0;
     private interval: NodeJS.Timeout;
 
-    constructor(message: string, max: number = 3, symbol = ".", intervalSize: number = 500) {
+    constructor(message: string, max: number = 3, symbol = ".", intervalSize: number = 375) {
         this.message = message;
         this.max = max + 1;
         this.symbol = symbol;

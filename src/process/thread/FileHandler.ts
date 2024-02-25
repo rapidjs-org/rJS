@@ -1,13 +1,12 @@
-import path, { basename, dirname, extname, normalize, join } from "path";
+import { basename, dirname, extname, normalize, join } from "path";
 
-import { IFilestamp } from "../interfaces";
 import { AHandler } from "./AHandler";
 import { Request } from "./Request";
-import { VFS } from "./VFS";
-import { TJSON } from "../types";
+import { IFilestamp, VFS } from "./VFS";
+import { TJSON } from "../../types";
+import { Context } from "../../common/Context";
 
 import mimeJSON from "./mime.json";
-import { Context } from "../common/Context";
 
 
 const _config = {

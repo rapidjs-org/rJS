@@ -26,6 +26,12 @@ function bindWrite(streamIdentifier: TStreamIdentifier) {
     : process.stderr.write.bind(process.stderr);
 
     return (message: string, ...args: unknown[]): boolean => {
+        message = message.toString();
+        
+        if(!message.trim().length) {
+            return stream(message);
+        }
+
         logMutex.lock(() => {
             const formattedMessage: string = message
             .replace(/#([a-z]+)\{([^}]*)\}/i, (_, code: string, formatMessage: string) => {

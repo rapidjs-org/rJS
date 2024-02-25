@@ -1,10 +1,8 @@
 import { Args } from "../common/Args";
-import { SerialMemory } from "../common/SerialMemory";
 
 
 type TCommandHandler = () => void;
 
-new SerialMemory();
 
 export class CLI {
 	private static commandHandlers: Map<string, TCommandHandler> = new Map();
@@ -17,7 +15,7 @@ export class CLI {
 	}
 
 	public static eval(defaultCommandName?: string) {
-    	const commandName: string = Args.parsePositional(0);
+    	const commandName: string = Args.cli.parsePositional(0);
 
 		const commandHandler: TCommandHandler = this.commandHandlers.get(commandName ?? defaultCommandName);
     	if(commandHandler) {

@@ -25,5 +25,7 @@ export class HeaderParser {
 			return (a.value.match(/\*/g) || []).length - (b.value.match(/\*/g) || []).length;
 		})
 		.map((a: IQualityHeader) => a.value);
+
+		// TODO: Not Acceptable state ?
 	}
 }

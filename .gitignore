@@ -13,4 +13,4 @@ dist/
 
 build/
 
-src/thread/distributed-sharedmemory
+src/process/thread/distributed-sharedmemory

@@ -1,0 +1,12 @@
+Channel closed
+Error [ERR_IPC_CHANNEL_CLOSED]: Channel closed
+    at new NodeError (node:internal/errors:399:5)
+    at target.send (node:internal/child_process:740:16)
+    at ProcessPool.activateWorker (/Users/Privat/Desktop/rapid/core/debug/proxy/ProcessPool.js:68:22)
+    at ProcessPool.activate (/Users/Privat/Desktop/rapid/core/debug/common/AWorkerPool.js:38:14)
+    at /Users/Privat/Desktop/rapid/core/debug/common/AWorkerPool.js:85:18
+    at new Promise (<anonymous>)
+    at ProcessPool.assign (/Users/Privat/Desktop/rapid/core/debug/common/AWorkerPool.js:78:16)
+    at Socket.<anonymous> (/Users/Privat/Desktop/rapid/core/debug/proxy/api.proxy.js:73:22)
+    at Socket.emit (node:events:513:28)
+    at addChunk (node:internal/streams/readable:324:12)

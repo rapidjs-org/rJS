@@ -4,9 +4,9 @@ import { BroadcastChannel } from "worker_threads";
 
 import "./file-logs";
 import { ThreadPool } from "./ThreadPool";
-import { IRequest, IResponse } from "../interfaces";
+import { IHTTPMessage, IRequest, IResponse } from "../interfaces";
 import { Context } from "../common/Context";
-import { socketRespond } from "../common/socket-respond";
+import { SocketResponder } from "../common/SocketResponder";
 
 import __config from "../__config.json";
 
@@ -21,77 +21,58 @@ const MAX_CONFIG: Record<string, number> = {
 };
 
 const workerBroadcastChannel = new BroadcastChannel("worker-broadcast-channel");
-const threadPool: ThreadPool = new ThreadPool(join(__dirname, "../thread/api.thread"))
-.on("online", () => {
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"))
+.once("online", () => {	
 	process.send("online");
 });
 
 
-process.on("exit", () => console.log(789))
-
-process.on("message", (cmd: string, data: unknown) => {
-	switch(cmd) {
+process.on("message", (data: unknown, handle?: unknown) => {
+	switch(data) {
 		case "terminate":
 			return workerBroadcastChannel.postMessage("terminate");
-		case "socket":
-			return handleSocket(data as Socket);
+		default:
+			return handleClientPackage(data as IHTTPMessage, handle as Socket);
 	}
 });
 
 
-function handleSocket(socket: Socket) {
-	socket.on("data", (data: Buffer) => {
-		const message: string[] = String(data).split(/\n\s*\n/);
-		const messageHead: string[] = message[0].trim().split(/\s*\n/g);
-		const messageBody: string = message[1];
+function handleClientPackage(message: IHTTPMessage, socket: Socket) {
+	if(message.body.length > MAX_CONFIG.payloadSize) {
+		respond(socket, 413);
+		return;
+	}
+	if(message.url.length > MAX_CONFIG.uriLength) {
+		respond(socket, 414);
+		return;
+	}
+	if(Object.entries(message.headers).flat().join("").length > MAX_CONFIG.headersSize) {
+		respond(socket, 431);
+		return;
+	}
 
-		const protocol: string[] = messageHead.shift().split(/\s+/g);
-		const method: string = protocol[0];
-		const url: string = protocol[1];
-		//const version: string = protocol[2];
-		
-		if(messageBody.length > MAX_CONFIG.payloadSize) {
-			respond(socket, 413);
-			return;
-		}
-		if(url.length > MAX_CONFIG.uriLength) {
-			respond(socket, 414);
-			return;
-		}
-		if(messageHead.length > MAX_CONFIG.headersSize) {
-			respond(socket, 431);
-			return;
-		}
+	const sReq: IRequest = {
+		method: message.method,
+		url: message.url,
+		headers: message.headers,
+		body: message.body,
+		clientIP: socket.remoteAddress
+	};
 
-		const sReq: IRequest = {
-			method, url,
-			
-			headers: Object.fromEntries(
-				messageHead
-				.map((line: string) => line.split(/\s*:\s*/))
-			),
-			clientIP: socket.remoteAddress,
-			body: messageBody
-		};
-
-		// Assign accordingly prepared request data to worker thread
-		threadPool.assign(sReq)
-		.then((workerRes: IResponse) => {
-			respond(socket, workerRes.status, workerRes.headers, workerRes.message as Uint8Array);
-		})
-		.catch((err: Error) => {
-            console.error(err);	// TODO: Log
-			respond(socket, 500);
-		});
+	// Assign accordingly prepared request data to worker thread
+	threadPool.assign(sReq)
+	.then((workerRes: IResponse) => {
+		respond(socket, workerRes.status, workerRes.headers, workerRes.message as Uint8Array);
 	})
-	.on("error", err => {
-		console.error(err);		// TODO: Log
+	.catch((err: Error) => {
+		console.error(err);	// TODO: Log
+		respond(socket, 500);
 	});
 }
 
 
 function respond(...args: unknown[]) {
-	socketRespond.apply(null, args);
+	SocketResponder.respond.apply(null, args);
 	
 	process.send("done");
 }

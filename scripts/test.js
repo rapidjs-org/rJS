@@ -39,7 +39,7 @@ process.on("exit", async code => {
 
     if(code === 2) {
         await evalIntermediateScript(AFTER_SCRIPT_FILENAME);
-
+        
         return code;
     }
 
@@ -308,5 +308,6 @@ module.exports.init = function(title, badgeColorRGB) {
         .unref();
 
         traversePath(TEST_PATH);
-    });
+    })
+    .catch(() => process.exit(2));
 };

@@ -1,5 +1,11 @@
 export class Args {
-	private static readonly raw: string[] = process.argv.slice(2);
+	private readonly raw: string[];
+
+	public static cli: Args = new Args();
+
+	constructor(raw: string[] = process.argv.slice(2)) {
+		this.raw = raw;
+	}
 
 	/**
      * Retrieve the index of a key in the arguments array.
@@ -7,8 +13,8 @@ export class Args {
      * @param shorthand Shorthand key (without indicating single dash)
      * @returns Value type resolve interface
      */
-	private static retrieveKeyIndex(name: string, shorthand?: string): number {
-    	return Math.max(Args.raw.indexOf(`--${name.toLowerCase()}`), shorthand ? Args.raw.indexOf(`-${shorthand.toUpperCase()}`) : -1);
+	private retrieveKeyIndex(name: string, shorthand?: string): number {
+    	return Math.max(this.raw.indexOf(`--${name.toLowerCase()}`), shorthand ? this.raw.indexOf(`-${shorthand.toUpperCase()}`) : -1);
 	}
 
 	/**
@@ -17,8 +23,8 @@ export class Args {
      * @param index Position key
      * @returns The name of the positional argument if provided at index (no indicating dash)
      */
-	public static parsePositional(index = 0): string {
-		const positional: string = Args.raw[index];
+	public parsePositional(index = 0): string {
+		const positional: string = this.raw[index];
 
     	return !/^\-/.test(positional) ? positional : null;
 	}
@@ -29,7 +35,7 @@ export class Args {
      * @param shorthand Flag shorthand (without indicating single dash)
      * @returns Whether the flag is set
      */
-	public static parseFlag(key: string, shorthand?: string): boolean {
+	public parseFlag(key: string, shorthand?: string): boolean {
     	return (this.retrieveKeyIndex(key, shorthand) >= 0);
 	}
 
@@ -39,12 +45,12 @@ export class Args {
      * @param [shorthand] Option shorthand (without indicating single dash)
      * @returns Value type resolve interface
      */
-	public static parseOption(key: string, shorthand?: string): {
+	public parseOption(key: string, shorthand?: string): {
         string: string;
         number: number;
     } {
     	let index: number = this.retrieveKeyIndex(key, shorthand);
-    	if(index < 0 || ++index >= Args.raw.length) {
+    	if(index < 0 || ++index >= this.raw.length) {
     		return {
     			string: undefined,
     			number: undefined
@@ -56,8 +62,8 @@ export class Args {
         * Utilize after parsing an option in order to fit type.
         */
     	return {
-    		string: Args.raw[index],
-    		number: +Args.raw[index]
+    		string: this.raw[index],
+    		number: +this.raw[index]
     	};
 	}
 }

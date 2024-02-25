@@ -1,5 +1,5 @@
-import { IResponse } from "../interfaces";
-import { THeaders, TStatusCode } from "../types";
+import { IResponse } from "../../interfaces";
+import { THeaders, TStatusCode } from "../../types";
 
 
 export class Response {

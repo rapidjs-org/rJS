@@ -4,7 +4,7 @@ import { EventEmitter } from "stream";
 import { Request } from "./Request";
 import { Response } from "./Response";
 import { HeaderParser } from "./HeaderParser";
-import { Context } from "../common/Context";
+import { Context } from "../../common/Context";
 
 
 const ENCODERS: { [ key: string ]: ((data: unknown) => Buffer) } = Object.freeze({
@@ -19,7 +19,7 @@ const REQUEST_TIMEOUT: number = Context.CONFIG.get<number>("timeout");
 export abstract class AHandler extends EventEmitter {
 	protected readonly req: Request;
 	protected readonly res: Response = new Response();
-
+	
 	private hasConsumedResponse: boolean = false;
 
 	constructor(req: Request) {

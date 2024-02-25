@@ -1,10 +1,9 @@
+import { Util } from "../../../common/Util";
+
 import * as sharedmemory from "./sharedmemory";
 
 
-const IS_UNIX_BASED_OS = (process.platform !== "win32");    // Optimistic
-
-
-let isDisabled: boolean = !IS_UNIX_BASED_OS;
+let isDisabled: boolean = !Util.isUnixBasedOS;
 
 
 const fallbackStorage: Map<string, unknown> = new Map()
@@ -56,7 +55,6 @@ export function free(uniqueItemKey: string) {
 }
 
 export function freeAll() {
-    console.log("FREE ALL");
     Array.from(writtenUniqueItemKeys)
-    .forEach((key: string) => {free(key);console.log(key)});
+    .forEach((key: string) => free(key));
 }

@@ -1,7 +1,7 @@
 {
     "clientCache": 3600,
     "maxClientRequests": 2,
-    "maxHeadersSize": 100,
+    "maxHeadersSize": 750,
     "maxPayloadSize": 1000,
     "maxURILength": 500,
     "port": 80,

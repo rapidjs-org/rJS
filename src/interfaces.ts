@@ -1,4 +1,24 @@
-import { THeaders } from "./types";
+import { THeaders, TProtocol } from "./types";
+
+
+export interface IContextEmbed {
+    cwd?: string;
+    args?: string[];
+	protocol?: TProtocol;
+	hostnames?: string[];
+	port?: number;
+	clustered?: boolean;
+}
+
+
+export interface IHTTPMessage {
+    version: string;
+    protocol: string;
+    method: string;
+    url: string;
+    headers: THeaders;
+    body: string|null;
+}
 
 
 export interface IRequest {
@@ -18,7 +38,6 @@ export interface IResponse {
 }
 
 
-export interface IFilestamp {
-	data: string;
-	eTag: string;
+export interface IProxyMonitor {
+    port: number;
 }
