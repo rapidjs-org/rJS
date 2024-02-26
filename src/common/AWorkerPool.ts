@@ -42,7 +42,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O> extends Eve
 	constructor(baseSize?: number, timeout: number = 30000, maxPending: number = Infinity) {
 		super();
 		
-    	this.baseSize = baseSize || cpus().length;
+    	this.baseSize = Math.min((baseSize || Infinity), cpus().length);
     	this.timeout = timeout;
     	this.maxPending = maxPending;
 		
@@ -153,8 +153,8 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O> extends Eve
     	delete this.createWorker;
 
     	Array.from(this.activeWorkers.keys())
-		.concat(this.idleWorkers)
-		.forEach((worker: Worker) => {
+    	.concat(this.idleWorkers)
+    	.forEach((worker: Worker) => {
     		this.destroyWorker(worker);
     	});
     }

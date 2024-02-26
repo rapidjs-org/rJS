@@ -16,17 +16,22 @@ import __config from "../__config.json";
 process.title = `${__config.appNameShort} proxy`;
 
 
+const META = {
+	startTime: Date.now(),
+	META.proxyPort: -1,
+	isAlive: true
+};
+
+
 process.on("message", async (contextEmbed: IContextEmbed) => init(contextEmbed));	// TODO: Use generic communication model in detached mode instead
 
 EventClassHandler.registerUncaught((err: Error) => {
-	require("fs").writeFileSync(__dirname+"/../../XXX.txt", err.message + "\n" + err.stack.toString());
+	console.error(err);
 });
 
 
 //const rateLimiter: RateLimiter = new RateLimiter(Context.CONFIG.get<number>("maxClientRequests") || Infinity);
 const contextProcessPools: MultiMap<string, ProcessPool> = new MultiMap();
-
-let proxyPort: number;
 
 
 function getEffectiveContextEmbed(contextEmbed: IContextEmbed): IContextEmbed {
@@ -55,10 +60,10 @@ function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
 		const tryResolve = () => {
 			if(--requiredListenEvents) return;
 			
-			proxyPort = port;
+			META.proxyPort = port;
 
 			resolve();
-		}
+		};
 		
 		enableProxyIPC
 		&& new IPCServer(port, tryResolve)
@@ -66,6 +71,9 @@ function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
 			unbedContext(hostnames);
 		})
 		.registerCommand("embed", (contextEmbed: IContextEmbed) => {
+			if(!META.isAlive) {
+				throw new Error("Host application has stopped listening");	// TODO: Error log
+			}
 			return embedContext(contextEmbed);
 		})
 		.registerCommand("ping", () => {
@@ -105,19 +113,26 @@ function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
 		.listen(port, tryResolve)
 		.on("error", (err: Error & { code: string; }) => {
 			if (err.code === "EADDRINUSE" || err.code === "EACCES") {
-                reject(new Error("Port is unavailable"));
+				reject(new Error("Port is unavailable"));
 
 				return;
-            }	
+			}	
 			
 			reject(err);
+		})
+		.on("close", () => {
+			META.isAlive = false;
 		});
 	});
 }
 
 function ping(): IProxyMonitor {
 	return {
-		port: proxyPort
+		isAlive: true,		// TODO
+		pid: process.pid,
+		port: META.proxyPort,
+		hostnames: contextProcessPools.keys(),	// TODO: With cores (?)
+		aliveTime: Date.now() - META.startTime
 	};
 }
 
@@ -149,7 +164,7 @@ function unbedContext(hostnames: string[]) {
 
 export async function embedContext(contextEmbed: IContextEmbed): Promise<number> {
 	const effectiveContextEmbed: IContextEmbed = getEffectiveContextEmbed(contextEmbed);
-
+	// TODO: Update max cores based on last embedding?
 	return new Promise((resolve, reject) => {
 		const reusedHostnames: string[] = contextProcessPools.keys()
 		.flat()

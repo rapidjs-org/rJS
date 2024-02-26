@@ -27,15 +27,18 @@ const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thre
 });
 
 
+// TODO: Default server API, but also raw (?)
+
+
 process.on("message", (data: unknown, handle?: unknown) => {
 	switch(data) {
-		case "terminate":
-			return workerBroadcastChannel.postMessage("terminate");
-		default:
-			return handleClientPackage(data as IHTTPMessage, handle as Socket);
+	case "terminate":
+		return workerBroadcastChannel.postMessage("terminate");
+	default:
+		return handleClientPackage(data as IHTTPMessage, handle as Socket);
 	}
 });
-
+setTimeout(() => console.log("adawdawd a wdaw d"), 5000);
 
 function handleClientPackage(message: IHTTPMessage, socket: Socket) {
 	if(message.body.length > MAX_CONFIG.payloadSize) {

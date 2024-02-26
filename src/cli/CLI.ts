@@ -27,8 +27,8 @@ export class CLI {
     	// Handle undefined command
     	console.error(
     		commandName
-			? `Unknown command '${commandName}'`
-			: "No command provided"
+				? `Unknown command '${commandName}'`
+				: "No command provided"
     	);
 
     	setImmediate(() => process.exit(1));

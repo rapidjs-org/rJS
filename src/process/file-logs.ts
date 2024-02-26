@@ -11,7 +11,7 @@ import __config from "../__config.json";
 
 
 const _config = {
-    logFileRotationMemoryThreshold: 1000000000
+	logFileRotationMemoryThreshold: 1000000000
 };
 
 
@@ -23,45 +23,45 @@ const logDirPath = join(process.cwd(), __config.logsDirName);
 
 new LogIntercept()
 .on("write", (_, rawMessage: string) => {
-    if(!rawMessage.trim().length) return;
+	if(!rawMessage.trim().length) return;
 
-    const nowDate: Date = new Date();
-    const wrapValue = (value: unknown): string => {
-        return value.toString().padStart(2, "0");
-    };
-    const date: string = [
-        nowDate.getFullYear(), wrapValue(nowDate.getMonth()), wrapValue(nowDate.getDate())
-    ].join("-");
+	const nowDate: Date = new Date();
+	const wrapValue = (value: unknown): string => {
+		return value.toString().padStart(2, "0");
+	};
+	const date: string = [
+		nowDate.getFullYear(), wrapValue(nowDate.getMonth()), wrapValue(nowDate.getDate())
+	].join("-");
 	const time: string = [
-        wrapValue(nowDate.getHours()), wrapValue(nowDate.getMinutes()), wrapValue(nowDate.getSeconds())
-    ].join(":");
+		wrapValue(nowDate.getHours()), wrapValue(nowDate.getMinutes()), wrapValue(nowDate.getSeconds())
+	].join(":");
     
-    const timePrefix: string = `[${time}]`;
+	const timePrefix: string = `[${time}]`;
 
-    const logDirStats: StatsFs = statfsSync(logDirPath);
-    const remainingBytes: number = logDirStats.bsize * logDirStats.bavail;
+	const logDirStats: StatsFs = statfsSync(logDirPath);
+	const remainingBytes: number = logDirStats.bsize * logDirStats.bavail;
 
-    if(remainingBytes <= _config.logFileRotationMemoryThreshold) {
-        const oldestLogFile: Dirent = readdirSync(logDirPath, {
-            withFileTypes: true
-        })
-        .filter((dirent: Dirent) => dirent.isFile())
-        .sort((a: Dirent, b: Dirent) => {
-            const enumerate = (dateName: string): number => {
-                return parseInt((dateName.match(/[0-9]+/g) ?? []).join(""));
-            };
-            return enumerate(a.name) - enumerate(b.name);
-        })
-        .pop();
+	if(remainingBytes <= _config.logFileRotationMemoryThreshold) {
+		const oldestLogFile: Dirent = readdirSync(logDirPath, {
+			withFileTypes: true
+		})
+		.filter((dirent: Dirent) => dirent.isFile())
+		.sort((a: Dirent, b: Dirent) => {
+			const enumerate = (dateName: string): number => {
+				return parseInt((dateName.match(/[0-9]+/g) ?? []).join(""));
+			};
+			return enumerate(a.name) - enumerate(b.name);
+		})
+		.pop();
 
-        if(!oldestLogFile) return;
+		if(!oldestLogFile) return;
 
-        rmSync(join(logDirPath, oldestLogFile.name))
-    }
+		rmSync(join(logDirPath, oldestLogFile.name));
+	}
 
 	appendFile(join(logDirPath, `${date}.log`), `${timePrefix}\t${
 		rawMessage
-        .replace(/\n?$/g, "")
-        .replace(/\n/g, `\n${Array.from({ length: timePrefix.length }, () => " ").join("")}\t`)
+		.replace(/\n?$/g, "")
+		.replace(/\n/g, `\n${Array.from({ length: timePrefix.length }, () => " ").join("")}\t`)
 	}\n`, (err: Error) => {});
 });

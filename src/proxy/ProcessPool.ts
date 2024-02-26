@@ -23,7 +23,7 @@ export class ProcessPool extends AWorkerPool<ChildProcess, IClientPackage, void>
 	private readonly args: string[];
 
 	constructor(childProcessModulePath: string, cwd: string, args: string[], baseSize?: number, timeout?: number, maxPending?: number) {
-		super(baseSize || (new Args(args).parseOption("max-cores").number || cpus().length), timeout, maxPending);
+		super(baseSize || (new Args(args).parseOption("max-cores").number), timeout, maxPending);
 		
     	this.childProcessModulePath = childProcessModulePath;
     	this.cwd = cwd;
@@ -49,12 +49,12 @@ export class ProcessPool extends AWorkerPool<ChildProcess, IClientPackage, void>
 			childProcess
 			.on("message", (message: string) => {
 				switch(message) {
-					case "online":
-						resolve(childProcess);
-						break;
-					case "done":
-						this.deactivateWorker(childProcess, null);
-						break;
+				case "online":
+					resolve(childProcess);
+					break;
+				case "done":
+					this.deactivateWorker(childProcess, null);
+					break;
 				}
 			})
 			.on("error", (err: Error) => {

@@ -70,7 +70,7 @@ export class Config {
     
 	public get<T>(...keys: string[]): T {
 		let intermediate = this.obj;
-		for(let key of keys) {
+		for(const key of keys) {
 			intermediate = intermediate[key] as TJSON;
 		}
 		return intermediate as T;

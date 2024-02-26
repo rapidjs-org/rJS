@@ -24,7 +24,7 @@ export class RateLimiter {
         	timePivot: now,
         	previousWindow: this.limit,
         	currentWindow: 0
-        };
+		};
 
 		const windowSpan: number = this.windowSize * 2;
     	const delta: number = now - limitData.timePivot;

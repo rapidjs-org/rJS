@@ -5,7 +5,7 @@ import { EventClassHandler } from "./EventClassHandler";
 import { Util } from "./Util";
 
 const _config = {
-    "socketNamePrefix": "rjs.proxy."
+	"socketNamePrefix": "rjs.proxy."
 };
 
 
@@ -66,8 +66,8 @@ export class IPCServer {
 				const response: IPCResponse = JSON.parse(message.toString());
 
 				response.error
-				? reject(response.error)
-				: resolve(response.data);
+					? reject(response.error)
+					: resolve(response.data);
 				
 				client.end();
 			});
@@ -79,9 +79,9 @@ export class IPCServer {
 		});
 	}
 
-    private readonly commandRegistry: Map<string, TCommandHandler> = new Map();
+	private readonly commandRegistry: Map<string, TCommandHandler> = new Map();
 
-    constructor(associatedPort: number, listensCallback?: (() => void), errorCallback: (err: Error) => void = (() => {})) {
+	constructor(associatedPort: number, listensCallback?: (() => void), errorCallback: (err: Error) => void = (() => {})) {
     	IPCServer.removeSocketFile(associatedPort);
 
     	const socketLocation: string = IPCServer.locateIPCFile(associatedPort);
@@ -96,8 +96,8 @@ export class IPCServer {
 					try {
 						const response: unknown = commandHandler(parsedMessage.commandParam);
 						data = await (!(response instanceof Promise)
-								? Promise.resolve(response)
-								: response);
+							? Promise.resolve(response)
+							: response);
 					} catch(err: unknown) {
 						error = err.toString();
 					} finally {
@@ -119,11 +119,11 @@ export class IPCServer {
 			
     		IPCServer.removeSocketFile(associatedPort);
     	});
-    }
+	}
 
-    public registerCommand(command: string, handler: TCommandHandler): this {
+	public registerCommand(command: string, handler: TCommandHandler): this {
     	this.commandRegistry.set(command, handler);
 
 		return this;
-    }
+	}
 }

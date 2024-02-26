@@ -22,17 +22,17 @@ parentPort.on("message", async (sReq: IRequest) => {
 	
 	let handler: AHandler;
 	switch(req.method) {
-		case "GET":
-		case "HEAD":
-			handler = new FileHandler(req);
-			break;
-		case "POST":
-			handler = new PluginHandler(req);
-			break;
-		default:
-			respondError(405);
+	case "GET":
+	case "HEAD":
+		handler = new FileHandler(req);
+		break;
+	case "POST":
+		handler = new PluginHandler(req);
+		break;
+	default:
+		respondError(405);
 
-			return;
+		return;
 	}
 
 	handler.once("respond", (sRes: IResponse) => {

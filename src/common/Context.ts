@@ -9,8 +9,8 @@ type TMode = "PROD" | "DEV";
 
 export class Context {
 	public static MODE: TMode = Args.cli.parseFlag("dev", "D")
-                              ? "DEV"
-                              : "PROD";
+		? "DEV"
+		: "PROD";
 	public static CONFIG: Config = new Config("./", DEFAULT_CONFIG)
 	.addTypeConstraint("clientCache", "number")
 	.addTypeConstraint("maxClientRequests", "number")

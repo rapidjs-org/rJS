@@ -19,6 +19,7 @@
     "compile:ts": "./scripts/help-copy.sh ./debug && npx tsc",
     "compile:ts:watch": "./scripts/help-copy.sh ./debug && npx tsc --watch",
     "compile": "npm run compile:ts:watch",
+    "generate-typings": "node ./scripts/generate-typings",
     "debug": "./rjs.sh start -W ./test-app/",
     "debug:dev": "./rjs.sh start -W ./test-app/ -D",
     "test:shm": "node ./scripts/test-shm.js ./test/shm/",
@@ -29,7 +30,7 @@
     "lint": "npx eslint --ext .ts --fix ./src",
     "assess": "npm run test && npm run lint",
     "build": "npm run assess && node ./scripts/build.js",
-    "print-used-args": "node ./scripts/print-used-args.js"
+    "print-args": "node ./scripts/print-args.js"
   },
   "files": [
     "dist"

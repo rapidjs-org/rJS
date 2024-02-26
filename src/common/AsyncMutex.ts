@@ -29,8 +29,8 @@ export class AsyncMutex<T> {
 			.then(() => {
 				const callbackResults: T|Promise<T> = callback();
 				((callbackResults instanceof Promise)
-				? callbackResults
-				: Promise.resolve(callbackResults))
+					? callbackResults
+					: Promise.resolve(callbackResults))
 				.then((result: T) => resolve(result))
 				.catch((err: Error) => reject(err))
 				.finally(() => {

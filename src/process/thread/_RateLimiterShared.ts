@@ -26,7 +26,7 @@ export class RateLimiter extends ASharedMemory<ILimitData> {
         	timePivot: now,
         	previousWindow: 0,
         	currentWindow: 0
-        };
+		};
 
     	const delta: number = now - limitData.timePivot;
 		if(delta > this.windowSize) {

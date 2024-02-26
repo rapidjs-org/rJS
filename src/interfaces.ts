@@ -39,5 +39,9 @@ export interface IResponse {
 
 
 export interface IProxyMonitor {
+    isAlive: boolean;
+    pid: number;
     port: number;
+    hostnames: string[]|string[][];
+    aliveTime: number;
 }

@@ -14,7 +14,7 @@ export class Request {
 		this.body = body;
 
 		this.headers = {};
-		for(let name of Object.keys(headers)) {
+		for(const name of Object.keys(headers)) {
 			this.headers[name.toLowerCase()] = headers[name];
 		}
 	}

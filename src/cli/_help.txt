@@ -1,25 +1,24 @@
-Usage: rjs <command> [ --<arg:key>|-<arg:shorthand> [ <arg-option> ]? ]*
+Usage: rjs <command> [--<arg:key>|-<arg:shorthand>[ <arg-option>]?]*
+
+→ start                         Start a new host application
+
+  Flags:
+  --dev, -D                     Run development mode ('DEV')
+  --secure, -S                  Use HTTPS (HTTP by default)
+
+  Options:
+  --hostname, -H                Specify hostname (defaults to localhost; multiple hostnames as comma delimited list)
+  --port, -P                    Specify listen port (defaults to 80 (HTTP) / 443 (HTTPS))
+  --working-dir, -W             Specify application working directory (defaults to process CWD)
+
+→ stop                          Stop an existing host application (or unlink a hostname)
+
+  Options:
+  --hostname, -H                Specify associated hostname (defaults to localhost; multiple hostnames as comma delimited list)
+  --port, -P                    Specify associated port (defaults to 80 (HTTP) / 443 (HTTPS))
+
+→ monitor                       Monitor running host applications.
 
 → help                          Display help text
-
-→ start                         Start a new web space with a specific shell application (successive argument at position 1)
-
-Optional arguments:
-
-• Flags:
-
---dev, -D                       Run DEV Context.MODE (PROD Context.MODE otherwise)
---secure, -S                    Use HTTPS (HTTP by default)
---standalone                    Ininitalize in standlone environment (reverse proxied by default)
-
-• Options:
-
---hostname, -H                  Specify hostname (defaults to localhost; multiple hostnames as comma delimited list)
---logs, -L                      Specify logs directory path (file logs disabled by default; provide in order to activate)
---port, -P                      Specify listen port (defaults to 80 (HTTP) / 443 (HTTPS))
---ssl                           Specify SSL directory path (./ssl by default)
---working-dir, -W               Specify application working directory (defaults to process CWD)
-
-→ stop                          Stop an existing web space
 
 Visit https://rapidjs.org for more information.

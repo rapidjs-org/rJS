@@ -19,19 +19,17 @@ try {
     });
 } catch {}
 
-const CWD = join(__dirname, "../");
-execSync(`npx tsc --outDir ${DIST_DIR_PATH}`, {
-    cwd: CWD
-});
-execSync(`./scripts/shm-gyp.sh build --release`, {
-    cwd: CWD
-});
-execSync(`./scripts/shm-copy.sh ${DIST_DIR_NAME} Release`, {
-    cwd: CWD
-});
-execSync(`./scripts/help-copy.sh ${DIST_DIR_NAME}`, {
-    cwd: CWD
-});
+
+const cmd = command => {
+    execSync(command, {
+        cwd: join(__dirname, "../")
+    });
+};
+//cmd(`node ./scripts/generate-typings.js`);
+cmd(`npx tsc --outDir ${DIST_DIR_PATH} --removeComments`);
+cmd(`./scripts/shm-gyp.sh build --release`);
+cmd(`./scripts/shm-copy.sh ${DIST_DIR_NAME} Release`);
+cmd(`./scripts/help-copy.sh ${DIST_DIR_NAME}`);
 
 process.on("exit", () => {
     console.log(`\x1b[32mBuild process \x1b[1msucceeded\x1b[22m (${
@@ -71,11 +69,14 @@ function minify(path) {
 minify(DIST_DIR_PATH);
 
 function minifyJS(contents) {
-    return `/*\n${
+    const shebangRegex = /^#![^\n]*\n/;
+    const shebangLine = (contents.match(shebangRegex) || [ "" ])[0];
+    return `${shebangLine}/*\n${
         SIGNATURE.split(/\n/g)
         .map(str => ` * ${str.trim()}`)
         .join("\n")
     }\n */\n${contents
+        .slice(shebangLine.length)
         .replace(/\n/g, "")
         .replace(/(\s)\s+/g, "$1")
         .trim()

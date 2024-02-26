@@ -19,8 +19,8 @@ export class Cache<T> extends Map<string, T> {
 
 	public get(key: string): T {
 		return this.has(key) 
-		? super.get(key)
-		: undefined;
+			? super.get(key)
+			: undefined;
 	}
     
 	public has(key: string): boolean {
