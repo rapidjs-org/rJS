@@ -7,11 +7,11 @@ import { join } from "path";
 import { CLI } from "./CLI";
 import { ProgressLine } from "./ProgressLine";
 import { Args } from "../common/Args";
-import { embed, unbed } from "../api/api";
 import { LogIntercept } from "../common/LogIntercept";
 import { IPCServer } from "../common/IPCServer";
-import { IProxyMonitor } from "../interfaces";
+import { IApiEmbed, IProxyMonitor } from "../interfaces";
 import { Prompt } from "./Prompt";
+import * as API from "../api/api";
 
 
 // TODO: General (CLI, proxy) log files?
@@ -62,19 +62,21 @@ CLI.registerCommand("help", () => {
 
 
 CLI.registerCommand("start", async () => {	
-	const specifiedWorkingDir: string = Args.cli.parseOption("working-dir", "W").string ?? "./";
 	const progressLine: ProgressLine = new ProgressLine("Starting application").activate();
-
-	process.on("exit", () => progressLine.deactivate());
+	const specifiedWorkingDir: string = Args.cli.parseOption("working-dir", "W").string ?? "./";
 	
 	// TODO: Handle EADDR ? DEV: Must be free; PROD: Embed if is rJS process, else error
-	embed(specifiedWorkingDir)
-	.then(async (port: number) => {
+	API.embed(specifiedWorkingDir)
+	.then(async (api: IApiEmbed) => {
 		const { Context } = await import("../common/Context");
 
 		progressLine.deactivate();
 
-		console.log(`Host listening on #b{localhost:${port}}`);
+		console.log(`Host listening on ${
+			[ api.hostnames ].flat()
+			.map((hostname: string) => `#b{${hostname}:${api.port}}`)
+			.join(", ")
+		}`);
 		
 		(Context.MODE === "PROD")
 		? setImmediate(() => process.exit(0))
@@ -87,89 +89,63 @@ CLI.registerCommand("start", async () => {
 		
 		setImmediate(() => process.exit(1));
 	});
+
+	// TODO: Endless wait upon too many processes (max sizing distr strategy)
 });
 
 
-CLI.registerCommand("stop", async () => {
+CLI.registerCommand("stop", async () => {	
 	const specifiedPort: number = Args.cli.parseOption("port", "P").number;
 	const specifiedHostnames: string = Args.cli.parseOption("hostname", "H").string;
 
 	const hostnames: string[] = (specifiedHostnames ?? "")
 	.split(",")
 	.filter((hostname: string) => hostname.trim().length);
-	const hostnamePrintList: string = hostnames.length ?
-		`${hostnames
-		.map((hostname: string) => ` '${hostname}'`)
+	const hostnamePrintList: string = hostnames.length
+	? `${
+		hostnames
+		.map((hostname: string) => `'${hostname}'`)
 		.join(", ")
-		}`
-		: "";
+	}` : "";
 
 	if(!specifiedPort
 	&& !specifiedHostnames) {
 		if(!(await Prompt.ask("No host identifiers specified. Stop all host applications?"))) return;
 	} else {
 		if(!specifiedPort
-		&& !(await Prompt.ask(`No port specified. Stop all '${
+		&& !(await Prompt.ask(`No port specified. Stop all ${
 			hostnamePrintList
-		}' related hosts across all ports?`))) return;
+		 } related hosts across all ports?`))) return;
 
 		if(!specifiedHostnames
 		&& !(await Prompt.ask(`No hostname(s) specified. Stop all port ${specifiedPort} related hosts?`))) return;
 	}
 
+	const progressLine: ProgressLine = new ProgressLine("Stopping application").activate();
 	const ports: number[] = [ specifiedPort ?? IPCServer.associatedPorts() ].flat();
-	if(!ports.length) {
-		console.error("No host registered at the moment");
 
-		return;
-	}
+	API.unbed(ports, hostnames)
+	.then(() => {
+		const pluralS: string = (ports.length > 1) ? "s" : "";
+		ports.length
+		&& console.log(`Host${pluralS}${
+			hostnamePrintList
+		} on port${pluralS} ${
+			ports.join(", ")
+		} successfully stopped`);
+	})
+	.catch((err: unknown) => {
+		progressLine.deactivate();
 
-	const faultyPorts: number[] = [];
-	for(let i = 0; i < ports.length; i++) {
-		try {
-			await unbed(ports[i], hostnames);
-		} catch(err: unknown) {
-			console.error((err instanceof Error) ? err.message : err);
-
-			faultyPorts.push(ports[i]);
-		}
-	}
-
-	const successfulPorts: number[] = ports.filter((port: number) => !faultyPorts.includes(port));
-	if(!successfulPorts.length) {
-		setImmediate(() => process.exit(1));
-
-		return;
-	}
-
-	const pluralS: string = (successfulPorts.length > 1) ? "s" : "";
-	successfulPorts.length
-	&& console.log(`Host${pluralS}${
-		hostnamePrintList
-	} on port${pluralS} ${
-		successfulPorts.join(", ")
-	} successfully stopped`);
+		throw err;
+	});
 });
 
 CLI.registerCommand("monitor", async () => {
 	// TODO: Single port filter?
-	const proxiedPorts: number[] = IPCServer.associatedPorts();
-	if(!proxiedPorts.length) {
-		console.error("No host registered at the moment");
+	const progressLine: ProgressLine = new ProgressLine("Monitoring applications").activate();
 
-		return;
-	}
-	
-	const proxyMonitors: IProxyMonitor[] = [];
-	for(let i = 0; i < proxiedPorts.length; i++) {
-		try {
-			proxyMonitors.push((await IPCServer.message(proxiedPorts[i], "ping")) as IProxyMonitor);
-		} catch(err: unknown) {
-			// TODO: Spot erroneous proxy (?)
-		}
-	}
-	
-	const proxyMonitorPrints: string[] = proxyMonitors
+	const proxyMonitorPrints: string[] = (await API.monitor())
 	.map((proxyMonitor: IProxyMonitor) => {
 		const statusColor: string = proxyMonitor.isAlive ? "\x1b[32m" : "\x1b[31m";
 
@@ -215,6 +191,8 @@ CLI.registerCommand("monitor", async () => {
 		}, () => "–").join("")
 	}\x1b[0m`;
 
+	progressLine.deactivate();
+
 	console.log(`Registered Hosts:\n${
 		separatorLine
 	}\n${
@@ -222,5 +200,3 @@ CLI.registerCommand("monitor", async () => {
 		.join(`\n${separatorLine}\n`)
 	}\n${separatorLine}`);
 });
-
-// TODO: All-soft API beneath

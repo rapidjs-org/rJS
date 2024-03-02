@@ -20,7 +20,7 @@ process.on("exit", (code: number) => {
 });
 
 
-export class EventClassHandler {
+export class InterruptionHandler {
 	public static register(callback: (code?: number) => void) {
 		terminationEmitter.on("terminate", callback);
 	}

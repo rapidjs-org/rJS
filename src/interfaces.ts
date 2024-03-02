@@ -41,7 +41,14 @@ export interface IResponse {
 export interface IProxyMonitor {
     isAlive: boolean;
     pid: number;
-    port: number;
     hostnames: string[]|string[][];
     aliveTime: number;
+
+    port?: number;
+}
+
+
+export interface IApiEmbed {
+    port: number;
+    hostnames: string|string[];
 }

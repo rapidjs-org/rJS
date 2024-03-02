@@ -1,7 +1,7 @@
 import { join } from "path";
 import { Dirent, mkdirSync, readdirSync, rmSync } from "fs";
 import { Socket, createServer, createConnection } from "net";
-import { EventClassHandler } from "./EventClassHandler";
+import { InterruptionHandler } from "./InterruptionHandler";
 import { Util } from "./Util";
 
 const _config = {
@@ -64,10 +64,10 @@ export class IPCServer {
 			
 			client.on("data", (message: Buffer) => {
 				const response: IPCResponse = JSON.parse(message.toString());
-
+				
 				response.error
-					? reject(response.error)
-					: resolve(response.data);
+				? reject(response.error)
+				: resolve(response.data);
 				
 				client.end();
 			});
@@ -104,7 +104,7 @@ export class IPCServer {
 						socket.write(JSON.stringify({
 							data, error
 						} as IPCResponse));
-
+						
 						socket.destroy();
 					}
 				}
@@ -114,7 +114,7 @@ export class IPCServer {
 
     	server.on("error", errorCallback);
         
-		EventClassHandler.register(() => {
+		InterruptionHandler.register(() => {
     		server.close();
 			
     		IPCServer.removeSocketFile(associatedPort);

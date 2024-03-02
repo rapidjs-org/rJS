@@ -1,3 +1,8 @@
+/**
+ * All-soft CLI equivalent API.
+ */
+
+
 import { isAbsolute, join } from "path";
 import { fork } from "child_process";
 import { homedir } from "os";
@@ -5,10 +10,10 @@ import { homedir } from "os";
 import { Args } from "../common/Args";
 import { TProtocol } from "../types";
 import { IPCServer } from "../common/IPCServer";
-import { IContextEmbed } from "../interfaces";
+import { IApiEmbed, IContextEmbed, IProxyMonitor } from "../interfaces";
 
 
-export async function embed(workingDir: string = process.cwd()): Promise<number> {
+export async function embed(workingDir: string = process.cwd()): Promise<IApiEmbed> {
 	const specifiedWorkingDir: string = isAbsolute(workingDir)
 		? workingDir
 		: join(process.cwd(), workingDir);
@@ -32,7 +37,11 @@ export async function embed(workingDir: string = process.cwd()): Promise<number>
 			clustered: false
 		}, false);
         
-		return port;
+		return {
+			port,
+
+			hostnames: "localhost"
+		};
 	}
 
 	const protocol: TProtocol = (Args.cli.parseFlag("secure", "S") ?? Context.CONFIG.get<boolean>("secure")) ? "HTTPS" : "HTTP";
@@ -53,7 +62,9 @@ export async function embed(workingDir: string = process.cwd()): Promise<number>
 
 	return new Promise(async (resolve, reject) => {
 		IPCServer.message(port, "embed", contextEmbed)
-		.then((/* proxyPID: number */) => resolve(port))
+		.then((/* proxyPID: number */) => resolve({
+			port, hostnames
+		}))
 		.catch((err: Error & { code: string; }) => {
 			if(err.code === "ECONNREFUSED") {
 				IPCServer.clean(port);
@@ -68,14 +79,16 @@ export async function embed(workingDir: string = process.cwd()): Promise<number>
 			});
 			process.on("SIGINT", () => detachedChild.kill());
             
-			detachedChild.once("message", (/* proxyPID: number */) => resolve(port));
+			detachedChild.once("message", (/* proxyPID: number */) => resolve({
+				port, hostnames
+			}));
             
 			detachedChild.stdout.on("data", (data: Buffer) => {
 				console.log(data.toString());
 			});
 			detachedChild.stderr.on("data", (data: Buffer) => {
 				reject(data.toString());
-    
+				
 				detachedChild.kill();
 			});
     
@@ -84,14 +97,48 @@ export async function embed(workingDir: string = process.cwd()): Promise<number>
 	});
 }
 
-export function unbed(port: number = 80, hostnames: string|string[] = []): Promise<void> {
-	return new Promise((resolve, reject) => {
+export async function unbed(ports: number|number[] = IPCServer.associatedPorts(), hostnames: string|string[] = []): Promise<void> {
+	const proxiedPorts: number[] = [ ports ].flat();
+
+	if(!proxiedPorts.length) {
+		throw new RangeError("No host registered at the moment");
+	}
+
+	for(let port of proxiedPorts) {
 		IPCServer.message(port, "unbed", [ hostnames ].flat().filter((hostname: string) => hostname))
-		.then(() => resolve())
 		.catch((err: Error & { code: string; }) => {
-			(err.code === "ENOENT")
-				? reject(new ReferenceError(`No proxy process associated with port ${port}`))
-				: reject(err);
+			if(err.code === "ENOENT") {
+				throw new ReferenceError(`No proxy process associated with port ${port}`);
+			}
+			throw err;
 		});
-	});
+	}
+}
+
+
+type TDisplayProxyMonitor = (IProxyMonitor & { port: number; });
+
+export async function monitor(): Promise<TDisplayProxyMonitor[]> {
+	const proxiedPorts: number[] = IPCServer.associatedPorts();
+
+	if(!proxiedPorts.length) {
+		throw new RangeError("No host registered at the moment");
+	}
+
+	const displayProxyMonitors: TDisplayProxyMonitor[] = [];
+	for(let i = 0; i < proxiedPorts.length; i++) {
+		try {
+			displayProxyMonitors.push({
+				port: proxiedPorts[i],
+
+				...(await IPCServer.message(proxiedPorts[i], "ping")) as IProxyMonitor
+			});
+		} catch(err: unknown) {
+			console.error(err.toString());
+
+			// TODO: Spot erroneous proxy (?)
+		}	
+	}
+
+	return displayProxyMonitors;
 }

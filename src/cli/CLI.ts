@@ -19,7 +19,16 @@ export class CLI {
 
 		const commandHandler: TCommandHandler = this.commandHandlers.get(commandName ?? defaultCommandName);
     	if(commandHandler) {
-    		commandHandler();
+			try {
+				const exitCode: number|void = commandHandler();
+				
+				(typeof(exitCode) === "number")
+				&& setImmediate(() => process.exit(exitCode));
+			} catch(err: unknown) {
+				console.error(err.toString());
+
+				setImmediate(() => process.exit(1));
+			}
 			
     		return;
     	}

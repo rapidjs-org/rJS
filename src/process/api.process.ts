@@ -38,7 +38,7 @@ process.on("message", (data: unknown, handle?: unknown) => {
 		return handleClientPackage(data as IHTTPMessage, handle as Socket);
 	}
 });
-setTimeout(() => console.log("adawdawd a wdaw d"), 5000);
+
 
 function handleClientPackage(message: IHTTPMessage, socket: Socket) {
 	if(message.body.length > MAX_CONFIG.payloadSize) {

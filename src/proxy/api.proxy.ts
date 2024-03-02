@@ -7,7 +7,7 @@ import { SocketResponder } from "../common/SocketResponder";
 import { MultiMap } from "../common/MultiMap";
 import { HTTPParser } from "./HTTPParser";
 import { IPCServer } from "../common/IPCServer";
-import { EventClassHandler } from "../common/EventClassHandler";
+import { InterruptionHandler } from "../common/InterruptionHandler";
 //import { RateLimiter } from "./RateLimiter";
 
 import __config from "../__config.json";
@@ -16,16 +16,19 @@ import __config from "../__config.json";
 process.title = `${__config.appNameShort} proxy`;
 
 
-const META = {
+const META: {
+	startTime: number;
+	isAlive: boolean;
+} = {
 	startTime: Date.now(),
-	META.proxyPort: -1,
 	isAlive: true
 };
 
 
 process.on("message", async (contextEmbed: IContextEmbed) => init(contextEmbed));	// TODO: Use generic communication model in detached mode instead
 
-EventClassHandler.registerUncaught((err: Error) => {
+InterruptionHandler.registerUncaught((err: Error) => {
+	require("fs").writeFileSync(__dirname+"/../../ERR.txt", err.toString() + "\n" + err.stack.toString() || "");
 	console.error(err);
 });
 
@@ -49,7 +52,7 @@ function getEffectiveContextEmbed(contextEmbed: IContextEmbed): IContextEmbed {
 
 // TODO: Special case: Spin up HTTP(80) and HTTPS(443) together (?)
 function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
-	EventClassHandler.register(() => {
+	InterruptionHandler.register(() => {
 		unbedContext([]);
 		
 		// TODO: Free SHM (termination listener)
@@ -60,8 +63,6 @@ function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
 		const tryResolve = () => {
 			if(--requiredListenEvents) return;
 			
-			META.proxyPort = port;
-
 			resolve();
 		};
 		
@@ -71,9 +72,9 @@ function initServer(port: number, enableProxyIPC: boolean): Promise<void> {
 			unbedContext(hostnames);
 		})
 		.registerCommand("embed", (contextEmbed: IContextEmbed) => {
-			if(!META.isAlive) {
+			/* if(!META.isAlive) {
 				throw new Error("Host application has stopped listening");	// TODO: Error log
-			}
+			} */
 			return embedContext(contextEmbed);
 		})
 		.registerCommand("ping", () => {
@@ -130,14 +131,12 @@ function ping(): IProxyMonitor {
 	return {
 		isAlive: true,		// TODO
 		pid: process.pid,
-		port: META.proxyPort,
 		hostnames: contextProcessPools.keys(),	// TODO: With cores (?)
 		aliveTime: Date.now() - META.startTime
 	};
 }
 
 function unbedContext(hostnames: string[]) {
-	//require("fs").writeFileSync(__dirname+"/../../XXX.txt", (hostnames.length ? hostnames : contextProcessPools.keys()).toString());
 	const unknownHostnames: string[] = hostnames
 	.filter((hostname: string) => !contextProcessPools.keys().flat().includes(hostname));
 	if(unknownHostnames.length) {
@@ -152,6 +151,15 @@ function unbedContext(hostnames: string[]) {
 
 	(hostnames.length ? hostnames : contextProcessPools.keys())
 	.forEach((hostnames: string|string[]) => {
+		// TODO: Arg to remove all related hostnames with one provided only
+		if(!contextProcessPools.has(hostnames)) {
+			throw new ReferenceError(`Hostnames ${
+				[ hostnames ].flat()
+				.map((hostname: string) => `'${hostname}'`)
+				.join(", ")
+			} not registered on provided port`);
+		}
+
 		const processPool: ProcessPool = contextProcessPools.get(hostnames);
 		!contextProcessPools.delete(hostnames)
 		&& processPool.clear();
@@ -177,7 +185,7 @@ export async function embedContext(contextEmbed: IContextEmbed): Promise<number>
 				.map((hostname: string) => `'${hostname}'`)
 				.join(", ")
 			} already used`));
-						
+			
 			return;
 		}
 

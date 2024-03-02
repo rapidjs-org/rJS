@@ -44,7 +44,7 @@ function bindWrite(streamIdentifier: TStreamIdentifier) {
 			}
 
 			const formattedMessage: string = message
-			.replace(/#([a-z]+)\{([^}]*)\}/i, (_, code: string, formatMessage: string) => {
+			.replace(/#([a-z]+)\{([^}]*)\}/gi, (_, code: string, formatMessage: string) => {
 				const ansii: Record<string, number> = {
 					"B": 1,
 					"I": 3,
