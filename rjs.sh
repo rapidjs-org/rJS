@@ -1,3 +1,4 @@
 #! /bin/bash
 
-./scripts/debug-bin.sh $@
+
+node "$(dirname "$0")/debug/cli/app.js" $@

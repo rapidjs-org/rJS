@@ -1,0 +1,34 @@
+{
+    "name": "@rapidjs.org/proxy",
+    "version": "0.1.0",
+    "description": "No- and low-code web application development framework for JavaScript (proxy)",
+    "author": {
+      "name": "Thassilo Martin Schiepanski",
+      "url": "https://github.com/t-ski",
+      "githubUsername": "t-ski"
+    },
+    "files": [
+      "debug"
+    ],
+    "keywords": [
+      "rapidjs",
+      "rapidjs.org"
+    ],
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/rapidjs-org/core.git"
+    },
+    "bugs": {
+      "url": "https://github.com/rapidjs-org/core/issues"
+    },
+    "homepage": "https://rapidjs.org",
+    "main": "./build/app.js",
+    "types": "./types/app.d.ts",
+    "scripts": {
+        "build": "cp "
+    },
+    "devDependencies": {
+        "@rapidjs.org/shared": "0.1.x",
+        "@rapidjs.org/core": "^0.1.0"
+    }
+}  

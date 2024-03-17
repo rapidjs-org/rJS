@@ -4,13 +4,11 @@
 .logs/
 .config/
 
+*.tsbuildinfo
+
 package-lock.json
 
 node_modules/
 
 debug/
 dist/
-
-build/
-
-src/process/thread/distributed-sharedmemory

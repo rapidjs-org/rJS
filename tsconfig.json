@@ -1,16 +1,21 @@
 {
-    "compilerOptions": {
-        "module": "CommonJS",
-        "esModuleInterop": true,
-        "target": "es2017",
-        "moduleResolution": "node",
-        "noImplicitAny": true,
-        "resolveJsonModule": true,
-        "allowJs": true,
-        "outDir": "./debug/"
+  "extends": "./tsconfig.common.json",
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/cli/"
     },
-    "include": [
-        "./src/**/*.ts",
-        "./src/**/*.json"
-    ]
+    {
+      "path": "./packages/core/"
+    },
+    {
+      "path": "./packages/proxy/"
+    },
+    {
+      "path": "./packages/shared/"
+    },
+    {
+      "path": "./packages/standalone/"
+    }
+  ]
 }

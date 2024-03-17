@@ -1,0 +1,6 @@
+{
+    "appName": "rapidJS",
+    "appNameShort": "rJS",
+    "httpVersion": "1.1",
+    "logsDirName": ".logs"
+}

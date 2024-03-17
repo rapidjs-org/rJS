@@ -1,0 +1,39 @@
+{
+    "name": "@rapidjs.org/core",
+    "version": "0.1.0",
+    "description": "No- and low-code web application development framework for JavaScrip (core)",
+    "author": {
+      "name": "Thassilo Martin Schiepanski",
+      "url": "https://github.com/t-ski",
+      "githubUsername": "t-ski"
+    },
+    "files": [
+      "debug"
+    ],
+    "keywords": [
+      "rapidjs",
+      "rapidjs.org"
+    ],
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/rapidjs-org/core.git"
+    },
+    "bugs": {
+      "url": "https://github.com/rapidjs-org/core/issues"
+    },
+    "homepage": "https://rapidjs.org",
+    "main": "./build/app.js",
+    "types": "./types/app.d.ts",
+    "scripts": {
+        "configure": "./scripts/gyp-shm.sh configure --debug",
+        "test": "node ./scripts/test-shm.js",
+        "cp-shm": "",
+        "build": "npm run cp-shm"
+    },
+    "devDependencies": {
+        "@rapidjs.org/shared": "0.1.x",
+        "node-addon-api": "^7.1.0",
+        "node-gyp": "^10.0.1"
+    }
+  }
+  

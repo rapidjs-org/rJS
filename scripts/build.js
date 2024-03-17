@@ -4,8 +4,8 @@ const { readdir, readFileSync, writeFileSync, rmSync } = require("fs");
 
 
 const DIST_DIR_NAME = "dist";
-const DIST_DIR_PATH = join(__dirname, "../", DIST_DIR_NAME);
-const SIGNATURE = String(readFileSync(join(__dirname, "../signature.txt")));
+const DIST_DIR_PATH = join(process.cwd(), DIST_DIR_NAME);
+const SIGNATURE = String(readFileSync(join(__dirname, "../../../signature.txt")));
 const START_TIME = Date.now();
 const record = {
     fileCount: 0

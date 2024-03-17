@@ -1,60 +1,33 @@
 {
-  "name": "@rapidjs.org/core",
-  "version": "0.0.1",
-  "description": "",
-  "author": {
-    "name": "Thassilo Martin Schiepanski",
-    "url": "https://github.com/t-ski",
-    "githubUsername": "t-ski"
-  },
-  "bin": {
-    "rjs": "./dist/cli/api.cli.js",
-    "rapidjs": "./dist/cli/api.cli.js"
-  },
-  "main": "./dist/api/api.js",
-  "types": "./typings.d.ts",
+  "private": true,
+  "author": "Thassilo Martin Schiepanski",
+  "workspaces": [
+    "./packages/*"
+  ],
   "scripts": {
-    "configure": "npm i && ./scripts/shm-gyp.sh configure --debug",
-    "compile:cpp": "./scripts/shm-gyp.sh build --debug && ./scripts/shm-copy.sh ./debug Debug",
-    "compile:ts": "./scripts/help-copy.sh ./debug && npx tsc",
-    "compile:ts:watch": "./scripts/help-copy.sh ./debug && npx tsc --watch",
-    "compile": "npm run compile:ts:watch",
     "debug": "./rjs.sh start -W ./test-app/",
     "debug:dev": "./rjs.sh start -W ./test-app/ -D",
-    "test:shm": "node ./scripts/test-shm.js ./test/shm/",
-    "test:cpp:shm": "npm run compile:cpp && npm run test:shm",
-    "test:unit": "node ./scripts/test-unit.js ./test/unit/",
-    "test:request": "node ./scripts/test-request.js ./test/request/",
-    "test": "npm run test:shm && npm run test:unit && npm run test:request",
-    "lint": "npx eslint --ext .ts --fix ./src",
-    "assess": "npm run test && npm run lint",
-    "generate-typings": "npx tsc ./src/api/api.ts --esModuleInterop --resolveJsonModule --declaration --emitDeclarationOnly --outFile ./typings.d.ts",
-    "build": "npm run assess && node ./scripts/build.js && npm run generate-typings",
+    "test:unit": "node ./scripts/test/app.js unit ./test/unit/",
+    "test:request": "node ./scripts/test/app.js request ./test/request/",
+    "test": "npm run test:unit && npm run test:request && npm run test -ws --if-present",
+    "build": "npx tsc -b && run build -ws --if-present",
+    "compile": "npx tsc -b",
+    "compile:watch": "npm run compile -- --watch",
+    "compile:package:cli": "npx tsc -b ./packages/cli/",
+    "compile:package:core": "npx tsc -b ./packages/core/",
+    "compile:package:proxy": "npx tsc -b ./packages/proxy/",
+    "compile:package:shared": "npx tsc -b ./packages/shared/",
+    "compile:package:standalone": "npx tsc -b ./packages/standalone/",
+    "clean": "npx tsc --build --clean",
+    "lint": "npx eslint --ext .ts --fix ./packages/*/src/*",
     "print-args": "node ./scripts/print-args.js"
   },
-  "files": [
-    "dist"
-  ],
-  "keywords": [
-    "rapidjs",
-    "rapidjs.org"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rapidjs-org/core.git"
-  },
-  "bugs": {
-    "url": "https://github.com/rapidjs-org/core/issues"
-  },
-  "homepage": "https://rapidjs.org",
   "devDependencies": {
     "@types/node": "^20.10.6",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
+    "typescript": "^5.3.3",
     "eslint": "^8.56.0",
-    "eslint-plugin-typescript": "^0.14.0",
-    "node-addon-api": "^7.1.0",
-    "node-gyp": "^10.0.1",
-    "typescript": "^5.3.3"
+    "eslint-plugin-typescript": "^0.14.0"
   }
 }

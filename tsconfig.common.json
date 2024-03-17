@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "target": "es2017",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "noImplicitAny": true,
+        "resolveJsonModule": true,
+        "composite": true,
+        "noEmitOnError": true,
+        "incremental": true,
+        "allowJs": true,
+        "declaration": true,
+        "declarationMap": true
+    }
+}
