@@ -1,33 +1,23 @@
 {
-  "private": true,
-  "author": "Thassilo Martin Schiepanski",
-  "workspaces": [
-    "./packages/*"
-  ],
-  "scripts": {
-    "debug": "./rjs.sh start -W ./test-app/",
-    "debug:dev": "./rjs.sh start -W ./test-app/ -D",
-    "test:unit": "node ./scripts/test/app.js unit ./test/unit/",
-    "test:request": "node ./scripts/test/app.js request ./test/request/",
-    "test": "npm run test:unit && npm run test:request && npm run test -ws --if-present",
-    "build": "npx tsc -b && run build -ws --if-present",
-    "compile": "npx tsc -b",
-    "compile:watch": "npm run compile -- --watch",
-    "compile:package:cli": "npx tsc -b ./packages/cli/",
-    "compile:package:core": "npx tsc -b ./packages/core/",
-    "compile:package:proxy": "npx tsc -b ./packages/proxy/",
-    "compile:package:shared": "npx tsc -b ./packages/shared/",
-    "compile:package:standalone": "npx tsc -b ./packages/standalone/",
-    "clean": "npx tsc --build --clean",
-    "lint": "npx eslint --ext .ts --fix ./packages/*/src/*",
-    "print-args": "node ./scripts/print-args.js"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.6",
-    "@typescript-eslint/eslint-plugin": "^6.19.1",
-    "@typescript-eslint/parser": "^6.19.1",
-    "typescript": "^5.3.3",
-    "eslint": "^8.56.0",
-    "eslint-plugin-typescript": "^0.14.0"
-  }
+	"private": true,
+	"author": "Thassilo Martin Schiepanski",
+	"workspaces": [
+		"./packages/*"
+	],
+	"scripts": {
+		"copy-commons": "node ./scripts/cp-tsconfig.js",
+		"compile": "npm run copy-commons && npm run compile -ws",
+		"compile:core": "npm run compile:watch -w @rapidjs.org/core",
+		"compile:rjs": "npm run build -w @rapidjs.org/core && npm run compile:watch -w @rapidjs.org/rjs",
+		"debug": "./rjs.sh start -W ./test-app/",
+		"debug:dev": "./rjs.sh start -W ./test-app/ -D",
+		"lint": "npx eslint --ext .ts ./packages/*/src/*",
+		"lint:fix": "npx eslint --ext .ts --fix ./packages/*/src/*"
+	},
+	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "^6.19.1",
+		"@typescript-eslint/parser": "^6.19.1",
+		"eslint": "^8.56.0",
+		"eslint-plugin-typescript": "^0.14.0"
+	}
 }

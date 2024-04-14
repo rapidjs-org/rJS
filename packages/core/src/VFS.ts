@@ -1,6 +1,5 @@
 import { existsSync, readFileSync, writeFileSync, rmSync, statSync } from "fs";
 import { join, normalize } from "path";
-import { ASharedMemory } from "./sharedmemory/ASharedMemory";
 
 
 export interface IFilestamp {
@@ -9,15 +8,11 @@ export interface IFilestamp {
 }
 
 
-export class VFS extends ASharedMemory<IFilestamp> {
+export class VFS {
 	private readonly rootPath: string;
 
-	constructor(relativeRootPath: string = "./") {
-		super(relativeRootPath);
-
-		this.validatePath(relativeRootPath);
-
-		this.rootPath = join(process.cwd(), relativeRootPath);
+	constructor(rootPath: string = "./") {
+		this.rootPath = rootPath;
 	}
 
 	private validatePath(relativePath: string) {
@@ -38,7 +33,7 @@ export class VFS extends ASharedMemory<IFilestamp> {
 			eTag: Date.now().toString()
 		};
 		
-		this.writeSHM(relativePath, filestamp);
+		//this.writeSHM(relativePath, filestamp);
 
 		return filestamp;
 	}
@@ -51,7 +46,7 @@ export class VFS extends ASharedMemory<IFilestamp> {
 	
 	public read(relativePath: string): IFilestamp {
 		const absolutePath: string = this.getAbsolutePath(relativePath);
-		const filestamp: IFilestamp = this.readSHM(relativePath);
+		const filestamp: IFilestamp = null//this.readSHM(relativePath);
 
 		if(filestamp) return filestamp;
 		if(!this.exists(relativePath)) return null;
@@ -73,7 +68,7 @@ export class VFS extends ASharedMemory<IFilestamp> {
 	}
 
 	public deleteDisc(relativePath: string) {
-		this.freeSHM(relativePath);
+		//this.freeSHM(relativePath);
 
 		rmSync(this.getAbsolutePath(relativePath));
 	}

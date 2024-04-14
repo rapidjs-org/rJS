@@ -10,5 +10,7 @@ package-lock.json
 
 node_modules/
 
-debug/
-dist/
+packages/**/debug/
+packages/**/build/
+packages/**/types/
+packages/**/common/

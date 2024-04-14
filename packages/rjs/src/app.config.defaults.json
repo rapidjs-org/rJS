@@ -1,0 +1,6 @@
+{
+    "maxClientRequestsPerMin": 100,
+    "maxRequestURLLength": 250,
+    "maxRequestHeadersLength": 750,
+    "maxRequestBodyLength": 1000
+}

@@ -1,17 +1,17 @@
 "use strict";
 
 
-const { join } = require("path");
-const { existsSync } = require("fs");
+const { join, basename } = require("path");
+const { existsSync, readdir } = require("fs");
 
 
 const TEST_PATH = join(process.cwd(), process.argv.slice(2)[1] || "");
 if(!existsSync(TEST_PATH)) throw new ReferenceError(`Test directory not found '${TEST_PATH}'`);
 const BEFORE_SCRIPT_FILENAME = "_before.js";
 const AFTER_SCRIPT_FILENAME = "_after.js";
+const INTERMEDIATE_TIMEOUT = 3000;
 const UNWRAP_TIMEOUT = 5000;
 const START_TIME = Date.now();
-
 
 let progressInterval;
 let lastErrorTestFilePosition;
@@ -24,7 +24,14 @@ const evalIntermediateScript = (scriptFilename) => {
     
     let exp = require(join(TEST_PATH, scriptFilename));
     exp = (exp instanceof Function) ? exp() : exp;
-    return ((exp instanceof Promise) ? exp : Promise.resolve());
+    return ((exp instanceof Promise)
+    ? new Promise(async (resolve, reject) => {
+        const timeout = setTimeout(() => reject(new RangeError(`Intermediate script timeout on '${scriptFilename}'`)), INTERMEDIATE_TIMEOUT);
+        await exp;
+        clearTimeout(timeout);
+        resolve();
+    })
+    : Promise.resolve());
 };
 
 const clearProgressLog = () => {
@@ -99,8 +106,10 @@ process.on("exit", async code => {
         Math.round((counter.success / (counter.success + counter.failure) || 1) * 100)
     }% (${counter.success}/${counter.success + counter.failure}) successful, ${
         Math.round((Date.now() - START_TIME) * 0.001)
-    }s)\x1b[0m`);
+    }s)\x1b[0m\n`);
 });
+process.on("SIGTERM", () => process.exit(2));
+process.on("SIGINT", () => process.exit(2));
 
 const handleBubblingError = async (err) => {
     clearProgressLog();
@@ -152,22 +161,23 @@ class AsyncMutex {
     }
 }
 
-module.exports.Test = class {
+class Test {
     static instances = [];
     static openTestCases = 0;
     static endTimeout;
     static suiteFailed = false;
 
-    static init() {
+    static init(title, badgeColorRGB = [ 240, 240, 240 ]) {
+        console.log(`\n\x1b[1m\x1b[48;2;${badgeColorRGB.join(";")}m ${title.toUpperCase()} \x1b[0m`);
+        
         const traversePath = (path) => {
             readdir(path, {
                 withFileTypes: true
             }, (err, dirents) => {
                 if(err) throw err;
-    
+                
                 dirents.forEach(dirent => {
                     const filePath = join(path, dirent.name);
-    
                     if(dirent.isDirectory()) {
                         traversePath(filePath);
     
@@ -204,7 +214,9 @@ module.exports.Test = class {
 
             traversePath(TEST_PATH);
         })
-        .catch(async () => {
+        .catch(async (err) => {
+            console.error(err);
+
             await evalIntermediateScript(AFTER_SCRIPT_FILENAME);
 
             process.exit(2);
@@ -273,7 +285,7 @@ module.exports.Test = class {
 
                             await evalIntermediateScript(AFTER_SCRIPT_FILENAME);
                             
-                            process.exit(Test.suiteFailed);
+                            process.exit(+Test.suiteFailed);
                         }, this.endTimeoutDuration);
                         
                         const expectedValue = (expected instanceof Function)
@@ -310,3 +322,6 @@ module.exports.Test = class {
         };
     }
 };
+
+
+module.exports.Test = Test;

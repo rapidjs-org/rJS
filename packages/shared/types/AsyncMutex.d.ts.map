@@ -1,1 +1,0 @@
-{"version":3,"file":"AsyncMutex.d.ts","sourceRoot":"","sources":["../src/AsyncMutex.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,qBAAa,UAAU,CAAC,CAAC;IAExB,OAAO,CAAC,QAAQ,CAAC,YAAY,CAAqC;IAElE,OAAO,CAAC,QAAQ,CAAS;IAEzB,OAAO,CAAC,OAAO;IAYR,IAAI,CAAC,QAAQ,EAAE,MAAM,CAAC,GAAC,OAAO,CAAC,CAAC,CAAC,GAAG,OAAO,CAAC,CAAC,CAAC;CAkBrD"}

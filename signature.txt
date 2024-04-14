@@ -1,1 +1,1 @@
-rapidJS (c) Thassilo Martin Schiepanski
+rapidJS, rJS (c) Thassilo Martin Schiepanski

@@ -1,5 +1,3 @@
-import { InterruptionHandler } from "../common/InterruptionHandler";
-
 export class ProgressLine {
 	private readonly message: string;
 	private readonly max: number;
@@ -14,8 +12,8 @@ export class ProgressLine {
 		this.max = max + 1;
 		this.symbol = symbol;
 		this.intervalSize = intervalSize;
-
-		InterruptionHandler.register(() => this.deactivate());
+		
+		// TODO: Clear on termination
 	}
 
 	public activate(): this {

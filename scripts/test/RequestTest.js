@@ -4,8 +4,8 @@ const { deepStrictEqual } = require("assert");
 const { Test } = require("./Test");
 
 
-const END_TIMEOUT = 1500;
-const REQUEST_TIMEOUT = 3000;
+const END_TIMEOUT = 1000;
+const REQUEST_TIMEOUT = 5000;
 
 
 global.RequestTest = class extends Test {
@@ -27,24 +27,25 @@ global.RequestTest = class extends Test {
     }
 
     eval(pathOrCallback, options = {}) {
+        const path = (pathOrCallback instanceof Function)
+        ? pathOrCallback()
+        : pathOrCallback;
+
+        const body = options.body;
+        delete options.body;
+
         return new Promise((resolve, reject) => {
             const reqOptions = {
                 ...RequestTest.commonHost,
                 
                 method: "GET",
                 headers: {},
-    
-                ...((pathOrCallback instanceof Function)
-                    ? pathOrCallback()
-                    : { path: pathOrCallback }),
+                path: path,
+                
                 ...options
             };
             
-            const requestTimeout = setTimeout(() => {
-                reject(new RangeError(`Request timeout on \x1b[2m'${JSON.stringify(reqOptions, null, 2)}'\x1b[22m`));
-            }, REQUEST_TIMEOUT);
-            
-            http.get(reqOptions, res => {
+            const req = http.request(reqOptions, res => {
                 const expected = {
                     status: res.statusCode,
                     headers: res.headers
@@ -68,6 +69,15 @@ global.RequestTest = class extends Test {
                 res.on("error", err => reject(err));
             })
             .on("error", err => reject(err));
+
+            const requestTimeout = setTimeout(() => {
+                req._destroy();
+                
+                reject(new RangeError(`Request timeout on \x1b[2m'${JSON.stringify(reqOptions, null, 2)}'\x1b[22m`));
+            }, REQUEST_TIMEOUT);
+
+            body && req.write(body);
+            req.end();
         });
     }
 
