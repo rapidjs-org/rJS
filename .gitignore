@@ -6,11 +6,8 @@
 
 *.tsbuildinfo
 
-package-lock.json
-
 node_modules/
 
 packages/**/debug/
 packages/**/build/
 packages/**/types/
-packages/**/common/

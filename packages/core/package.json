@@ -2,11 +2,7 @@
     "name": "@rapidjs.org/core",
     "version": "0.1.0",
     "description": "No- and low-code web application development framework for JavaScript",
-    "author": {
-        "name": "Thassilo Martin Schiepanski",
-        "url": "https://github.com/t-ski",
-        "githubUsername": "t-ski"
-    },
+    "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
         "rapidjs",
@@ -26,12 +22,18 @@
         "./types/"
     ],
     "scripts": {
-        "debug": "node ./test-app/app.js",
-        "test:unit": "node ../../scripts/test/app.js unit ./test/unit/",
-        "test:request": "node ../../scripts/test/app.js request ./test/request/",
-        "test": "npm run test:unit && npm run test:request",
+        "debug": "npx tsc --project ./tsconfig.debug.json",
+        "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npx tsc --project ./tsconfig.build.json",
-        "compile": "npx tsc --project ./tsconfig.debug.json",
-        "compile:watch": "npm run compile -- --watch"
+        "test:unit": "npx rjs-test unit ./test/unit/",
+        "test:http": "npx rjs-test http ./test/http/",
+        "test": "nm run test:unit && npm run test:http"
+    },
+    "devDependencies": {
+		"@rapidjs.org/test": "file:../app-test/packages/test",
+		"@rapidjs.org/test--http": "file:../app-test/packages/@http",
+		"@rapidjs.org/test--unit": "file:../app-test/packages/@unit",
+        "@types/node": "^20.10.6",
+        "typescript": "^5.3.3"
     }
 }

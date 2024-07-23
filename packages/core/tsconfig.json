@@ -11,14 +11,10 @@
         "declaration": true,
         "declarationDir": "./types/",
         "rootDir": "./src/",
-        "paths": {
-            "@common/types": [
-                "../common.types"
-            ]
-        }
+        "outDir": "./build/"
     },
     "include": [
         "./src/**/*.ts",
         "./src/**/*.json"
-    ]
+, "src/WorkerPool.ts"    ]
 }

@@ -1,4 +1,4 @@
 #! /bin/bash
 
 
-node "$(dirname "$0")/debug/cli/app.js" $@
+node "$(dirname "$0")/packages/rjs/build/cli.js" $@

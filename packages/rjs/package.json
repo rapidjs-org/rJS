@@ -2,11 +2,7 @@
     "name": "@rapidjs.org/rjs",
     "version": "0.1.0",
     "description": "No- and low-code web application development framework for JavaScript",
-    "author": {
-        "name": "Thassilo Martin Schiepanski",
-        "url": "https://github.com/t-ski",
-        "githubUsername": "t-ski"
-    },
+    "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
         "rapidjs",
@@ -20,25 +16,27 @@
         "url": "https://github.com/rapidjs-org/core/issues"
     },
     "main": "./build/api.js",
-    "types": "./types/api.d.ts",
+    "bin": {
+        "rjs": "./build/cli.js"
+    },
     "files": [
         "./build/",
-        "./types/"
+        "./types/",
+        "./_config.json",
+        "./cli.help.txt"
     ],
     "scripts": {
-        "debug": "node ./test-app/app.js",
-        "test:unit": "node ../../scripts/test/app.js unit ./test/unit/",
-        "test:request": "node ../../scripts/test/app.js request ./test/request/",
-        "test": "npm run test:unit && npm run test:request",
+        "debug": "npx tsc --project ./tsconfig.debug.json",
+        "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npx tsc --project ./tsconfig.build.json",
-        "compile": "tsc --project ./tsconfig.debug.json",
-        "compile:watch": "npm run compile -- --watch"
+        "test": "echo 'undefined' && exit 1"
+    },
+    "dependencies": {
+        "@rapidjs.org/core": "^0.1.0",
+        "@rapidjs.org/proxy": "^0.1.0"
     },
     "devDependencies": {
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
-    },
-    "dependencies": {
-        "@rapidjs.org/core": "^0.1.0"
     }
 }
