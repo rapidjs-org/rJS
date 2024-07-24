@@ -22,7 +22,6 @@
     "files": [
         "./build/",
         "./types/",
-        "./_config.json",
         "./cli.help.txt"
     ],
     "scripts": {
