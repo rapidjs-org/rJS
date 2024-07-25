@@ -1,0 +1,6 @@
+{
+    "configNameSuffix": ".config",
+	"defaultWebDirName": "web",
+	"defaultWebFileExtension": "html",
+	"defaultWebFileName": "index"
+}

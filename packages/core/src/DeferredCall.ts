@@ -1,4 +1,4 @@
-export class CallDeferral {
+export class DeferredCall {
 	private deferredEvents: number;
 	private deferredCallback: () => void;
 
@@ -9,7 +9,7 @@ export class CallDeferral {
 	public call(deferredCallback?: () => void) {
 		this.deferredCallback = deferredCallback || this.deferredCallback;
 
-		if(--this.deferredEvents > 0 || !this.deferredCallback) return;
+		if(--this.deferredEvents !== 0 || !this.deferredCallback) return;
 
 		this.deferredCallback();
 	}

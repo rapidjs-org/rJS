@@ -42,6 +42,6 @@ export class RateLimiter {
 		const weightedTotal: number = (limitData.previousWindow * previousWindowWeight)
 									+ (limitData.currentWindow * (1 - previousWindowWeight));
 		
-    	return weightedTotal <= this.limit /* / ThreadPool.size() ??? */;	// Optimistic; i.e. assume even distribution across worker processes
+    	return weightedTotal <= this.limit;
 	}
 }

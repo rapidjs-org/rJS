@@ -1,14 +1,12 @@
-import { TSerializable, TStatus } from "@common/types";
-
-import { THTTPMethod, THeaders } from "./types";
+import { THTTPMethod, THeaders, TSerializable, TStatus } from "./types";
 
 
 export interface ISerialRequest {
     method: THTTPMethod;
     url: string;
     headers: THeaders;
-
-    body?: Buffer|TSerializable;
+    
+    body?: string;
     clientIP?: string;
 }
 

@@ -23,7 +23,7 @@ export interface IWorkerPoolOptions {
 }
 
 // TODO: Need mutex?
-export abstract class WorkerPool<Worker extends EventEmitter, I, O, E> extends EventEmitter {
+export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends EventEmitter {
 	private readonly options: IWorkerPoolOptions;
 	private readonly activeWorkers: Map<Worker, IActiveWorker<O, E>> = new Map();
 	private readonly idleWorkers: Worker[] = [];

@@ -1,40 +1,39 @@
-import { parentPort, workerData } from "worker_threads";
+import { parentPort } from "worker_threads";
 
-import * as rJS_core from "@rapidjs.org/core";
+import { ISerialRequest, ISerialResponse } from "../interfaces";
+import { AHandler } from "./AHandler";
+import { GetHandler } from "./get/GetHandler";
+import { PostHandler } from "./post/PostHandler";
 
-import * as utils from "../utils";
-import { APP_CONFIG } from "./APP_CONFIG";
 
+process.on("uncaughtException", (err: unknown) => {
+    const isStatusError: boolean = /^[2345]\d{2}$/.test(err.toString());
 
-const REQUEST_LIMITS = {
-    bodyLength: APP_CONFIG.get<number>("maxRequestBodyLength"),
-    urlLength: APP_CONFIG.get<number>("maxRequestURLLength"),
-    headersLength: APP_CONFIG.get<number>("maxRequestHeadersLength"),
-};
+    !isStatusError && console.error(err);
 
-const requestHandler: rJS_core.RequestHandler = new rJS_core.RequestHandler({
-    devMode: false,
-    workingDir: workerData.workingDir
+    parentPort.postMessage({
+        status: isStatusError ? err : 500
+    });
+
+    // TODO: Error control (no endless run on repeated dense errors)
 });
 
 
-process.on("uncaughtException", (potentialStatus: TStatus|unknown) => {
-	parentPort.postMessage(utils.serialResponseFromPotentialStatus(potentialStatus));
-});
+parentPort.on("message", (sReq: ISerialRequest) => {
+    let handler: AHandler;
+    switch(sReq.method) {
+        // TODO: HEAD
+        case "GET":
+            handler = new GetHandler(sReq);
+            break;
+        case "POST":
+            handler = new PostHandler(sReq);
+            break;
+        default:
+            throw 405;
+    }
 
-
-parentPort.on("message", (serialRequest: rJS_core.ISerialRequest) => {
-	if(serialRequest.url.length > REQUEST_LIMITS.urlLength) {
-		throw 414;
-	}
-	if(Object.entries(serialRequest.headers).flat().join("").length > REQUEST_LIMITS.headersLength) {
-		throw 432;
-	}
-	if((serialRequest.body ?? "").toString().length > REQUEST_LIMITS.bodyLength) {
-		throw 413;
-	}
-
-    requestHandler
-    .handle(serialRequest)
-    .then((serialResponse: rJS_core.ISerialResponse) => parentPort.postMessage(serialResponse));
+    handler.on("response", (sRes: ISerialResponse) => parentPort.postMessage(sRes));
+    
+    handler.process();
 });

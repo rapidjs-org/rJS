@@ -1,37 +1,22 @@
 import { Worker as Thread, SHARE_ENV } from "worker_threads";
 
-import { IWorkerPoolOptions, WorkerPool } from "./WorkerPool";
-
-import rJS_core from "@rapidjs.org/core";
-
-
-interface IThreadOptions {
-	workingDir?: string;
-	devMode?: boolean;
-}
-
-interface IThreadPoolOptions extends IWorkerPoolOptions {
-	threadOptions: IThreadOptions;
-};
+import { ISerialRequest, ISerialResponse } from "./interfaces";
+import { IWorkerPoolOptions, AWorkerPool } from "./AWorkerPool";
 
 
-export class ThreadPool extends WorkerPool<Thread, rJS_core.ISerialRequest, rJS_core.ISerialResponse, number> {
-	private readonly threadOptions: IThreadOptions;
-
-	constructor(threadModulePath: string, options: IThreadPoolOptions) {
+export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialResponse, number> {
+	constructor(threadModulePath: string, options: IWorkerPoolOptions) {
 		super(threadModulePath, options);
-
-		this.threadOptions = options.threadOptions ?? {};
 	}
 	
 	protected createWorker(): Promise<Thread> {
     	const thread = new Thread(this.workerModulePath, {
-    		argv: process.argv.slice(2),
+    		argv: [],
     		env: SHARE_ENV,
-			workerData: this.threadOptions
+			workerData: null
     	});
 		
-		thread.on("message", (serialResponse: rJS_core.ISerialResponse) => {
+		thread.on("message", (serialResponse: ISerialResponse) => {
 			this.deactivateWorker(thread, serialResponse); 
 		});
 		/* thread.on("error", (potentialStatus: number|unknown) => {
@@ -47,7 +32,7 @@ export class ThreadPool extends WorkerPool<Thread, rJS_core.ISerialRequest, rJS_
     	thread.terminate();
 	}
 
-	protected activateWorker(thread: Thread, serialRequest: rJS_core.ISerialRequest) {
+	protected activateWorker(thread: Thread, serialRequest: ISerialRequest) {
     	thread.postMessage(serialRequest);
 	}
 
