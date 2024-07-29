@@ -2,15 +2,19 @@ import { join } from "path";
 import { STATUS_CODES, IncomingMessage, ServerResponse, createServer } from "http";
 import { Socket } from "net";
 
+import { THTTPMethod, TSerializable, TStatus } from "./types";
+import { ISerialRequest, ISerialResponse } from "./interfaces";
 import { ThreadPool } from "./ThreadPool";
 import { DeferredCall } from "./DeferredCall";
-import { ISerialRequest, ISerialResponse } from "./interfaces";
-import { THTTPMethod, TStatus } from "./types";
+import { RateLimiter } from "./RateLimiter";
+import { Cache } from "./Cache";
+import { Config } from "./stateless/Config";
 
 
 const onlineDeferral = new DeferredCall(2);
-
-const threadPool = new ThreadPool(join(__dirname, "./thread/api.thread"), {    
+const rateLimiter: RateLimiter = new RateLimiter(Config.global.read("security", "maxRequestsPerMin").number());
+const responseCache: Cache<Partial<ISerialRequest>, Partial<ISerialResponse>> = new Cache();
+const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"), {    
     ...process.env.DEV ? { baseSize: 1 } : {}
 })
 .once("online", () => onlineDeferral.call());
@@ -21,39 +25,84 @@ process.once("message", () => onlineDeferral.call(() => {
 }));
 
 
-function respond(sResPartial: Partial<ISerialResponse>, socket: Socket) {
-    console.log(sResPartial)
+function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSocket: boolean = false) {
     const status: TStatus = sResPartial.status ?? 500;
 
-    const data: string[] = [];
+    const data: (string|Buffer)[] = [];
     data.push(`HTTP/1.1 ${status ?? 500} ${STATUS_CODES[status]}`);
     data.push(
         ...Object.entries(sResPartial.headers ?? {})
         .map((entry: [ string, string|readonly string[] ]) => `${entry[0]}: ${entry[1]}`)
     );
-    data.push(`\r\n${sResPartial.body ?? ""}`);
-    console.log(data
-        .flat()
-        .join("\r\n"))
-    socket.write(Buffer.from(
-        data
-        .flat()
-        .join("\r\n"),
-        "utf-8"
-    ));
+        
+    socket.write(Buffer.concat([
+        Buffer.from(data.join("\r\n"), "utf-8"),
+        Buffer.from("\r\n\r\n"),
+        sResPartial.body ?? Buffer.from("")
+    ]), (err?: Error) => {
+        err && console.error(err);
+    });
     
-    socket.end(() => socket.destroy());
+    closeSocket
+    && socket.end(() => socket.destroy());
+}
+
+function respondError(status: TStatus, socket: Socket) {
+    respond({ status }, socket, true);
 }
 
 async function handleRequest(sReq: ISerialRequest, socket: Socket) {
+    // Security
+    if(!rateLimiter.grantsAccess(sReq.clientIP)) {
+        respondError(429, socket);
+
+        return;
+    }
+    if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
+        respondError(414, socket);
+
+        return;
+    }
+    if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
+        respondError(413, socket);
+
+        return;
+    }
+    if(
+        Object.entries(sReq.headers)
+        .reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
+        > Config.global.read("security", "maxRequestHeadersLength").number()
+    ) {
+        respondError(431, socket);
+
+        return;
+    }
+
+    const cacheKey: Partial<ISerialRequest> = {
+        method: sReq.method,
+        url: sReq.url   // TODO: Consider query part?
+    };
+
+    if(responseCache.has(cacheKey)) {
+        respond(responseCache.get(cacheKey), socket);
+
+        return;
+    }
+    
     threadPool.assign(sReq)
-    .then((sRes: Partial<ISerialResponse>) => respond(sRes, socket))
+    .then((sRes: Partial<ISerialResponse>) => {
+        responseCache.set(cacheKey, sRes);
+
+        respond(sRes, socket);
+    })
     .catch((err: unknown) => {
         console.error(err);
 
+        // TODO: Cache errors?
+        
         respond({
             ...(typeof(err) === "number") ? { status: err as TStatus } : {},
-            ...(typeof(err) !== "number") ? { body: err.toString() } : {},
+            ...(typeof(err) !== "number") ? { body: Buffer.from(err.toString(), "utf-8") } : {},
         }, socket);
     });
 }
@@ -66,7 +115,7 @@ export interface IServerOptions {
 
 export function serve(options: Partial<IServerOptions>): Promise<void> {
     const optionsWithDefaults = {
-        port: 80,
+        port: 80,   // TODO: Config or arg soft (?)
 
         ...options
     };

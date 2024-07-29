@@ -30,9 +30,9 @@
         "test": "nm run test:unit && npm run test:http"
     },
     "devDependencies": {
-		"@rapidjs.org/test": "file:../app-test/packages/test",
-		"@rapidjs.org/test--http": "file:../app-test/packages/@http",
-		"@rapidjs.org/test--unit": "file:../app-test/packages/@unit",
+        "@rapidjs.org/testing": "^0.1.1",
+        "@rapidjs.org/testing-http": "^0.1.0",
+        "@rapidjs.org/testing-unit": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     }

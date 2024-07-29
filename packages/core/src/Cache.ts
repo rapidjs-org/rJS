@@ -1,25 +1,25 @@
-const _config = {
-	defaultCacheDuration: 5000
-};
+import { Config } from "./stateless/Config";
 
 
-export class Cache<T> extends Map<string, T> {
-	private readonly keyStoreTimestamps: Map<string, number> = new Map();
+// TODO: Cach entry max size threshold (keep memory “clean”)?
+
+export class Cache<K, T> extends Map<K, T> {
+	private readonly keyStoreTimestamps: Map<K, number> = new Map();
 	private readonly duration: number;
 
-	constructor(duration: number = _config.defaultCacheDuration) {
+	constructor(duration: number = (process.env.DEV ? Config.global.read("peformance", "serverCacheMs").number() : null) ?? Infinity) {
 		super();
-
+		
 		this.duration = duration;
 	}
 
-	public get(key: string): T {
+	public get(key: K): T {
 		return this.has(key) 
 			? super.get(key)
 			: undefined;
 	}
-    
-	public has(key: string): boolean {
+	
+	public has(key: K): boolean {
 		if(!this.keyStoreTimestamps.has(key)) return false;
 		
 		if((Date.now() - this.keyStoreTimestamps.get(key)) <= this.duration)

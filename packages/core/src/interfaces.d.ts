@@ -1,4 +1,4 @@
-import { THTTPMethod, THeaders, TSerializable, TStatus } from "./types";
+import { THTTPMethod, THeaders, TStatus } from "./types";
 
 
 export interface ISerialRequest {
@@ -13,6 +13,11 @@ export interface ISerialRequest {
 export interface ISerialResponse {
     status: TStatus;
     headers: THeaders;
+    
+    body?: Buffer;
+}
 
-    body?: TSerializable;
+export interface IFilestamp {
+	data: string;
+	eTag: string;
 }

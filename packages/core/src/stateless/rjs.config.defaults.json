@@ -1,0 +1,16 @@
+{
+    "security": {
+        "maxRequestsPerMin": 100,
+        "maxRequestURILength": 250,
+        "maxRequestBodyByteLength": 1000,
+        "maxRequestHeadersLength": 750
+    },
+    "performance": {
+        "clientCacheMs": 86400000,
+        "serverCacheMs": 5000,
+        "compressionByteThreshold": 1400
+    },
+    "headers": {
+        "Server": "rapidJS"
+    }
+}

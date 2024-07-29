@@ -1,0 +1,8 @@
+{
+    "security": {
+        "maxRequestURILength": 100
+    },
+    "performance": {
+        "serverCacheMs": 500
+    }
+}

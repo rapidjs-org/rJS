@@ -1,4 +1,4 @@
-import { THeaders } from "../types";
+import { THeaders, TSerializable } from "../types";
 import { ISerialRequest } from "../interfaces";
 
 
@@ -28,15 +28,15 @@ export class Request {
 		this.clientIP = sReq.clientIP;
 	}
 
-	public getHeader(name: string): string {
-		return (this.headers[name.toLowerCase()] ?? [])[0];
+	public getHeader(name: string): TSerializable {
+		return [ this.headers[name.toLowerCase()] ?? null ].flat()[0];
 	}
 
 	public getWeightedHeader(name: string): string[] {
-		const value: string = this.getHeader(name);
+		const value = this.getHeader(name) as string;
 
 		if(!value) return [];
-
+		
 		const values: string[] = value.split(/,/g);
 		return values
 		.map((value: string) => {

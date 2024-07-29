@@ -22,9 +22,9 @@ process.on("uncaughtException", (err: unknown) => {
 parentPort.on("message", (sReq: ISerialRequest) => {
     let handler: AHandler;
     switch(sReq.method) {
-        // TODO: HEAD
         case "GET":
-            handler = new GetHandler(sReq);
+        case "HEAD":
+            handler = new GetHandler(sReq, );
             break;
         case "POST":
             handler = new PostHandler(sReq);
@@ -32,8 +32,14 @@ parentPort.on("message", (sReq: ISerialRequest) => {
         default:
             throw 405;
     }
-
-    handler.on("response", (sRes: ISerialResponse) => parentPort.postMessage(sRes));
+    
+    handler.on("response", (sRes: ISerialResponse) => {
+        if(sReq.method === "HEAD") {
+            sReq.body = null;
+        }
+        
+        parentPort.postMessage(sRes);
+    });
     
     handler.process();
 });
