@@ -4,5 +4,6 @@
     "configNamePrefix": "rjs",
     "configNameSuffix": "config",
 	"filesDirName": "assets",
-	"logsDirName": ".logs"
+	"logsDirName": ".logs",
+    "routesDirName": "routes"
 }

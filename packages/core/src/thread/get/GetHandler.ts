@@ -3,7 +3,7 @@ import { IFilestamp } from "../../interfaces";
 import { AHandler } from "../AHandler";
 import { Config } from "../../stateless/Config";
 
-import { VFS } from "./VFS";
+import { VirtualFileSystem } from "./VirtualFileSystem";
 
 import mime from "./mime.json";
 
@@ -14,7 +14,7 @@ const CUSTOM_HEADERS: TJSON = Config.global.read("headers").obj() ?? {};
 
 
 export class GetHandler extends AHandler {
-    private readonly filesVFS: VFS = new VFS(_config.filesDirName);
+    private readonly filesVFS: VirtualFileSystem = new VirtualFileSystem(_config.filesDirName);
     
     public process(): void {
         // Canonic redirect(s)
@@ -39,8 +39,7 @@ export class GetHandler extends AHandler {
         const pathname: string = this.request.url.pathname
         .replace(/(\/)$/, "$1index")
         .replace(/(\/[^.]+)$/, "$1.html");
-
-        // TODO: Make data
+        
         if(!this.filesVFS.exists(pathname)) {
             this.response.setStatus(404);   // TODO: Error pages
 
@@ -58,7 +57,7 @@ export class GetHandler extends AHandler {
 
             return;
         }
-
+        
         this.response.setBody(filestamp.data);
 
         for(const header in CUSTOM_HEADERS) {
@@ -71,6 +70,16 @@ export class GetHandler extends AHandler {
                                         ?? (mime as TJSON)[extname]) as string;
         fileMime && this.response.setHeader("Content-Type", fileMime);
 
+        this.response.hasCompressableBody = !/^(application|image|video|audio)\//.test(fileMime)   // Black list pattern
+        || [
+            "application/json",
+            "application/ld+json",
+            "application/rtf",
+            "image/svg",
+            "image/svg+xml",
+            "image/svg",
+        ].includes(fileMime);   // White list
+        
         // ETag
         this.response.setHeader("ETag", `W/${filestamp.eTag}`);
 

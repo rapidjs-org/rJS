@@ -1,6 +1,7 @@
 import EventEmitter from "events";
 import zlib from "zlib";
 
+import { TSerializable } from "../types";
 import { ISerialRequest, ISerialResponse } from "../interfaces";
 import { Request } from "./Request";
 import { Response } from "./Response";
@@ -25,7 +26,7 @@ export abstract class AHandler extends EventEmitter {
 
     constructor(sReq: ISerialRequest) {
         super();
-
+        
         this.request = new Request(sReq);
         this.response = new Response();
     }
@@ -34,18 +35,18 @@ export abstract class AHandler extends EventEmitter {
         if(this.hasConsumedResponse) throw new RangeError("Response consumed multiple times");
         this.hasConsumedResponse = true;
 
-        if(!this.response.bodyIsBuffer  // TODO: Not if buffer, but text type (MIME)?
+        if(this.response.hasCompressableBody
         && (this.response.getBody() ?? "").toString().length > Config.global.read("performance", "compressionByteThreshold").number()) {
             const encoding: string = this.request
                 .getWeightedHeader("Accept-Encoding")
                 .filter((encoder: string) => ENCODERS[encoder])
                 .shift()
             ?? "identity";
-            
+
 			this.response.setBody(ENCODERS[encoding](this.response.getBody()));
 			this.response.setHeader("Content-Encoding", encoding);
         }
-
+        
         const sResponse: ISerialResponse = this.response.serialize();
         
         // Common headers

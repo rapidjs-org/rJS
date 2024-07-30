@@ -1,3 +1,5 @@
+// TODO: Check all headers (Cache-Control, ...)
+
 new HTTPTest("GET /")
 .eval("/")
 .expect({
@@ -27,4 +29,10 @@ new HTTPTest("GET /index.txt")
 .eval("/index.php")
 .expect({
     status: 404
+});
+
+new HTTPTest("GET /nested/")
+.eval("/nested/")
+.expect({
+    status: 200
 });

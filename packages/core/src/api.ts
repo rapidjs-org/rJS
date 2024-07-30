@@ -15,95 +15,90 @@ const onlineDeferral = new DeferredCall(2);
 const rateLimiter: RateLimiter = new RateLimiter(Config.global.read("security", "maxRequestsPerMin").number());
 const responseCache: Cache<Partial<ISerialRequest>, Partial<ISerialResponse>> = new Cache();
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"), {    
-    ...process.env.DEV ? { baseSize: 1 } : {}
+	...process.env.DEV ? { baseSize: 1 } : {}
 })
 .once("online", () => onlineDeferral.call());
 
 
 process.once("message", () => onlineDeferral.call(() => {
-    process.on("message", handleRequest);
+	process.on("message", handleRequest);
 }));
 
 
 function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSocket: boolean = false) {
-    const status: TStatus = sResPartial.status ?? 500;
+	const status: TStatus = sResPartial.status ?? 500;
 
-    const data: (string|Buffer)[] = [];
-    data.push(`HTTP/1.1 ${status ?? 500} ${STATUS_CODES[status]}`);
-    data.push(
-        ...Object.entries(sResPartial.headers ?? {})
+	const data: (string|Buffer)[] = [];
+	data.push(`HTTP/1.1 ${status ?? 500} ${STATUS_CODES[status]}`);
+	data.push(
+		...Object.entries(sResPartial.headers ?? {})
         .map((entry: [ string, string|readonly string[] ]) => `${entry[0]}: ${entry[1]}`)
-    );
+	);
         
-    socket.write(Buffer.concat([
-        Buffer.from(data.join("\r\n"), "utf-8"),
-        Buffer.from("\r\n\r\n"),
-        sResPartial.body ?? Buffer.from("")
-    ]), (err?: Error) => {
-        err && console.error(err);
-    });
+	socket.write(Buffer.concat([
+		Buffer.from(data.join("\r\n"), "utf-8"),
+		Buffer.from("\r\n\r\n"),
+		sResPartial.body ?? Buffer.from("")
+	]), (err?: Error) => {
+		err && console.error(err);
+	});
     
-    closeSocket
+	closeSocket
     && socket.end(() => socket.destroy());
 }
 
 function respondError(status: TStatus, socket: Socket) {
-    respond({ status }, socket, true);
+	respond({ status }, socket, true);
 }
 
 async function handleRequest(sReq: ISerialRequest, socket: Socket) {
-    // Security
-    if(!rateLimiter.grantsAccess(sReq.clientIP)) {
-        respondError(429, socket);
+	// Security
+	if(!rateLimiter.grantsAccess(sReq.clientIP)) {
+		respondError(429, socket);
 
-        return;
-    }
-    if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
-        respondError(414, socket);
+		return;
+	}
+	if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
+		respondError(414, socket);
 
-        return;
-    }
-    if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
-        respondError(413, socket);
+		return;
+	}
+	if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
+		respondError(413, socket);
 
-        return;
-    }
-    if(
-        Object.entries(sReq.headers)
+		return;
+	}
+	if(
+		Object.entries(sReq.headers)
         .reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
         > Config.global.read("security", "maxRequestHeadersLength").number()
-    ) {
-        respondError(431, socket);
+	) {
+		respondError(431, socket);
 
-        return;
-    }
+		return;
+	}
 
-    const cacheKey: Partial<ISerialRequest> = {
-        method: sReq.method,
-        url: sReq.url   // TODO: Consider query part?
-    };
+	const cacheKey: Partial<ISerialRequest> = {
+		method: sReq.method,
+		url: sReq.url   // TODO: Consider query part?
+	};
 
-    if(responseCache.has(cacheKey)) {
-        respond(responseCache.get(cacheKey), socket);
+	if(responseCache.has(cacheKey)) {
+		respond(responseCache.get(cacheKey), socket);
 
-        return;
-    }
+		return;
+	}
     
-    threadPool.assign(sReq)
+	threadPool.assign(sReq)
     .then((sRes: Partial<ISerialResponse>) => {
-        responseCache.set(cacheKey, sRes);
-
-        respond(sRes, socket);
+    	responseCache.set(cacheKey, sRes);
+		
+    	respond(sRes, socket);
     })
     .catch((err: unknown) => {
-        console.error(err);
+    	respondError((typeof(err) === "number") ? err as TStatus : 500, socket);
 
-        // TODO: Cache errors?
-        
-        respond({
-            ...(typeof(err) === "number") ? { status: err as TStatus } : {},
-            ...(typeof(err) !== "number") ? { body: Buffer.from(err.toString(), "utf-8") } : {},
-        }, socket);
+    	console.error(err);
     });
 }
 
@@ -114,39 +109,39 @@ export interface IServerOptions {
 
 
 export function serve(options: Partial<IServerOptions>): Promise<void> {
-    const optionsWithDefaults = {
-        port: 80,   // TODO: Config or arg soft (?)
+	const optionsWithDefaults = {
+		port: 80,   // TODO: Config or arg soft (?)
 
-        ...options
-    };
+		...options
+	};
 
-    return new Promise((resolve) => {
-        // TODO: HTTPS option, multiplex on proxy
+	return new Promise((resolve) => {
+		// TODO: HTTPS option, multiplex on proxy
 		createServer((dReq: IncomingMessage, dRes: ServerResponse) => {
-            new Promise((resolve, reject) => {
-                const body: string[] = [];
-                dReq.on("readable", () => {
-                    body.push(dReq.read());
-                });
-                dReq.on("end", () => resolve(body.join()));
-                dReq.on("error", (err: Error) => reject(err));
-            })
+			new Promise((resolve, reject) => {
+				const body: string[] = [];
+				dReq.on("readable", () => {
+					body.push(dReq.read());
+				});
+				dReq.on("end", () => resolve(body.join("")));
+				dReq.on("error", (err: Error) => reject(err));
+			})
             .then((body: string) => {
-                handleRequest({
-                    method: dReq.method as THTTPMethod,
-                    url: dReq.url,
-                    headers: dReq.headers,
-                    body: body,
-                    clientIP: dReq.socket.remoteAddress
-                }, dReq.socket);
+            	handleRequest({
+            		method: dReq.method as THTTPMethod,
+            		url: dReq.url,
+            		headers: dReq.headers,
+            		body: body,
+            		clientIP: dReq.socket.remoteAddress
+            	}, dReq.socket);
             })
             .catch((err: Error) => {
-                dRes.statusCode = 500;
-                dRes.end();
+            	dRes.statusCode = 500;
+            	dRes.end();
 
-                console.error(err);
+            	console.error(err);
             })
-        })
+		})
         .listen(optionsWithDefaults.port, () => onlineDeferral.call(resolve));
 	});
 }

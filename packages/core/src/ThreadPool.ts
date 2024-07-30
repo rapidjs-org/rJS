@@ -16,8 +16,11 @@ export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialRespo
 			workerData: null
     	});
 		
-		thread.on("message", (serialResponse: ISerialResponse) => {
-			this.deactivateWorker(thread, serialResponse); 
+		thread.on("message", (sRes: ISerialResponse) => {
+			const isServerError: boolean = ~~(sRes.status / 100) === 5;
+			!isServerError
+			? this.deactivateWorker(thread, sRes)
+			: this.deactivateWorkerWithError(thread, sRes.status); 
 		});
 		/* thread.on("error", (potentialStatus: number|unknown) => {
 			// TODO: Spin up new

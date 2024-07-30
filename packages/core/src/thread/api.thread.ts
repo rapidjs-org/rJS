@@ -4,19 +4,7 @@ import { ISerialRequest, ISerialResponse } from "../interfaces";
 import { AHandler } from "./AHandler";
 import { GetHandler } from "./get/GetHandler";
 import { PostHandler } from "./post/PostHandler";
-
-
-process.on("uncaughtException", (err: unknown) => {
-    const isStatusError: boolean = /^[2345]\d{2}$/.test(err.toString());
-
-    !isStatusError && console.error(err);
-
-    parentPort.postMessage({
-        status: isStatusError ? err : 500
-    });
-
-    // TODO: Error control (no endless run on repeated dense errors)
-});
+import { connected } from "process";
 
 
 parentPort.on("message", (sReq: ISerialRequest) => {
@@ -33,13 +21,26 @@ parentPort.on("message", (sReq: ISerialRequest) => {
             throw 405;
     }
     
-    handler.on("response", (sRes: ISerialResponse) => {
+    handler.once("response", (sRes: ISerialResponse) => {
         if(sReq.method === "HEAD") {
-            sReq.body = null;
+            delete sReq.body;
         }
-        
+                
         parentPort.postMessage(sRes);
     });
     
-    handler.process();
+    try {
+        handler.process();
+    } catch(err: unknown) {
+        const isStatusError: boolean = /^[2345]\d{2}$/.test(err.toString());
+        
+        handler.emit("response", {
+            status: isStatusError ? err : 500
+        });
+        
+        !isStatusError
+        && console.error(err);
+
+        // TODO: Error control (no endless run on repeated dense errors)
+    }
 });

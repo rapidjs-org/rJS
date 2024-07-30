@@ -18,6 +18,6 @@ export interface ISerialResponse {
 }
 
 export interface IFilestamp {
-	data: string;
+	data: Buffer|string;
 	eTag: string;
 }

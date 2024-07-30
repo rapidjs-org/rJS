@@ -6,7 +6,9 @@ export class Response {
 	private readonly headers: THeaders = {};
 
     private status: number = 200;
-    private body?: TSerializable;
+    private body?: Buffer|TSerializable;
+    
+	public hasCompressableBody: boolean = true;
     
     public setHeader(name: string, value: TSerializable|readonly TSerializable[]) {
         const capitalizedName = name
@@ -14,11 +16,7 @@ export class Response {
         .replace(/(^|-)([a-z])/g, (_, delimiter, symbol) => `${delimiter}${symbol.toUpperCase()}`);
         this.headers[capitalizedName] = value;
     }
-
-    public get bodyIsBuffer(): boolean {
-        return Buffer.isBuffer(this.body);
-    }
-
+    
     public setBody(body: TSerializable) {
         this.body = body;
     }

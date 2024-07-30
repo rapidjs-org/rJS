@@ -24,17 +24,19 @@ new HTTPTest("Security: > Max Headers")
 new HTTPTest("Security: ≤ Max Payload")
 .eval("/", {
     method: "POST",
-    body: "a".repeat(999)
+    body: { d: "a".repeat(999 - 7) }
 })
 .expect({
-    status: 200
+    status: 404
 });
 
 new HTTPTest("Security: > Max Payload")
 .eval("/", {
     method: "POST",
-    body: "a".repeat(1000)
+    body: { d: "a".repeat(1000 - 7) }
 })
 .expect({
     status: 413
 });
+
+// TODO: Timeout (408)

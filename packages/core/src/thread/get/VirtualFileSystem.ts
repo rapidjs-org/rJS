@@ -5,7 +5,7 @@ import { IFilestamp } from "../../interfaces";
 import { Cache } from "../../Cache";
 
 
-export class VFS {
+export class VirtualFileSystem {
 	private readonly rootPath: string;
 	private readonly cache: Cache<string, IFilestamp> = new Cache(86400000);
 
@@ -24,25 +24,31 @@ export class VFS {
 	private getAbsolutePath(relativePath: string): string {
 		return join(this.rootPath, relativePath);
 	}
-	
-	public read(relativePath: string): IFilestamp {
-		if(this.cache.has(relativePath)) return this.cache.get(relativePath);
 
+	private load(relativePath: string, data: Buffer|string): IFilestamp {
 		this.validatePath(relativePath);
-
-		const absolutePath: string = this.getAbsolutePath(relativePath);
-		
-		const data: string = readFileSync(absolutePath).toString();
 
 		const filestamp = {
 			data: data,
-			eTag: Date.now().toString()
+			eTag: Date.now().toString()	// Stable across single runtime
 		};
 		
 		this.cache.set(relativePath, filestamp);
 
 		return filestamp;
 	}
+	
+	public read(relativePath: string): IFilestamp {
+		if(this.cache.has(relativePath)) return this.cache.get(relativePath);
+
+		const absolutePath: string = this.getAbsolutePath(relativePath);
+		
+		return this.load(relativePath, readFileSync(absolutePath));
+	}
+
+	public writeVirtual(relativePath: string, data: Buffer|string): IFilestamp {
+		return this.load(relativePath, data);
+	} 
 	
 	public exists(relativePath: string): boolean {
 		this.validatePath(relativePath);

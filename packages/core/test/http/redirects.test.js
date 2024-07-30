@@ -24,3 +24,12 @@ new HTTPTest("Redirect: /other.html")
     },
     status: 302
 });
+
+new HTTPTest("Redirect: /nested/index")
+.eval("/nested/index")
+.expect({
+    headers: {
+        "Location": "/nested/"
+    },
+    status: 302
+});
