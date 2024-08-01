@@ -1,0 +1,38 @@
+{
+    "name": "@rapidjs.org/rjs-cli",
+    "version": "0.1.0",
+    "description": "rapidJS (rJS): No- and low-code ecosystem for JavaScript.",
+    "author": "Thassilo Martin Schiepanski",
+    "homepage": "https://rapidjs.org",
+    "keywords": [
+        "rapidjs",
+        "rapidjs.org"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rapidjs-org/core.git"
+    },
+    "bugs": {
+        "url": "https://github.com/rapidjs-org/core/issues"
+    },
+    "main": "./build/api.js",
+    "bin": {
+        "rjs": "./build/cli.js"
+    },
+    "files": [
+        "./build/",
+        "./types/",
+        "./cli.help.txt"
+    ],
+    "scripts": {
+        "debug": "npx tsc --project ./tsconfig.debug.json",
+        "debug:watch": "npm run debug -- --watch",
+        "build": "rm -rf ./build/ && npx tsc --project ./tsconfig.build.json",
+        "test": "echo 'undefined' && exit 1",
+        "bin": "./rjs.sh"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.6",
+        "typescript": "^5.3.3"
+    }
+}

@@ -1,3 +1,9 @@
 {
-    "brand": "rJS"
+    "configNameInfixDev": "_dev",
+    "configNameInfixProd": "_prod",
+    "configNamePrefix": "rjs",
+    "defaultFilesDirName": "public",
+    "globalConfigName": "config",
+	"logsDirName": ".logs",
+    "routesDirName": "routes"
 }

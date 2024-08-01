@@ -8,8 +8,6 @@
         "resolveJsonModule": true,
         "noEmitOnError": true,
         "allowJs": true,
-        "declaration": true,
-        "declarationDir": "./types/",
         "rootDir": "./src/",
         "outDir": "./build/"
     },

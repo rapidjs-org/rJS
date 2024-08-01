@@ -1,7 +1,7 @@
 {
-    "name": "@rapidjs.org/rjs",
+    "name": "@rapidjs.org/rjs-proxy",
     "version": "0.1.0",
-    "description": "No- and low-code web application development framework for JavaScript.",
+    "description": "No- and low-code web application reverse proxy for rJS and JavaScript.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
@@ -22,14 +22,13 @@
         "./types/"
     ],
     "scripts": {
-        "copy-shared": "../../scripts/copy-shared.sh rjs",
+        "copy-shared": "../../scripts/copy-shared.sh rjs-proxy",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
-        "test:http:rate-limiter": "npx rjs-test http ./test/http-rate-limiter/rate-limiter.test.js",
-        "test": "npm run test:unit && npm run test:http && npm run test:http:rate-limiter"
+        "test": "nm run test:unit && npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "^0.1.1",
@@ -37,5 +36,8 @@
         "@rapidjs.org/testing-unit": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@rapidjs.org/rjs": "^0.1.0"
     }
 }

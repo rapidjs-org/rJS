@@ -1,9 +1,0 @@
-{
-    "configNameInfixDev": "dev",
-    "configNameInfixProd": "prod",
-    "configNamePrefix": "rjs",
-    "configNameSuffix": "config",
-	"filesDirName": "assets",
-	"logsDirName": ".logs",
-    "routesDirName": "routes"
-}
