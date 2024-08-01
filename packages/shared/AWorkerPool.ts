@@ -47,7 +47,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 		this.workerModulePath = workerModulePath;
 		
 		setImmediate(async () => {
-			for(let i = 0; i < this.options.baseSize; i++) {
+			for(let i = 0; i < Math.max(this.options.baseSize ?? 1, 1); i++) {
 				const worker: Worker = await this.createWorker();
     
 				this.idleWorkers.push(worker);

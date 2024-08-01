@@ -1,4 +1,6 @@
-process.title = "rJS Instance";
+import _config from "./_config.json";
+
+process.title = `rJS ${_config.processTitle}`;
 
 
 import { join } from "path";
@@ -51,7 +53,9 @@ function respondError(status: TStatus, socket: Socket) {
 }
 
 
-export { ISerialRequest } from "./interfaces";
+export interface IRequest extends Omit<ISerialRequest, "method"> {
+	method: string;
+};
 
 export interface IServerOptions {
     port: number;
@@ -62,55 +66,66 @@ export interface IServerOptions {
 }
 
 
-export async function handleRequest(sReq: ISerialRequest, socket: Socket) {
-	// Security
-	if(!rateLimiter.grantsAccess(sReq.clientIP)) {
-		respondError(429, socket);
+export async function handleRequest(sReq: ISerialRequest, socket: Socket): Promise<void> {
+	return new Promise((resolve, reject) => {
+		// Security
+		if(!rateLimiter.grantsAccess(sReq.clientIP)) {
+			respondError(429, socket);
 
-		return;
-	}
-	if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
-		respondError(414, socket);
+			reject(429);
+			return;
+		}
+		if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
+			respondError(414, socket);
 
-		return;
-	}
-	if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
-		respondError(413, socket);
+			reject(414);
+			return;
+		}
+		if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
+			respondError(413, socket);
 
-		return;
-	}
-	if(
-		Object.entries(sReq.headers)
-        .reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
-        > Config.global.read("security", "maxRequestHeadersLength").number()
-	) {
-		respondError(431, socket);
+			reject(413);
+			return;
+		}
+		if(
+			Object.entries(sReq.headers)
+			.reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
+			> Config.global.read("security", "maxRequestHeadersLength").number()
+		) {
+			respondError(431, socket);
+			
+			reject(431);
+			return;
+		}
 
-		return;
-	}
+		const cacheKey: Partial<ISerialRequest> = {
+			method: sReq.method,
+			url: sReq.url   // TODO: Consider query part?
+		};
 
-	const cacheKey: Partial<ISerialRequest> = {
-		method: sReq.method,
-		url: sReq.url   // TODO: Consider query part?
-	};
+		if(responseCache.has(cacheKey)) {
+			respond(responseCache.get(cacheKey), socket);
 
-	if(responseCache.has(cacheKey)) {
-		respond(responseCache.get(cacheKey), socket);
-
-		return;
-	}
-    
-	threadPool.assign(sReq)
-    .then((sRes: Partial<ISerialResponse>) => {
-    	responseCache.set(cacheKey, sRes);
+			resolve();
+			return;
+		}
 		
-    	respond(sRes, socket);
-    })
-    .catch((err: unknown) => {
-    	respondError((typeof(err) === "number") ? err as TStatus : 500, socket);
+		threadPool.assign(sReq)
+		.then((sRes: Partial<ISerialResponse>) => {
+			responseCache.set(cacheKey, sRes);
+			
+			respond(sRes, socket);
 
-    	console.error(err);
-    });
+			resolve();
+		})
+		.catch((err: unknown) => {
+			respondError((typeof(err) === "number") ? err as TStatus : 500, socket);
+
+			console.error(err);
+
+			reject(err);
+		});
+	});
 }
 
 export function serve(options: Partial<IServerOptions>): Promise<void> {
@@ -150,6 +165,6 @@ export function serve(options: Partial<IServerOptions>): Promise<void> {
             	console.error(err);
             })
 		})
-        .listen(optionsWithDefaults.port, () => onlineDeferral.call(resolve));
+        .listen(optionsWithDefaults.port, () => onlineDeferral.call());
 	});
 }

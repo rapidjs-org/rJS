@@ -5,7 +5,7 @@ import { IWorkerPoolOptions, AWorkerPool } from "./.shared/AWorkerPool";
 
 
 export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialResponse, number> {
-	constructor(threadModulePath: string, options: IWorkerPoolOptions) {
+	constructor(threadModulePath: string, options?: IWorkerPoolOptions) {
 		super(threadModulePath, options);
 	}
 	
