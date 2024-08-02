@@ -1,7 +1,7 @@
 import { Worker as Thread, SHARE_ENV } from "worker_threads";
 
-import { ISerialRequest, ISerialResponse } from "./interfaces";
 import { IWorkerPoolOptions, AWorkerPool } from "./.shared/AWorkerPool";
+import { ISerialRequest, ISerialResponse } from "./interfaces";
 
 
 export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialResponse, number> {

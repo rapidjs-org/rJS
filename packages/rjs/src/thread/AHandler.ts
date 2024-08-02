@@ -5,7 +5,7 @@ import { TSerializable } from "../types";
 import { ISerialRequest, ISerialResponse } from "../interfaces";
 import { Request } from "./Request";
 import { Response } from "./Response";
-import { Config } from "../shared/Config";
+import { Config } from "../stateless/Config";
 
 
 // TODO: i18n
@@ -57,7 +57,7 @@ export abstract class AHandler extends EventEmitter {
             "stale-while-revalidate=300",
             "must-revalidate"
         ].join(", "));
-
+        
         this.emit("response", sResponse);
     }
 

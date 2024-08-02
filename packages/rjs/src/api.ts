@@ -8,16 +8,16 @@ import { STATUS_CODES, IncomingMessage, ServerResponse, createServer as createHT
 import { createServer as createHTTPSServer } from "https";
 import { Socket } from "net";
 
+import { DeferredCall } from "./.shared/DeferredCall";
 import { THTTPMethod, TSerializable, TStatus } from "./types";
 import { ISerialRequest, ISerialResponse } from "./interfaces";
 import { ThreadPool } from "./ThreadPool";
-import { DeferredCall } from "./DeferredCall";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
-import { Config } from "./shared/Config";
+import { Config } from "./stateless/Config";
 
 
-const onlineDeferral = new DeferredCall(2);
+const onlineDeferral = new DeferredCall(null, 2);
 const rateLimiter: RateLimiter = new RateLimiter(Config.global.read("security", "maxRequestsPerMin").number());
 const responseCache: Cache<Partial<ISerialRequest>, Partial<ISerialResponse>> = new Cache();
 const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thread"), {    
@@ -43,7 +43,7 @@ function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSoc
 	]), (err?: Error) => {
 		err && console.error(err);
 	});
-    
+	
 	closeSocket
     && socket.end(() => socket.destroy());
 }
@@ -59,32 +59,35 @@ export interface IRequest extends Omit<ISerialRequest, "method"> {
 
 export interface IServerOptions {
     port: number;
+	
 	tls?: {
 		cert: string;
 		key: string;
+
+		ca?: string[];
 	};
 }
 
 
-export async function handleRequest(sReq: ISerialRequest, socket: Socket): Promise<void> {
+export async function handleRequest(sReq: IRequest, socket: Socket): Promise<void> {
 	return new Promise((resolve, reject) => {
 		// Security
 		if(!rateLimiter.grantsAccess(sReq.clientIP)) {
 			respondError(429, socket);
 
-			reject(429);
+			resolve();
 			return;
 		}
 		if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
 			respondError(414, socket);
 
-			reject(414);
+			resolve();
 			return;
 		}
 		if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
 			respondError(413, socket);
 
-			reject(413);
+			resolve();
 			return;
 		}
 		if(
@@ -94,12 +97,12 @@ export async function handleRequest(sReq: ISerialRequest, socket: Socket): Promi
 		) {
 			respondError(431, socket);
 			
-			reject(431);
+			resolve();
 			return;
 		}
 
 		const cacheKey: Partial<ISerialRequest> = {
-			method: sReq.method,
+			method: sReq.method as THTTPMethod,
 			url: sReq.url   // TODO: Consider query part?
 		};
 
@@ -109,8 +112,8 @@ export async function handleRequest(sReq: ISerialRequest, socket: Socket): Promi
 			resolve();
 			return;
 		}
-		
-		threadPool.assign(sReq)
+				
+		threadPool.assign(sReq as ISerialRequest)
 		.then((sRes: Partial<ISerialResponse>) => {
 			responseCache.set(cacheKey, sRes);
 			
@@ -120,8 +123,6 @@ export async function handleRequest(sReq: ISerialRequest, socket: Socket): Promi
 		})
 		.catch((err: unknown) => {
 			respondError((typeof(err) === "number") ? err as TStatus : 500, socket);
-
-			console.error(err);
 
 			reject(err);
 		});
@@ -156,7 +157,8 @@ export function serve(options: Partial<IServerOptions>): Promise<void> {
             		headers: dReq.headers,
             		body: body,
             		clientIP: dReq.socket.remoteAddress
-            	}, dReq.socket);
+            	}, dReq.socket)
+				.catch((err: Error) => console.error(err));
             })
             .catch((err: Error) => {
             	dRes.statusCode = 500;
@@ -165,6 +167,6 @@ export function serve(options: Partial<IServerOptions>): Promise<void> {
             	console.error(err);
             })
 		})
-        .listen(optionsWithDefaults.port, () => onlineDeferral.call());
+        .listen(optionsWithDefaults.port, () => onlineDeferral.call(resolve));
 	});
 }

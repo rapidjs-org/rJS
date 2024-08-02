@@ -1,7 +1,7 @@
 import { TJSON } from "../../types";
 import { IFilestamp } from "../../interfaces";
 import { AHandler } from "../AHandler";
-import { Config } from "../../shared/Config";
+import { Config } from "../../stateless/Config";
 
 import { VirtualFileSystem } from "./VirtualFileSystem";
 
