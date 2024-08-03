@@ -1,15 +1,16 @@
-import { Dirent, readdirSync } from "fs";
+import _config from "./_config.json";
+
+process.title = `rJS ${_config.processTitle}`;
+
+import { Dirent, readFileSync, readdirSync } from "fs";
 import { join } from "path";
 
 import { Command } from "./Command";
 import { Printer } from "./Printer";
 
 
-const printer: Printer = new Printer();
-
-
 process.on("uncaughtException", (err: Error) => {
-	printer.stderr(err, {
+	Printer.global.stderr(err, {
 		replicatedMessage: true
 	});
     
@@ -17,7 +18,12 @@ process.on("uncaughtException", (err: Error) => {
 });
 
 
-printer.stdout("Test");
+new Command("help", () => {
+    Printer.global.stdout(readFileSync(join(__dirname, "../../cli.help.txt")).toString());
+
+    process.exit(0);
+});
+
 
 // Dynamically load command registry definitions
 readdirSync(join(__dirname, "./commands/"), {

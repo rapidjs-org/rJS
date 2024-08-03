@@ -11,6 +11,8 @@ interface IPrinterOptions {
 
 
 export class Printer {
+	public static readonly global: Printer = new Printer();
+	
 	private static readonly brandSequence: string
 		= Printer.format(` ${
 			Printer.format("r", [ "38;2;255;97;97" ], 39)
@@ -32,7 +34,7 @@ export class Printer {
 			encode(closeCodes),
 		].join("");
 	}
-
+	
 	private readonly last: {
         channel: TStdChannel;
         message: string;

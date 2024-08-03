@@ -21,7 +21,9 @@
     "files": [
         "./build/",
         "./types/",
-        "./cli.help.txt"
+        "./templates/",
+        "./cli.help.txt",
+        "./cli.gen.help.txt"
     ],
     "scripts": {
         "debug": "npx tsc --project ./tsconfig.debug.json",

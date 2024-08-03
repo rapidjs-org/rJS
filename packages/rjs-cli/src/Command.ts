@@ -5,28 +5,34 @@ type TCommandHandler = () => void;
 
 
 export class Command {
-	private static readonly commandRegistry: Map<string, TCommandHandler> = new Map();
+	private static readonly commandRegistry: Map<number, Map<string, TCommandHandler>> = new Map();
 
-	public static eval() {
-		const name: string = Args.parsePositional(0);
+	private static declarePositionalRegistry(positional: number) {
+		if(Command.commandRegistry.has(positional)) return;
+		
+		Command.commandRegistry.set(positional, new Map());
+	}
 
+	public static eval(positional: number = 0) {
+		const name: string = Args.parsePositional(positional);
 		if(!name) {
-			throw new SyntaxError("Missing command (pos 0)");
+			throw new SyntaxError(`Missing command (pos ${positional})`);
 		}
-		if(!Command.commandRegistry.has(name)) {
+
+		Command.declarePositionalRegistry(positional);
+		if(!Command.commandRegistry.get(positional).has(name)) {
 			throw new SyntaxError(`Unknown command ${name}`);
 		}
 
-		Command.commandRegistry.get(name)();
+		Command.commandRegistry.get(positional)
+		.get(name)
+		.apply(null);
 	}
 
-	public static expose(): {
-		[ member: string ]: TCommandHandler;
-	} {
-		return Object.fromEntries(Command.commandRegistry);
-	}
+	constructor(name: string, commandHandler: TCommandHandler, positional: number = 0) {
+		Command.declarePositionalRegistry(positional);
 
-	constructor(name: string, commandHandler: TCommandHandler) {
-		Command.commandRegistry.set(name, commandHandler);
+		Command.commandRegistry.get(positional)
+		.set(name, commandHandler);
 	}
 }

@@ -18,12 +18,57 @@ import { ProcessPool } from "./ProcessPool";
 import { IPCServer } from "./IPCServer";
 
 
-// [ hostname: string ]: ProcessPool
+// [ hostname: string ]: { … }
 const embeddedContexts: MultiMap<string, {
     processPool: ProcessPool;
     secureContext: SecureContext
 }> = new MultiMap();
 
+
+function embedContext(appContext: IAppContext): Promise<void> {
+	return new Promise((resolve) => {
+		const processPool: ProcessPool = new ProcessPool(
+			join(__dirname, "../process/api.process"),
+			appContext.workingDirPath
+		)
+        .once("online", resolve);
+		
+		const evalTLSArg = (arg: Buffer|string) => {
+			return arg; // TODO: Read if is path; with periodic refresh (daily?)
+		};
+		embeddedContexts.set([ appContext.hostnames ].flat(), {
+			processPool,
+			secureContext: createSecureContext({
+				key: evalTLSArg(appContext.tls.key),
+				cert: evalTLSArg(appContext.tls.cert),
+				ca: [ appContext.tls.ca ].flat().map((ca: Buffer|string) => evalTLSArg(ca))
+			}).context
+		});
+	});
+}
+
+function unbedContext(hostnames: string|string[]): Promise<void> {
+	return new Promise((resolve, reject) => {
+		if(!embeddedContexts.has(hostnames)) {
+			reject();
+            
+			return;
+		}
+
+		embeddedContexts.get(hostnames)
+        .processPool
+        .clear();
+		embeddedContexts.delete(hostnames);
+
+		resolve();
+	});
+}
+
+function monitorProxy(): IMonitoring {
+    return {
+        proxiedHostnames: embeddedContexts.keys()
+    };
+}
 
 function startServer(port: number): Promise<void> {
 	return new Promise((resolve, reject) => {
@@ -85,51 +130,6 @@ function startServer(port: number): Promise<void> {
         .registerCommand<IMonitoring>("monitor", monitorProxy)
         .on("error", (err: Error) => reject(err));
 	});
-}
-
-function embedContext(appContext: IAppContext): Promise<void> {
-	return new Promise((resolve) => {
-		const processPool: ProcessPool = new ProcessPool(
-			join(__dirname, "../process/api.process"),
-			appContext.workingDirPath
-		)
-        .once("online", resolve);
-        
-		const evalTLSArg = (arg: Buffer|string) => {
-			return arg; // TODO: Read if is path; with periodic refresh (daily?)
-		};
-		embeddedContexts.set([ appContext.hostnames ].flat(), {
-			processPool,
-			secureContext: createSecureContext({
-				key: evalTLSArg(appContext.tls.key),
-				cert: evalTLSArg(appContext.tls.cert),
-				ca: [ appContext.tls.ca ].flat().map((ca: Buffer|string) => evalTLSArg(ca))
-			}).context
-		});
-	});
-}
-
-function unbedContext(hostnames: string|string[]): Promise<void> {
-	return new Promise((resolve, reject) => {
-		if(!embeddedContexts.has(hostnames)) {
-			reject();
-            
-			return;
-		}
-
-		embeddedContexts.get(hostnames)
-        .processPool
-        .clear();
-		embeddedContexts.delete(hostnames);
-
-		resolve();
-	});
-}
-
-function monitorProxy(): IMonitoring {
-    return {
-        proxiedHostnames: embeddedContexts.keys()
-    };
 }
 
 
