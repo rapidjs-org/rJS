@@ -69,7 +69,9 @@ export interface IServerOptions {
 }
 
 
-export async function handleRequest(sReq: IRequest, socket: Socket): Promise<void> {
+export async function handleRequest(sReq: IRequest, socket: Socket, dryHandler: (sReq: IRequest) => void): Promise<void> {
+	dryHandler(sReq);
+	
 	return new Promise((resolve, reject) => {
 		// Security
 		if(!rateLimiter.grantsAccess(sReq.clientIP)) {
@@ -129,7 +131,7 @@ export async function handleRequest(sReq: IRequest, socket: Socket): Promise<voi
 	});
 }
 
-export function serve(options: Partial<IServerOptions>): Promise<void> {
+export function serve(options: Partial<IServerOptions>, dryHandler?: (sReq: IRequest) => void): Promise<void> {
 	const optionsWithDefaults = {
 		port: 80,
 		
@@ -157,7 +159,7 @@ export function serve(options: Partial<IServerOptions>): Promise<void> {
             		headers: dReq.headers,
             		body: body,
             		clientIP: dReq.socket.remoteAddress
-            	}, dReq.socket)
+            	}, dReq.socket, dryHandler)
 				.catch((err: Error) => console.error(err));
             })
             .catch((err: Error) => {

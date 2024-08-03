@@ -22,11 +22,11 @@ export class Args {
 	public static parseOption(key: string, shorthand?: string) {
 		const index: number = Args.retrieveKeyIndex(key, shorthand);
 		const value: string = ~index ? Args.raw[index + 1] : null;
-        const isSet = ![ undefined, null ].includes(value);
+		const isSet = ![ undefined, null ].includes(value);
 		return {
-            string: (): string => isSet ? value.toString() : null,
-            number: (): number => isSet ? parseFloat(value.toString()) : null,
-            boolean: (): boolean => isSet ? value.toString() === "true" : null
+			string: (): string => isSet ? value.toString() : null,
+			number: (): number => isSet ? parseFloat(value.toString()) : null,
+			boolean: (): boolean => isSet ? value.toString() === "true" : null
 		};
 	}
 }

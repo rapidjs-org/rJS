@@ -26,14 +26,12 @@
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
-        "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
-        "test": "nm run test:unit && npm run test:http"
+        "test": "npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "^0.1.1",
         "@rapidjs.org/testing-http": "^0.1.0",
-        "@rapidjs.org/testing-unit": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },

@@ -33,12 +33,12 @@ export class ProcessPool extends AWorkerPool<ChildProcess, IProxyPackage, void, 
 			childProcess
 			.on("message", (message: string) => {
 				switch(message) {
-				case "online":
-					resolve(childProcess);
-					break;
-				case "done":
-					this.deactivateWorker(childProcess);
-					break;
+					case "online":
+						resolve(childProcess);
+						break;
+					case "done":
+						this.deactivateWorker(childProcess);
+						break;
 				}
 			})
 			.on("error", (err: Error) => {

@@ -66,8 +66,8 @@ export class Printer {
 		process[channel].write([
 			optionsWithDefaults.withBrandSequence ? Printer.brandSequence + " " : "",
 			optionsWithDefaults.replicatedMessage
-			? message.replace(/\n?$/, "\n")
-			: `${message}\n`
+				? message.replace(/\n?$/, "\n")
+				: `${message}\n`
 		].join(""));
 		
         

@@ -15,7 +15,6 @@
     "bugs": {
         "url": "https://github.com/rapidjs-org/core/issues"
     },
-    "main": "./build/api.js",
     "bin": {
         "rjs": "./build/cli.js"
     },
@@ -32,6 +31,7 @@
         "bin": "./rjs.sh"
     },
     "devDependencies": {
+        "@rapidjs.org/rjs-proxy": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     }

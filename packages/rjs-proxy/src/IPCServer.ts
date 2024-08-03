@@ -6,11 +6,14 @@ import { EventEmitter } from "events";
 
 type TIPCHandler<T> = (data: T) => void;
 
-type TIPCResponse = 0 | 1;
-
 interface IIPCRequest<T> {
     command: string;
     data: T;
+}
+
+interface IIPCResponse<T> {
+    error?: string;
+    data?: T;
 }
 
 
@@ -27,20 +30,20 @@ export class IPCServer extends EventEmitter {
 		return join(socketLocation, `rjs__${associatedPort}.sock`);
 	}
 
-	public static message<T>(associatedPort: number, command: string, data: T): Promise<void> {
+	public static message<I, O = void>(associatedPort: number, command: string, data?: I): Promise<O> {
 		return new Promise((resolve, reject) => {
 			const client: Socket = createConnection(IPCServer.locateIPCFile(associatedPort));
             
-			const proxyIPCPackage: IIPCRequest<T> = {
+			const proxyIPCPackage: IIPCRequest<I> = {
 				command, data
 			};
 
 			client.on("data", (message: Buffer) => {
-				const response = parseInt(message.toString()) as TIPCResponse;
+				const response = JSON.parse(message.toString()) as IIPCResponse<O>;
 
-				response
-				? reject()  // TODO: Reason?
-				: resolve();
+				response.error
+				? reject(response.error)
+				: resolve(response.data);
                 
 				client.end();
 			});
@@ -49,22 +52,22 @@ export class IPCServer extends EventEmitter {
                 
 				client.end();
 
-                console.error(err);
+				console.error(err);
 			});
 			client.write(JSON.stringify(proxyIPCPackage));
 		});
 	}
 
 	private readonly associatedPort: number;
-    private readonly server: Server;
+	private readonly server: Server;
 	private readonly handlerRegistry: Map<string, TIPCHandler<unknown>> = new Map();
     
 	constructor(associatedPort: number) {
 		super();
 
-        this.destroy();	// Stop in case port related server is (still) running
+		this.destroy();	// Clean up socket location
 		
-        this.associatedPort = associatedPort;
+		this.associatedPort = associatedPort;
 
     	this.server = createServer((socket: Socket) => {
     		socket.on("data", async (message: Buffer) => {
@@ -74,16 +77,14 @@ export class IPCServer extends EventEmitter {
 				if(!handler) return;
 
 				try {
-					const response: unknown = handler(parsedMessage.data);
-					await (!(response instanceof Promise)
-					? Promise.resolve(response)
-					: response);
+					let data: unknown = handler(parsedMessage.data);
+					data =  (data instanceof Promise)
+					? (await data)
+					: data;
 
-					socket.write((0 as TIPCResponse).toString());
-				} catch(err: unknown) {
-					console.error(err);
-
-					socket.write((1 as TIPCResponse).toString());
+					socket.write(JSON.stringify({ data } as IIPCResponse<unknown>));
+				} catch(error: unknown) {
+					socket.write(JSON.stringify({ error } as IIPCResponse<unknown>));
 				} finally {
 					socket.destroy();
 				}
@@ -91,14 +92,14 @@ export class IPCServer extends EventEmitter {
     	})
 		.on("error", (err: Error) => this.emit("error", err));
 		
-        [
-            "exit",
-            "uncaughtException", "unhandledRejection",
-            "SIGINT", "SIGUSR1", "SIGUSR2",
-            "SIGTERM"
-        ].forEach((terminalEvent: string) => {
-            process.on(terminalEvent, () => this.destroy());
-        });
+		[
+			"exit",
+			"uncaughtException", "unhandledRejection",
+			"SIGINT", "SIGUSR1", "SIGUSR2",
+			"SIGTERM"
+		].forEach((terminalEvent: string) => {
+			process.on(terminalEvent, () => this.destroy());
+		});
 	}
 	
 	private destroy() {

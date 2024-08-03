@@ -9,11 +9,11 @@ const printer: Printer = new Printer();
 
 
 process.on("uncaughtException", (err: Error) => {
-    printer.stderr(err, {
-        replicatedMessage: true
-    });
+	printer.stderr(err, {
+		replicatedMessage: true
+	});
     
-    process.exit(1);
+	process.exit(1);
 });
 
 
@@ -21,7 +21,7 @@ printer.stdout("Test");
 
 // Dynamically load command registry definitions
 readdirSync(join(__dirname, "./commands/"), {
-    withFileTypes: true
+	withFileTypes: true
 })
 .filter((dirent: Dirent) => /\.js$/.test(dirent.name))
 .forEach((dirent: Dirent) => require(join(dirent.path, dirent.name)));

@@ -20,6 +20,12 @@ export class Command {
 		Command.commandRegistry.get(name)();
 	}
 
+	public static expose(): {
+		[ member: string ]: TCommandHandler;
+	} {
+		return Object.fromEntries(Command.commandRegistry);
+	}
+
 	constructor(name: string, commandHandler: TCommandHandler) {
 		Command.commandRegistry.set(name, commandHandler);
 	}
