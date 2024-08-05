@@ -8,39 +8,39 @@ import { connected } from "process";
 
 
 parentPort.on("message", (sReq: ISerialRequest) => {
-    let handler: AHandler;
-    switch(sReq.method) {
-        case "GET":
-        case "HEAD":
-            handler = new GetHandler(sReq, );
-            break;
-        case "POST":
-            handler = new PostHandler(sReq);
-            break;
-        default:
-            throw 405;
-    }
+	let handler: AHandler;
+	switch(sReq.method) {
+		case "GET":
+		case "HEAD":
+			handler = new GetHandler(sReq, );
+			break;
+		case "POST":
+			handler = new PostHandler(sReq);
+			break;
+		default:
+			throw 405;
+	}
     
-    handler.once("response", (sRes: ISerialResponse) => {
-        if(sReq.method === "HEAD") {
-            delete sReq.body;
-        }
+	handler.once("response", (sRes: ISerialResponse) => {
+		if(sReq.method === "HEAD") {
+			delete sReq.body;
+		}
                 
-        parentPort.postMessage(sRes);
-    });
+		parentPort.postMessage(sRes);
+	});
     
-    try {
-        handler.process();
-    } catch(err: unknown) {
-        const isStatusError: boolean = /^[2345]\d{2}$/.test(err.toString());
+	try {
+		handler.process();
+	} catch(err: unknown) {
+		const isStatusError: boolean = /^[2345]\d{2}$/.test(err.toString());
         
-        handler.emit("response", {
-            status: isStatusError ? err : 500
-        });
+		handler.emit("response", {
+			status: isStatusError ? err : 500
+		});
         
-        !isStatusError
+		!isStatusError
         && console.error(err);
 
-        // TODO: Error control (no endless run on repeated dense errors)
-    }
+		// TODO: Error control (no endless run on repeated dense errors)
+	}
 });

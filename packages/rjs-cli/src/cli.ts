@@ -33,12 +33,12 @@ function loadCmd(relativePath: string) {
 	readdirSync(join(__dirname, relativePath), {
 		withFileTypes: true
 	})
-	.filter((dirent: Dirent) => /^[a-z0-9_-]+\.js$/.test(dirent.name))
+	.filter((dirent: Dirent) => /^_[a-z0-9_-]+\.js$/.test(dirent.name))
 	.forEach((dirent: Dirent) => require(join(dirent.path, dirent.name)));
 }
 
 loadCmd("registry");
-loadCmd("gen.registry");
+loadCmd("registry.generate");
 
 
 // Execute targeted command handler

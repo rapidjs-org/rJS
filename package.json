@@ -10,7 +10,7 @@
 		"build": "npm run build -ws",
 		"test:app": "./rjs.sh start -W ./test-app/",
 		"test:app:dev": "./rjs.sh start -W ./test-app/ -D",
-		"test": "npm run test -ws",
+		"test": "npm run build -ws && npm run test -ws",
 		"lint": "npx eslint ./packages/*/src/**/*.ts",
 		"lint:fix": "npx eslint --fix ./packages/*/src/**/*.ts",
 		"format": "npx prettier --check ./packages/*/src/**/*.ts",

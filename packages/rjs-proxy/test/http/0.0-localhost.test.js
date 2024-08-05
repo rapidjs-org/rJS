@@ -2,17 +2,29 @@ const { embedTestApp } = require("./_embedTestApp");
 
 
 embedTestApp("localhost")
-.then(() => {
-    console.log("App 1 embedded");
-    
-    setTimeout(() => {
-    new HTTPTest("GET /")
-    .eval("/")
-    .expect({
-        status: 200
-    });
-    }, 250);
-})
-.catch(err => console.error(err));
+.then(async () => {
+    // Workaround (enhance testing framework)
+    let embedErrorMessage;
+    try {
+        await embedTestApp("localhost");
+    } catch(err) {
+        embedErrorMessage = err.message ?? err;
+    } finally {
+        if(embedErrorMessage !== "Hostname(s) already bound to proxy") {
+            throw new Error(`[extra] ${
+                "Repeated hostname embedding should be rejected."
+            }${
+                embedErrorMessage ? `\nInstead caught: ${embedErrorMessage}` : ""
+            }`);
+        }
 
-// TODO: Test collision behavior!
+        // Contextual tests
+        new HTTPTest("Embed 'localhost' → GET /")
+        .eval("/")
+        .expect({
+            status: 200
+        });
+    }
+});
+
+// TODO: Add other context

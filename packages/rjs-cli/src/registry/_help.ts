@@ -6,7 +6,7 @@ import { Printer } from "../Printer";
 
 
 new Command("help", () => {
-    Printer.global.stdout(readFileSync(join(__dirname, "../../cli.gen.help.txt")).toString());
-    
-    process.exit(0);
-}, 1);
+	Printer.global.stdout(readFileSync(join(__dirname, "../../cli.help.txt")).toString());
+
+	process.exit(0);
+});

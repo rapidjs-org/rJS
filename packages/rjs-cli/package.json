@@ -29,7 +29,8 @@
         "debug": "npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npx tsc --project ./tsconfig.build.json",
-        "test": "echo 'undefined' && exit 1",
+        "test:cli": "npx rjs-test cli ./test/cli/",
+        "test": "npm run test:cli",
         "bin": "./rjs.sh"
     },
     "devDependencies": {

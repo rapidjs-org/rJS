@@ -6,15 +6,15 @@ import ProxyAPI from "@rapidjs.org/rjs-proxy";
 
 
 new Command("stop", () => {
-    new Dependency("@rapidjs.org/rjs-proxy")
+	new Dependency("@rapidjs.org/rjs-proxy")
     .installIfNotPresent()
     .then(async (api) => {
-        await (await api.require<typeof ProxyAPI>())
+    	await (await api.require<typeof ProxyAPI>())
         .unbed(Args.parseOption("port", "P").number(), Args.parseOption("hostname", "H").string() ?? "localhost");
         
-        // TODO: Output
+    	// TODO: Output
     })
     .catch(() => {
-        // TODO
+    	// TODO
     })
 });
