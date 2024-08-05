@@ -33,8 +33,13 @@
         "bin": "./rjs.sh"
     },
     "devDependencies": {
-        "@rapidjs.org/rjs-proxy": "^0.1.0",
+        "@rapidjs.org/testing": "^0.1.2",
+        "@rapidjs.org/testing-cli": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "@rapidjs.org/rjs": "0.x",
+        "@rapidjs.org/rjs-proxy": "0.x"
     }
 }

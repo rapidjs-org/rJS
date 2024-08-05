@@ -32,7 +32,7 @@
         "test": "npm run test:unit && npm run test:http && npm run test:http:rate-limiter"
     },
     "devDependencies": {
-        "@rapidjs.org/testing": "^0.1.1",
+        "@rapidjs.org/testing": "^0.1.2",
         "@rapidjs.org/testing-http": "^0.1.0",
         "@rapidjs.org/testing-unit": "^0.1.0",
         "@types/node": "^20.10.6",

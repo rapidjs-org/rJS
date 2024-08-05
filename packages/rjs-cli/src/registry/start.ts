@@ -1,3 +1,5 @@
+import { resolve } from "path";
+
 import { Command } from "../Command";
 import { Args } from "../Args";
 import { Dependency } from "../Dependency";
@@ -11,9 +13,9 @@ new Command("start", () => {
     .then(async (api) => {
         await (await api.require<typeof ProxyAPI>())
         .embed(Args.parseOption("port", "P").number(), {
-            hostnames: Args.parseOption("hostname", "H").string() ?? "localhost",   // TODO: Multiple woth comma separation
+            hostnames: Args.parseOption("hostname", "H").string(),  // TODO: Multiple woth comma separation
             tls: null,  // TODO
-            workingDirPath: Args.parseOption("working-dir", "W").string() ?? process.cwd()
+            workingDirPath: resolve(Args.parseOption("working-dir", "W").string())
         });
         
         // TODO: Output

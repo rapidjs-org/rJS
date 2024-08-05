@@ -26,7 +26,18 @@ const threadPool: ThreadPool = new ThreadPool(join(__dirname, "./thread/api.thre
 .once("online", () => onlineDeferral.call());
 
 
-function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSocket: boolean = false) {
+function respond(sResPartial: Partial<ISerialResponse>, socket?: Socket, closeSocket: boolean = false): ISerialResponse {
+	const completeResponse = (sResPartial: Partial<ISerialResponse>): ISerialResponse => {
+		return {
+			status: 200,
+			headers: {},
+	
+			...sResPartial
+		};
+	};
+	
+	if(!socket) return completeResponse(sResPartial);
+
 	const status: TStatus = sResPartial.status ?? 500;
 
 	const data: (string|Buffer)[] = [];
@@ -35,7 +46,7 @@ function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSoc
 		...Object.entries(sResPartial.headers ?? {})
         .map((entry: [ string, string|readonly string[] ]) => `${entry[0]}: ${entry[1]}`)
 	);
-        
+    
 	socket.write(Buffer.concat([
 		Buffer.from(data.join("\r\n"), "utf-8"),
 		Buffer.from("\r\n\r\n"),
@@ -45,17 +56,21 @@ function respond(sResPartial: Partial<ISerialResponse>, socket: Socket, closeSoc
 	});
 	
 	closeSocket
-    && socket.end(() => socket.destroy());
+	&& socket.end(() => socket.destroy());
+	
+	return completeResponse(sResPartial);
 }
 
-function respondError(status: TStatus, socket: Socket) {
-	respond({ status }, socket, true);
+function respondError(status: TStatus, socket?: Socket): ISerialResponse {
+	return respond({ status }, socket, true);
 }
 
 
 export interface IRequest extends Omit<ISerialRequest, "method"> {
 	method: string;
 };
+
+export interface IResponse extends ISerialResponse {}
 
 export interface IServerOptions {
     port: number;
@@ -69,27 +84,22 @@ export interface IServerOptions {
 }
 
 
-export async function handleRequest(sReq: IRequest, socket: Socket, dryHandler: (sReq: IRequest) => void): Promise<void> {
-	dryHandler(sReq);
-	
+export async function handleRequest(sReq: IRequest, socket?: Socket): Promise<IResponse> {
 	return new Promise((resolve, reject) => {
 		// Security
 		if(!rateLimiter.grantsAccess(sReq.clientIP)) {
-			respondError(429, socket);
+			resolve(respondError(429, socket));
 
-			resolve();
 			return;
 		}
 		if(sReq.url.length > Config.global.read("security", "maxRequestURILength").number()) {
-			respondError(414, socket);
+			resolve(respondError(414, socket));
 
-			resolve();
 			return;
 		}
 		if((sReq.body ?? "").length > Config.global.read("security", "maxRequestBodyByteLength").number()) {
-			respondError(413, socket);
+			resolve(respondError(413, socket));
 
-			resolve();
 			return;
 		}
 		if(
@@ -97,9 +107,8 @@ export async function handleRequest(sReq: IRequest, socket: Socket, dryHandler: 
 			.reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
 			> Config.global.read("security", "maxRequestHeadersLength").number()
 		) {
-			respondError(431, socket);
+			resolve(respondError(431, socket));
 			
-			resolve();
 			return;
 		}
 
@@ -109,9 +118,8 @@ export async function handleRequest(sReq: IRequest, socket: Socket, dryHandler: 
 		};
 
 		if(responseCache.has(cacheKey)) {
-			respond(responseCache.get(cacheKey), socket);
+			resolve(respond(responseCache.get(cacheKey), socket));
 
-			resolve();
 			return;
 		}
 				
@@ -119,19 +127,17 @@ export async function handleRequest(sReq: IRequest, socket: Socket, dryHandler: 
 		.then((sRes: Partial<ISerialResponse>) => {
 			responseCache.set(cacheKey, sRes);
 			
-			respond(sRes, socket);
-
-			resolve();
+			resolve(respond(sRes, socket));
 		})
 		.catch((err: unknown) => {
 			respondError((typeof(err) === "number") ? err as TStatus : 500, socket);
-
+			
 			reject(err);
 		});
 	});
 }
 
-export function serve(options: Partial<IServerOptions>, dryHandler?: (sReq: IRequest) => void): Promise<void> {
+export function serve(options: Partial<IServerOptions>, dryHandler: ((sReq: IRequest) => void) = () => {}): Promise<void> {
 	const optionsWithDefaults = {
 		port: 80,
 		
@@ -153,14 +159,18 @@ export function serve(options: Partial<IServerOptions>, dryHandler?: (sReq: IReq
 				dReq.on("error", (err: Error) => reject(err));
 			})
             .then((body: string) => {
-            	handleRequest({
+				const sRes: IRequest = {
             		method: dReq.method as THTTPMethod,
             		url: dReq.url,
             		headers: dReq.headers,
             		body: body,
             		clientIP: dReq.socket.remoteAddress
-            	}, dReq.socket, dryHandler)
+            	};
+				
+            	handleRequest(sRes, dReq.socket)
 				.catch((err: Error) => console.error(err));
+
+				dryHandler(sRes);
             })
             .catch((err: Error) => {
             	dRes.statusCode = 500;

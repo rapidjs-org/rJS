@@ -2,7 +2,7 @@ import { Command } from "../Command";
 import { Args } from "../Args";
 import { Dependency } from "../Dependency";
 
-import ProxyAPI from "@rapidjs.org/rjs-proxy/types/api copy";
+import ProxyAPI from "@rapidjs.org/rjs-proxy";
 
 
 new Command("monitor", () => {

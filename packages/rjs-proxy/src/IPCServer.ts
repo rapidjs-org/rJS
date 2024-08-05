@@ -3,6 +3,8 @@ import { mkdirSync, rmSync } from "fs";
 import { Socket, createServer, createConnection, Server } from "net";
 import { EventEmitter } from "events";
 
+import { TerminationHandler } from "./TerminationHandler";
+
 
 type TIPCHandler<T> = (data: T) => void;
 
@@ -33,7 +35,7 @@ export class IPCServer extends EventEmitter {
 	public static message<I, O = void>(associatedPort: number, command: string, data?: I): Promise<O> {
 		return new Promise((resolve, reject) => {
 			const client: Socket = createConnection(IPCServer.locateIPCFile(associatedPort));
-            
+			
 			const proxyIPCPackage: IIPCRequest<I> = {
 				command, data
 			};
@@ -44,16 +46,15 @@ export class IPCServer extends EventEmitter {
 				response.error
 				? reject(response.error)
 				: resolve(response.data);
-                
+				
+				client.end();
+			})
+			.on("error", (err: Error) => {				
+				reject(err);
+				
 				client.end();
 			});
-			client.on("error", (err: Error) => {
-				reject();
-                
-				client.end();
-
-				console.error(err);
-			});
+			
 			client.write(JSON.stringify(proxyIPCPackage));
 		});
 	}
@@ -71,10 +72,14 @@ export class IPCServer extends EventEmitter {
 
     	this.server = createServer((socket: Socket) => {
     		socket.on("data", async (message: Buffer) => {
-    			const parsedMessage: IIPCRequest<unknown> = JSON.parse(message.toString());
+				const parsedMessage: IIPCRequest<unknown> = JSON.parse(message.toString());
 				
 				const handler: TIPCHandler<unknown>|undefined = this.handlerRegistry.get(parsedMessage.command);
-				if(!handler) return;
+				if(!handler) {
+					socket.write(JSON.stringify({ error: "Unknown handler" } as IIPCResponse<string>));
+
+					return;
+				}
 
 				try {
 					let data: unknown = handler(parsedMessage.data);
@@ -83,8 +88,14 @@ export class IPCServer extends EventEmitter {
 					: data;
 
 					socket.write(JSON.stringify({ data } as IIPCResponse<unknown>));
-				} catch(error: unknown) {
-					socket.write(JSON.stringify({ error } as IIPCResponse<unknown>));
+				} catch(err: unknown|Error) {
+					socket.write(JSON.stringify({
+						error: (err instanceof Error)
+						? err.message
+						: ([ "string", "number", "boolean" ].includes(typeof(err))
+							? err.toString()
+							: JSON.stringify(err))
+					} as IIPCResponse<unknown>));
 				} finally {
 					socket.destroy();
 				}
@@ -92,14 +103,7 @@ export class IPCServer extends EventEmitter {
     	})
 		.on("error", (err: Error) => this.emit("error", err));
 		
-		[
-			"exit",
-			"uncaughtException", "unhandledRejection",
-			"SIGINT", "SIGUSR1", "SIGUSR2",
-			"SIGTERM"
-		].forEach((terminalEvent: string) => {
-			process.on(terminalEvent, () => this.destroy());
-		});
+		new TerminationHandler(() => this.destroy());
 	}
 	
 	private destroy() {

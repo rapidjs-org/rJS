@@ -1,5 +1,7 @@
 import { EventEmitter } from "events";
 
+import { Update } from "./Update";
+
 
 export class Dependency extends EventEmitter {
 	packageReference: string;
@@ -8,6 +10,11 @@ export class Dependency extends EventEmitter {
 		super();
 		
 		this.packageReference = packageReference;
+
+		process.on("exit", () => {
+			Update.isAvailable(this.packageReference)
+			&& new Update(this.packageReference);
+		});
 	}
 
 	installIfNotPresent(): Promise<this> {

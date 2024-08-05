@@ -47,7 +47,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 		this.workerModulePath = workerModulePath;
 		
 		setImmediate(async () => {
-			for(let i = 0; i < Math.max(this.options.baseSize ?? 1, 1); i++) {
+			for(let i = 0; i < Math.max(this.options.baseSize ?? 1,); i++) {
 				const worker: Worker = await this.createWorker();
     
 				this.idleWorkers.push(worker);
@@ -65,12 +65,13 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 	protected abstract onTimeout(worker: Worker): void;
 
 	private activate() {
-    	if(!this.pendingAssignments.length || !this.idleWorkers.length) {
+    	if(!this.pendingAssignments.length
+		|| !this.idleWorkers.length) {
     		return;
     	}
 
-    	const worker: Worker = this.idleWorkers.shift();
-    	const assignment: IPendingAssignment<I, O, E> = this.pendingAssignments.shift();
+    	const worker: Worker = this.idleWorkers.shift()!;
+    	const assignment: IPendingAssignment<I, O, E> = this.pendingAssignments.shift()!;
         
     	this.activateWorker(worker, assignment.dataIn);
         
@@ -94,7 +95,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 	}
 
 	public deactivateWorker(worker: Worker, dataOut?: O) {
-    	const activeWorker: IActiveWorker<O, E> = this.activeWorkers.get(worker);
+    	const activeWorker: IActiveWorker<O, E> = this.activeWorkers.get(worker)!;
 
     	if(!activeWorker) return;
 
@@ -109,7 +110,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 	}
 
 	public deactivateWorkerWithError(worker: Worker, err?: E) {
-    	const activeWorker: IActiveWorker<O, E> = this.activeWorkers.get(worker);
+    	const activeWorker: IActiveWorker<O, E> = this.activeWorkers.get(worker)!;
 
     	if(!activeWorker) return;
 
@@ -120,7 +121,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 
 	public assign(dataIn: I): Promise<O> {
     	return new Promise((resolve, reject) => {
-    		if(this.pendingAssignments.length >= this.options.maxPending) {
+    		if(this.pendingAssignments.length >= (this.options.maxPending ?? Infinity)) {
     			reject();
 
     			return;
@@ -134,8 +135,6 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 	}
 
 	public clear() {
-    	delete this.createWorker;
-
     	Array.from(this.activeWorkers.keys())
     	.concat(this.idleWorkers)
     	.forEach((worker: Worker) => {

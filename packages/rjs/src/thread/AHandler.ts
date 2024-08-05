@@ -47,10 +47,10 @@ export abstract class AHandler extends EventEmitter {
 			this.response.setHeader("Content-Encoding", encoding);
         }
         
-        const sResponse: ISerialResponse = this.response.serialize();
+        const sRes: ISerialResponse = this.response.serialize();
         
         // Common headers
-        this.response.setHeader("Content-Length", Buffer.byteLength(sResponse.body ?? ""));
+        this.response.setHeader("Content-Length", Buffer.byteLength(sRes.body ?? ""));
         this.response.setHeader("Connection", "keep-alive");
         this.response.setHeader("Cache-Control", [
             `max-age=${Config.global.read("performance", "clientCacheMs").number()}`,
@@ -58,7 +58,7 @@ export abstract class AHandler extends EventEmitter {
             "must-revalidate"
         ].join(", "));
         
-        this.emit("response", sResponse);
+        this.emit("response", sRes);
     }
 
     public abstract process(): void;

@@ -6,11 +6,10 @@ process.title = `rJS ${_config.processTitle}`;
 import { IncomingMessage, ServerResponse } from "http";
 import { createServer as createHTTPSServer } from "https";
 import { SecureContext, createSecureContext } from "tls";
-import { Socket } from "net";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync } from "fs";
+import { join, resolve as resolvePath } from "path";
 
-import { IRequest } from "@rapidjs.org/rjs";
+import { IRequest, IResponse } from "@rapidjs.org/rjs";
 
 import { DeferredCall } from "./.shared/DeferredCall";
 import { MultiMap } from "./MultiMap";
@@ -20,28 +19,47 @@ import { IPCServer } from "./IPCServer";
 
 // [ hostname: string ]: { … }
 const embeddedContexts: MultiMap<string, {
-    processPool: ProcessPool;
+    processPool: ProcessPool<IRequest, IResponse>;
     secureContext: SecureContext
 }> = new MultiMap();
 
 
 function embedContext(appContext: IAppContext): Promise<void> {
-	return new Promise((resolve) => {
-		const processPool: ProcessPool = new ProcessPool(
-			join(__dirname, "../process/api.process"),
+	return new Promise((resolve, reject) => {
+		if(embeddedContexts.has(appContext.hostnames)) {
+			reject(new RangeError("Hostname(s) already bound to proxy"));
+
+			return;
+		}
+
+		const processPool = new ProcessPool<IRequest, IResponse>(
+			join(__dirname, "./process/api.process"),
 			appContext.workingDirPath
 		)
         .once("online", resolve);
 		
-		const evalTLSArg = (arg: Buffer|string) => {
-			return arg; // TODO: Read if is path; with periodic refresh (daily?)
+		const evalTLSArg = (arg: string|null) => {
+			try {
+				if(!arg) return null;
+				if(!/\.(pem|key|ce?rt?)$/i.test(arg)) {
+					return Buffer.from(arg, "utf8");
+				}
+
+				const path: string = resolvePath(appContext.workingDirPath, arg.toString())
+				existsSync(path);
+				return readFileSync(path);
+			} catch {
+				return arg;
+			}
 		};
+
 		embeddedContexts.set([ appContext.hostnames ].flat(), {
 			processPool,
 			secureContext: createSecureContext({
-				key: evalTLSArg(appContext.tls.key),
-				cert: evalTLSArg(appContext.tls.cert),
-				ca: [ appContext.tls.ca ].flat().map((ca: Buffer|string) => evalTLSArg(ca))
+				key: evalTLSArg(appContext.tls.key as string),
+				cert: evalTLSArg(appContext.tls.cert as string),
+				ca: (appContext.tls.ca ? [ appContext.tls.ca ].flat() : [])
+					.map((ca: Buffer|string) => evalTLSArg(ca as string))
 			}).context
 		});
 	});
@@ -73,12 +91,12 @@ function monitorProxy(): IMonitoring {
 function startServer(port: number): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const onlineDeferral = new DeferredCall(resolve, 2);
-        
+		
 		createHTTPSServer({
 			SNICallback: (hostname: string, cb: (err: Error, ctx?: SecureContext) => void) => {    // TODO: Check hostname arg (syntax)
 				return embeddedContexts.has(hostname)
 					? cb(null, embeddedContexts.get(hostname).secureContext)
-					: cb(null);
+					: cb(null);	// Redirect?
 			}
 		}, (dReq: IncomingMessage, dRes: ServerResponse) => {
 			new Promise((resolve, reject) => {
@@ -92,7 +110,6 @@ function startServer(port: number): Promise<void> {
             .then((body: string) => {
             	// Multiplex, i.e. assign to respective process pool
             	const requestedHostname: string = dReq.headers["host"].replace(/:\d+$/, "");
-            	//console.log(requestedHostname);
             	if(!requestedHostname || !embeddedContexts.has(requestedHostname)) {
             		dRes.statusCode = 400;
             		dRes.end();
@@ -107,11 +124,24 @@ function startServer(port: number): Promise<void> {
             		body: body,
             		clientIP: dReq.socket.remoteAddress
             	};
-            	const socket: Socket = dReq.socket;
 
             	embeddedContexts.get(requestedHostname)
                 .processPool
-                .assign({ sReq, socket });
+                .assign(sReq)
+				.then((sRes: IResponse) => {
+					// Decode body
+					sRes.body = sRes.body
+					? Buffer.from(Object.values(sRes.body))
+					: null;
+
+					dRes.statusCode = sRes.status;
+					Object.entries(sRes.headers)
+					.forEach((header: [ string, string|(readonly string[]) ]) => {
+						dRes.setHeader(header[0], header[1]);
+					});
+					
+					dRes.end(sRes.body);
+				});
             })
             .catch((err: Error) => {
             	dRes.statusCode = 500;
@@ -125,6 +155,7 @@ function startServer(port: number): Promise<void> {
 
 		new IPCServer(port)
         .listen(() => onlineDeferral.call())
+        .registerCommand<void>("ping", () => {})
         .registerCommand<IAppContext>("embed", embedContext)
         .registerCommand<string|string[]>("unbed", unbedContext)
         .registerCommand<IMonitoring>("monitor", monitorProxy)
@@ -152,15 +183,20 @@ export interface IMonitoring {
 export function embed(port: number, appContext: IAppContext): Promise<void> {
 	// Start server once only if proxied context is first for the related port.
 	// Maintain the server process and embed additional contexts via IPC.
-    
-	return new Promise((resolve) => {
-		IPCServer.message(port, null, null)
-        .catch(async () => {    // Proxy process needs to be created first
-        	await startServer(port);
-
-        	resolve();
-        })
-        .finally(() =>  IPCServer.message<IAppContext>(port, "embed", appContext));
+	return new Promise((resolve, reject) => {
+		const embedAppContext = () => {
+			IPCServer.message<IAppContext, Promise<void>>(port, "embed", appContext)
+			.then(resolve)
+			.catch(reject);
+		}
+		
+		IPCServer.message(port, "ping")
+		.then(embedAppContext)
+		.catch(async () => {	// Proxy server needs to be created first
+			await startServer(port);
+			
+			embedAppContext();
+		});
 	});
 }
 

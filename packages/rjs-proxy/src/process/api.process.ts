@@ -1,13 +1,12 @@
-import { Socket } from "net";
-
-import { IRequest, handleRequest } from "@rapidjs.org/rjs";
+import { IRequest, IResponse, handleRequest } from "@rapidjs.org/rjs";
 
 
-process.on("message", async (data: unknown, socket?: Socket) => {
-    await handleRequest(data as IRequest, socket);  // TODO: Get request handler function to capture online event
+process.on("message", async (sReq: IRequest) => {
+    // TODO: Get request handler function to capture online event
 
-    process.send("done");
+    const sRes: IResponse = await handleRequest(sReq);
+    
+    process.send(sRes);
 });
-
 
 process.send("online");

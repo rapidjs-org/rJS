@@ -1,48 +1,45 @@
-import { Socket } from "net";
 import { ChildProcess, fork } from "child_process";
 
-import { IRequest } from "@rapidjs.org/rjs";
-
 import { IWorkerPoolOptions, AWorkerPool } from "./.shared/AWorkerPool";
+import { TerminationHandler } from "./TerminationHandler";
 
 
-interface IProxyPackage {
-	sReq: IRequest;
-	socket: Socket;
-}
-
-
-export class ProcessPool extends AWorkerPool<ChildProcess, IProxyPackage, void, number> {
+export class ProcessPool<I, O> extends AWorkerPool<ChildProcess, I, O, number> {
 	private readonly instanceWorkingDirPath: string;
 
 	constructor(childProcessModulePath: string, instanceWorkingDirPath: string, options?: IWorkerPoolOptions) {
 		super(childProcessModulePath, options);
 
 		this.instanceWorkingDirPath = instanceWorkingDirPath;
+
+		new TerminationHandler(() => this.clear());
 	}
 	
 	protected createWorker(): Promise<ChildProcess> {
     	const childProcess = fork(this.workerModulePath, {
 			cwd: this.instanceWorkingDirPath,
+			detached: false,
 			silent: true
     	});
 		childProcess.stdout.on("data", (message: Buffer) => process.stdout.write(message.toString()));
 		childProcess.stderr.on("data", (err: Buffer) => process.stderr.write(err.toString()));
-		
-    	return new Promise((resolve) => {
+
+    	return new Promise((resolve, reject) => {
 			childProcess
-			.on("message", (message: string) => {
-				switch(message) {
-					case "online":
-						resolve(childProcess);
-						break;
-					case "done":
-						this.deactivateWorker(childProcess);
-						break;
-				}
+			.once("message", () => {
+				resolve(childProcess);
+
+				childProcess.on("message", (dataOut: O) => {
+					this.deactivateWorker(childProcess, dataOut);
+				});
 			})
 			.on("error", (err: Error) => {
+				reject();
+
+				console.error(err);
+
 				// TODO: Spin up new
+
 				throw err;
 			});
 		});
@@ -52,8 +49,8 @@ export class ProcessPool extends AWorkerPool<ChildProcess, IProxyPackage, void, 
     	childProcess.kill();
 	}
 
-	protected activateWorker(childProcess: ChildProcess, proxyPackage: IProxyPackage) {
-    	childProcess.send(proxyPackage.sReq, proxyPackage.socket);
+	protected activateWorker(childProcess: ChildProcess, dataIn: I) {
+		childProcess.send(dataIn as Record<string, unknown>);
 	}
 
 	protected onTimeout(childProcess: ChildProcess): void {
