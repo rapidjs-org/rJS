@@ -1,4 +1,4 @@
-import { Config } from "./stateless/Config";
+import { Config } from "./Config";
 
 
 // TODO: Cach entry max size threshold (keep memory “clean”)?

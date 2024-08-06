@@ -32,13 +32,13 @@ existsSync(ROUTES_PATH)
 
 export class PostHandler extends AHandler {
     public process(): void {
-        let params: {
-            name: string;
-            
-            args?: TSerializable[];
-        };
+        let params;
         try {
-            params = this.request.getBody().json();
+            params = this.request.getBody().json<{
+                name: string;
+                
+                args?: TSerializable[];
+            }>();
         } catch(err: unknown) {
             this.response.setStatus(400);
 

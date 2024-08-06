@@ -1,6 +1,4 @@
 #! /bin/bash
 
 
-cd $(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
-
-node ./build/cli.js $@
+node "$(dirname $([ -L $0 ] && readlink -f $0 || echo $0))/build/cli.js" $@

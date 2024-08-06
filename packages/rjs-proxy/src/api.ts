@@ -25,11 +25,9 @@ const embeddedContexts: MultiMap<string, {
 
 
 function embedContext(appContext: IAppContext): Promise<void> {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		if(embeddedContexts.has(appContext.hostnames)) {
-			reject(new RangeError("Hostname(s) already bound to proxy"));
-
-			return;
+			throw new RangeError("Hostname(s) already bound to proxy");
 		}
 
 		const processPool = new ProcessPool<IRequest, IResponse>(
@@ -65,10 +63,16 @@ function embedContext(appContext: IAppContext): Promise<void> {
 	});
 }
 
-function unbedContext(hostnames: string|string[]): Promise<void> {
+function unbedContext(hostnames?: string|string[]): Promise<void> {
 	return new Promise((resolve, reject) => {
+		if(!hostnames) {
+			resolve();
+
+			setTimeout(() => process.exit(0));
+		}
+
 		if(!embeddedContexts.has(hostnames)) {
-			reject();
+			reject(new RangeError("Unknown hostname(s)"));
             
 			return;
 		}
@@ -200,10 +204,22 @@ export function embed(port: number, appContext: IAppContext): Promise<void> {
 	});
 }
 
-export function unbed(port: number, hostnames: string|string[]): Promise<void> {
-	return IPCServer.message<string|string[]>(port, "unbed", hostnames);
+export function unbed(port: number, hostnames?: string|string[]): Promise<void> {
+	return new Promise((resolve, reject) => {
+		IPCServer.message(port, "ping")
+		.then(async () => {
+			IPCServer.message<string|string[]|null>(port, "unbed", hostnames)
+			.then(resolve)
+			.catch(reject);
+		})
+		.catch(() => {
+			reject(new ReferenceError("Unknown proxy."));
+		});
+	});
 }
 
 export function monitor(port: number) {
 	return IPCServer.message<void, IMonitoring>(port, "monitor");
 }
+
+// TODO: Logs for proxy (besides individual apps)

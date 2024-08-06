@@ -8,13 +8,26 @@ export class MultiMap<K, T> {
     	return [ keyArgument ].flat() as K[];
 	}
 
-	private cleanValues() {
+	private smoothenValues() {
     	this.valueMap
     	.forEach((_, key: number) => {
     		!Array.from(this.associationMap.values()).includes(key)
             && this.valueMap.delete(key);
     	});
 	}
+
+	/* public getRelatedKeys(key: K): K[] {
+		const keys: K[] = [];
+
+		const pivotIdentifier: number = this.associationMap.get(key);
+		this.associationMap
+		.forEach((identifier: number, key:K) => {
+			if(identifier !== pivotIdentifier) return;
+			keys.push(key);
+		});
+
+		return keys;
+	} */
     
 	public set(keyArgument: K|K[], value: T) {
     	const keys: K[] = this.normalizeKeyArgument(keyArgument);
@@ -25,7 +38,7 @@ export class MultiMap<K, T> {
     		this.associationMap.set(key, this.entryCounter);
     	});
 
-    	this.cleanValues();
+    	this.smoothenValues();
 	}
 
 	public get(keyArgument: K|K[]): T {
@@ -55,7 +68,7 @@ export class MultiMap<K, T> {
     		this.associationMap.delete(key);
     	});
 
-		this.cleanValues();
+		this.smoothenValues();
 
 		return this.valueMap.has(association);
 	}

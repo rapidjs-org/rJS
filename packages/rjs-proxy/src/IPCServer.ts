@@ -83,7 +83,7 @@ export class IPCServer extends EventEmitter {
 
 				try {
 					let data: unknown = handler(parsedMessage.data);
-					data =  (data instanceof Promise)
+					data = (data instanceof Promise)
 					? (await data)
 					: data;
 

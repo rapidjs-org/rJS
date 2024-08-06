@@ -1,7 +1,7 @@
 import { resolve, join } from "path";
 import { existsSync, mkdirSync, appendFile } from "fs";
 
-import _config from "../_config.json";
+import _config from "../rjs/src/_config.json";
 
 
 export class Logs {

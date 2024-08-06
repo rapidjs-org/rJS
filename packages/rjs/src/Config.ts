@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
-import { TJSON } from "../types";
+import { TJSON } from "./types";
 
-import _config from "../_config.json";
+import _config from "./_config.json";
 
 import coreDefaultsObj from "./rjs.config.defaults.json";
 

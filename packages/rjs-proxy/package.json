@@ -22,7 +22,7 @@
         "./types/"
     ],
     "scripts": {
-        "copy-shared": "../../scripts/copy-shared.sh rjs-proxy",
+        "copy-shared": "node ../../scripts/copy-shared.js rjs-proxy",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",

@@ -22,7 +22,7 @@
         "./types/"
     ],
     "scripts": {
-        "copy-shared": "../../scripts/copy-shared.sh rjs",
+        "copy-shared": "node ../../scripts/copy-shared.js rjs",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "rm -rf ./build/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
@@ -33,7 +33,7 @@
     },
     "devDependencies": {
         "@rapidjs.org/testing": "^0.1.2",
-        "@rapidjs.org/testing-http": "^0.1.0",
+        "@rapidjs.org/testing-http": "^0.1.1",
         "@rapidjs.org/testing-unit": "^0.1.0",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"

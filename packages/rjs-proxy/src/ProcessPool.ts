@@ -9,7 +9,7 @@ export class ProcessPool<I, O> extends AWorkerPool<ChildProcess, I, O, number> {
 
 	constructor(childProcessModulePath: string, instanceWorkingDirPath: string, options?: IWorkerPoolOptions) {
 		super(childProcessModulePath, options);
-
+		
 		this.instanceWorkingDirPath = instanceWorkingDirPath;
 
 		new TerminationHandler(() => this.clear());
@@ -18,12 +18,9 @@ export class ProcessPool<I, O> extends AWorkerPool<ChildProcess, I, O, number> {
 	protected createWorker(): Promise<ChildProcess> {
     	const childProcess = fork(this.workerModulePath, {
 			cwd: this.instanceWorkingDirPath,
-			detached: false,
-			silent: true
+			detached: false
     	});
-		childProcess.stdout.on("data", (message: Buffer) => process.stdout.write(message.toString()));
-		childProcess.stderr.on("data", (err: Buffer) => process.stderr.write(err.toString()));
-
+		
     	return new Promise((resolve, reject) => {
 			childProcess
 			.once("message", () => {

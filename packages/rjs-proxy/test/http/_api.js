@@ -2,13 +2,13 @@ const { join } = require("path");
 const { readFileSync } = require("fs");
 
 
-const API = require("../../build/api");
+const PROXY_API = require("../../build/api");
 
 
-module.exports.embedTestApp = (hostname) => {
+module.exports.embedTestApp = (hostname, alternativeHostnames = []) => {
     const workingDirPath = join(__dirname, hostname);
-    return API.embed(require("./_PORT"), {
-        hostnames: hostname,
+    return PROXY_API.embed(require("./_PORT"), {
+        hostnames: [ hostname, alternativeHostnames ].flat(),
         tls: {
             key: "./key.pem",                                       // as (relative) path
             cert: readFileSync(join(workingDirPath, "cert.pem"))    // as data buffer

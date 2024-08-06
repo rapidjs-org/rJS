@@ -14,7 +14,10 @@ import { ISerialRequest, ISerialResponse } from "./interfaces";
 import { ThreadPool } from "./ThreadPool";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
-import { Config } from "./stateless/Config";
+import { Config } from "./Config";
+
+
+// TODO: Check if is valid project dir at CWD
 
 
 const onlineDeferral = new DeferredCall(null, 2);
