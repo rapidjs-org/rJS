@@ -1,17 +1,40 @@
+import { Args } from "../Args";
 import { Command } from "../Command";
-import { Dependency } from "./Dependency";
-
-import rJSProxyAPI from "@rapidjs.org/rjs-proxy";
 import { Printer } from "../Printer";
-import { ARG_CONTEXT } from "./ARG_CONTEXT";
+import { Dependency } from "./Dependency";
+import { activePorts } from "./activePorts";
+
+import * as rJSProxyAPI from "@rapidjs.org/rjs-proxy";
 
 new Command("monitor", () => {
 	new Dependency("@rapidjs.org/rjs-proxy").installIfNotPresent().then(async (api) => {
-		const monitoring: rJSProxyAPI.IMonitoring = await (
-			await api.require<typeof rJSProxyAPI>()
-		).monitor(ARG_CONTEXT.port);
-
-		Printer.global.stdout(Printer.format("Proxy state:".toUpperCase(), [1]));
-		Printer.global.stdout(JSON.stringify(monitoring));
+		const contextPort: number = Args.parseOption("port", "P").number();
+		const proxiedPorts: number[] = contextPort
+			? [ contextPort ]
+			: activePorts(rJSProxyAPI.SOCKET_LOCATION);
+		
+		if(!proxiedPorts.length) {
+			throw new RangeError("No proxies running.");
+		}
+		
+		const lines: string[] = [];
+		for(const port of proxiedPorts) {
+			const monitoring: rJSProxyAPI.IMonitoring = await (
+				await api.require<typeof rJSProxyAPI>()
+			).monitor(port);
+			
+			lines.push(`${
+				Printer.format(":", [ 2 ])
+			}${
+				Printer.format(port.toString(), [ 36 ])
+			}${
+				" ".repeat(6 - port.toString().length)
+			}${
+				monitoring.proxiedHostnames
+				.map((hostnames: string|string[]) => Printer.format([ hostnames ].flat().join("|"), [ 1, 34 ]))
+				.join(", ")
+			}`);
+		}	// Monitoring: + working dir
+		Printer.global.stdout(Printer.format(` PROXY STATE\n${lines.join("\n")}`, [ 1 ]));
 	});
 });

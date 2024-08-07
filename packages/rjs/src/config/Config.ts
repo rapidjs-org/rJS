@@ -1,16 +1,12 @@
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
-import { TJSON } from "./types";
+import { TJSON } from "../types";
 
-import _config from "./_config.json";
-
-import coreDefaultsObj from "./rjs.config.defaults.json";
+import _config from "../_config.json";
 
 
 export class Config {
-	public static global = new Config(_config.globalConfigName, coreDefaultsObj);
-
 	private static deepMergeObjects(targetObj: TJSON, sourceObj: TJSON): TJSON {
 		for(const key of (Object.keys(targetObj).concat(Object.keys(sourceObj)))) {
 			if((targetObj[key] || "").constructor.name !== "Object"
@@ -29,9 +25,11 @@ export class Config {
 	}
 
 	private readonly obj: TJSON;
+	private readonly path: string;
 	private readonly name?: string;
 
-	constructor(name?: string, defaultsObj: TJSON = {}) {
+	constructor(path: string, name?: string, defaultsObj: TJSON = {}) {
+		this.path = path;
 		this.name = name;
         
 		this.obj = defaultsObj;
@@ -41,13 +39,14 @@ export class Config {
 
 	private parseFile(modeInfix?: string): TJSON {
 		const configFilePath: string = resolve(
+			this.path,
 			[
 				_config.configNamePrefix,
 				this.name,
 				modeInfix,
 				"json"
 			]
-            .filter((part: string|null) => part)
+            .filter((part: string|null) => !!part)
             .join(".")
 		);
 		return existsSync(configFilePath)

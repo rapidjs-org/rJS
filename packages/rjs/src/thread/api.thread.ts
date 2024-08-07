@@ -5,6 +5,7 @@ import { AHandler } from "./AHandler";
 import { GetHandler } from "./get/GetHandler";
 import { PostHandler } from "./post/PostHandler";
 
+
 parentPort.on("message", (sReq: ISerialRequest) => {
 	let handler: AHandler;
 	switch (sReq.method) {

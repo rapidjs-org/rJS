@@ -25,7 +25,7 @@
         "copy-shared": "node ../../scripts/copy-shared.js rjs",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
-        "build": "rm -rf ./build/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
+        "build": "rm -rf ./build/ && rm -rf ./types/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
         "test:http:rate-limiter": "npx rjs-test http ./test/http-rate-limiter/rate-limiter.test.js",

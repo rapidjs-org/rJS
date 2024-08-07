@@ -4,7 +4,10 @@ import { Template } from "./Template";
 new Command(
 	"instance",
 	() => {
-		new Template("instance");
+		new Template("application");
 	},
-	{ relatedPositionalArg: 1 }
+	{
+		aliases: [ "app" ],
+		relatedPositionalArg: 1
+	}
 );

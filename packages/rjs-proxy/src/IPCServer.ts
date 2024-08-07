@@ -19,19 +19,21 @@ interface IIPCResponse<T> {
 }
 
 
-const isWin: boolean = process.platform === "win32";
-const socketLocation: string = join(!isWin ? "/" : "\\\\.\\pipe\\", "tmp");
+const IS_WIN: boolean = process.platform === "win32";
 
 
-!socketLocation
-&& mkdirSync(socketLocation, { recursive: true });
+export const SOCKET_DIR_PATH: string = join(!IS_WIN ? "/" : "\\\\.\\pipe\\", "tmp");
+
+
+!SOCKET_DIR_PATH
+&& mkdirSync(SOCKET_DIR_PATH, { recursive: true });
 
 
 export class IPCServer extends EventEmitter {
 	private static locateIPCFile(associatedPort: number): string {
-		return join(socketLocation, `rjs__${associatedPort}.sock`);
+		return join(SOCKET_DIR_PATH, `rjs__${associatedPort}.sock`);
 	}
-
+	
 	public static message<I, O = void>(associatedPort: number, command: string, data?: I): Promise<O> {
 		return new Promise((resolve, reject) => {
 			const client: Socket = createConnection(IPCServer.locateIPCFile(associatedPort));

@@ -1,24 +1,24 @@
 import { resolve, join } from "path";
 import { existsSync, mkdirSync, appendFile } from "fs";
 
-import _config from "../rjs/src/_config.json";
-
 
 export class Logs {
 	public static global: Logs = new Logs();
 
 	private readonly logsDirPath: string;
-	private readonly isVerbose: boolean;
 
-	constructor(isVerbose: boolean = false) {
-		this.logsDirPath = resolve(_config.logsDirName);
-		this.isVerbose = isVerbose;
+	constructor(logsDirName: string = ".logs") {
+		this.logsDirPath = resolve(logsDirName);
 
 		!existsSync(this.logsDirPath)
-        && mkdirSync(this.logsDirPath, { recursive: true });
+        && mkdirSync(this.logsDirPath, {
+			recursive: true
+		});
 	}
 
 	private log(shortMessage: string, verboseMessage?: string, prefix?: string, channel: "stdout"|"stderr" = "stdout") {
+		// TODO: Filter redundant messages (worker copies)
+		
 		process[channel].write(`${shortMessage}\n`);
         
 		const date: Date = new Date();
@@ -37,11 +37,12 @@ export class Logs {
 			`[${timeKey}]\t${prefix ? `(${prefix}) ` : ""}${
 				shortMessage
 			}${
-				(this.isVerbose && verboseMessage) ? `\n${verboseMessage}`: ""
+				verboseMessage ? `\n${verboseMessage}`: ""
 			}\n`,
 			(err) =>  {
-				// TODO
-			});
+				throw err;
+			}
+		);
 	}
     
 	public info(shortMessage: string, verboseMessage?: string) {
@@ -52,7 +53,13 @@ export class Logs {
 		this.log(shortMessage, verboseMessage, "warning");
 	}
     
-	public error(shortMessage: string, verboseMessage?: string) {
+	public error(error: Error): void;
+	public error(shortMessage: string, verboseMessage?: string): void;
+	public error(errorOrShortMessage: Error|string, verboseMessage?: string) {
+		const shortMessage: string = (errorOrShortMessage instanceof Error)
+		? errorOrShortMessage.message
+		: errorOrShortMessage;
+		
 		this.log(shortMessage, verboseMessage, "error", "stderr");
 	}
 }

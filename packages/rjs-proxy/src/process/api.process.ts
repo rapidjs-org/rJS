@@ -1,9 +1,12 @@
-import { IRequest, IResponse, handleRequest } from "@rapidjs.org/rjs";
+import { IRequest, IResponse, Context } from "@rapidjs.org/rjs";
+
+
+const context: Context = new Context(process.cwd());
+// TODO: Listen for context online to communicate ready state (?)
+
 
 process.on("message", async (sReq: IRequest) => {
-	// TODO: Get request handler function to capture online event
-
-	const sRes: IResponse = await handleRequest(sReq);
+	const sRes: IResponse = await context.handleRequest(sReq);
 
 	process.send(sRes);
 });

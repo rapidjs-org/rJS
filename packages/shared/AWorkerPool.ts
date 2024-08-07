@@ -4,7 +4,7 @@ import { cpus } from "os";
 
 interface IWorker<O, E> {
     resolve: (dataOut: O) => void;
-	reject: (err: E) => void;
+	reject: (err?: E) => void;
 }
 
 interface IActiveWorker<O, E> extends IWorker<O, E> {
@@ -48,9 +48,7 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
 		
 		setImmediate(async () => {
 			for(let i = 0; i < Math.max(this.options.baseSize ?? 1,); i++) {
-				const worker: Worker = await this.createWorker();
-    
-				this.idleWorkers.push(worker);
+				this.spawnWorker();
 			}
 			
 			this.emit("online");
@@ -92,6 +90,14 @@ export abstract class AWorkerPool<Worker extends EventEmitter, I, O, E> extends 
         };
         
     	return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
+	}
+
+	protected async spawnWorker(): Promise<Worker> {
+		const worker: Worker = await this.createWorker();
+		
+		this.idleWorkers.push(worker);
+		
+		return worker;
 	}
 
 	public deactivateWorker(worker: Worker, dataOut?: O) {

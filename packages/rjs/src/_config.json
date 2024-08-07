@@ -4,7 +4,6 @@
     "configNamePrefix": "rjs",
     "defaultFilesDirName": "public",
     "globalConfigName": "config",
-	"logsDirName": ".logs",
     "processTitle": "Instance",
     "routesDirName": "routes"
 }

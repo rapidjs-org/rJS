@@ -1,7 +1,7 @@
 import { TJSON } from "../../types";
 import { IFilestamp } from "../../interfaces";
+import { APP_CONFIG} from "../APP_CONFIG";
 import { AHandler } from "../AHandler";
-import { Config } from "../../Config";
 
 import { VirtualFileSystem } from "./VirtualFileSystem";
 
@@ -10,12 +10,12 @@ import mime from "./mime.json";
 import _config from "../../_config.json";
 
 
-const CUSTOM_HEADERS: TJSON = Config.global.read("headers").obj() ?? {};
+const CUSTOM_HEADERS: TJSON = APP_CONFIG.read("headers").obj() ?? {};
 
 
 export class GetHandler extends AHandler {
     private readonly filesVFS: VirtualFileSystem = new VirtualFileSystem(
-        Config.global.read("filesDirName").string()
+        APP_CONFIG.read("filesDirName").string()
         ?? _config.defaultFilesDirName
     );
     
@@ -69,7 +69,7 @@ export class GetHandler extends AHandler {
 
         // MIME
         const extname: string = (pathname.match(/\.[^.]+$/) ?? [ "" ])[0];
-        const fileMime: string|undefined = ((Config.global.read("mime").obj() ?? {})[extname]
+        const fileMime: string|undefined = ((APP_CONFIG.read("mime").obj() ?? {})[extname]
                                         ?? (mime as TJSON)[extname]) as string;
         fileMime && this.response.setHeader("Content-Type", fileMime);
 

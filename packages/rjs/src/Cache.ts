@@ -1,16 +1,13 @@
-import { Config } from "./Config";
-
-
-// TODO: Cach entry max size threshold (keep memory “clean”)?
+// TODO: Cache entry max size threshold (keep memory “clean”)?
 
 export class Cache<K, T> extends Map<K, T> {
 	private readonly keyStoreTimestamps: Map<K, number> = new Map();
 	private readonly duration: number;
 
-	constructor(duration: number = (process.env.DEV ? Config.global.read("peformance", "serverCacheMs").number() : null) ?? Infinity) {
+	constructor(duration: number) {
 		super();
 		
-		this.duration = duration;
+		this.duration = !process.env.DEV ? duration : Infinity;
 	}
 
 	public get(key: K): T {

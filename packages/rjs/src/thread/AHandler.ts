@@ -2,11 +2,11 @@ import EventEmitter from "events";
 import zlib from "zlib";
 
 import { ISerialRequest, ISerialResponse } from "../interfaces";
+import { APP_CONFIG} from "./APP_CONFIG";
 import { Request } from "./Request";
 import { Response } from "./Response";
-import { Config } from "../Config";
 
-// TODO: i18n
+// TODO: i18n (?)
 
 const ENCODERS: { [key: string]: (data: unknown) => Buffer } = Object.freeze({
 	identity: (data: unknown) => data as Buffer,
@@ -35,7 +35,7 @@ export abstract class AHandler extends EventEmitter {
 		if (
 			this.response.hasCompressableBody &&
 			(this.response.getBody() ?? "").toString().length >
-				Config.global.read("performance", "compressionByteThreshold").number()
+				APP_CONFIG.read("performance", "compressionByteThreshold").number()
 		) {
 			const encoding: string =
 				this.request
@@ -55,7 +55,7 @@ export abstract class AHandler extends EventEmitter {
 		this.response.setHeader(
 			"Cache-Control",
 			[
-				`max-age=${Config.global.read("performance", "clientCacheMs").number()}`,
+				`max-age=${APP_CONFIG.read("performance", "clientCacheMs").number()}`,
 				"stale-while-revalidate=300",
 				"must-revalidate"
 			].join(", ")

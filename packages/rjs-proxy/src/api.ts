@@ -1,8 +1,3 @@
-import _config from "./_config.json";
-
-process.title = `rJS ${_config.processTitle}`;
-
-
 import { IncomingMessage, ServerResponse } from "http";
 import { createServer as createHTTPSServer } from "https";
 import { SecureContext, createSecureContext } from "tls";
@@ -16,6 +11,8 @@ import { MultiMap } from "./MultiMap";
 import { ProcessPool } from "./ProcessPool";
 import { IPCServer } from "./IPCServer";
 
+import _config from "./_config.json";
+
 
 // [ hostname: string ]: { … }
 const embeddedContexts: MultiMap<string, {
@@ -25,14 +22,19 @@ const embeddedContexts: MultiMap<string, {
 
 
 function embedContext(appContext: IAppContext): Promise<void> {
-	return new Promise((resolve) => {
+	return new Promise((resolve, reject) => {
 		if(embeddedContexts.has(appContext.hostnames)) {
-			throw new RangeError("Hostname(s) already bound to proxy");
+			reject(new RangeError("Hostname(s) already bound to proxy"));
+
+			return;
 		}
 
 		const processPool = new ProcessPool<IRequest, IResponse>(
 			join(__dirname, "./process/api.process"),
-			appContext.workingDirPath
+			appContext.workingDirPath,
+			{
+				DEV: appContext.devMode ? "1" : ""	// TODO: Test
+			}
 		)
         .once("online", resolve);
 		
@@ -93,6 +95,8 @@ function monitorProxy(): IMonitoring {
 }
 
 function startServer(port: number): Promise<void> {
+	process.title = `rJS ${_config.processTitle}`;
+
 	return new Promise((resolve, reject) => {
 		const onlineDeferral = new DeferredCall(resolve, 2);
 		
@@ -177,11 +181,15 @@ export interface IAppContext {
         ca?: Buffer|string|(Buffer|string)[];
     };
 	workingDirPath: string;
+
+	devMode?: boolean;
 }
 
 export interface IMonitoring {
     proxiedHostnames: string[][];
 }
+
+export { SOCKET_DIR_PATH as SOCKET_LOCATION } from "./IPCServer";
 
 
 export function embed(port: number, appContext: IAppContext): Promise<void> {

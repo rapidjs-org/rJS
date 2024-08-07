@@ -1,24 +1,31 @@
 import { ChildProcess, fork } from "child_process";
 
 import { IWorkerPoolOptions, AWorkerPool } from "./.shared/AWorkerPool";
+import { Logs } from "./.shared/Logs";
 import { TerminationHandler } from "./TerminationHandler";
 
 
 export class ProcessPool<I, O> extends AWorkerPool<ChildProcess, I, O, number> {
-	private readonly instanceWorkingDirPath: string;
+	private readonly processWorkingDirPath: string;
+	private readonly env: { [ key: string ]: string };
 
-	constructor(childProcessModulePath: string, instanceWorkingDirPath: string, options?: IWorkerPoolOptions) {
-		super(childProcessModulePath, options);
+	constructor(childProcessModulePath: string, processWorkingDirPath: string, env: { [ key: string ]: string; } = {}, options?: IWorkerPoolOptions) {
+		super(childProcessModulePath, {
+			...options,
+			...env.DEV ? { baseSize: 1 } : {}
+		});
 		
-		this.instanceWorkingDirPath = instanceWorkingDirPath;
+		this.processWorkingDirPath = processWorkingDirPath;
+		this.env = env;
 
 		new TerminationHandler(() => this.clear());
 	}
 	
 	protected createWorker(): Promise<ChildProcess> {
     	const childProcess = fork(this.workerModulePath, {
-			cwd: this.instanceWorkingDirPath,
-			detached: false
+			cwd: this.processWorkingDirPath,
+			detached: false,
+			env: this.env
     	});
 		
     	return new Promise((resolve, reject) => {
@@ -31,13 +38,14 @@ export class ProcessPool<I, O> extends AWorkerPool<ChildProcess, I, O, number> {
 				});
 			})
 			.on("error", (err: Error) => {
-				reject();
+				reject(err);
+				
+				Logs.global.error(err);
+			})
+			.on("exit", (exitCode: number) => {
+				if(exitCode === 0) return;
 
-				console.error(err);
-
-				// TODO: Spin up new
-
-				throw err;
+				this.spawnWorker();
 			});
 		});
 	}

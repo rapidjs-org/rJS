@@ -28,7 +28,7 @@
     "scripts": {
         "debug": "npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
-        "build": "rm -rf ./build/ && npx tsc --project ./tsconfig.build.json",
+        "build": "rm -rf ./build/ && rm -rf ./types/ && npx tsc --project ./tsconfig.build.json",
         "test:cli": "npx rjs-test cli ./test/cli/",
         "test": "npm run test:cli",
         "bin": "./rjs.sh"
