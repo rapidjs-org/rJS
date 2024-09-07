@@ -2,13 +2,12 @@ import { IncomingMessage, ServerResponse } from "http";
 import { createServer as createHTTPSServer } from "https";
 import { SecureContext, createSecureContext } from "tls";
 import { existsSync, readFileSync } from "fs";
-import { join, resolve as resolvePath } from "path";
+import { resolve as resolvePath } from "path";
 
-import { IRequest, IResponse } from "@rapidjs.org/rjs";
+import { IRequest, IResponse, Context } from "@rapidjs.org/rjs";
 
 import { DeferredCall } from "./.shared/DeferredCall";
 import { MultiMap } from "./MultiMap";
-import { ProcessPool } from "./ProcessPool";
 import { IPCServer } from "./IPCServer";
 
 import _config from "./_config.json";
@@ -16,7 +15,7 @@ import _config from "./_config.json";
 
 // [ hostname: string ]: { … }
 const embeddedContexts: MultiMap<string, {
-    processPool: ProcessPool<IRequest, IResponse>;
+    rjsContext: Context;
     secureContext: SecureContext
 }> = new MultiMap();
 
@@ -28,15 +27,6 @@ function embedContext(appContext: IAppContext): Promise<void> {
 
 			return;
 		}
-
-		const processPool = new ProcessPool<IRequest, IResponse>(
-			join(__dirname, "./process/api.process"),
-			appContext.workingDirPath,
-			{
-				DEV: appContext.devMode ? "1" : ""	// TODO: Test
-			}
-		)
-        .once("online", resolve);
 		
 		const evalTLSArg = (arg: string|null) => {
 			try {
@@ -45,7 +35,7 @@ function embedContext(appContext: IAppContext): Promise<void> {
 					return Buffer.from(arg, "utf8");
 				}
 
-				const path: string = resolvePath(appContext.workingDirPath, arg.toString())
+				const path: string = resolvePath(appContext.workingDirectory, arg.toString())
 				existsSync(path);
 				return readFileSync(path);
 			} catch {
@@ -53,8 +43,14 @@ function embedContext(appContext: IAppContext): Promise<void> {
 			}
 		};
 
+		const context: Context = new Context({
+			dev: appContext.dev,
+			workingDirectory: appContext.workingDirectory
+		})
+        .once("online", resolve);
+		
 		embeddedContexts.set([ appContext.hostnames ].flat(), {
-			processPool,
+			rjsContext: context,
 			secureContext: createSecureContext({
 				key: evalTLSArg(appContext.tls.key as string),
 				cert: evalTLSArg(appContext.tls.cert as string),
@@ -65,27 +61,22 @@ function embedContext(appContext: IAppContext): Promise<void> {
 	});
 }
 
-function unbedContext(hostnames?: string|string[]): Promise<void> {
-	return new Promise((resolve, reject) => {
-		if(!hostnames) {
-			resolve();
+async function unbedContext(hostnames?: string|string[]): Promise<void> {
+	if(!hostnames) {
+		setTimeout(() => process.exit(0));
 
-			setTimeout(() => process.exit(0));
-		}
+		return;
+	}
 
-		if(!embeddedContexts.has(hostnames)) {
-			reject(new RangeError("Unknown hostname(s)"));
-            
-			return;
-		}
+	if(!embeddedContexts.has(hostnames)) {
+		throw new RangeError("Unknown hostname(s)");
+	}
 
-		embeddedContexts.get(hostnames)
-        .processPool
-        .clear();
-		embeddedContexts.delete(hostnames);
+	embeddedContexts.get(hostnames)
+	.rjsContext
+	.destroy();
 
-		resolve();
-	});
+	embeddedContexts.delete(hostnames);
 }
 
 function monitorProxy(): IMonitoring {
@@ -134,8 +125,8 @@ function startServer(port: number): Promise<void> {
             	};
 
             	embeddedContexts.get(requestedHostname)
-                .processPool
-                .assign(sReq)
+				.rjsContext
+                .handleRequest(sReq)
 				.then((sRes: IResponse) => {
 					// Decode body
 					sRes.body = sRes.body
@@ -180,9 +171,9 @@ export interface IAppContext {
         
         ca?: Buffer|string|(Buffer|string)[];
     };
-	workingDirPath: string;
+	workingDirectory: string;
 
-	devMode?: boolean;
+	dev?: boolean;
 }
 
 export interface IMonitoring {

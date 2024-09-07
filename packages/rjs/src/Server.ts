@@ -2,15 +2,18 @@ import { EventEmitter } from "events";
 import { IncomingMessage, ServerResponse, createServer as createHTTPServer } from "http";
 import { createServer as createHTTPSServer } from "https";
 
+import { THTTPMethod } from "./.shared/global.types";
+import { Options } from "./.shared/Options";
 import { DeferredCall } from "./.shared/DeferredCall";
-import { THTTPMethod } from "./types";
-import { IRequest } from "./api";
-import { Context } from "./Context";
+import { Scope } from "./Scope";
+
+import { ICoreOptions } from "@rapidjs.org/rjs-core";
+import { ISerialRequest } from "./.shared/global.interfaces";
 
 
 export interface IServerOptions {
     port: number;
-	
+
 	tls?: {
 		cert: string;
 		key: string;
@@ -21,37 +24,40 @@ export interface IServerOptions {
 
 
 export class Server extends EventEmitter {
-	private readonly options: IServerOptions;
-	private readonly context: Context;
+	private readonly scope: Scope;
 
-	constructor(workingDirPath: string = process.cwd(), options: Partial<IServerOptions> = {}) {
+	constructor(options: Partial<IServerOptions & ICoreOptions> = {}) {
 		super();
-
-		this.options = {
-			port: 80,
-			
-			...options
-		};
-
+		
+		const optionsWithDefaults: IServerOptions & ICoreOptions = new Options<IServerOptions & ICoreOptions>(
+			options, {
+				port: 80
+			}
+		).object;
+		
 		const onlineDeferral = new DeferredCall(() => this.emit("online"), 2);
 		
-		this.context = new Context(workingDirPath)
+		this.scope = new Scope(optionsWithDefaults)
 		.on("online", () => onlineDeferral.call());
 
-		((this.options.tls
+		((optionsWithDefaults.tls
 			? createHTTPSServer
 			: createHTTPServer) as Function)
 		((dReq: IncomingMessage, dRes: ServerResponse) => {
-			new Promise((resolve, reject) => {
-				const body: string[] = [];
-				dReq.on("readable", () => {
-					body.push(dReq.read());
-				});
-				dReq.on("end", () => resolve(body.join("")));
-				dReq.on("error", (err: Error) => reject(err));
-			})
+			(
+				[ "POST" ].includes(dReq.method)
+				? new Promise((resolve, reject) => {
+					const body: string[] = [];
+					dReq.on("readable", () => {
+						body.push(dReq.read());
+					});
+					dReq.on("end", () => resolve(body.join("")));
+					dReq.on("error", (err: Error) => reject(err));
+				})
+				: Promise.resolve(null)
+			)
 			.then((body: string) => {
-				const sRes: IRequest = {
+				const sReq: ISerialRequest = {
 					method: dReq.method as THTTPMethod,
 					url: dReq.url,
 					headers: dReq.headers,
@@ -59,11 +65,9 @@ export class Server extends EventEmitter {
 					clientIP: dReq.socket.remoteAddress
 				};
 				
-				this.context
-				.handleRequest(sRes, dReq.socket)
-				.catch((err: Error) => console.error(err));
-
-				this.emit("request", sRes);
+				this.scope.handleRequest(sReq, dReq.socket);
+				
+				this.emit("request", sReq);
 			})
 			.catch((err: Error) => {
 				dRes.statusCode = 500;
@@ -72,6 +76,6 @@ export class Server extends EventEmitter {
 				console.error(err);
 			})
 		})
-		.listen(this.options.port, () => onlineDeferral.call());
+		.listen(optionsWithDefaults.port, () => onlineDeferral.call());
 	}
 }

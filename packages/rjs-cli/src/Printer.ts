@@ -1,3 +1,4 @@
+import { Options } from "./.shared/Options";
 import _config from "./_config.json";
 
 
@@ -57,12 +58,10 @@ export class Printer {
 		};
 
 	private print(message: string, channel: TStdChannel, options: IPrinterOptions = {}) {
-		const optionsWithDefaults: IPrinterOptions = {
+		const optionsWithDefaults: IPrinterOptions = new Options(options, {
 			replicatedMessage: false,
-			withBrandSequence: true,
-
-			...options
-		};
+			withBrandSequence: true
+		}).obj;
 
 		const nowTimestamp: number = Date.now();
 

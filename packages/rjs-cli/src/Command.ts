@@ -1,3 +1,4 @@
+import { Options } from "./.shared/Options";
 import { Args } from "./Args";
 import { Printer } from "./Printer";
 
@@ -58,12 +59,10 @@ export class Command {
 			: commandHandlerOrOptions
 		) as ICommandOptions;
 		
-		const optionsWithDefaults: ICommandOptions = {
+		const optionsWithDefaults: ICommandOptions = new Options(options, {
 			aliases: [],
-			relatedPositionalArg: 0,
-
-			...options
-		};
+			relatedPositionalArg: 0
+		}).object;
 
 		Command.declarePositionalRegistry(optionsWithDefaults.relatedPositionalArg);
 

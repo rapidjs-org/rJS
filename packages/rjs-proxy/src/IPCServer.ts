@@ -3,7 +3,7 @@ import { mkdirSync, rmSync } from "fs";
 import { Socket, createServer, createConnection, Server } from "net";
 import { EventEmitter } from "events";
 
-import { TerminationHandler } from "./TerminationHandler";
+import { TerminationHandler } from "./.shared/TerminationHandler";
 
 
 type TIPCHandler<T> = (data: T) => void;

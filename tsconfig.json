@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "target": "es2017",        
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "noImplicitAny": true,
+        "resolveJsonModule": true,
+        "noEmitOnError": true,
+        "allowJs": true,
+        "declaration": true
+    }
+}

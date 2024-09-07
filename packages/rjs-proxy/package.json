@@ -10,10 +10,10 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/rapidjs-org/core.git"
+        "url": "git+https://github.com/rapidjs-org/rjs.git"
     },
     "bugs": {
-        "url": "https://github.com/rapidjs-org/core/issues"
+        "url": "https://github.com/rapidjs-org/rjs/issues"
     },
     "main": "./build/api.js",
     "types": "./types/api.d.ts",
@@ -23,19 +23,21 @@
     ],
     "scripts": {
         "copy-shared": "node ../../scripts/copy-shared.js rjs-proxy",
+        "clean": "rm -rf ./build && rm -rf ./types",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
-        "build": "rm -rf ./build/ && rm -rf ./types/ && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
+        "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:http": "npx rjs-test http ./test/http/",
         "test": "npm run test:http"
     },
     "devDependencies": {
-        "@rapidjs.org/testing": "^0.1.2",
-        "@rapidjs.org/testing-http": "^0.1.0",
+        "@rapidjs.org/testing": "0.x",
+        "@rapidjs.org/testing-http": "0.x",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@rapidjs.org/rjs": "0.x"
+        "@rapidjs.org/rjs-core": "0.x",
+        "@rapidjs.org/rjs-cluster": "0.x"
     }
 }

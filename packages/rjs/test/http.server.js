@@ -1,17 +1,16 @@
-const rjsCore = require("../build/api");
+const rjs = require("../build/api");
 
 
 module.exports.start = (port) => {
     return new Promise(async (resolve) => {
-        new rjsCore.Server(process.cwd(), { port })
+        new rjs.Server({
+            port,
+            cwd: require("path").join(__dirname, "../../../test-app")
+        })
         .on("online", () => {
-            console.log("Test server listening...");
+            console.log(`Test server listening (:${port})…`);
             
-            resolve();
+            setImmediate(resolve);
         });
     });
-};
-
-module.exports.stop = () => {
-    console.log("Test server inherently shuts down.");
 };

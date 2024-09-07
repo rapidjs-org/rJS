@@ -1,9 +1,0 @@
-{
-    "configNameInfixDev": "_dev",
-    "configNameInfixProd": "_prod",
-    "configNamePrefix": "rjs",
-    "defaultFilesDirName": "public",
-    "globalConfigName": "config",
-    "processTitle": "Instance",
-    "routesDirName": "routes"
-}

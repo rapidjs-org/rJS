@@ -10,10 +10,10 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/rapidjs-org/core.git"
+        "url": "git+https://github.com/rapidjs-org/rjs.git"
     },
     "bugs": {
-        "url": "https://github.com/rapidjs-org/core/issues"
+        "url": "https://github.com/rapidjs-org/rjs/issues"
     },
     "bin": {
         "rjs": "./build/cli.js"
@@ -26,16 +26,18 @@
         "./cli.gen.help.txt"
     ],
     "scripts": {
-        "debug": "npx tsc --project ./tsconfig.debug.json",
+        "copy-shared": "node ../../scripts/copy-shared.js rjs-cli",
+        "clean": "rm -rf ./build && rm -rf ./types",
+        "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
-        "build": "rm -rf ./build/ && rm -rf ./types/ && npx tsc --project ./tsconfig.build.json",
+        "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:cli": "npx rjs-test cli ./test/cli/",
         "test": "npm run test:cli",
         "bin": "./rjs.sh"
     },
     "devDependencies": {
-        "@rapidjs.org/testing": "^0.1.2",
-        "@rapidjs.org/testing-cli": "^0.1.0",
+        "@rapidjs.org/testing": "0.x",
+        "@rapidjs.org/testing-cli": "0.x",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },
