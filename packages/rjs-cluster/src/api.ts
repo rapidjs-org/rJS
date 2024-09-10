@@ -1,11 +1,4 @@
-import { Socket } from "net";
+export { ProcessCluster } from "./process/ProcessCluster";
+export { ThreadCluster } from "./thread/ThreadCluster";
 
-import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
-import { ProcessPool } from "./process/ProcessPool";
-
-
-export class Cluster extends ProcessPool {
-    public handleRequest(sReq: ISerialRequest, socket?: Socket): ISerialResponse|Promise<ISerialResponse> {
-        return this.assign({ sReq, socket });
-    }
-}
+export { Cluster } from "./cluster/Cluster";

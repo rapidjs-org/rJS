@@ -8,8 +8,13 @@ export class Logger {
 	}
 	
 	private readonly logsDirPath: string;
+	private readonly silent: boolean;
+	
+	constructor(logsDirPath: string|null = null, silent: boolean = false) {
+		this.silent = silent;
 
-	constructor(logsDirPath: string) {
+		if(!logsDirPath) return;
+		
 		this.logsDirPath = resolve(logsDirPath);
 		
 		!existsSync(this.logsDirPath)
@@ -20,8 +25,10 @@ export class Logger {
 	
 	private log(shortMessage: string, verboseMessage?: string, prefix?: string, channel: "stdout"|"stderr" = "stdout") {
 		// TODO: Filter redundant messages (worker copies)
+		!this.silent
+		&& process[channel].write(`${shortMessage}\n`);
 		
-		process[channel].write(`${shortMessage}\n`);
+		if(!this.logsDirPath) return;
 		
 		const date: Date = new Date();
 		const dateKey: string = [
@@ -42,9 +49,10 @@ export class Logger {
 				verboseMessage ? `\n${verboseMessage}`: ""
 			}\n`,
 			(err) =>  {
-				console.error(err);
+				!this.silent
+				&& console.error(err);
 
-				process.exit(2)
+				// TODO: How to handle?
 			}
 		);
 	}

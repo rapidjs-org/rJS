@@ -2,34 +2,32 @@ import { Worker as Thread, SHARE_ENV } from "worker_threads";
 import { join } from "path";
 
 import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
-import { Logger } from "../.shared/Logger";
-import { AWorkerPool, IAdapterOptions, IWorkerPoolOptions } from "../AWorkerPool";
 import { WORKER_ERROR_CODE } from "../local.constants";
+import { AWorkerCluster, IAdapterConfiguration, IClusterOptions } from "../AWorkerCluster";
 
 
-export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialResponse, number> {
-	constructor(adapterOptions: IAdapterOptions, options: IWorkerPoolOptions = {}) {
-		super(join(__dirname, "./api.thread"), adapterOptions, options);
+export class ThreadCluster extends AWorkerCluster<Thread> {
+	constructor(adapterConfig: IAdapterConfiguration, options?: IClusterOptions) {
+		super(join(__dirname, "api.thread"), adapterConfig, options);
 	}
 	
 	protected createWorker(): Promise<Thread> {
     	const thread = new Thread(this.workerModulePath, {
     		argv: [],
     		env: SHARE_ENV,
-			workerData: {
-				adapterModulePath: this.adapterOptions.modulePath,
-				applicationOptions: this.adapterOptions.options
-			}
+			workerData: this.adapterConfig
     	});
-
+		
 		thread.on("error", (err: string) => {
-			this.logError(err);
-			
-			this.errorLimiter.feed();
+			this.errorLimiter.feed(err);
+
+			this.deactivateWorkerWithError(thread, 500);
 		});
 		thread.on("exit", (exitCode: number) => {
 			if([ 0, WORKER_ERROR_CODE ].includes(exitCode)) return;
 			
+			this.deactivateWorkerWithError(thread, 500);
+					
 			this.spawnWorker();
 		});
 		
@@ -39,22 +37,18 @@ export class ThreadPool extends AWorkerPool<Thread, ISerialRequest, ISerialRespo
 				
 				thread.on("message", (sRes: ISerialResponse) => {
 					(~~(sRes.status / 100) !== 5)
-					? this.deactivateWorker(thread, sRes)
-					: this.deactivateWorkerWithError(thread, sRes.status); 
+						? this.deactivateWorker(thread, sRes)
+						: this.deactivateWorkerWithError(thread, sRes.status); 
 				});
 			});
     	});
 	}
-    
+
 	protected destroyWorker(thread: Thread) {
     	thread.terminate();
 	}
 
 	protected activateWorker(thread: Thread, serialRequest: ISerialRequest) {
     	thread.postMessage(serialRequest);
-	}
-
-	protected onTimeout(worker: Thread): void {
-		this.deactivateWorkerWithError(worker, 408);
 	}
 }

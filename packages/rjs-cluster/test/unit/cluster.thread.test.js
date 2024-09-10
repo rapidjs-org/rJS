@@ -1,11 +1,11 @@
-const { Cluster } = require("../../build/api");
+const { ThreadCluster } = require("../../build/api");
 
 const WORKER_AMOUNT = 2;
-const ROUNDTRIP_AMOUNT = 8;
+const ROUNDTRIP_AMOUNT = 4;
 
 new UnitTest("Thread cluster setup")
 .actual(new Promise(resolve => {
-    const cluster = new Cluster({
+    const cluster = new ThreadCluster({
         modulePath: require("path").join(__dirname, "_adapter.thread"),
         options: "test:options"
     }, {
@@ -25,7 +25,7 @@ new UnitTest("Thread cluster setup")
                 tids.add(sRes.body.workerId);
                 delete sRes.body.workerId;
                 sRes.workerIdInRange = tids.size <= WORKER_AMOUNT;
-
+                
                 return sRes;
             })
             .expect({

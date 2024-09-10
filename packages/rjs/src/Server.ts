@@ -3,12 +3,13 @@ import { IncomingMessage, ServerResponse, createServer as createHTTPServer } fro
 import { createServer as createHTTPSServer } from "https";
 
 import { THTTPMethod } from "./.shared/global.types";
+import { ISerialRequest } from "./.shared/global.interfaces";
 import { Options } from "./.shared/Options";
+import { Logger } from "./.shared/Logger";
 import { DeferredCall } from "./.shared/DeferredCall";
 import { Scope } from "./Scope";
 
 import { ICoreOptions } from "@rapidjs.org/rjs-core";
-import { ISerialRequest } from "./.shared/global.interfaces";
 
 
 export interface IServerOptions {
@@ -40,6 +41,8 @@ export class Server extends EventEmitter {
 		this.scope = new Scope(optionsWithDefaults)
 		.on("online", () => onlineDeferral.call());
 
+		const logger: Logger = new Logger(this.scope.options.cwd);
+		
 		((optionsWithDefaults.tls
 			? createHTTPSServer
 			: createHTTPServer) as Function)
@@ -72,8 +75,8 @@ export class Server extends EventEmitter {
 			.catch((err: Error) => {
 				dRes.statusCode = 500;
 				dRes.end();
-
-				console.error(err);
+				
+				logger && logger.error(err);
 			})
 		})
 		.listen(optionsWithDefaults.port, () => onlineDeferral.call());

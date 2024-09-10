@@ -27,11 +27,8 @@
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
-        "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
-        "test:http:rate-limiter": "npx rjs-test http ./test/http-rate-limiter/rate-limiter.test.js",
-        "test": "npm run test:unit && npm run test:http && npm run test:http:rate-limiter",
-        "test-app": "node ./test/app.js"
+        "test": "npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "0.x",

@@ -4,6 +4,7 @@ import { join, resolve } from "path";
 import { Args } from "../Args";
 import { Printer } from "../Printer";
 
+// TODO: From remote?
 export class Template {
 	constructor(templateName: string) {
 		const sourcePath: string = join(__dirname, "../../templates/", templateName);

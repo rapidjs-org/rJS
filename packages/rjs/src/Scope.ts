@@ -1,3 +1,4 @@
+import { join } from "path";
 import { EventEmitter } from "events";
 import { Socket } from "net";
 
@@ -5,27 +6,27 @@ import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 
 import { ICoreOptions, Core } from "@rapidjs.org/rjs-core";
 import { Cluster } from "@rapidjs.org/rjs-cluster";
-import { join } from "path";
 
 
 export class Scope extends EventEmitter {
+	public readonly options: ICoreOptions;
 	private readonly cluster: Cluster;
 
 	constructor(options: Partial<ICoreOptions> = {}) {
 		super();
 
-		const optionsWithDefaults: ICoreOptions = Core.optionsWithDefaults(options);
+		this.options = Core.optionsWithDefaults(options);
 		
-		this.cluster = new Cluster({
-			modulePath: join(__dirname, "./adapter"),
+		this.cluster = new Cluster({	// TODO: Cluster type option
+			modulePath: join(__dirname, "adapter"),
 			options
 		}, {
-			baseSize: optionsWithDefaults.dev ? 1 : undefined,
-			logsDirPath: optionsWithDefaults.cwd
+			baseSize: this.options.dev ? 1 : undefined,
+			logsDirPath: this.options.cwd
 		})
 		.once("online", () => this.emit("online"));
 	}	
-
+	
 	public async handleRequest(sReq: ISerialRequest, socket?: Socket): Promise<ISerialResponse> {	// TODO: IncomingMessage object overload?
 		return this.cluster.handleRequest(sReq as ISerialRequest, socket);
 	}

@@ -53,7 +53,9 @@ export abstract class AHandler extends EventEmitter {
 		const sRes: { body: Buffer; } & ISerialResponse = this.response.serialize();
 
 		// Common headers
-		this.response.setHeader("Content-Length", Buffer.byteLength(sRes.body ?? ""));
+		const bodyLength: number = sRes.body ? Buffer.byteLength(sRes.body) : 0;
+		bodyLength
+		&& this.response.setHeader("Content-Length", bodyLength.toString());
 		this.response.setHeader("Connection", "keep-alive");
 		this.response.setHeader(
 			"Cache-Control",

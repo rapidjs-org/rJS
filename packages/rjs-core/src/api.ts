@@ -1,6 +1,6 @@
 import { join } from "path";
 
-import { THTTPMethod, THeaders, TSerializable } from "./.shared/global.types";
+import { THTTPMethod, THeaders, TSerializable, TStatus } from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { Options } from "./.shared/Options";
 import { Config } from "./Config";
@@ -24,7 +24,7 @@ export interface ICoreOptions {
 export class Core {
     public static optionsWithDefaults(options: Partial<ICoreOptions>): ICoreOptions {
         return new Options(options, {
-            dev: false,
+            dev: false, // TODO: dev also via env var?
             cwd: process.cwd()
         }).object
     }
@@ -33,7 +33,7 @@ export class Core {
     private readonly vfs: VirtualFileSystem;
     private readonly rateLimiter: RateLimiter;
     private readonly responseCache: Cache<Partial<ISerialRequest>, ISerialResponse>;
-    
+
     constructor(options: Partial<ICoreOptions>) {
         const optionsWithDefaults: ICoreOptions = Core.optionsWithDefaults(options);
         
@@ -46,19 +46,26 @@ export class Core {
             this.config.read("peformance", "serverCacheMs").number()
         );
     }
-
+    
     public handleRequest(sReqPartial: Partial<ISerialRequest>): Promise<ISerialResponse> {
         const sReq: ISerialRequest = {
             method: "GET",
-            url: "/",
+            url: "/"    ,
             headers: {},
             
             ...sReqPartial
         };
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
+            const resolveWithStatus = (status: TStatus) => {
+                resolve({
+                    status,
+                    headers: {}
+                });
+            };
+            
             if(!this.rateLimiter.grantsAccess(sReq.clientIP)) {
-                reject(429);
+                resolveWithStatus(429);
 
                 return;
             }
@@ -77,7 +84,7 @@ export class Core {
                 sReq.url.length
                 > this.config.read("security", "maxRequestURILength").number()
             ) {
-                reject(414);
+                resolveWithStatus(414);
                 
                 return;
             }
@@ -85,16 +92,16 @@ export class Core {
                 (sReq.body ?? "").length
                 > this.config.read("security", "maxRequestBodyByteLength").number()
             ) {
-                reject(413);
-                
+                resolveWithStatus(413);
+                 
                 return;
             }
             if(
-                Object.entries(sReq)
+                Object.entries(sReq.headers)
                 .reduce((acc: number, cur: [ string, TSerializable ]) => acc + cur[0].length + cur[1].toString().length, 0)
                 > this.config.read("security", "maxRequestHeadersLength").number()
             ) {
-                reject(431);
+                resolveWithStatus(431);
                 
                 return;
             }
@@ -109,9 +116,11 @@ export class Core {
                     handler = new PostHandler(sReq, this.config);
                     break;
                 default:
-                    throw 405;
+                    resolveWithStatus(405);
+
+                    return;
             }
-            
+
             handler.once("response", (sRes: ISerialResponse) => {
                 if (sReq.method === "HEAD") {
                     delete sRes.body;
@@ -127,9 +136,7 @@ export class Core {
             } catch (err: unknown) {
                 const isStatusError: boolean = /^[2345]\d{2}$/.test((err as string).toString());
                 
-                handler.emit("response", {
-                    status: isStatusError ? err : 500
-                });
+                handler.emit("response", resolveWithStatus(isStatusError ? (err as TStatus) : 500));
                 
                 if(isStatusError) return;
                 

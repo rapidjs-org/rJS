@@ -1,52 +1,58 @@
+import { EventEmitter } from "events";
 import { Options } from "./.shared/Options";
 
 interface IErrorRecord {
+    err: Error|unknown;
     timestamp: number;
 }
 
-interface IErrorLimiterOptions {
+export interface IErrorLimiterOptions {
     threshold: number;
-    windowSize: number;
-    initPeriodSize: number;
+    windowMs: number;
+    initPeriodMs: number;
 }
 
-export class ErrorLimiter {
-    private readonly limitCb: (onInit: boolean) => void;
+export class ErrorLimiter extends EventEmitter {
     private readonly options: IErrorLimiterOptions;
 
-    private isInitPeriod:  boolean = true;
+    private isInitPeriod: boolean;
     private records: IErrorRecord[] = [];
 
-    constructor(limitCb: ((onInit: boolean) => void) = (() => {}), options: Partial<IErrorLimiterOptions> = {}) {
-        this.limitCb = limitCb;
-        this.options = new Options(options, {
-            threshold: 3,
-            windowSize: 3000,
-            initPeriodSize: 3000
-        }).object;
+    constructor(options?: Partial<IErrorLimiterOptions>) {
+        super();
 
+        this.options = new Options<IErrorLimiterOptions>(options, {
+            threshold: 3,
+            windowMs: 3000,
+            initPeriodMs: 3000
+        }).object;
+        
+        this.isInitPeriod = (this.options.initPeriodMs > 0);
         setTimeout(() => {
             this.isInitPeriod = false;
-        }, this.options.initPeriodSize);
+        }, this.options.initPeriodMs);
     }
 
-    public feed() {
+    public feed(err?: Error|unknown) {
+        this.emit("feed", err);
+
         this.records = this.records
         .filter((record: IErrorRecord) => {
-            return (Date.now() - record.timestamp) <= this.options.windowSize;
+            return (Date.now() - record.timestamp) <= this.options.windowMs;
         });
 
         this.records.push({
+            err,
             timestamp: Date.now()
         });
-        
+
         if(!this.isInitPeriod
         && this.records.length < this.options.threshold) return;
         
-        this.limitCb(this.isInitPeriod);
+        this.emit("terminate", this.isInitPeriod);
     }
 
     public trigger() {
-        this.limitCb(false);
+        this.emit("terminate");
     }
 }

@@ -19,7 +19,7 @@ export class RateLimiter {
     	const now: number = Date.now();
 		const limitData: ILimitData = this.limits.get(clientIdentifier) ?? {
         	timePivot: now,
-        	previousWindow: this.limit,
+        	previousWindow: null,
         	currentWindow: 0
 		};
 
@@ -39,7 +39,7 @@ export class RateLimiter {
 		this.limits.set(clientIdentifier, limitData);
 		
 		const previousWindowWeight: number = (windowSpan - delta) / windowSpan;
-		const weightedTotal: number = (limitData.previousWindow * previousWindowWeight)
+		const weightedTotal: number = ((limitData.previousWindow ?? limitData.currentWindow) * previousWindowWeight)
 									+ (limitData.currentWindow * (1 - previousWindowWeight));
 		
     	return weightedTotal <= this.limit;

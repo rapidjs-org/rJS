@@ -25,24 +25,19 @@ export class Config {
 	}
 
 	private readonly obj: TJSON;
-	private readonly path: string;
-	private readonly name?: string;
 
 	constructor(path: string, name?: string, forDev: boolean = false, defaultsObj: TJSON = {}) {
-		this.path = path;
-		this.name = name;
-        
 		this.obj = defaultsObj;
-		this.obj = Config.deepMergeObjects(this.obj, this.parseFile());
-		this.obj = Config.deepMergeObjects(this.obj, this.parseFile(forDev ? _config.configNameInfixDev : _config.configNameInfixProd));
+		this.obj = Config.deepMergeObjects(this.obj, this.parseFile(path, name));
+		this.obj = Config.deepMergeObjects(this.obj, this.parseFile(path, name, forDev ? _config.configNameInfixDev : _config.configNameInfixProd));
 	}
 
-	private parseFile(modeInfix?: string): TJSON {
+	private parseFile(path: string, name: string, modeInfix?: string): TJSON {
 		const configFilePath: string = resolve(
-			this.path,
+			path,
 			[
 				_config.configNamePrefix,
-				this.name,
+				name,
 				modeInfix,
 				"json"
 			]

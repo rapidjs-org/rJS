@@ -1,15 +1,14 @@
 import { parentPort, workerData } from "worker_threads";
 
 import { ISerialRequest } from "../.shared/global.interfaces";
-import { TAdapter, TAdapterModule } from "../local.types";
+import { TAdapter, Adapter } from "../Adapter";
 
 
-import(workerData.adapterModulePath)
-.then((adapterModule: TAdapterModule) => {
-	const requestHandlerAdapter: TAdapter = adapterModule.default(workerData.applicationOptions);
-
+new Adapter(workerData.modulePath, workerData.options)
+.loadHandler()
+.then(async (handler: TAdapter) => {
 	parentPort.on("message", async (sReq: ISerialRequest) => {
-		parentPort.postMessage(await requestHandlerAdapter(sReq));
+		parentPort.postMessage(await handler(sReq));
 	});
 	
 	parentPort.postMessage("online");

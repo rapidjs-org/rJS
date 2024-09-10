@@ -1,2 +1,0 @@
-(c) rapidJS, rJS
-Thassilo Martin Schiepanski
