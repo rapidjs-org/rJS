@@ -1,0 +1,11 @@
+{
+    "extends": "../../tsconfig.debug.json",
+    "compilerOptions": {
+        "declarationDir": "./types/",
+        "rootDir": "./src/",
+        "outDir": "./build/"
+    },
+    "include": [
+        "./src/**/*.ts"
+    ]
+}
