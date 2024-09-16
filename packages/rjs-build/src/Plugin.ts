@@ -39,9 +39,8 @@ export class Plugin<O extends { [ key: string ]: unknown; }> {
 
     private fetchBuildConfig(): TJSON {
         const buildConfigPath: string = this.resolveBuildConfigPath();
-        delete require.cache[buildConfigPath];
         return existsSync(buildConfigPath)
-        ? require(buildConfigPath)
+        ? JSON.parse(readFileSync(buildConfigPath).toString())
         : {};
     }
 

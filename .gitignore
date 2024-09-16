@@ -9,6 +9,6 @@
 
 node_modules/
 
-packages/**/debug/
-packages/**/build/
-packages/**/types/
+packages/*/debug/
+packages/*/build/
+packages/*/types/

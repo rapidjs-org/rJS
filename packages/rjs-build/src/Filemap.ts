@@ -13,11 +13,15 @@ export class Filemap {
 
         fileNodes
         .forEach((fileNode: AFilesystemNode) => {
-            this.pathMap.set(resolve(fileNode.relativePath), fileNode);
+            this.pathMap.set(this.normalizeRelativePath(fileNode.relativePath), fileNode);
         });
     }
     
+    private normalizeRelativePath(relativePath: string): string {
+        return resolve(`./${relativePath}`);
+    }
+    
     public lookup(relativePath: string): AFilesystemNode {
-        return this.pathMap.get(resolve(relativePath));
+        return this.pathMap.get(this.normalizeRelativePath(relativePath));
     }
 }

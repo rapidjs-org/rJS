@@ -1,15 +1,15 @@
-const rjs = require("../../build/api");
+const { FileServer } = require("../../build/api");
+
+const PORT = 7201;
 
 
-const PORT = 7300;
-
-
-module.exports.BEFORE = new Promise(async (resolve) => {
-    new rjs.Server({
-        port: PORT,
-        cwd: require("path").join(__dirname, "../../../../test-app")
+module.exports.BEFORE = new Promise(resolve => {
+    new FileServer({
+        privateDirectoryPath: require("path").join(__dirname, "../../../../test-app/plugins"),
+        publicDirectoryPath: require("path").join(__dirname, "../../../../test-app/public")
     })
-    .on("online", () => {
+    .listen(PORT)
+    .then(() => {
         console.log(`Test server listening (:${PORT})…`);
         
         resolve();

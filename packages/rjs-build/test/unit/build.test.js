@@ -4,10 +4,10 @@ const build = new Build(require("path").join(__dirname, "../../../../test-app/pl
 
 new UnitTest("Basic build")
 .actual(new Promise(async resolve => {
-	resolve(await build.apply());
+	resolve(await build.retrieveAll());
 
 	new UnitTest("Basic rebuild")
-	.actual(build.reapply("./out.txt", {
+	.actual(build.retrieve("./out.txt", {
 		option1: "O2"
 	}))
 	.expect({

@@ -1,0 +1,9 @@
+{
+    "configNameInfixDev": "dev",
+    "configNameInfixProd": "prod",
+    "configNamePrefix": "rjs",
+    "globalConfigName": "config",
+    "privateDirName": "plugins",
+    "publicDirName": "public",
+    "routesDirName": "routes"
+}

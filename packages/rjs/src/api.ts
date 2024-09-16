@@ -1,2 +1,2 @@
-export { Scope } from "./Scope";
-export { IServerOptions, Server } from "./Server";
+export { FileEmitter } from "./FileEmitter";
+export { FileServer } from "./FileServer";

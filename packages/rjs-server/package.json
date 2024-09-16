@@ -1,5 +1,5 @@
 {
-    "name": "@rapidjs.org/rjs",
+    "name": "@rapidjs.org/rjs-server",
     "version": "0.1.0",
     "description": "No- and low-code web application development framework for JavaScript.",
     "author": "Thassilo Martin Schiepanski",
@@ -17,35 +17,28 @@
     },
     "main": "./build/api.js",
     "types": "./types/api.d.ts",
-    "bin": {
-        "rjs": "./build/cli.js"
-    },
     "files": [
         "./build/",
-        "./types/",
-        "./templates/",
-        "./cli.help.txt",
-        "./cli.gen.help.txt"
+        "./types/"
     ],
     "scripts": {
-        "copy-shared": "node ../../scripts/copy-shared.js rjs",
+        "copy-shared": "node ../../scripts/copy-shared.js rjs-server",
         "clean": "rm -rf ./build && rm -rf ./types",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
-        "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
-        "test:cli": "npx rjs-test cli ./test/cli/",
-        "test": "npm run test:unit && npm run test:http && npm run test:cli"
+        "test": "npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "0.x",
-        "@rapidjs.org/testing-unit": "0.x",
         "@rapidjs.org/testing-http": "0.x",
+        "@rapidjs.org/testing-unit": "0.x",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@rapidjs.org/rjs-build": "0.x"
+        "@rapidjs.org/rjs-core": "0.x",
+        "@rapidjs.org/rjs-cluster": "0.x"
     }
 }

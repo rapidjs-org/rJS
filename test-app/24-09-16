@@ -1,0 +1,50 @@
+[22:14:18]	333
+
+[22:14:18]	333
+
+[22:14:18]	true
+
+[22:14:42]	true
+
+[22:14:42]	true
+
+[22:16:13]	true
+
+[22:16:38]	true
+
+[22:16:38]	null
+
+[22:17:58]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726517878350',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: Uint8Array(12) [
+     84,  69,  83,  84,  32,
+     40, 105, 110, 100, 101,
+    120,  41
+  ]
+}
+
+[22:20:37]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726518037016',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: Uint8Array(12) [
+     84,  69,  83,  84,  32,
+     40, 105, 110, 100, 101,
+    120,  41
+  ]
+}
+
+[22:20:55]	true
+

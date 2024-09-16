@@ -1,7 +1,6 @@
 import { Dirent, readdirSync } from "fs";
 import { join, resolve } from "path";
 
-import { Options } from "./.shared/Options";
 import { AFilesystemNode } from "./AFilesystemNode";
 import { Directory } from "./Directory";
 import { File } from "./File";
@@ -18,16 +17,18 @@ export enum EBuildFilter {
 export class Build<O extends { [ key: string ]: unknown; }> {
     private readonly outpathMap: Map<string, Plugin<O>> = new Map();
     private readonly pluginsDirectoryPath: string;
-
+    
     private plugins: Plugin<O>[] = [];
 
     constructor(pluginsDirectoryPath: string) {
         this.pluginsDirectoryPath = resolve(pluginsDirectoryPath);
-        
-        this.fetchPlugins();
     }
     
-    public async fetchPlugins() {
+    private normalizeRelativePath(relativePath: string): string {
+        return resolve(`./${relativePath}`);
+    }
+
+    private async fetchPlugins() {
         this.plugins = readdirSync(this.pluginsDirectoryPath, {
             withFileTypes: true
         })
@@ -41,8 +42,10 @@ export class Build<O extends { [ key: string ]: unknown; }> {
             : acc;
         }, []);
     }
-    
-    public async apply(options?: O, filter: EBuildFilter = EBuildFilter.ALL): Promise<Filemap> {
+
+    public async retrieveAll(options?: O, filter: EBuildFilter = EBuildFilter.ALL): Promise<Filemap> {
+        this.fetchPlugins();    // TODO: skip already loaded ones in prod?
+
         return new Filemap(
             await this.plugins
             .reduce(async (acc: Promise<AFilesystemNode[]>, plugin: Plugin<O>) => {
@@ -51,7 +54,7 @@ export class Build<O extends { [ key: string ]: unknown; }> {
                 fileNodes
                 .forEach((fileNode: AFilesystemNode) => {
                     this.outpathMap
-                    .set(resolve(fileNode.relativePath), plugin);
+                    .set(this.normalizeRelativePath(fileNode.relativePath), plugin);
                 });
                 
                 return [
@@ -71,17 +74,22 @@ export class Build<O extends { [ key: string ]: unknown; }> {
         );
     }
 
-    public async reapply(relativeOutPath: string, options?: O): Promise<AFilesystemNode|null> {
-        !this.outpathMap.has(resolve(relativeOutPath))
-        && this.fetchPlugins();
-        
-        const relatedPlugin: Plugin<O> = await this.outpathMap.get(resolve(relativeOutPath));
-        return relatedPlugin
-        ? (await relatedPlugin.apply(options))
+    public async retrieve(relativePath: string, options?: O): Promise<AFilesystemNode|null> {
+        const filterFilesystemNode = (fileNodes: AFilesystemNode[]): AFilesystemNode => {
+            return fileNodes
             .filter((fileNode: AFilesystemNode) => {
-                return resolve(fileNode.relativePath) === resolve(relativeOutPath)
+                return this.normalizeRelativePath(fileNode.relativePath) === this.normalizeRelativePath(relativePath)
             })
-            .pop()
+            .pop();
+        };
+        
+        if(!this.outpathMap.has(this.normalizeRelativePath(relativePath))) {
+            return filterFilesystemNode((await this.retrieveAll()).fileNodes); 
+        }
+        
+        const relatedPlugin: Plugin<O> = await this.outpathMap.get(this.normalizeRelativePath(relativePath));
+        return relatedPlugin
+        ? filterFilesystemNode(await relatedPlugin.apply(options))
         : null;
     }
 }
