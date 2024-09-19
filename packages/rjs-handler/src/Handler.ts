@@ -14,6 +14,7 @@ import { PostHandlerContext } from "./PostHandlerContext";
 import _config from "./_config.json";
 
 import GLOBAL_CONFIG_DEFAULTS from "./config.defaults.json";
+import { RPCController } from "./RPCController";
 
 
 export interface IHandlerOptions {
@@ -26,6 +27,7 @@ export class Handler {
     private readonly vfs: VirtualFileSystem;
     private readonly rateLimiter: RateLimiter;
     private readonly responseCache: Cache<Partial<ISerialRequest>, ISerialResponse>;
+    private readonly rpcController: RPCController;
 
     constructor(options: Partial<IHandlerOptions>) {
         const optionsWithDefaults: IHandlerOptions = new Options(options, {
@@ -49,6 +51,9 @@ export class Handler {
         this.responseCache = new Cache(
             this.config.read("peformance", "serverCacheMs").number()
         );
+        this.rpcController = new RPCController(
+            join(optionsWithDefaults.cwd, _config.rpcDirName)
+        );
     }
 
     public activate(sReqPartial: Partial<ISerialRequest>): Promise<ISerialResponse> {
@@ -67,7 +72,7 @@ export class Handler {
                     headers: {}
                 });
             };
-            
+
             if(!this.rateLimiter.grantsAccess(sReq.clientIP)) {
                 resolveWithStatus(429);
 
@@ -122,7 +127,7 @@ export class Handler {
                     handler = new GetHandlerContext(sReq, this.config, this.vfs, this.config.read("headers").object() as THeaders);
                     break;
                 case "POST":
-                    handler = new PostHandlerContext(sReq, this.config);
+                    handler = new PostHandlerContext(sReq, this.config, this.rpcController);
                     break;
                 default:
                     resolveWithStatus(405);

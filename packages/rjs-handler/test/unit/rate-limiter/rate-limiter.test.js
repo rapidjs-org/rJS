@@ -10,7 +10,7 @@ const handler = new Handler({
 
 new UnitTest("Security: ≤ Rate Limit")
 .actual(async () => {
-    return (await handler.apply({
+    return (await handler.activate({
         method: "GET",
         url: "/"
     })).status;
@@ -19,7 +19,7 @@ new UnitTest("Security: ≤ Rate Limit")
 
 new UnitTest("Security: > Rate Limit")
 .actual(async () => {
-    return (await handler.apply({
+    return (await handler.activate({
         method: "GET",
         url: "/"
     })).status;

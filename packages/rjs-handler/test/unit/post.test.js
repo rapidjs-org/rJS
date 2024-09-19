@@ -4,66 +4,66 @@ new UnitTest("POST /route1")
 .actual(request({
     method: "POST",
     url: "/route1",
-    body: {
+    body: JSON.stringify({
         name: "sum",
         args: [ 1, 2 ]
-    }
-}, true))
+    })
+}, [ "Content-Type" ]))
 .expect({
     status: 200,
     headers: {
         "Content-Type": "application/json"
     },
-    body: {
+    body: Buffer.from(JSON.stringify({
         data: 3
-    }
+    }))
 });
 
 new UnitTest("POST /route1")
 .actual(request({
     method: "POST",
     url: "/route1",
-    body: {
+    body: JSON.stringify({
         name: "CONSTANT"
-    }
-}, true))
+    })
+}, []))
 .expect({
     status: 200,
-    body: {
+    body: Buffer.from(JSON.stringify({
         data: "value"
-    }
+    }))
 });
 
 new UnitTest("POST /route2")
 .actual(request({
     method: "POST",
     url: "/route2",
-    body: {
+    body: JSON.stringify({
         name: "CONSTANT"
-    }
-}, true))
+    })
+}, []))
 .expect({
     status: 200,
-    body: {
+    body: Buffer.from(JSON.stringify({
         data: "value"
-    }
+    }))
 });
 
 new UnitTest("POST /route2 (no body)")
 .actual(request({
     method: "POST",
     url: "/route2"
-}, []))
+}, [], true))
 .expect({
-    status: 400
+    status: 404
 });
 
 new UnitTest("POST /route2 (unknown param name)")
 .actual(request({
     method: "POST",
     url: "/route2",
-    body: { name: "any" }
-}, []))
+    body: JSON.stringify({ name: "any" })
+}, [], true))
 .expect({
     status: 404
 });
@@ -72,20 +72,20 @@ new UnitTest("POST /non-existing-route")
 .actual(request({
     method: "POST",
     url: "/non-existing-route",
-    body: {}
-}, []))
+    body: JSON.stringify({})
+}, [], true))
 .expect({
     status: 404
 });
 
 new UnitTest("POST /nested/route1")
-.eval(request({
+.actual(request({
     method: "POST",
     url: "/nested/route1",
-    body: {
+    body: JSON.stringify({
         name: "CONSTANT"
-    }
-}, []))
+    })
+}, [], true))
 .expect({
     status: 200
 });

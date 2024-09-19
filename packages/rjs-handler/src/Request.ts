@@ -58,7 +58,7 @@ export class Request {
 		return {
 			text: () => $this.body,
 			json<T>() {
-				return JSON.parse($this.body) as T;
+				return ($this.body ? JSON.parse($this.body) : {}) as T;
 			}
 		};
 	}

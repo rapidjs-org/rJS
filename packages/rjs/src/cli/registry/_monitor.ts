@@ -2,12 +2,14 @@ import { Args } from "../Args";
 import { Command } from "../Command";
 import { Printer } from "../Printer";
 import { Dependency } from "./Dependency";
-import { activePorts } from "./activePorts";
+import { activePorts } from "./util";
 
 import * as rJSProxyAPI from "@rapidjs.org/rjs-proxy";
 
 new Command("monitor", () => {
-	new Dependency("@rapidjs.org/rjs-proxy").installIfNotPresent().then(async (api) => {
+	new Dependency("@rapidjs.org/rjs-proxy")
+	.installIfNotPresent()
+	.then(async (api) => {
 		const contextPort: number = Args.parseOption("port", "P").number();
 		const proxiedPorts: number[] = contextPort
 			? [ contextPort ]

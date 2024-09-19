@@ -4,7 +4,7 @@ import { join } from "path";
 import { Command } from "../../Command";
 import { Printer } from "../../Printer";
 import { Dependency } from "../Dependency";
-import { CONTEXT } from "../CONTEXT";
+import { CONTEXT } from "../local.constants";
 
 
 new Command("start", () => {

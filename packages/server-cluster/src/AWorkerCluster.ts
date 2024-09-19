@@ -106,7 +106,7 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
             threadId: number;
             pid: number;
         };
-        
+		
     	return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
 	}
 
@@ -114,16 +114,10 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
 		const worker: Worker = await this.createWorker();
 
 		(worker as Worker & { stdout: EventEmitter; })
-		.stdout.on("data", (message: unknown) => {
-			if(!(message.toString() ?? "").trim().length) return;
-			this.emit("stdout", message);
-		});
+		.stdout.on("data", (message: unknown) => this.emit("stdout", message));
 		(worker as Worker & { stderr: EventEmitter; })
-		.stderr.on("data", (message: unknown) => {
-			if(!(message.toString() ?? "").trim().length) return;
-			this.emit("stderr", message);
-		});
-
+		.stderr.on("data", (message: unknown) => this.emit("stderr", message));
+		
 		this.idleWorkers.push(worker);
 		
 		return worker;

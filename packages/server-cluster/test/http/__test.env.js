@@ -15,17 +15,19 @@ module.exports.BEFORE = new Promise(async (resolve) => {
     .on("stdout", message => process.stdout.write(message))
     .on("stderr", message => process.stderr.write(message))
     .on("online", () => {
-        createServer(async req => {
-            cluster.handleRequest(
+        createServer(async (req, res) => {
+            await cluster.handleRequest(
                 {
                     url: req.url
                 },
                 req.socket
             );
+            
+            res.end();
         })
         .listen(PORT, () => {
             console.log(`Test server listening (:${PORT})…`);
-    
+            
             resolve();
         });
     });

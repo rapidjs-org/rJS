@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import { homedir } from "os";
 
 import { Args } from "../../Args";
-import { CONTEXT } from "../CONTEXT";
+import { CONTEXT } from "../local.constants";
 
 import * as rJSProxyAPI from "@rapidjs.org/rjs-proxy";
 

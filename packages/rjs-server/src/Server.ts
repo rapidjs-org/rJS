@@ -66,7 +66,7 @@ export class Server extends EventEmitter {
 				})
 				: Promise.resolve(null)
 			)
-			.then((body: string) => {
+			.then(async (body: string) => {
 				const sReq: ISerialRequest = {
 					method: dReq.method as THTTPMethod,
 					url: dReq.url,
@@ -75,7 +75,8 @@ export class Server extends EventEmitter {
 					clientIP: dReq.socket.remoteAddress
 				};
 				
-				this.instance.handleRequest(sReq, dReq.socket);
+				this.instance.handleRequest(sReq, dReq.socket)
+				.finally(() => dRes.end());
 				
 				this.emit("request", sReq);
 			})

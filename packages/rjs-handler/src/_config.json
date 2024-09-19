@@ -5,5 +5,5 @@
     "globalConfigName": "config",
     "privateDirName": "plugins",
     "publicDirName": "public",
-    "routesDirName": "routes"
+    "rpcDirName": "api"
 }

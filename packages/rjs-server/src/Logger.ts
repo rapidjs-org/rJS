@@ -23,10 +23,10 @@ export class Logger {
 		});
 	}
 	
-	private log(shortMessage: string, verboseMessage?: string, prefix?: string, channel: "stdout"|"stderr" = "stdout") {
+	private log(shortMessage: string|Buffer, verboseMessage?: string, prefix?: string, channel: "stdout"|"stderr" = "stdout") {
 		// TODO: Filter redundant messages (worker copies)
 		!this.silent
-		&& process[channel].write(`${shortMessage}\n`);
+		&& process[channel].write(shortMessage.toString().replace(/\n?$/, "\n"));
 		
 		if(!this.logsDirPath) return;
 		

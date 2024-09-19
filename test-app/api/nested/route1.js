@@ -1,0 +1,1 @@
+module.exports.CONSTANT = "value1.1";

@@ -2,12 +2,14 @@ import { Command } from "../Command";
 import { Args } from "../Args";
 import { Dependency } from "./Dependency";
 import { Printer } from "../Printer";
-import { CONTEXT } from "./CONTEXT";
+import { CONTEXT } from "./local.constants";
 
 import * as rJSProxyAPI from "@rapidjs.org/rjs-proxy";
 
 new Command("stop", () => {
-	new Dependency("@rapidjs.org/rjs-proxy").installIfNotPresent().then(async (api) => {
+	new Dependency("@rapidjs.org/rjs-proxy")
+	.installIfNotPresent()
+	.then(async (api) => {
 		await (
 			await api.require<typeof rJSProxyAPI>()
 		).unbed(CONTEXT.port, Args.parseOption("hostnames", "H").string() ? CONTEXT.hostnames : null);

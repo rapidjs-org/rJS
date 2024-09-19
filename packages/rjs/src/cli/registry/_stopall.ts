@@ -5,10 +5,12 @@ import { Dependency } from "./Dependency";
 import { Printer } from "../Printer";
 
 import * as rJSProxyAPI from "@rapidjs.org/rjs-proxy";
-import { activePorts } from "./activePorts";
+import { activePorts } from "./util";
 
 new Command("stopall", () => {
-	new Dependency("@rapidjs.org/rjs-proxy").installIfNotPresent().then(async (api) => {
+	new Dependency("@rapidjs.org/rjs-proxy")
+	.installIfNotPresent()
+	.then(async (api) => {
 		const proxiedPorts: number[] = activePorts(rJSProxyAPI.SOCKET_LOCATION);
 
 		if(!proxiedPorts.length) {

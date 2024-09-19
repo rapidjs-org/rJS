@@ -57,6 +57,7 @@ export abstract class AHandlerContext extends EventEmitter {
 		bodyLength
 		&& this.response.setHeader("Content-Length", bodyLength.toString());
 		this.response.setHeader("Connection", "keep-alive");
+		this.response.setHeader("Keep-Alive", "timeout=5");
 		this.response.setHeader(
 			"Cache-Control",
 			[

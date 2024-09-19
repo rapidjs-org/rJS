@@ -1,0 +1,156 @@
+[00:29:57]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726525797634',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:30:55]	/ {
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726525855899',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:34:45]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526085857',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:34:58]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526098215',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  }
+}
+
+[00:36:54]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526214913',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  }
+}
+
+[00:37:24]	{ status: 200, body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29> }
+
+[00:37:47]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526267037',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:40:29]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526429639',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate',
+    'keep-alive': 'timeout=10, max=100'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:40:38]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526438137',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:40:51]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726526451042',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:51:06]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726527066273',
+    'Content-Length': '12',
+    Connection: 'keep-alive',
+    'Keep-Alive': 'timeout=5',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:51:45]	{
+  status: 200,
+  headers: {
+    Server: 'rapidJS',
+    Etag: 'W/1726527105988',
+    'Content-Length': '12',
+    'Cache-Control': 'max-age=86400000, stale-while-revalidate=300, must-revalidate'
+  },
+  body: <Buffer 54 45 53 54 20 28 69 6e 64 65 78 29>
+}
+
+[00:55:18]	(error) 
+node:internal/event_target:1096
+  process.nextTick(() => { throw err; });
+                           ^
+
+[00:55:18]	(error) TypeError [Error]: Cannot read properties of undefined (reading 'rateLimiter')
+    at /Users/Privat/Desktop/rapidJS/rapidJS/packages/rjs-handler/build/Handler.js:38:23
+    at new Promise (<anonymous>)
+    at activate (/Users/Privat/Desktop/rapidJS/rapidJS/packages/rjs-handler/build/Handler.js:30:16)
+    at MessagePort.<anonymous> (/Users/Privat/Desktop/rapidJS/rapidJS/packages/server-cluster/build/thread/api.thread.js:9:55)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:822:20)
+    at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)
+
+Node.js v21.7.1
+
+[00:58:34]	{
+  method: 'GET',
+  url: '/',
+  headers: { host: 'localhost:7203', connection: 'keep-alive' },
+  body: null,
+  clientIP: '::1'
+}
+

@@ -1,20 +1,14 @@
 import { EventEmitter } from "events";
 import { execSync } from "child_process";
 
-import { Update } from "../Update";
-
 export class Dependency extends EventEmitter {
 	// TODO: Eventually work "lazy" on project level
 	packageReference: string;
 
 	constructor(packageReference: string /* , majorVersion?: number */) {
 		super();
-
+		
 		this.packageReference = packageReference;
-
-		process.on("exit", () => {
-			Update.isAvailable(this.packageReference) && new Update(this.packageReference);
-		});
 	}
 
 	installIfNotPresent(): Promise<this> {
