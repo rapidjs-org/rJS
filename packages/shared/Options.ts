@@ -19,9 +19,9 @@ export class Options<T> {
 		}
 		return targetObj;
 	};
-	
-	private obj: T;
 
+	private obj: T;
+	
 	constructor(obj: Partial<T>, defaultsObj: T) {
 		this.obj = Options.deepMerge(defaultsObj, obj) as T;
 	}

@@ -16,7 +16,7 @@ new UnitTest("Cluster setup")
         
         const tids = new Set();
         for(let i = 0; i < ROUNDTRIP_AMOUNT; i++) {
-            new UnitTest(`Thread roundtrip (${i})`)
+            new UnitTest(`Cluster roundtrip (${i})`)
             .actual(async () => {
                 const sRes = await cluster.handleRequest({
                     sReq: `test:request:${i}`

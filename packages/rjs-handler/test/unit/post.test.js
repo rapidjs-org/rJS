@@ -14,9 +14,9 @@ new UnitTest("POST /route1")
     headers: {
         "Content-Type": "application/json"
     },
-    body: Buffer.from(JSON.stringify({
+    body: {
         data: 3
-    }))
+    }
 });
 
 new UnitTest("POST /route1")
@@ -29,9 +29,9 @@ new UnitTest("POST /route1")
 }, []))
 .expect({
     status: 200,
-    body: Buffer.from(JSON.stringify({
-        data: "value"
-    }))
+    body: {
+        data: "value1"
+    }
 });
 
 new UnitTest("POST /route2")
@@ -44,9 +44,9 @@ new UnitTest("POST /route2")
 }, []))
 .expect({
     status: 200,
-    body: Buffer.from(JSON.stringify({
-        data: "value"
-    }))
+    body: {
+        data: "value2"
+    }
 });
 
 new UnitTest("POST /route2 (no body)")

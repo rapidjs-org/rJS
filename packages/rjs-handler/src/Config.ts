@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 import { TJSON } from "./.shared/global.types";
+import { Options } from "./.shared/Options";
 
 import _config from "./_config.json";
 
@@ -15,23 +16,31 @@ export class Config {
 
 				continue;
 			}
-            
+			
 			sourceObj[key] = Config.deepMergeObjects(
                 targetObj[key] as TJSON, sourceObj[key] as TJSON
 			);
 		}
-        
+		
 		return { ...targetObj, ...sourceObj };
 	}
-
+	
 	private readonly obj: TJSON;
 
 	constructor(path: string, name?: string, forDev: boolean = false, defaultsObj: TJSON = {}) {
 		this.obj = defaultsObj;
-		this.obj = Config.deepMergeObjects(this.obj, this.parseFile(path, name));
-		this.obj = Config.deepMergeObjects(this.obj, this.parseFile(path, name, forDev ? _config.configNameInfixDev : _config.configNameInfixProd));
+		this.obj = new Options(
+			this.parseFile(path, name),
+			this.obj
+		).object;
+		this.obj = new Options(
+			this.parseFile(
+				path, name, forDev ? _config.configNameInfixDev : _config.configNameInfixProd
+			),
+			this.obj
+		).object;
 	}
-
+	
 	private parseFile(path: string, name: string, modeInfix?: string): TJSON {
 		const configFilePath: string = resolve(
 			path,

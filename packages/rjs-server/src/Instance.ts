@@ -6,6 +6,8 @@ import { Logger } from "./Logger";
 import { Cluster } from "@rapidjs.org/server-cluster";
 import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
 
+import _config from "./_config.json";
+
 
 export function createInstance(options?: Partial<IHandlerOptions>, clusterSize?: IClusterSize): Promise<Instance> {
 	return new Promise((resolve) => {
@@ -25,7 +27,7 @@ export class Instance extends Cluster {
 			baseSize: options.dev ? 1 : (clusterSize ?? {}).threads
 		});
 		
-		const logger: Logger = new Logger(options.cwd);
+		const logger: Logger = new Logger(join(options.cwd, _config.logsDirName));
 		
 		this.on("stdout", (message: string) => logger.info(message));
 		this.on("stderr", (message: string) => logger.error(message));

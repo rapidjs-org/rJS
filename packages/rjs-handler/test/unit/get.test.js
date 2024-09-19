@@ -13,7 +13,7 @@ new UnitTest("GET /")
         "Server": "rapidJS",
         "Content-Length": 12
     },
-    body: Buffer.from("TEST (index)")
+    body: "TEST (index)"
 });
 
 new UnitTest("GET /compress.txt")
@@ -60,5 +60,5 @@ new UnitTest("GET /out.txt (built)")
 }, []))
 .expect({
 	status: 200,
-	body: Buffer.from("O\nP1\nP2")
+	body: "O\nP1\nP2"
 });

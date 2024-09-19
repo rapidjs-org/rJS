@@ -12,7 +12,7 @@ export class Logger {
 	
 	constructor(logsDirPath: string|null = null, silent: boolean = false) {
 		this.silent = silent;
-
+		
 		if(!logsDirPath) return;
 		
 		this.logsDirPath = resolve(logsDirPath);

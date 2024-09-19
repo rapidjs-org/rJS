@@ -19,12 +19,18 @@ module.exports.request = async (sReq, headerFilters = null, hideBody = false, me
             sRes.headers = filteredHeaders;
         }
     }
+
     if(hideBody) {
         delete sRes.body;
     } else if(metaBody) {
         sRes.body = {
             length: sRes.body ? Buffer.byteLength(sRes.body) : 0
         };
+    } else {
+        try {
+            sRes.body = sRes.body.toString();
+            sRes.body = JSON.parse(sRes.body);
+        } catch {}
     }
     
     return sRes;
