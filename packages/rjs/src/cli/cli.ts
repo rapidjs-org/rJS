@@ -1,6 +1,6 @@
-import _config from "./_config.json";
+import _config from "../_config.json";
 
-process.title = `rJS ${_config.processTitle}`;
+process.title = `rJS ${_config.cliProcessTitle}`;
 
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";

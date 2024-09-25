@@ -5,7 +5,7 @@ const PORT = 7201;
 
 module.exports.BEFORE = new Promise(resolve => {
     new FileServer({
-        privateDirectoryPath: require("path").join(__dirname, "../../../../test-app/plugins"),
+        privateDirectoryPath: require("path").join(__dirname, "../../../../test-app/private"),
         publicDirectoryPath: require("path").join(__dirname, "../../../../test-app/public")
     })
     .listen(PORT)

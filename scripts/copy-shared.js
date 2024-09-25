@@ -5,26 +5,30 @@ const _util = require("./_util");
 
 
 const PACKAGES_DIR_PATH = path.join(__dirname, "../packages/");
-const SHARED_DIR_NAME = "shared";
+const SHARED_DIR_PATH = path.join(PACKAGES_DIR_PATH, "shared");
 const SHARED_DEPENDENCY_DIR_NAME = ".shared";
-
-
-const targetPackageName = process.argv.slice(2)[0];
-if(!fs.existsSync(path.join(PACKAGES_DIR_PATH, targetPackageName))) {
-    throw new ReferenceError(`Package '${targetPackageName}' does not exist`);
+const TARGET_PACKAGE_NAME = process.argv.slice(2)[0];
+if(!fs.existsSync(path.join(PACKAGES_DIR_PATH, TARGET_PACKAGE_NAME))) {
+    throw new ReferenceError(`Package '${TARGET_PACKAGE_NAME}' does not exist`);
 }
+const TARGET_SHARED_DIR_PATH = path.join(PACKAGES_DIR_PATH, TARGET_PACKAGE_NAME, "./src", SHARED_DEPENDENCY_DIR_NAME);
 
-const targetSharedDirPath = path.join(PACKAGES_DIR_PATH, targetPackageName, "./src", SHARED_DEPENDENCY_DIR_NAME);
-fs.rmSync(targetSharedDirPath, {
+fs.rmSync(TARGET_SHARED_DIR_PATH, {
     force: true,
     recursive: true
 });
-fs.cpSync(path.join(PACKAGES_DIR_PATH, SHARED_DIR_NAME), targetSharedDirPath, {
+fs.cpSync(SHARED_DIR_PATH, TARGET_SHARED_DIR_PATH, {
     recursive: true
+});
+fs.readdirSync(TARGET_SHARED_DIR_PATH, {
+    withFileTypes: true,
+    recursive: true
+}).forEach(dirent => {
+    fs.chmodSync(path.join(dirent.parentPath, dirent.name), "444");
 });
 
 
 _util.print([
-    `Copied shared modules state to package '${targetPackageName}'.`,
-    `(packages/${SHARED_DEPENDENCY_DIR_NAME} → packages/${targetPackageName}/src/${SHARED_DEPENDENCY_DIR_NAME})`
+    `Copied shared modules state to package '${TARGET_PACKAGE_NAME}'.`,
+    `(packages/${SHARED_DEPENDENCY_DIR_NAME} → packages/${TARGET_PACKAGE_NAME}/src/${SHARED_DEPENDENCY_DIR_NAME})`
 ].join("\n"));

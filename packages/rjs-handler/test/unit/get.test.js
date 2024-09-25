@@ -6,14 +6,15 @@ new UnitTest("GET /")
 .actual(request({
     method: "GET",
     url: "/"
-}, [ "Server", "Content-Length" ]))
+}, [ "Server", "Content-Length", "Content-Type" ]))
 .expect({
     status: 200,
     headers: {
         "Server": "rapidJS",
-        "Content-Length": 12
+        "Content-Length": 5,
+        "Content-Type": "text/html"
     },
-    body: "TEST (index)"
+    body: "INDEX"
 });
 
 new UnitTest("GET /compress.txt")
@@ -27,7 +28,7 @@ new UnitTest("GET /compress.txt")
 .expect({
     status: 200,
     headers: {
-        "Content-Length": 632,  // Compressed (1000 > 632)
+        "Content-Length": 632,
         "Content-Encoding": "gzip"
     },
     body: {
@@ -39,8 +40,11 @@ new UnitTest("GET /index.txt")
 .actual(request({
     method: "GET",
     url: "/index.php"
-}, [], true))
+}, [ "Content-Length" ], true))
 .expect({
+    headers: {
+        "Content-Length": 0
+    },
     status: 404
 });
 
@@ -53,12 +57,50 @@ new UnitTest("GET /nested/")
     status: 200
 });
 
-new UnitTest("GET /out.txt (built)")
+new UnitTest("GET /page")
 .eval(request({
     method: "GET",
-    url: "/out.txt"
-}, []))
+    url: "/page"
+}, [], null, true))
 .expect({
 	status: 200,
-	body: "O\nP1\nP2"
+	body: {
+        length: 229
+        + require("fs").readFileSync(
+            require("path").join(__dirname, "../../client/rjs.client.js")
+        ).toString()
+        .replace(/\n/g, "")
+        .replace(/\s{2,}/g, " ")
+        .length
+        + "<script>".length
+        + "</script>".length
+        + 2
+    }
 });
+
+new UnitTest("/page + client module injection")
+.eval(async () => {
+    return !!~(
+        (await request({
+            method: "GET",
+            url: "/page"
+        }))
+        .body
+        .indexOf("<script>window.rJS =")
+    );
+})
+.expect(true);
+
+new UnitTest("GET /index.txt")
+.actual(request({
+    method: "GET",
+    url: "/index.php"
+}, [ "Content-Length" ], true))
+.expect({
+    headers: {
+        "Content-Length": 0
+    },
+    status: 404
+});
+
+// TODO: 404

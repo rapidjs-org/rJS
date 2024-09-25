@@ -3,7 +3,7 @@ import { IncomingMessage, ServerResponse, createServer as createHTTPServer } fro
 import { createServer as createHTTPSServer } from "https";
 
 import { THTTPMethod } from "./.shared/global.types";
-import { ISerialRequest } from "./.shared/global.interfaces";
+import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { IClusterSize } from "./local.interfaces";
 import { Options } from "./.shared/Options";
 import { DeferredCall } from "./DeferredCall";
@@ -33,7 +33,7 @@ export function createServer(options?: Partial<IServerOptions & IHandlerOptions>
 
 export class Server extends EventEmitter {
 	private readonly instance: Instance;
-
+	
 	constructor(options?: Partial<IServerOptions & IHandlerOptions>, clusterSize?: IClusterSize) {
 		super();
 		
@@ -47,7 +47,7 @@ export class Server extends EventEmitter {
 		
 		this.instance = new Instance(optionsWithDefaults, clusterSize)
 		.on("online", () => onlineDeferral.call());
-
+		
 		const logger: Logger = new Logger(options.cwd);
 		
 		((optionsWithDefaults.tls
@@ -75,7 +75,15 @@ export class Server extends EventEmitter {
 					clientIP: dReq.socket.remoteAddress
 				};
 				
-				this.instance.handleRequest(sReq, dReq.socket)
+				this.instance
+				.handleRequest(sReq)
+				.then((sRes: ISerialResponse) => {
+					dRes.statusCode = sRes.status;
+					for(const header in sRes.headers) {
+						dRes.setHeader(header, [ sRes.headers[header] ].flat().join(", "));
+					}
+					dRes.write(sRes.body);
+				})
 				.finally(() => dRes.end());
 				
 				this.emit("request", sReq);

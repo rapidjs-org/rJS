@@ -16,14 +16,14 @@ module.exports.BEFORE = new Promise(async (resolve) => {
     .on("stderr", message => process.stderr.write(message))
     .on("online", () => {
         createServer(async (req, res) => {
-            await cluster.handleRequest(
+            const sRes = await cluster.handleRequest(
                 {
                     url: req.url
-                },
-                req.socket
+                }
             );
             
-            res.end();
+            res.statusCode = sRes.status ?? 200;
+            res.end(JSON.stringify(sRes.body));
         })
         .listen(PORT, () => {
             console.log(`Test server listening (:${PORT})…`);

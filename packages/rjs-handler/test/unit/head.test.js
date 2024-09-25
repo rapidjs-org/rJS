@@ -9,6 +9,6 @@ new UnitTest("HEAD /")
     status: 200,
     headers: {
         "Server": "rapidJS",
-        "Content-Length": 12
+        "Content-Length": 5
     }
 });

@@ -1,6 +1,5 @@
 import { ChildProcess } from "child_process";
 import { Worker as Thread } from "worker_threads";
-import { Socket } from "net";
 import { join } from "path";
 
 import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
@@ -13,10 +12,7 @@ import { ProcessCluster } from "../process/ProcessCluster";
 import { ThreadCluster } from "../thread/ThreadCluster";
 
 export class Cluster {
-    private readonly parentCluster: AWorkerCluster<
-        ChildProcess | Thread,
-        Socket | void
-    >;
+    private readonly parentCluster: AWorkerCluster<ChildProcess | Thread>;
 
     constructor(
         adapterConfig: IAdapterConfiguration,
@@ -38,11 +34,8 @@ export class Cluster {
                 : new ThreadCluster(adapterConfig, threadClusterOptions);
     }
 
-    public handleRequest(
-        sReq: ISerialRequest,
-        socket?: Socket
-    ): Promise<ISerialResponse> {
-        return this.parentCluster.handleRequest(sReq, socket);
+    public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
+        return this.parentCluster.handleRequest(sReq);
     }
 
     public on(event: string, handler: (...args: unknown[]) => void): this {

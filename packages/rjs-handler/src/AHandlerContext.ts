@@ -54,19 +54,15 @@ export abstract class AHandlerContext extends EventEmitter {
 
 		// Common headers
 		const bodyLength: number = sRes.body ? Buffer.byteLength(sRes.body) : 0;
-		bodyLength
-		&& this.response.setHeader("Content-Length", bodyLength.toString());
+		this.response.setHeader("Content-Length", bodyLength.toString());
 		this.response.setHeader("Connection", "keep-alive");
 		this.response.setHeader("Keep-Alive", "timeout=5");
-		this.response.setHeader(
-			"Cache-Control",
-			[
-				`max-age=${this.config.read("performance", "clientCacheMs").number()}`,
-				"stale-while-revalidate=300",
-				"must-revalidate"
-			].join(", ")
-		);
-
+		this.response.setHeader("Cache-Control", [
+			`max-age=${this.config.read("performance", "clientCacheMs").number()}`,
+			"stale-while-revalidate=300",
+			"must-revalidate"
+		]);
+		
 		this.emit("response", sRes);
 	}
 

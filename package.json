@@ -22,7 +22,7 @@
 		"test:w:rjs": "npm run test -w @rapidjs.org/rjs",
 		"test:w:rjs-proxy": "npm run test -w @rapidjs.org/rjs-proxy",
 		"test:w:rjs-cli": "npm run test -w @rapidjs.org/rjs-cli",
-		"test": "npm run test:w:rjs && npm run test:w:rjs-proxy && npm run test:w:rjs-cli",
+		"test": "npm run test -ws",
 		"test-app": "node ./test-app/app",
 		"lint": "npx eslint ./packages/*/src/**/*.ts",
 		"lint:fix": "npx eslint --fix ./packages/*/src/**/*.ts",

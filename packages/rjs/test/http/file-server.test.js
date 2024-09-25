@@ -8,7 +8,7 @@ new HTTPTest("File serve: Static 200")
 .eval("/index.html")
 .expect({
 	status: 200,
-	body: "TEST (index)"
+	body: "INDEX"
 });
 
 new HTTPTest("File serve: Dynamic 200")

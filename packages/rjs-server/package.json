@@ -1,10 +1,11 @@
 {
     "name": "@rapidjs.org/rjs-server",
     "version": "0.1.0",
-    "description": "No- and low-code web application development framework for JavaScript.",
+    "description": "rJS (pron. ‘rapidJS’) is a web server with virtual plugin-based build capabilities.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
+        "rJS",
         "rapidjs",
         "rapidjs.org"
     ],

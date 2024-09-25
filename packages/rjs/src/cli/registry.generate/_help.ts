@@ -1,21 +1,11 @@
-import { readFileSync } from "fs";
 import { join } from "path";
 
 import { Command } from "../Command";
-import { Printer } from "../Printer";
+import { printHelp } from "../util";
 
-const WEB_URL: string = "https://rapidjs.org";
 
-new Command(
-	"help",
-	() => {
-		Printer.global.stdout(
-			readFileSync(join(__dirname, "../../cli.gen.help.txt"))
-				.toString()
-				.replace(WEB_URL, Printer.format(WEB_URL, [Printer.escapes.PRIMARY_COLOR_FG], 39))
-		);
+new Command("help", () => {
+	printHelp(join(__dirname, "../../../cli.gen.help.txt"));
 
-		process.exit(0);
-	},
-	{ relatedPositionalArg: 1 }
-);
+	process.exit(0);
+}, { relatedPositionalArg: 1 });

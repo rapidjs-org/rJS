@@ -1,10 +1,11 @@
 {
     "name": "@rapidjs.org/server-cluster",
     "version": "0.1.0",
-    "description": "No- and low-code web application reverse proxy for rJS and JavaScript.",
+    "description": "Web server cluster (process and thread pool) utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
+        "rJS",
         "rapidjs",
         "rapidjs.org"
     ],

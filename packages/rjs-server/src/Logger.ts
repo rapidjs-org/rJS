@@ -22,12 +22,12 @@ export class Logger {
 			recursive: true
 		});
 	}
-	
+
 	private log(shortMessage: string|Buffer, verboseMessage?: string, prefix?: string, channel: "stdout"|"stderr" = "stdout") {
 		// TODO: Filter redundant messages (worker copies)
 		!this.silent
 		&& process[channel].write(shortMessage.toString().replace(/\n?$/, "\n"));
-		
+
 		if(!this.logsDirPath) return;
 		
 		const date: Date = new Date();
@@ -48,19 +48,14 @@ export class Logger {
 			}${
 				verboseMessage ? `\n${verboseMessage}`: ""
 			}\n`,
-			(err) =>  {
-				!this.silent
-				&& console.error(err);
-
-				// TODO: How to handle?
-			}
+			(err) => (err && !this.silent) && console.error(err)
 		);
 	}
-    
+		
 	public info(shortMessage: string, verboseMessage?: string) {
 		this.log(shortMessage, verboseMessage);
 	}
-    
+	
 	public warn(shortMessage: string, verboseMessage?: string) {
 		this.log(shortMessage, verboseMessage, "warning");
 	}

@@ -1,6 +1,6 @@
 // TODO: Enhance CLI testing for partial stdout/-err matching
-/* new CLITest("Print help")
-.actual("node ./build/cli", [ "help" ])
+/* new CLITest("Build with file emitter")
+.actual("./rjs.sh", [ "help" ])
 .expected({
     stdout: [
         "..."

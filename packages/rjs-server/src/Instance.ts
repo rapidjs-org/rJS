@@ -7,6 +7,8 @@ import { Cluster } from "@rapidjs.org/server-cluster";
 import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
 
 import _config from "./_config.json";
+import { ISerialRequest, ISerialResponse } from "@rapidjs.org/server-cluster/types/.shared/global.interfaces";
+import { Socket } from "net";
 
 
 export function createInstance(options?: Partial<IHandlerOptions>, clusterSize?: IClusterSize): Promise<Instance> {

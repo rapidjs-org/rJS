@@ -13,7 +13,7 @@ export class Response {
 		const capitalizedName = name
 			.toLowerCase()
 			.replace(/(^|-)([a-z])/g, (_, delimiter: string, symbol: string) => `${delimiter}${symbol.toUpperCase()}`);
-		this.headers[capitalizedName] = value;
+		this.headers[capitalizedName] = [ value ].flat().join(", ");
 	}
 
 	public setBody(body: TSerializable) {

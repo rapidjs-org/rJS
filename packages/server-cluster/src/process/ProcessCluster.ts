@@ -1,5 +1,4 @@
 import { ChildProcess, fork } from "child_process";
-import { Socket } from "net";
 import { join } from "path";
 
 import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
@@ -10,7 +9,7 @@ import {
     IClusterOptions
 } from "../AWorkerCluster";
 
-export class ProcessCluster extends AWorkerCluster<ChildProcess, Socket> {
+export class ProcessCluster extends AWorkerCluster<ChildProcess> {
     constructor(
         adapterConfig: IAdapterConfiguration,
         options?: Partial<IClusterOptions>
@@ -62,11 +61,7 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess, Socket> {
         childProcess.kill();
     }
 
-    protected activateWorker(
-        childProcess: ChildProcess,
-        sReq: ISerialRequest,
-        socket: Socket
-    ) {
-        childProcess.send(sReq, socket);
+    protected activateWorker(childProcess: ChildProcess, sReq: ISerialRequest) {
+        childProcess.send(sReq);
     }
 }

@@ -19,10 +19,10 @@ export class FileEmitter {
 
     constructor(options: Partial<IFileEmitterOptions>) {
         const optionsWithDefaults: IFileEmitterOptions = new Options(options, {
-            privateDirectoryPath: _config.publicDirectoryName,
+            privateDirectoryPath: _config.privateDirectoryName,
             publicDirectoryPath: _config.publicDirectoryName
         }).object;
-
+        
         this.build = new Build(optionsWithDefaults.privateDirectoryPath);
         this.publicRootPath = resolve(optionsWithDefaults.publicDirectoryPath);
     }
@@ -43,7 +43,7 @@ export class FileEmitter {
             });
         });
     }
-
+    
     private async renderDirectory(directory: Directory): Promise<void> {
         const fileNodes: (Directory|File)[] = [];
         directory
@@ -68,7 +68,7 @@ export class FileEmitter {
         for(const fileNode of publicFiles.fileNodes) {
             await this.renderFileNode(fileNode);
         }
-
+        
         return publicFiles;
     }
 }

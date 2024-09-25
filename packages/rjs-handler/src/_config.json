@@ -3,7 +3,7 @@
     "configNameInfixProd": "prod",
     "configNamePrefix": "rjs",
     "globalConfigName": "config",
-    "privateDirName": "plugins",
+    "privateDirName": "private",
     "publicDirName": "public",
     "rpcDirName": "api"
 }

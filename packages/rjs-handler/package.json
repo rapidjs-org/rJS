@@ -1,10 +1,11 @@
 {
     "name": "@rapidjs.org/rjs-handler",
     "version": "0.1.0",
-    "description": "No- and low-code web application reverse proxy for rJS and JavaScript.",
+    "description": "Core HTTP-based request handler utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
+        "rJS",
         "rapidjs",
         "rapidjs.org"
     ],
@@ -18,6 +19,7 @@
     "main": "./build/api.js",
     "types": "./types/api.d.ts",
     "files": [
+        "./client/",
         "./build/",
         "./types/"
     ],

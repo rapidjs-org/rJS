@@ -18,7 +18,7 @@ export default async function (options: {
                     }
                 );
             })
-            .on("error", (err: Error | unknown) => {
+            .on("error", (err: unknown) => {
                 throw err;
             })
             .on("stdout", (message: string) => process.stdout.write(message))

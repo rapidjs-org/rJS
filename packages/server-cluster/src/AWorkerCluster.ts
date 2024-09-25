@@ -18,10 +18,8 @@ interface IActiveWorker extends IWorker {
     timeout: NodeJS.Timeout;
 }
 
-interface IPendingAssignment<T> extends IWorker  {
+interface IPendingAssignment extends IWorker  {
     sReq: ISerialRequest;
-
-	data?: T;
 }
 
 
@@ -40,10 +38,10 @@ export interface IClusterOptions {
 }
 
 // TODO: Elastic size
-export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> extends EventEmitter {
+export abstract class AWorkerCluster<Worker extends EventEmitter> extends EventEmitter {
 	private readonly activeWorkers: Map<Worker, IActiveWorker> = new Map();
 	private readonly idleWorkers: Worker[] = [];
-	private readonly pendingAssignments: IPendingAssignment<T>[] = [];
+	private readonly pendingAssignments: IPendingAssignment[] = [];
 	private readonly options: IClusterOptions;
 
 	protected readonly errorLimiter: ErrorLimiter;
@@ -80,16 +78,16 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
 
     protected abstract createWorker(): Worker|Promise<Worker>;
     protected abstract destroyWorker(worker: Worker): void;
-    protected abstract activateWorker(worker: Worker, sReq: ISerialRequest, reqData?: T): void;
-
+    protected abstract activateWorker(worker: Worker, sReq: ISerialRequest): void;
+	
 	private activate() {
     	if(!this.pendingAssignments.length
 			|| !this.idleWorkers.length) return;
 		
     	const worker: Worker = this.idleWorkers.shift()!;
-    	const assignment: IPendingAssignment<T> = this.pendingAssignments.shift()!;
+    	const assignment: IPendingAssignment = this.pendingAssignments.shift()!;
 		
-    	this.activateWorker(worker, assignment.sReq, assignment.data);
+    	this.activateWorker(worker, assignment.sReq);
 		
     	this.activeWorkers.set(worker, {
     		resolve: assignment.resolve,
@@ -129,6 +127,26 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
     	if(!activeWorker) return;
 
     	clearTimeout(activeWorker.timeout);
+
+		if(sRes) {
+			sRes.body = (sRes.body instanceof Uint8Array)
+			? (() => {
+				const buffer: Buffer = Buffer.alloc(sRes.body.byteLength);
+				for(let i = 0; i < buffer.length; ++i) {
+					buffer[i] = sRes.body[i];
+				}
+				return buffer;
+			})()
+			: ((Object.keys(sRes.body).sort().join(",") == "data,type")
+				? (() => {
+					const buffer = Buffer.alloc((sRes.body as unknown as { data: number[]; }).data.length);
+					for (let i = 0; i < buffer.length; ++i) {
+						buffer[i] = (sRes.body as unknown as { data: number[]; }).data[i];
+					}
+					return buffer;
+				})()
+				: sRes.body);
+		}
 		
     	activeWorker.resolve({
 			status: 200,
@@ -166,7 +184,7 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
 	}
 
 	// TODO: IncomingMessage object overload?
-	public handleRequest(sReq: ISerialRequest, data?: T): Promise<ISerialResponse> {
+	public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
     	return new Promise((resolve, reject) => {
     		if(this.pendingAssignments.length >= (this.options.maxPending ?? Infinity)) {
     			reject();
@@ -176,7 +194,7 @@ export abstract class AWorkerCluster<Worker extends EventEmitter, T = void> exte
 
     		this.pendingAssignments
     		.push({
-				sReq, data,
+				sReq,
 				resolve, reject
 			});
             

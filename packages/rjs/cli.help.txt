@@ -1,22 +1,19 @@
-© rapidJS (rJS)
+rJS (rapidJS)
+
 Usage:   rjs <command> [<sub-command>]* [--<arg:name>|-<arg:shorthand> [<option>]?]*
-Example: rjs start -W ./apps/my-app
+Example: rjs build ./private --out ./public
 
-→ start                 Start a server application and embed it within a reverse proxy.
-• Flags:
---dev, -D               Enable development mode.
-• Options:
---port, -P              Port to listen on (443 by default).
---working-path, -W      Path to target application in the file system (current working directory by default).
+• Global Flags:
+  --stacktrace      Always print the full stack trace of errors.
 
-→ stop                  Remove hostname(s) from a proxied server application. Once no more hostnames relate to the app, it is inherently terminated.
-• Options:
---port, -P              Port to remove from (443 by default).
-
-→ stopall               Stop all reverse proxies, and in herently running server applications.
-
-→ monitor               Display an overview of proxied server applications.
-• Options:
---port, -P              Listening port to filter for.
+→ build             Perform a build.
+  • Subcommands:
+    1               Path to private file directory.
+  • Flags:
+    --serve, -S     Whether to serve the files via HTTP for incremental development.
+                    When served, the public directory contains files to serve besides the virtually built ones.
+  • Options:
+    --public        Path to public file directory, i.e. output destination.
+    --serve, -S     Alternative server port (default is 7777).
 
 Read more at https://rapidjs.org.

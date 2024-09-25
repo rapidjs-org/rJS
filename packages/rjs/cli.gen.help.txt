@@ -1,10 +1,11 @@
-© rapidJS (rJS) – 'Generate' Utility
+rJS (rapidJS) – Generator Utility
+
 Usage:   rjs (generate|gen) <command:name|command:shorthand> [--<arg:name>|-<arg:shorthand> [<option>]?]*
 Example: rjs gen instance --path ./apps
 
 → application (app)     Generate a template of a minimal web application project with rJS.
-• Options:
---path, -P              Specify a generation target path other than the current working directory.
---name, -N              Specify which name to use for the generated application.
+  • Options:
+    --path, -P            Specify a generation target path other than the current working directory.
+    --name, -N            Specify which name to use for the generated application.
 
 Read more at https://rapidjs.org.

@@ -1,4 +1,6 @@
 {
+    "cliProcessTitle": "CLI",
+    "defaultServePort": 7777,
     "privateDirectoryName": "private",
     "publicDirectoryName": "public"
 }

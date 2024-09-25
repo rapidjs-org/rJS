@@ -1,5 +1,5 @@
-import { Options } from "./.shared/Options";
-import _config from "./_config.json";
+import { Options } from "../.shared/Options";
+import { Args } from "./Args";
 
 type TStdChannel = "stdout" | "stderr";
 
@@ -13,7 +13,8 @@ export class Printer {
     public static readonly escapes = {
         DARK_COLOR_FG: "38;2;0;0;0",
         PRIMARY_COLOR_FG: "38;2;255;97;97",
-        SECONDARY_COLOR_BG: "48;2;255;250;195"
+        SECONDARY_COLOR_BG: "48;2;255;250;195",
+        TERTIARY_COLOR_FG: "38;2;136;82;224"
     };
 
     private static readonly brandSequence: string = Printer.format(
@@ -61,7 +62,7 @@ export class Printer {
         const optionsWithDefaults: IPrinterOptions = new Options(options, {
             replicatedMessage: false,
             withBrandSequence: true
-        }).obj;
+        }).object;
 
         const nowTimestamp: number = Date.now();
 
@@ -103,7 +104,12 @@ export class Printer {
 
     public stderr(err: Error | string, options: IPrinterOptions = {}) {
         const message: string = Printer.format(
-            (err instanceof Error ? (err.stack ?? err.message) : err)
+            (err instanceof Error
+                ? Args.parseFlag("stacktrace")
+                    ? (err.stack ?? err.message)
+                    : err.message
+                : err
+            )
                 .replace(
                     /^(([A-Z][a-z]*)*Error:)/,
                     Printer.format("$1", [2], 22)
@@ -111,7 +117,7 @@ export class Printer {
                 .replace(/^([^\n]*[^.?!:;])( *\n)/, "$1.$2"),
             [31],
             39
-        ); // TODO: Always print stack in CLI?
+        );
 
         this.print(message, "stderr", options);
     }

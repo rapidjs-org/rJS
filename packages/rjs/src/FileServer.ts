@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "fs";
 
 import { Options } from "./.shared/Options";
 
-import { EBuildFilter, Build, Filemap, File } from "@rapidjs.org/rjs-build";
+import { Build, File } from "@rapidjs.org/rjs-build";
 
 import _config from "./_config.json";
 
@@ -20,7 +20,7 @@ export class FileServer {
 
     constructor(options: Partial<IFileServerOptions>) {
         const optionsWithDefaults: IFileServerOptions = new Options(options, {
-            privateDirectoryPath: _config.publicDirectoryName,
+            privateDirectoryPath: _config.privateDirectoryName,
             publicDirectoryPath: _config.publicDirectoryName
         }).object;
 
@@ -28,7 +28,7 @@ export class FileServer {
         this.publicRootPath = resolve(optionsWithDefaults.publicDirectoryPath);
     }
 
-    public listen(port: number): Promise<void> {
+    public listen(port?: number): Promise<void> {
         return new Promise((resolve) => {
             createServer(async (dReq: IncomingMessage, dRes: ServerResponse) => {
                 const close = (status: number) => {
@@ -52,7 +52,7 @@ export class FileServer {
                 
                 dRes.end(readFileSync(staticPath));
             })
-		    .listen(port, resolve);
+		    .listen(port ?? _config.defaultServePort, resolve);
 		});
     }
 }

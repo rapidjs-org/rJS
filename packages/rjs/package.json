@@ -1,10 +1,11 @@
 {
     "name": "@rapidjs.org/rjs",
     "version": "0.1.0",
-    "description": "No- and low-code web application development framework for JavaScript.",
+    "description": "rJS (pron. ‘rapidJS’) is a plugin-based build interface.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [
+        "rJS",
         "rapidjs",
         "rapidjs.org"
     ],
@@ -42,10 +43,12 @@
         "@rapidjs.org/testing": "0.x",
         "@rapidjs.org/testing-unit": "0.x",
         "@rapidjs.org/testing-http": "0.x",
+        "@rapidjs.org/testing-cli": "0.x",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@rapidjs.org/rjs-build": "0.x"
+        "@rapidjs.org/rjs-build": "0.x",
+        "@rapidjs.org/rjs-server": "0.x"
     }
 }

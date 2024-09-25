@@ -1,4 +1,4 @@
-import { Dirent, readdirSync } from "fs";
+import { Dirent, existsSync, readdirSync } from "fs";
 import { join, resolve } from "path";
 
 import { AFilesystemNode } from "./AFilesystemNode";
@@ -16,28 +16,32 @@ export enum EBuildFilter {
 
 export class Build<O extends { [ key: string ]: unknown; }> {
     private readonly outpathMap: Map<string, Plugin<O>> = new Map();
-    private readonly pluginsDirectoryPath: string;
-    
-    private plugins: Plugin<O>[] = [];
+    private readonly privateDirectoryPath: string;
 
-    constructor(pluginsDirectoryPath: string) {
-        this.pluginsDirectoryPath = resolve(pluginsDirectoryPath);
+    private private: Plugin<O>[] = [];
+
+    constructor(privateDirectoryPath: string) {
+        this.privateDirectoryPath = resolve(privateDirectoryPath);
+        
+        if(!existsSync(this.privateDirectoryPath)) {
+            throw new ReferenceError(`Private file directory does not exist ${this.privateDirectoryPath}`);
+        }
     }
-    
+
     private normalizeRelativePath(relativePath: string): string {
         return resolve(`./${relativePath}`);
     }
 
     private async fetchPlugins() {
-        this.plugins = readdirSync(this.pluginsDirectoryPath, {
+        this.private = readdirSync(this.privateDirectoryPath, {
             withFileTypes: true
         })
         .filter((dirent: Dirent) => dirent.isDirectory())
         .reduce((acc: Plugin<O>[], dirent: Dirent) => {
-            return Plugin.isPluginDirectory(join(this.pluginsDirectoryPath, dirent.name))
+            return Plugin.isPluginDirectory(join(this.privateDirectoryPath, dirent.name))
             ? [
                 ...acc,
-                new Plugin(join(this.pluginsDirectoryPath, dirent.name))
+                new Plugin(join(this.privateDirectoryPath, dirent.name))
             ]
             : acc;
         }, []);
@@ -45,9 +49,9 @@ export class Build<O extends { [ key: string ]: unknown; }> {
 
     public async retrieveAll(options?: O, filter: EBuildFilter = EBuildFilter.ALL): Promise<Filemap> {
         this.fetchPlugins();    // TODO: skip already loaded ones in prod?
-
+        
         return new Filemap(
-            await this.plugins
+            await this.private
             .reduce(async (acc: Promise<AFilesystemNode[]>, plugin: Plugin<O>) => {
                 const fileNodes: AFilesystemNode[] = await plugin.apply(options);
                 

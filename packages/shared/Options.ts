@@ -2,7 +2,7 @@ export class Options<T> {
 	private static deepMerge(target: unknown, source: unknown): unknown {
 		const isKeyObject = (obj: unknown) => {
 			return typeof(obj) === "object"
-			&& !!Object.entries(obj).length
+			&& !!Object.entries(obj ?? {}).length
 			&& !Array.isArray(obj);
 		};
 
