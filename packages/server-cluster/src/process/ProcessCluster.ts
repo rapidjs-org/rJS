@@ -4,64 +4,64 @@ import { join } from "path";
 import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
 import { WORKER_ERROR_CODE } from "../local.constants";
 import {
-    AWorkerCluster,
-    IAdapterConfiguration,
-    IClusterOptions
+	AWorkerCluster,
+	IAdapterConfiguration,
+	IClusterOptions
 } from "../AWorkerCluster";
 
 export class ProcessCluster extends AWorkerCluster<ChildProcess> {
-    constructor(
-        adapterConfig: IAdapterConfiguration,
-        options?: Partial<IClusterOptions>
-    ) {
-        super(join(__dirname, "api.process"), adapterConfig, options);
+	constructor(
+		adapterConfig: IAdapterConfiguration,
+		options?: Partial<IClusterOptions>
+	) {
+		super(join(__dirname, "api.process"), adapterConfig, options);
 
-        process.on("exit", () => this.destroy());
-        ["SIGINT", "SIGUSR1", "SIGUSR2", "SIGTERM"].forEach(
-            (terminalEvent: string) => {
-                process.on(terminalEvent, () => process.exit());
-            }
-        );
-    }
+		process.on("exit", () => this.destroy());
+		["SIGINT", "SIGUSR1", "SIGUSR2", "SIGTERM"].forEach(
+			(terminalEvent: string) => {
+				process.on(terminalEvent, () => process.exit());
+			}
+		);
+	}
 
-    protected createWorker(): Promise<ChildProcess> {
-        const childProcess = fork(this.workerModulePath, {
-            detached: false,
-            silent: true
-        }).on("exit", (exitCode: number) => {
-            exitCode === WORKER_ERROR_CODE && process.exit(WORKER_ERROR_CODE);
+	protected createWorker(): Promise<ChildProcess> {
+		const childProcess = fork(this.workerModulePath, {
+			detached: false,
+			silent: true
+		}).on("exit", (exitCode: number) => {
+			exitCode === WORKER_ERROR_CODE && process.exit(WORKER_ERROR_CODE);
 
-            if (exitCode === 0) return;
+			if (exitCode === 0) return;
 
-            this.deactivateWorkerWithError(childProcess, 500);
+			this.deactivateWorkerWithError(childProcess, 500);
 
-            this.spawnWorker();
-        });
+			this.spawnWorker();
+		});
 
-        childProcess.send(this.adapterConfig);
+		childProcess.send(this.adapterConfig);
 
-        return new Promise((resolve, reject) => {
-            childProcess
+		return new Promise((resolve, reject) => {
+			childProcess
                 .once("message", () => {
-                    resolve(childProcess);
+                	resolve(childProcess);
 
-                    childProcess.on("message", (sRes: ISerialResponse) => {
-                        this.deactivateWorker(childProcess, sRes);
-                    });
+                	childProcess.on("message", (sRes: ISerialResponse) => {
+                		this.deactivateWorker(childProcess, sRes);
+                	});
                 })
                 .on("error", (err: Error) => {
-                    this.errorLimiter.feed(err);
+                	this.errorLimiter.feed(err);
 
-                    reject(err);
+                	reject(err);
                 });
-        });
-    }
+		});
+	}
 
-    protected destroyWorker(childProcess: ChildProcess) {
-        childProcess.kill();
-    }
+	protected destroyWorker(childProcess: ChildProcess) {
+		childProcess.kill();
+	}
 
-    protected activateWorker(childProcess: ChildProcess, sReq: ISerialRequest) {
-        childProcess.send(sReq);
-    }
+	protected activateWorker(childProcess: ChildProcess, sReq: ISerialRequest) {
+		childProcess.send(sReq);
+	}
 }

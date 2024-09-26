@@ -4,53 +4,53 @@ import { join } from "path";
 
 import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
 import {
-    IAdapterConfiguration,
-    IClusterOptions,
-    AWorkerCluster
+	IAdapterConfiguration,
+	IClusterOptions,
+	AWorkerCluster
 } from "../AWorkerCluster";
 import { ProcessCluster } from "../process/ProcessCluster";
 import { ThreadCluster } from "../thread/ThreadCluster";
 
 export class Cluster {
-    private readonly parentCluster: AWorkerCluster<ChildProcess | Thread>;
+	private readonly parentCluster: AWorkerCluster<ChildProcess | Thread>;
 
-    constructor(
-        adapterConfig: IAdapterConfiguration,
-        processClusterOptions?: Partial<IClusterOptions>,
-        threadClusterOptions: Partial<IClusterOptions> = processClusterOptions
-    ) {
-        this.parentCluster =
+	constructor(
+		adapterConfig: IAdapterConfiguration,
+		processClusterOptions?: Partial<IClusterOptions>,
+		threadClusterOptions: Partial<IClusterOptions> = processClusterOptions
+	) {
+		this.parentCluster =
             processClusterOptions.baseSize !== 1
-                ? new ProcessCluster(
-                      {
-                          modulePath: join(__dirname, "adapter"),
-                          options: {
-                              threadAdapterConfig: adapterConfig,
-                              threadClusterOptions: threadClusterOptions
-                          }
-                      },
-                      processClusterOptions
-                  )
-                : new ThreadCluster(adapterConfig, threadClusterOptions);
-    }
+            	? new ProcessCluster(
+            		{
+            			modulePath: join(__dirname, "adapter"),
+            			options: {
+            				threadAdapterConfig: adapterConfig,
+            				threadClusterOptions: threadClusterOptions
+            			}
+            		},
+            		processClusterOptions
+            	)
+            	: new ThreadCluster(adapterConfig, threadClusterOptions);
+	}
 
-    public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
-        return this.parentCluster.handleRequest(sReq);
-    }
+	public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
+		return this.parentCluster.handleRequest(sReq);
+	}
 
-    public on(event: string, handler: (...args: unknown[]) => void): this {
-        this.parentCluster.on(event, handler);
+	public on(event: string, handler: (...args: unknown[]) => void): this {
+		this.parentCluster.on(event, handler);
 
-        return this;
-    }
+		return this;
+	}
 
-    public once(event: string, handler: (...args: unknown[]) => void): this {
-        this.parentCluster.once(event, handler);
+	public once(event: string, handler: (...args: unknown[]) => void): this {
+		this.parentCluster.once(event, handler);
 
-        return this;
-    }
+		return this;
+	}
 
-    public destroy() {
-        return this.parentCluster.destroy();
-    }
+	public destroy() {
+		return this.parentCluster.destroy();
+	}
 }

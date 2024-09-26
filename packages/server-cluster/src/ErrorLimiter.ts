@@ -13,41 +13,41 @@ export interface IErrorLimiterOptions {
 }
 
 export class ErrorLimiter extends EventEmitter {
-    private readonly options: IErrorLimiterOptions;
+	private readonly options: IErrorLimiterOptions;
 
-    private isInitPeriod: boolean;
-    private records: IErrorRecord[] = [];
+	private isInitPeriod: boolean;
+	private records: IErrorRecord[] = [];
 
-    constructor(options?: Partial<IErrorLimiterOptions>) {
-        super();
+	constructor(options?: Partial<IErrorLimiterOptions>) {
+		super();
 
-        this.options = new Options<IErrorLimiterOptions>(options, {
-            threshold: 3,
-            windowMs: 3000,
-            initPeriodMs: 3000
-        }).object;
+		this.options = new Options<IErrorLimiterOptions>(options, {
+			threshold: 3,
+			windowMs: 3000,
+			initPeriodMs: 3000
+		}).object;
 
-        this.isInitPeriod = this.options.initPeriodMs > 0;
-        setTimeout(() => {
-            this.isInitPeriod = false;
-        }, this.options.initPeriodMs);
-    }
+		this.isInitPeriod = this.options.initPeriodMs > 0;
+		setTimeout(() => {
+			this.isInitPeriod = false;
+		}, this.options.initPeriodMs);
+	}
 
-    public feed(err?: unknown) {
-        this.emit("feed", err);
+	public feed(err?: unknown) {
+		this.emit("feed", err);
 
-        this.records = this.records.filter((record: IErrorRecord) => {
-            return Date.now() - record.timestamp <= this.options.windowMs;
-        });
+		this.records = this.records.filter((record: IErrorRecord) => {
+			return Date.now() - record.timestamp <= this.options.windowMs;
+		});
 
-        this.records.push({
-            err,
-            timestamp: Date.now()
-        });
+		this.records.push({
+			err,
+			timestamp: Date.now()
+		});
 
-        if (!this.isInitPeriod && this.records.length < this.options.threshold)
-            return;
+		if (!this.isInitPeriod && this.records.length < this.options.threshold)
+			return;
 
-        this.emit("terminate", this.isInitPeriod);
-    }
+		this.emit("terminate", this.isInitPeriod);
+	}
 }

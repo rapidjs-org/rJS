@@ -5,26 +5,26 @@ export type TAdapter = (
 ) => ISerialResponse | Promise<ISerialResponse>;
 
 export class Adapter {
-    private readonly adapterModulePath: string;
+	private readonly adapterModulePath: string;
 
-    private readonly options?: unknown;
+	private readonly options?: unknown;
 
-    constructor(adapterModulePath: string, options?: unknown) {
-        this.adapterModulePath = adapterModulePath;
-        this.options = options;
-    }
+	constructor(adapterModulePath: string, options?: unknown) {
+		this.adapterModulePath = adapterModulePath;
+		this.options = options;
+	}
 
-    public loadHandler(): Promise<TAdapter> {
-        return new Promise((resolve) => {
-            import(this.adapterModulePath).then(
-                async (adapterAPI: {
+	public loadHandler(): Promise<TAdapter> {
+		return new Promise((resolve) => {
+			import(this.adapterModulePath).then(
+				async (adapterAPI: {
                     default: (
                         applicationOptions: unknown
                     ) => TAdapter | Promise<TAdapter>;
                 }) => {
-                    resolve(await adapterAPI.default(this.options));
-                }
-            );
-        });
-    }
+					resolve(await adapterAPI.default(this.options));
+				}
+			);
+		});
+	}
 }

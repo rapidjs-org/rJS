@@ -11,61 +11,61 @@ type THandlerRequestBody = {
 };
 
 export class PostHandlerContext extends AHandlerContext {
-    private readonly rpcController: RPCController;
+	private readonly rpcController: RPCController;
 
-    constructor(
-        sReq: ISerialRequest,
-        config: Config,
-        rpcController: RPCController
-    ) {
-        super(sReq, config);
+	constructor(
+		sReq: ISerialRequest,
+		config: Config,
+		rpcController: RPCController
+	) {
+		super(sReq, config);
 
-        this.rpcController = rpcController;
-    }
+		this.rpcController = rpcController;
+	}
 
-    public process(): void {
-        let params: THandlerRequestBody;
-        try {
-            params = this.request.getBody().json<THandlerRequestBody>();
-        } catch (err: unknown) {
-            this.response.setStatus(400);
+	public process(): void {
+		let params: THandlerRequestBody;
+		try {
+			params = this.request.getBody().json<THandlerRequestBody>();
+		} catch (err: unknown) {
+			this.response.setStatus(400);
 
-            this.respond();
+			this.respond();
 
-            return;
-        }
+			return;
+		}
 
-        if (
-            !this.rpcController.hasEndpoint(
-                this.request.url.pathname,
-                params.name
-            )
-        ) {
-            this.response.setStatus(404);
+		if (
+			!this.rpcController.hasEndpoint(
+				this.request.url.pathname,
+				params.name
+			)
+		) {
+			this.response.setStatus(404);
 
-            this.respond();
+			this.respond();
 
-            return;
-        }
+			return;
+		}
 
-        const requestedRpcMember: TRpcMember =
+		const requestedRpcMember: TRpcMember =
             this.rpcController.invokeEndpoint(
-                this.request.url.pathname,
-                params.name
+            	this.request.url.pathname,
+            	params.name
             );
-        const responseData =
+		const responseData =
             requestedRpcMember instanceof Function
-                ? requestedRpcMember(...(params.args ?? []))
-                : requestedRpcMember;
+            	? requestedRpcMember(...(params.args ?? []))
+            	: requestedRpcMember;
 
-        this.response.setBody(
-            JSON.stringify({
-                data: responseData
-            })
-        );
+		this.response.setBody(
+			JSON.stringify({
+				data: responseData
+			})
+		);
 
-        this.response.setHeader("Content-Type", "application/json");
+		this.response.setHeader("Content-Type", "application/json");
 
-        this.respond();
-    }
+		this.respond();
+	}
 }
