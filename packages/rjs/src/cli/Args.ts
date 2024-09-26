@@ -24,9 +24,9 @@ export class Args {
         const value: string = ~index ? Args.raw[index + 1] : null;
         const isSet = ![undefined, null].includes(value);
         return {
-            string: (): string => (isSet ? value.toString() : null),
-            number: (): number => (isSet ? parseFloat(value.toString()) : null),
-            boolean: (): boolean => (isSet ? value.toString() === "true" : null)
+            string: (): string => (isSet ? value.toString() : undefined),
+            number: (): number => (isSet ? parseFloat(value.toString()) : undefined),
+            boolean: (): boolean => (isSet ? value.toString() === "true" : undefined)
         };
     }
 }

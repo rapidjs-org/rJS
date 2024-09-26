@@ -2,8 +2,8 @@ const { readFileSync } = require("fs");
 const { FileEmitter } = require("../../build/api");
 
 const fileEmitter = new FileEmitter({
-	privateDirectoryPath: require("path").join(__dirname, "../../../../test-app/private"),
-	publicDirectoryPath: require("path").join(__dirname, "./_public")
+	pluginDirPath: require("path").join(__dirname, "../../../../test-app/plugins"),
+	publicDirPath: require("path").join(__dirname, "./_public")
 });
 
 new UnitTest("File emission")

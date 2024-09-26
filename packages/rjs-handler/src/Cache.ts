@@ -1,30 +1,30 @@
 // TODO: Cache entry max size threshold (keep memory “clean”)?
 
 export class Cache<K, T> extends Map<K, T> {
-	private readonly keyStoreTimestamps: Map<K, number> = new Map();
-	private readonly duration: number;
+    private readonly keyStoreTimestamps: Map<K, number> = new Map();
+    private readonly duration: number;
 
-	constructor(duration: number) {
-		super();
-		
-		this.duration = duration;
-	}
+    constructor(duration: number) {
+        super();
 
-	public get(key: K): T {
-		return this.has(key) 
-			? super.get(key)
-			: undefined;
-	}
+        this.duration = duration;
+    }
 
-	public has(key: K): boolean {
-		if(!this.keyStoreTimestamps.has(key)) return false;
-		
-		if((Date.now() - this.keyStoreTimestamps.get(key)) <= this.duration)
-			return true;
+    public get(key: K): T {
+        return this.has(key) ? super.get(key) : undefined;
+    }
 
-		this.keyStoreTimestamps.delete(key);
-		this.delete(key);
-		
-		return false;
-	}
+    public has(key: K): boolean {
+        if (this.duration === 0) return false;
+
+        if (!this.keyStoreTimestamps.has(key)) return false;
+
+        if (Date.now() - this.keyStoreTimestamps.get(key) <= this.duration)
+            return true;
+
+        this.keyStoreTimestamps.delete(key);
+        this.delete(key);
+
+        return false;
+    }
 }

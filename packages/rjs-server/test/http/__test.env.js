@@ -6,7 +6,10 @@ const PORT = 7203;
 module.exports.BEFORE = new Promise(async (resolve) => {
     await new rjs.createServer({
         port: PORT,
-        cwd: require("path").join(__dirname, "../../../../test-app")
+        cwd: require("path").join(__dirname, "../../../../test-app"),
+        apiDirPath: "./api",
+        pluginDirPath: "./plugins",
+        publicDirPath: "./public"
     }, {
         processes: 2,
         threads: 2

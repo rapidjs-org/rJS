@@ -91,7 +91,7 @@ new UnitTest("/page + client module injection")
 })
 .expect(true);
 
-new UnitTest("GET /index.txt")
+new UnitTest("GET /index.php")
 .actual(request({
     method: "GET",
     url: "/index.php"

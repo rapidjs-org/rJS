@@ -5,11 +5,10 @@ const PORT = 7201;
 
 module.exports.BEFORE = new Promise(resolve => {
     new FileServer({
-        privateDirectoryPath: require("path").join(__dirname, "../../../../test-app/private"),
-        publicDirectoryPath: require("path").join(__dirname, "../../../../test-app/public")
+        port: PORT,
+        cwd: require("path").join(__dirname, "../../../../test-app/")
     })
-    .listen(PORT)
-    .then(() => {
+    .on("online", () => {
         console.log(`Test server listening (:${PORT})…`);
         
         resolve();

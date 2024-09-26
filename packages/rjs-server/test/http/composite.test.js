@@ -3,12 +3,12 @@ new HTTPTest("GET success")
 .expect({
 	status: 200,
 	headers: {
-		"Content-Length": 12,
+		"Content-Length": 5,
 		"Connection": "keep-alive",
 		"Keep-Alive": "timeout=5",
 		"Cache-Control": "max-age=86400000, stale-while-revalidate=300, must-revalidate"
 	},
-	body: "TEST (index)"
+	body: "INDEX"
 });
 
 new HTTPTest("GET error")

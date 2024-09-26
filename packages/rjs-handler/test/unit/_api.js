@@ -1,7 +1,10 @@
 const { Handler } = require("../../build/api");
 
 const handler = new Handler({
-    cwd: require("path").join(__dirname, "../../../../test-app")
+    cwd: require("path").join(__dirname, "../../../../test-app"),
+    apiDirPath: "./api",
+    pluginDirPath: "./plugins",
+    publicDirPath: "./public",
 });
 
 module.exports.request = async (sReq, headerFilters = null, hideBody = false, metaBody = false) => {

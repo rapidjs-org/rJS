@@ -1,6 +1,6 @@
 {
+    "apiDirName": "api",
     "cliProcessTitle": "CLI",
-    "defaultServePort": 7777,
-    "privateDirectoryName": "private",
-    "publicDirectoryName": "public"
+    "pluginDirName": "plugins",
+    "publicDirName": "public"
 }

@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 import { Options } from "./.shared/Options";
 
 interface IErrorRecord {
-    err: Error|unknown;
+    err: unknown;
     timestamp: number;
 }
 
@@ -26,19 +26,18 @@ export class ErrorLimiter extends EventEmitter {
             windowMs: 3000,
             initPeriodMs: 3000
         }).object;
-        
-        this.isInitPeriod = (this.options.initPeriodMs > 0);
+
+        this.isInitPeriod = this.options.initPeriodMs > 0;
         setTimeout(() => {
             this.isInitPeriod = false;
         }, this.options.initPeriodMs);
     }
 
-    public feed(err?: Error|unknown) {
+    public feed(err?: unknown) {
         this.emit("feed", err);
-        
-        this.records = this.records
-        .filter((record: IErrorRecord) => {
-            return (Date.now() - record.timestamp) <= this.options.windowMs;
+
+        this.records = this.records.filter((record: IErrorRecord) => {
+            return Date.now() - record.timestamp <= this.options.windowMs;
         });
 
         this.records.push({
@@ -46,9 +45,9 @@ export class ErrorLimiter extends EventEmitter {
             timestamp: Date.now()
         });
 
-        if(!this.isInitPeriod
-        && this.records.length < this.options.threshold) return;
-        
+        if (!this.isInitPeriod && this.records.length < this.options.threshold)
+            return;
+
         this.emit("terminate", this.isInitPeriod);
     }
 }

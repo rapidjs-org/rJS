@@ -2,17 +2,19 @@ import { AFilesystemNode } from "./AFilesystemNode";
 import { Directory } from "./Directory";
 import { Filemap } from "./Filemap";
 
-
 export class Filesystem extends Directory {
     private readonly filemap: Filemap;
 
-    constructor(fileNodes: AFilesystemNode[] = []) {
+    public readonly rootPath: string;
+
+    constructor(rootPath: string, fileNodes: AFilesystemNode[] = []) {
         super(".", fileNodes);
 
         this.filemap = new Filemap(fileNodes);
+        this.rootPath = rootPath;
     }
-    
-    public lookup(relativePath: string): AFilesystemNode {
+
+    public get(relativePath: string): AFilesystemNode {
         return this.filemap.lookup(relativePath);
     }
 }

@@ -1,5 +1,9 @@
 import { EventEmitter } from "events";
-import { IncomingMessage, ServerResponse, createServer as createHTTPServer } from "http";
+import {
+    IncomingMessage,
+    ServerResponse,
+    createServer as createHTTPServer
+} from "http";
 import { createServer as createHTTPSServer } from "https";
 
 import { THTTPMethod } from "./.shared/global.types";
@@ -12,89 +16,108 @@ import { Instance } from "./Instance";
 
 import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
 
-
-export interface IServerOptions {
+export interface IServerOptions extends IHandlerOptions {
     port: number;
 
-	tls?: {
-		cert: string;
-		key: string;
-		
-		ca?: string[];
-	};
+    tls?: {
+        cert: string;
+        key: string;
+
+        ca?: string[];
+    };
 }
 
-export function createServer(options?: Partial<IServerOptions & IHandlerOptions>, clusterSize?: IClusterSize): Promise<Server> {
-	return new Promise((resolve) => {
-		const server: Server = new Server(options, clusterSize)
-		.on("online", () => resolve(server));
-	});
+export function createServer(
+    options?: Partial<IServerOptions>,
+    clusterSize?: IClusterSize
+): Promise<Server> {
+    return new Promise((resolve) => {
+        const server: Server = new Server(options, clusterSize).on(
+            "online",
+            () => resolve(server)
+        );
+    });
 }
 
 export class Server extends EventEmitter {
-	private readonly instance: Instance;
-	
-	constructor(options?: Partial<IServerOptions & IHandlerOptions>, clusterSize?: IClusterSize) {
-		super();
-		
-		const optionsWithDefaults: IServerOptions & IHandlerOptions = new Options<IServerOptions & IHandlerOptions>(
-			options, {
-				port: options.tls ? 80 : 443
-			}
-		).object;
-		
-		const onlineDeferral = new DeferredCall(() => this.emit("online"), 2);
-		
-		this.instance = new Instance(optionsWithDefaults, clusterSize)
-		.on("online", () => onlineDeferral.call());
-		
-		const logger: Logger = new Logger(options.cwd);
-		
-		((optionsWithDefaults.tls
-			? createHTTPSServer
-			: createHTTPServer) as Function)
-		((dReq: IncomingMessage, dRes: ServerResponse) => {
-			(
-				[ "POST" ].includes(dReq.method)
-				? new Promise((resolve, reject) => {
-					const body: string[] = [];
-					dReq.on("readable", () => {
-						body.push(dReq.read());
-					});
-					dReq.on("end", () => resolve(body.join("")));
-					dReq.on("error", (err: Error) => reject(err));
-				})
-				: Promise.resolve(null)
-			)
-			.then(async (body: string) => {
-				const sReq: ISerialRequest = {
-					method: dReq.method as THTTPMethod,
-					url: dReq.url,
-					headers: dReq.headers,
-					body: body,
-					clientIP: dReq.socket.remoteAddress
-				};
-				
-				this.instance
-				.handleRequest(sReq)
-				.then((sRes: ISerialResponse) => {
-					dRes.statusCode = sRes.status;
-					for(const header in sRes.headers) {
-						dRes.setHeader(header, [ sRes.headers[header] ].flat().join(", "));
-					}
-					dRes.write(sRes.body);
-				})
-				.finally(() => dRes.end());
-				
-				this.emit("request", sReq);
-			})
-			.catch((err: Error) => {
-				dRes.statusCode = 500;
-				dRes.end();
-				
-				logger && logger.error(err);
-			})
-		})
-		.listen(optionsWithDefaults.port, () => onlineDeferral.call());
-	}
+    private readonly instance: Instance;
+
+    public readonly port: number;
+    
+    constructor(options?: Partial<IServerOptions>, clusterSize?: IClusterSize) {
+        super();
+
+        const optionsWithDefaults: IServerOptions = new Options<IServerOptions>(
+            options,
+            {
+                port: !options.dev
+                ? !options.tls ? 80 : 443
+                : 7777
+            }
+        ).object;
+        this.port = optionsWithDefaults.port;
+        
+        const onlineDeferral = new DeferredCall(() => this.emit("online"), 2);
+        
+        this.instance = new Instance(
+            optionsWithDefaults,
+            optionsWithDefaults.dev
+                ? {
+                      processes: 1,
+                      threads: 1
+                  }
+                : clusterSize
+        ).on("online", () => onlineDeferral.call());
+        
+        const logger: Logger = new Logger(options.cwd);
+
+        (
+            ((!options.dev && optionsWithDefaults.tls)
+                ? createHTTPSServer
+                : createHTTPServer) as typeof createHTTPSServer
+        )((dReq: IncomingMessage, dRes: ServerResponse) => {
+            (["POST"].includes(dReq.method)
+                ? new Promise((resolve, reject) => {
+                      const body: string[] = [];
+                      dReq.on("readable", () => {
+                          body.push(dReq.read() as string);
+                      });
+                      dReq.on("end", () => resolve(body.join("")));
+                      dReq.on("error", (err: Error) => reject(err));
+                  })
+                : Promise.resolve(null)
+            )
+                .then((body: string) => {
+                    const sReq: ISerialRequest = {
+                        method: dReq.method as THTTPMethod,
+                        url: dReq.url,
+                        headers: dReq.headers,
+                        body: body,
+                        clientIP: dReq.socket.remoteAddress
+                    };
+
+                    this.instance
+                        .handleRequest(sReq)
+                        .then((sRes: ISerialResponse) => {
+                            dRes.statusCode = sRes.status;
+                            for (const header in sRes.headers) {
+                                dRes.setHeader(
+                                    header,
+                                    [sRes.headers[header]].flat().join(", ")
+                                );
+                            }
+                            dRes.write(sRes.body);
+                        })
+                        .finally(() => dRes.end());
+
+                    this.emit("request", sReq);
+                })
+                .catch((err: Error) => {
+                    dRes.statusCode = 500;
+                    dRes.end();
+
+                    logger && logger.error(err);
+                });
+        }).listen(this.port, () => onlineDeferral.call());
+    }
 }

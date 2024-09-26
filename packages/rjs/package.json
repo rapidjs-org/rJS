@@ -1,7 +1,7 @@
 {
     "name": "@rapidjs.org/rjs",
     "version": "0.1.0",
-    "description": "rJS (pron. ‘rapidJS’) is a plugin-based build interface.",
+    "description": "rJS (pron. ‘rapidJS’) is a plugin-based build interface, and a progressive web server based on virtual build capabilites.",
     "author": "Thassilo Martin Schiepanski",
     "homepage": "https://rapidjs.org",
     "keywords": [

@@ -5,7 +5,7 @@ new HTTPTest("File serve: 404")
 });
 
 new HTTPTest("File serve: Static 200")
-.eval("/index.html")
+.eval("/")
 .expect({
 	status: 200,
 	body: "INDEX"

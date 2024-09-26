@@ -1,8 +1,8 @@
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 
-
-export type TAdapter = (sReq: ISerialRequest) => ISerialResponse|Promise<ISerialResponse>;
-
+export type TAdapter = (
+    sReq: ISerialRequest
+) => ISerialResponse | Promise<ISerialResponse>;
 
 export class Adapter {
     private readonly adapterModulePath: string;
@@ -16,12 +16,15 @@ export class Adapter {
 
     public loadHandler(): Promise<TAdapter> {
         return new Promise((resolve) => {
-            import(this.adapterModulePath)
-            .then(async (adapterAPI: {
-                default: (applicationOptions: unknown) => TAdapter|Promise<TAdapter>;
-            }) => {
-                resolve(await adapterAPI.default(this.options));
-            });
+            import(this.adapterModulePath).then(
+                async (adapterAPI: {
+                    default: (
+                        applicationOptions: unknown
+                    ) => TAdapter | Promise<TAdapter>;
+                }) => {
+                    resolve(await adapterAPI.default(this.options));
+                }
+            );
         });
     }
 }
