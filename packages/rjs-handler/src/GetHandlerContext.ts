@@ -10,139 +10,139 @@ import { IFilestamp, VirtualFileSystem } from "./VirtualFileSystem";
 import mime from "./mime.json";
 
 const CLIENT_SCRIPT: string = readFileSync(
-	join(__dirname, "../client/rjs.client.js")
+    join(__dirname, "../client/rjs.client.js")
 )
     .toString()
     .replace(/\n/g, "")
     .replace(/\s{2,}/g, " ");
 
 export class GetHandlerContext extends AHandlerContext {
-	private readonly vfs: VirtualFileSystem;
-	private readonly customHeaders: THeaders;
+    private readonly vfs: VirtualFileSystem;
+    private readonly customHeaders: THeaders;
 
-	constructor(
-		sReq: ISerialRequest,
-		config: Config,
-		vfs: VirtualFileSystem,
-		customHeaders: THeaders = {}
-	) {
-		super(sReq, config);
+    constructor(
+        sReq: ISerialRequest,
+        config: Config,
+        vfs: VirtualFileSystem,
+        customHeaders: THeaders = {}
+    ) {
+        super(sReq, config);
 
-		this.vfs = vfs;
-		this.customHeaders = customHeaders;
-	}
+        this.vfs = vfs;
+        this.customHeaders = customHeaders;
+    }
 
-	private injectClientScript(htmlMarkup: string): string {
-		const firstTagIndex = (tagName: string) => {
-			const match: string[] =
+    private injectClientScript(htmlMarkup: string): string {
+        const firstTagIndex = (tagName: string) => {
+            const match: string[] =
                 htmlMarkup.match(
-                	new RegExp(
-                		`<${tagName}(?:\\s+[^="']+(?:=(?:"[^"]*"|'[^']*'))?)*\\s*>`,
-                		"i"
-                	)
+                    new RegExp(
+                        `<${tagName}(?:\\s+[^="']+(?:=(?:"[^"]*"|'[^']*'))?)*\\s*>`,
+                        "i"
+                    )
                 ) ?? [];
-			const index: number = match[0]
-				? htmlMarkup.indexOf(match[0])
-				: Infinity;
+            const index: number = match[0]
+                ? htmlMarkup.indexOf(match[0])
+                : Infinity;
 
-			return index + (match[0] ?? "").length;
-		};
+            return index + (match[0] ?? "").length;
+        };
 
-		const insertionIndex: number = Math.min(
-			firstTagIndex("HTML"),
-			firstTagIndex("HEAD")
-		);
-		return insertionIndex < Infinity
-			? [
-				htmlMarkup.slice(0, insertionIndex),
-				`${`<script>${CLIENT_SCRIPT}</script>`}`,
-				htmlMarkup.slice(insertionIndex)
-			].join("\n")
-			: htmlMarkup;
-	}
+        const insertionIndex: number = Math.min(
+            firstTagIndex("HTML"),
+            firstTagIndex("HEAD")
+        );
+        return insertionIndex < Infinity
+            ? [
+                  htmlMarkup.slice(0, insertionIndex),
+                  `${`<script>${CLIENT_SCRIPT}</script>`}`,
+                  htmlMarkup.slice(insertionIndex)
+              ].join("\n")
+            : htmlMarkup;
+    }
 
-	public async process() {
-		// Canonic redirect(s)
-		const canonicPathnamePart: string = this.request.url.pathname.match(
-			/(\/index)?(\.[hH][tT][mM][lL])?$/
-		)[0];
-		if (canonicPathnamePart.length) {
-			this.response.setStatus(302);
+    public async process() {
+        // Canonic redirect(s)
+        const canonicPathnamePart: string = this.request.url.pathname.match(
+            /(\/index)?(\.[hH][tT][mM][lL])?$/
+        )[0];
+        if (canonicPathnamePart.length) {
+            this.response.setStatus(302);
 
-			this.response.setHeader(
-				"Location",
-				[
-					this.request.url.pathname
+            this.response.setHeader(
+                "Location",
+                [
+                    this.request.url.pathname
                         .replace(/\.[hH][tT][mM][lL]$/, "")
                         .replace(/index$/, ""),
-					this.request.url.search ?? "",
-					this.request.url.hash ?? ""
-				].join("")
-			);
+                    this.request.url.search ?? "",
+                    this.request.url.hash ?? ""
+                ].join("")
+            );
 
-			this.respond();
+            this.respond();
 
-			return;
-		}
+            return;
+        }
 
-		const pathname: string = this.request.url.pathname
+        const pathname: string = this.request.url.pathname
             .replace(/(\/)$/, "$1index")
             .replace(/(\/[^.]+)$/, "$1.html");
 
-		const filestamp: IFilestamp = await this.vfs.read(pathname);
+        const filestamp: IFilestamp = await this.vfs.read(pathname);
 
-		if (!filestamp) {
-			this.response.setStatus(404); // TODO: Error pages
+        if (!filestamp) {
+            this.response.setStatus(404); // TODO: Error pages
 
-			this.respond();
+            this.respond();
 
-			return;
-		}
-		if (
-			[this.request.getHeader("If-None-Match")]
+            return;
+        }
+        if (
+            [this.request.getHeader("If-None-Match")]
                 .flat()
                 .includes(filestamp.eTag)
-		) {
-			this.response.setStatus(304);
+        ) {
+            this.response.setStatus(304);
 
-			this.respond();
+            this.respond();
 
-			return;
-		}
+            return;
+        }
 
-		for (const header in this.customHeaders) {
-			this.response.setHeader(
-				header,
+        for (const header in this.customHeaders) {
+            this.response.setHeader(
+                header,
                 this.customHeaders[header] as string
-			);
-		}
+            );
+        }
 
-		// MIME
-		const extname: string = (pathname.match(/\.([^.]+)$/) ?? [""])[1];
-		const fileMime: string | undefined = ((this.config
+        // MIME
+        const extname: string = (pathname.match(/\.([^.]+)$/) ?? [""])[1];
+        const fileMime: string | undefined = ((this.config
             .read("mime")
             .object() ?? {})[extname] ?? (mime as TJSON)[extname]) as string;
-		fileMime && this.response.setHeader("Content-Type", fileMime);
-		this.response.setBody(
-			fileMime === "text/html"
-				? this.injectClientScript(filestamp.data.toString())
-				: filestamp.data
-		);
+        fileMime && this.response.setHeader("Content-Type", fileMime);
+        this.response.setBody(
+            fileMime === "text/html"
+                ? this.injectClientScript(filestamp.data.toString())
+                : filestamp.data
+        );
 
-		this.response.hasCompressableBody =
+        this.response.hasCompressableBody =
             !/^(application|image|video|audio)\//.test(fileMime) || // Black list pattern
             [
-            	"application/json",
-            	"application/ld+json",
-            	"application/rtf",
-            	"image/svg",
-            	"image/svg+xml",
-            	"image/svg"
+                "application/json",
+                "application/ld+json",
+                "application/rtf",
+                "image/svg",
+                "image/svg+xml",
+                "image/svg"
             ].includes(fileMime); // White list
 
-		// ETag
-		this.response.setHeader("ETag", `W/${filestamp.eTag}`);
+        // ETag
+        this.response.setHeader("ETag", `W/${filestamp.eTag}`);
 
-		this.respond();
-	}
+        this.respond();
+    }
 }

@@ -1,7 +1,6 @@
 import { Dirent, readdirSync } from "fs";
-import { join, resolve } from "path";
+import { join, normalize, resolve } from "path";
 
-import { AFilesystemNode } from "./AFilesystemNode";
 import { Directory } from "./Directory";
 import { File } from "./File";
 import { Filemap } from "./Filemap";
@@ -14,104 +13,112 @@ export enum EBuildFilter {
 }
 
 export class Build<O extends { [key: string]: unknown }> {
-	private readonly dev: boolean;
-	private readonly outpathMap: Map<string, Plugin<O>> = new Map();
-	private readonly pluginDirectoryPath: string;
+    private readonly dev: boolean;
+    private readonly outpathMap: Map<string, Plugin<O>> = new Map();
+    private readonly pluginDirectoryPath: string;
+    private readonly plugins: Map<string, Plugin<O>> = new Map();
 
-	private plugins: Plugin<O>[] = [];
+    constructor(pluginDirectoryPath: string, dev?: boolean) {
+        this.dev = !!dev;
+        this.pluginDirectoryPath = pluginDirectoryPath;
+    }
 
-	constructor(pluginDirectoryPath: string, dev?: boolean) {
-		this.dev = !!dev;
-		this.pluginDirectoryPath = pluginDirectoryPath;
-	}
+    private normalizeRelativePath(relativePath: string): string {
+        return resolve(`./${relativePath}`);
+    }
 
-	private normalizeRelativePath(relativePath: string): string {
-		return resolve(`./${relativePath}`);
-	}
+    private fetchPlugins() {
+        const pluginDirectoryPaths: string[] = [];
 
-	private fetchPlugins() {
-		this.plugins = readdirSync(this.pluginDirectoryPath, {
-			withFileTypes: true
-		})
+        readdirSync(this.pluginDirectoryPath, {
+            withFileTypes: true
+        })
             .filter((dirent: Dirent) => dirent.isDirectory())
-            .reduce((acc: Plugin<O>[], dirent: Dirent) => {
-            	return Plugin.isPluginDirectory(
-            		join(this.pluginDirectoryPath, dirent.name)
-            	)
-            		? [
-            			...acc,
-            			new Plugin(
-            				join(this.pluginDirectoryPath, dirent.name),
-            				this.dev
-            			)
-            		]
-            		: acc;
-            }, []);
-	}
+            .forEach((dirent: Dirent) => {
+                const pluginDirectoryPath: string = normalize(
+                    join(this.pluginDirectoryPath, dirent.name)
+                );
+                if (!Plugin.isPluginDirectory(pluginDirectoryPath)) return;
+                pluginDirectoryPaths.push(pluginDirectoryPath);
 
-	public async retrieveAll(
-		options?: O,
-		filter: EBuildFilter = EBuildFilter.ALL
-	): Promise<Filemap> {
-		this.fetchPlugins(); // TODO: skip already loaded ones in prod?
+                if (this.plugins.has(pluginDirectoryPath)) return;
 
-		return new Filemap(
-			await this.plugins.reduce(
-				async (acc: Promise<AFilesystemNode[]>, plugin: Plugin<O>) => {
-					const fileNodes: AFilesystemNode[] =
-                        await plugin.apply(options);
+                this.plugins.set(
+                    pluginDirectoryPath,
+                    new Plugin(
+                        join(this.pluginDirectoryPath, dirent.name),
+                        this.dev
+                    )
+                );
+            });
 
-					fileNodes.forEach((fileNode: AFilesystemNode) => {
-						this.outpathMap.set(
-							this.normalizeRelativePath(fileNode.relativePath),
-							plugin
-						);
-					});
+        Array.from(this.plugins.keys()).forEach(
+            (pluginDirectoryPath: string) => {
+                if (pluginDirectoryPaths.includes(pluginDirectoryPath)) return;
 
-					return [
-						...(await acc),
-						...fileNodes.filter((fileNode: AFilesystemNode) => {
-							switch (filter) {
-								case EBuildFilter.DIRECTORY:
-									return fileNode instanceof Directory;
-								case EBuildFilter.FILE:
-									return fileNode instanceof File;
-							}
-							return true;
-						})
-					];
-				},
-				Promise.resolve([] as AFilesystemNode[])
-			)
-		);
-	}
+                this.plugins.delete(pluginDirectoryPath);
+            }
+        );
+    }
 
-	public async retrieve(
-		relativePath: string,
-		options?: O
-	): Promise<AFilesystemNode | null> {
-		const filterFilesystemNode = (
-			fileNodes: AFilesystemNode[]
-		): AFilesystemNode => {
-			return fileNodes
-                .filter((fileNode: AFilesystemNode) => {
-                	return (
-                		this.normalizeRelativePath(fileNode.relativePath) ===
+    public async retrieveAll(
+        options?: O,
+        filter: EBuildFilter = EBuildFilter.ALL
+    ): Promise<Filemap> {
+        this.fetchPlugins();
+
+        return new Filemap(
+            await Array.from(this.plugins.values()).reduce(
+                async (acc: Promise<File[]>, plugin: Plugin<O>) => {
+                    const files: File[] = await plugin.apply(options);
+                    files.forEach((fileNode: File) => {
+                        this.outpathMap.set(
+                            this.normalizeRelativePath(fileNode.relativePath),
+                            plugin
+                        );
+                    });
+
+                    return [
+                        ...(await acc),
+                        ...files.filter((file: File) => {
+                            switch (filter) {
+                                case EBuildFilter.DIRECTORY:
+                                    return file instanceof Directory;
+                                case EBuildFilter.FILE:
+                                    return file instanceof File;
+                            }
+                            return true;
+                        })
+                    ];
+                },
+                Promise.resolve([] as File[])
+            )
+        );
+    }
+
+    public async retrieve(
+        relativePath: string,
+        options?: O
+    ): Promise<File | null> {
+        const filterFilesystemNode = (files: File[]): File => {
+            return files
+                .filter((fileNode: File) => {
+                    return (
+                        this.normalizeRelativePath(fileNode.relativePath) ===
                         this.normalizeRelativePath(relativePath)
-                	);
+                    );
                 })
                 .pop();
-		};
+        };
 
-		if (!this.outpathMap.has(this.normalizeRelativePath(relativePath))) {
-			return filterFilesystemNode((await this.retrieveAll()).fileNodes);
-		}
+        !this.outpathMap.has(this.normalizeRelativePath(relativePath)) &&
+            (await this.retrieveAll()); // TODO: Always retrieve all for presuming new file?
 
-		const relatedPlugin: Plugin<O> = this.outpathMap.get(
-			this.normalizeRelativePath(relativePath)
-		);
-		return relatedPlugin
-			? filterFilesystemNode(await relatedPlugin.apply(options))
-			: null;
-	}
+        const relatedPlugin: Plugin<O> = this.outpathMap.get(
+            this.normalizeRelativePath(relativePath)
+        );
+        return relatedPlugin
+            ? filterFilesystemNode(await relatedPlugin.apply(options))
+            : null;
+    }
 }

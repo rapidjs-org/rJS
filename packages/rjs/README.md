@@ -17,7 +17,7 @@ npm i -g rapidjs.org/rjs
 
 ## Use
 
-At the core, rJS (pron. ‘rapidJS’) is an intuitive filesystem-derived build interface. Additionaly, it can be used with a production-ready web application server to move and hide the build step behind the server interface. rJS has been dsigned and developed with a delightful developer experience in mind.
+At the core, rJS (pron. ‘rapidJS’) is an intuitive filesystem-derived build interface. Additionaly, it can be used with a production-ready web application server to move and hide the build step behind the server interface. rJS has been designed and developed with a delightful developer experience in mind.
 
 ``` console
 (npx) rjs serve --dev --plugins-dir ./my-plugins
