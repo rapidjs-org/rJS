@@ -21,7 +21,7 @@ export function createFileEmitter(
 }
 
 export class FileEmitter {
-    private readonly build: Build<null>;
+    private readonly build: Build;
     private readonly publicRootPath: string;
 
     constructor(options: Partial<IFileEmitterOptions>) {

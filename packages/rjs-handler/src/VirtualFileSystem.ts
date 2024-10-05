@@ -15,7 +15,7 @@ export class VirtualFileSystem {
     private readonly cache: Cache<string, IFilestamp>;
 
     private readonly publicRootPath?: string;
-    private readonly buildInterface?: Build<null>;
+    private readonly buildInterface?: Build;
     private readonly preretrieval: Promise<void>;
 
     private privateFiles?: Filemap;

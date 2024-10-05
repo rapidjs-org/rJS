@@ -26,14 +26,11 @@ type TBuildInterfaceCallable = (
     },
     filesystem: Filesystem,
     configOptions: TJSON,
-    specificOptions: {
-        [key: string]: unknown;
-    },
     dev: boolean
 ) => (Directory | File)[];
 
-// TODO: Access to public files (static); e.g. for sitempa plugin?
-export class Plugin<O extends { [key: string]: unknown }> {
+// TODO: Access to public files (static); e.g. for sitemap plugin?
+export class Plugin {
     public static isPluginDirectory(pluginDirectoryPath: string): boolean {
         try {
             require.resolve(join(pluginDirectoryPath, _config.buildModuleName));
@@ -170,7 +167,7 @@ export class Plugin<O extends { [key: string]: unknown }> {
         });
     }
 
-    private updateApplyResults(options?: O): Promise<(File | Directory)[]> {
+    private applyResults(): Promise<(File | Directory)[]> {
         return new Promise(async (resolve) => {
             const applicationResults:
                 | (File | Directory)[]
@@ -187,7 +184,6 @@ export class Plugin<O extends { [key: string]: unknown }> {
                     (await this.fetchDirectory()).fileNodes
                 ),
                 (this.fetchBuildConfig().config ?? {}) as TJSON,
-                options,
                 this.dev
             );
 
@@ -202,12 +198,9 @@ export class Plugin<O extends { [key: string]: unknown }> {
         });
     }
 
-    public async apply(options?: O): Promise<(File | Directory)[]> {
+    public async apply(): Promise<(File | Directory)[]> {
         // TODO: Intermediate /tmp files?
-        if (!this.dev && !options && this.lastApplyResult)
-            return this.lastApplyResult;
-
-        if (options) return await this.updateApplyResults(options);
+        if (!this.dev && this.lastApplyResult) return this.lastApplyResult;
 
         for (const filepath of readdirSync(this.pluginDirectoryPath, {
             recursive: true
@@ -219,7 +212,7 @@ export class Plugin<O extends { [key: string]: unknown }> {
             )
                 continue;
 
-            return await this.updateApplyResults(options);
+            return await this.applyResults();
         }
 
         return this.lastApplyResult ?? [];

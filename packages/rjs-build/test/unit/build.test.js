@@ -7,14 +7,12 @@ new UnitTest("Basic build")
 	resolve(await build.retrieveAll());
 	
 	new UnitTest("Basic rebuild")
-	.actual(build.retrieve("./out.txt", {
-		option1: "O2"
-	}))
+	.actual(build.retrieve("./out.txt"))
 	.expect({
 		relativePath: "out.txt",
 		name: "out",
 		extension: "txt",
-		contents: "O2\nP1\nP2"
+		contents: "O\nP1\nP2"
 	});
 }))
 .expect(new Filemap([

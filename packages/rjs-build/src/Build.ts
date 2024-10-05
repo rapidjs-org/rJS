@@ -13,11 +13,11 @@ export enum EBuildFilter {
     DIRECTORY
 }
 
-export class Build<O extends { [key: string]: unknown }> {
+export class Build {
     private readonly dev: boolean;
-    private readonly outpathMap: Map<string, Plugin<O>> = new Map();
+    private readonly outpathMap: Map<string, Plugin> = new Map();
     private readonly pluginDirectoryPath: string;
-    private readonly plugins: Map<string, Plugin<O>> = new Map();
+    private readonly plugins: Map<string, Plugin> = new Map();
 
     constructor(pluginDirectoryPath: string, dev?: boolean) {
         this.dev = !!dev;
@@ -63,16 +63,14 @@ export class Build<O extends { [key: string]: unknown }> {
     }
 
     public async retrieveAll(
-        options?: O,
         filter: EBuildFilter = EBuildFilter.ALL
     ): Promise<Filemap> {
         this.fetchPlugins();
 
         return new Filemap(
             await Array.from(this.plugins.values()).reduce(
-                async (acc: Promise<File[]>, plugin: Plugin<O>) => {
-                    const files: (Directory | File)[] =
-                        await plugin.apply(options);
+                async (acc: Promise<File[]>, plugin: Plugin) => {
+                    const files: (Directory | File)[] = await plugin.apply();
                     files.forEach((fileNode: File) => {
                         this.outpathMap.set(
                             this.normalizeRelativePath(fileNode.relativePath),
@@ -98,10 +96,7 @@ export class Build<O extends { [key: string]: unknown }> {
         );
     }
 
-    public async retrieve(
-        relativePath: string,
-        options?: O
-    ): Promise<File | null> {
+    public async retrieve(relativePath: string): Promise<File | null> {
         const filterFilesystemNode = (files: AFilesystemNode[]): File => {
             return files
                 .filter((fileNode: File) => {
@@ -116,11 +111,11 @@ export class Build<O extends { [key: string]: unknown }> {
         !this.outpathMap.has(this.normalizeRelativePath(relativePath)) &&
             (await this.retrieveAll()); // TODO: Always retrieve all for presuming new file?
 
-        const relatedPlugin: Plugin<O> = this.outpathMap.get(
+        const relatedPlugin: Plugin = this.outpathMap.get(
             this.normalizeRelativePath(relativePath)
         );
         return relatedPlugin
-            ? filterFilesystemNode(await relatedPlugin.apply(options))
+            ? filterFilesystemNode(await relatedPlugin.apply())
             : null;
     }
 }

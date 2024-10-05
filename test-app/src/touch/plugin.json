@@ -1,3 +1,0 @@
-{
-    "cmd": "date > @PUBLIC/date.txt"
-}
