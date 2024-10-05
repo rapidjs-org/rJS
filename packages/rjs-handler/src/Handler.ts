@@ -68,7 +68,8 @@ export class Handler {
         );
         this.rpcController = this.options.apiDirPath
             ? new RPCController(
-                  resolve(this.options.cwd, this.options.apiDirPath)
+                  resolve(this.options.cwd, this.options.apiDirPath),
+                  this.options.dev
               )
             : null;
     }

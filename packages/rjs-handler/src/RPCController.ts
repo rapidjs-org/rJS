@@ -13,9 +13,11 @@ const JS_EXTENSION_REGEX = /\.(js|javascript)$/i; // TODO: TS
 export class RPCController {
     private readonly modules: Map<string, TRpcModule> = new Map();
     private readonly rpcFilePath: string;
+    private readonly dev: boolean;
 
-    constructor(modulesDirectoryPath: string) {
+    constructor(modulesDirectoryPath: string, dev: boolean = false) {
         this.rpcFilePath = modulesDirectoryPath;
+        this.dev = dev;
 
         // TODO: Debug reload
         this.load();
@@ -30,19 +32,25 @@ export class RPCController {
         })
             .filter((dirent: Dirent) => dirent.isFile())
             .filter((dirent: Dirent) => JS_EXTENSION_REGEX.test(dirent.name))
-            .forEach(async (dirent: Dirent) => {
+            .forEach((dirent: Dirent) => {
                 const routeModulePath: string = join(
                     dirent.parentPath,
                     dirent.name
                 ).replace(JS_EXTENSION_REGEX, "");
 
-                this.modules.set(
-                    routeModulePath.slice(this.rpcFilePath.length),
-                    await new ModuleDependency<TRpcModule>(
-                        routeModulePath
-                    ).import()
+                this.importModule(
+                    routeModulePath.slice(this.rpcFilePath.length)
                 );
             });
+    }
+
+    private async importModule(modulePath: string) {
+        this.modules.set(
+            modulePath,
+            await new ModuleDependency<TRpcModule>(
+                join(this.rpcFilePath, modulePath)
+            ).import()
+        );
     }
 
     public hasEndpoint(modulePath: string, memberName: string): boolean {
@@ -50,6 +58,8 @@ export class RPCController {
     }
 
     public invokeEndpoint(modulePath: string, memberName: string): TRpcMember {
+        this.dev && this.importModule(modulePath);
+
         return this.modules.get(modulePath)[memberName];
     }
 }

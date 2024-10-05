@@ -1,11 +1,11 @@
 const { request } = require("./_api");
 
-new UnitTest("POST /route1")
+new UnitTest("POST /route1 (fn declaration)")
 .actual(request({
     method: "POST",
     url: "/route1",
     body: JSON.stringify({
-        name: "sum",
+        name: "sum__declaration",
         args: [ 1, 2 ]
     })
 }, [ "Content-Type" ]))
@@ -15,6 +15,34 @@ new UnitTest("POST /route1")
         "Content-Type": "application/json"
     },
     body: 3
+});
+
+new UnitTest("POST /route1 (fn expression)")
+.actual(request({
+    method: "POST",
+    url: "/route1",
+    body: JSON.stringify({
+        name: "sum__expression",
+        args: [ 1, 2 ]
+    })
+}, []))
+.expect({
+    status: 200,
+    body: 3
+});
+
+new UnitTest("POST /route1 (CONTEXT)")
+.actual(request({
+    method: "POST",
+    url: "/route1",
+    body: JSON.stringify({
+        name: "sumWithContext",
+        args: [ 1, 2 ]
+    })
+}, []))
+.expect({
+    status: 200,
+    body: "undefined | 3"   // IP undefined without server wrapper
 });
 
 new UnitTest("POST /route1")

@@ -1,4 +1,5 @@
 {
+    "apiRequestContextArgName": "CONTEXT",
     "configNameInfixDev": "dev",
     "configNameInfixProd": "prod",
     "configNamePrefix": "rjs",
