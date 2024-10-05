@@ -20,3 +20,5 @@ new HTTPTest("GET error")
 		"Cache-Control": "max-age=86400000, stale-while-revalidate=300, must-revalidate"
 	}
 });
+
+// TODO: TLS test

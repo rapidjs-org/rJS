@@ -22,5 +22,7 @@ Example: rjs serve -D --port 8000
     --plugins-dir   Path to plugins directory (default './src').
     --public-dir    Path to public files directory (default './public').
     --port, -P      Alternative server port (default '80/443' (HTTP/HTTPS), or '7777' (development mode)).
+    --tls-cert, -C  Path to (or raw) TLS cetrificate for inherent HTTPS application.
+    --tls-key, -K   Path to (or raw) TLS key for inherent HTTPS application.
 
 Read more at https://rapidjs.org.

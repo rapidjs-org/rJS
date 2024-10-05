@@ -12,6 +12,10 @@ new Command("serve", () => {
         dev,
 
         port: Args.parseOption("port", "P").number(),
+        tls: {
+            cert: Args.parseOption("tls-cert", "C").string(),
+            key: Args.parseOption("tls-key", "K").string()
+        },
         apiDirPath: Args.parseOption("api-dir").string(),
         pluginDirPath: Args.parseOption("plugins-dir").string(),
         publicDirPath: Args.parseOption("public-dir").string()

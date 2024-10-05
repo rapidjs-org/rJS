@@ -5,6 +5,8 @@ import {
     createServer as createHTTPServer
 } from "http";
 import { createServer as createHTTPSServer } from "https";
+import { resolve } from "path";
+import { existsSync, readFileSync } from "fs";
 
 import { THTTPMethod } from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
@@ -20,10 +22,10 @@ export interface IServerOptions extends IHandlerOptions {
     port: number;
 
     tls?: {
-        cert: string;
-        key: string;
+        cert: string | Buffer;
+        key: string | Buffer;
 
-        ca?: string[];
+        ca?: (string | Buffer)[];
     };
 }
 
@@ -69,53 +71,79 @@ export class Server extends EventEmitter {
 
         const logger: Logger = new Logger(options.cwd);
 
+        const resolveTLSParameter = (
+            param: (string | Buffer)[] | undefined
+        ): (string | Buffer)[] => {
+            return [param]
+                .flat()
+                .map((param: string | Buffer | undefined) => {
+                    if (!param) return null;
+                    if (param instanceof Buffer) return param;
+
+                    const potentialPath: string = resolve(options.cwd, param);
+                    if (!existsSync(potentialPath)) return param;
+
+                    return readFileSync(potentialPath);
+                })
+                .filter((param: string | Buffer | null) => !!param);
+        };
+
         (
             (!options.dev && optionsWithDefaults.tls
                 ? createHTTPSServer
                 : createHTTPServer) as typeof createHTTPSServer
-        )((dReq: IncomingMessage, dRes: ServerResponse) => {
-            (["POST"].includes(dReq.method)
-                ? new Promise((resolve, reject) => {
-                      const body: string[] = [];
-                      dReq.on("readable", () => {
-                          body.push(dReq.read() as string);
-                      });
-                      dReq.on("end", () => resolve(body.join("")));
-                      dReq.on("error", (err: Error) => reject(err));
-                  })
-                : Promise.resolve(null)
-            )
-                .then((body: string) => {
-                    const sReq: ISerialRequest = {
-                        method: dReq.method as THTTPMethod,
-                        url: dReq.url,
-                        headers: dReq.headers,
-                        body: body,
-                        clientIP: dReq.socket.remoteAddress
-                    };
+        )(
+            {
+                ...(optionsWithDefaults.tls
+                    ? {
+                          ca: resolveTLSParameter(optionsWithDefaults.tls.ca)
+                      }
+                    : {})
+            },
+            (dReq: IncomingMessage, dRes: ServerResponse) => {
+                (["POST"].includes(dReq.method)
+                    ? new Promise((resolve, reject) => {
+                          const body: string[] = [];
+                          dReq.on("readable", () => {
+                              body.push(dReq.read() as string);
+                          });
+                          dReq.on("end", () => resolve(body.join("")));
+                          dReq.on("error", (err: Error) => reject(err));
+                      })
+                    : Promise.resolve(null)
+                )
+                    .then((body: string) => {
+                        const sReq: ISerialRequest = {
+                            method: dReq.method as THTTPMethod,
+                            url: dReq.url,
+                            headers: dReq.headers,
+                            body: body,
+                            clientIP: dReq.socket.remoteAddress
+                        };
 
-                    this.instance
-                        .handleRequest(sReq)
-                        .then((sRes: ISerialResponse) => {
-                            dRes.statusCode = sRes.status;
-                            for (const header in sRes.headers) {
-                                dRes.setHeader(
-                                    header,
-                                    [sRes.headers[header]].flat().join(", ")
-                                );
-                            }
-                            sRes.body && dRes.write(sRes.body);
-                        })
-                        .finally(() => dRes.end());
+                        this.instance
+                            .handleRequest(sReq)
+                            .then((sRes: ISerialResponse) => {
+                                dRes.statusCode = sRes.status;
+                                for (const header in sRes.headers) {
+                                    dRes.setHeader(
+                                        header,
+                                        [sRes.headers[header]].flat().join(", ")
+                                    );
+                                }
+                                sRes.body && dRes.write(sRes.body);
+                            })
+                            .finally(() => dRes.end());
 
-                    this.emit("request", sReq);
-                })
-                .catch((err: Error) => {
-                    dRes.statusCode = 500;
-                    dRes.end();
+                        this.emit("request", sReq);
+                    })
+                    .catch((err: Error) => {
+                        dRes.statusCode = 500;
+                        dRes.end();
 
-                    logger && logger.error(err);
-                });
-        }).listen(this.port, () => onlineDeferral.call());
+                        logger && logger.error(err);
+                    });
+            }
+        ).listen(this.port, () => onlineDeferral.call());
     }
 }
