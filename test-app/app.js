@@ -1,9 +1,9 @@
-const rjs = require("../packages/rjs-server/build/api");
+const rjs = require("../packages/rjs/build/api");
 
 
 const PORT = 8000;
 
-new rjs.createServer({
+new rjs.createFileServer({
     port: PORT,
     cwd: __dirname
 })

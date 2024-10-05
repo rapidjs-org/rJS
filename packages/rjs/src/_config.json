@@ -1,6 +1,6 @@
 {
     "apiDirName": "api",
     "cliProcessTitle": "rJS",
-    "pluginDirName": "plugins",
+    "pluginDirName": "src",
     "publicDirName": "public"
 }

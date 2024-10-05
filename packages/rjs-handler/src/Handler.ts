@@ -25,6 +25,7 @@ export interface IHandlerOptions {
 }
 
 export class Handler {
+    private readonly options: IHandlerOptions;
     private readonly config: Config;
     private readonly vfs: VirtualFileSystem;
     private readonly rateLimiter: RateLimiter;
@@ -35,13 +36,13 @@ export class Handler {
     private readonly rpcController: RPCController | null;
 
     constructor(options: Partial<IHandlerOptions>) {
-        const optionsWithDefaults: IHandlerOptions = new Options(options, {
+        this.options = new Options(options, {
             dev: false, // TODO: dev also via env var?
             cwd: process.cwd()
         }).object;
 
         this.config = new Config(
-            optionsWithDefaults.cwd,
+            this.options.cwd,
             _config.globalConfigName,
             options.dev,
             GLOBAL_CONFIG_DEFAULTS
@@ -50,31 +51,24 @@ export class Handler {
             this.config.read("security", "maxRequestsPerMin").number()
         );
         this.responseCache = new Cache(
-            this.config.read("peformance", "serverCacheMs").number()
+            !this.options.dev
+                ? this.config.read("peformance", "serverCacheMs").number()
+                : 0
         );
 
         this.vfs = new VirtualFileSystem(
             this.config,
-            optionsWithDefaults.dev,
-            optionsWithDefaults.publicDirPath
-                ? resolve(
-                      optionsWithDefaults.cwd,
-                      optionsWithDefaults.publicDirPath
-                  )
+            this.options.dev,
+            this.options.publicDirPath
+                ? resolve(this.options.cwd, this.options.publicDirPath)
                 : null,
-            optionsWithDefaults.pluginDirPath
-                ? resolve(
-                      optionsWithDefaults.cwd,
-                      optionsWithDefaults.pluginDirPath
-                  )
+            this.options.pluginDirPath
+                ? resolve(this.options.cwd, this.options.pluginDirPath)
                 : null
         );
-        this.rpcController = optionsWithDefaults.apiDirPath
+        this.rpcController = this.options.apiDirPath
             ? new RPCController(
-                  resolve(
-                      optionsWithDefaults.cwd,
-                      optionsWithDefaults.apiDirPath
-                  )
+                  resolve(this.options.cwd, this.options.apiDirPath)
               )
             : null;
     }
@@ -91,58 +85,66 @@ export class Handler {
         };
 
         return new Promise((resolve) => {
+            const cacheKey: Partial<ISerialRequest> = {
+                method: sReq.method,
+                url: sReq.url // TODO: Consider query part? No-cache signal? ...
+            };
+
             const resolveWithStatus = (status: TStatus) => {
                 resolve({
                     status,
                     headers: {}
                 });
             };
+            const enforceSecurityMeasure = (): boolean => {
+                if (!this.rateLimiter.grantsAccess(sReq.clientIP)) {
+                    resolveWithStatus(429);
 
-            if (!this.rateLimiter.grantsAccess(sReq.clientIP)) {
-                resolveWithStatus(429);
+                    return true;
+                }
 
-                return;
-            }
+                if (this.responseCache.has(cacheKey)) {
+                    resolve(this.responseCache.get(cacheKey));
 
-            const cacheKey: Partial<ISerialRequest> = {
-                method: sReq.method,
-                url: sReq.url // TODO: Consider query part? No-cache signal? ...
+                    return true;
+                }
+                if (
+                    sReq.url.length >
+                    this.config.read("security", "maxRequestURILength").number()
+                ) {
+                    resolveWithStatus(414);
+
+                    return true;
+                }
+                if (
+                    (sReq.body ?? "").length >
+                    this.config
+                        .read("security", "maxRequestBodyByteLength")
+                        .number()
+                ) {
+                    resolveWithStatus(413);
+
+                    return true;
+                }
+                if (
+                    Object.entries(sReq.headers).reduce(
+                        (acc: number, cur: [string, TSerializable]) =>
+                            acc + cur[0].length + cur[1].toString().length,
+                        0
+                    ) >
+                    this.config
+                        .read("security", "maxRequestHeadersLength")
+                        .number()
+                ) {
+                    resolveWithStatus(431);
+
+                    return true;
+                }
+
+                return false;
             };
-            if (this.responseCache.has(cacheKey)) {
-                resolve(this.responseCache.get(cacheKey));
 
-                return;
-            }
-            if (
-                sReq.url.length >
-                this.config.read("security", "maxRequestURILength").number()
-            ) {
-                resolveWithStatus(414);
-
-                return;
-            }
-            if (
-                (sReq.body ?? "").length >
-                this.config
-                    .read("security", "maxRequestBodyByteLength")
-                    .number()
-            ) {
-                resolveWithStatus(413);
-
-                return;
-            }
-            if (
-                Object.entries(sReq.headers).reduce(
-                    (acc: number, cur: [string, TSerializable]) =>
-                        acc + cur[0].length + cur[1].toString().length,
-                    0
-                ) >
-                this.config.read("security", "maxRequestHeadersLength").number()
-            ) {
-                resolveWithStatus(431);
-
-                return;
-            }
+            if (!this.options.dev && enforceSecurityMeasure()) return;
 
             let handler: AHandlerContext;
             switch (sReq.method) {

@@ -9,7 +9,7 @@ new UnitTest("Redirect: /index.html")
     headers: {
         "Location": "/"
     },
-    status: 302
+    status: 301
 });
 
 new UnitTest("Redirect: /index")
@@ -21,7 +21,7 @@ new UnitTest("Redirect: /index")
     headers: {
         "Location": "/"
     },
-    status: 302
+    status: 301
 });
 
 new UnitTest("Redirect: /other.html")
@@ -33,7 +33,7 @@ new UnitTest("Redirect: /other.html")
     headers: {
         "Location": "/other"
     },
-    status: 302
+    status: 301
 });
 
 new UnitTest("Redirect: /nested/index")
@@ -45,5 +45,5 @@ new UnitTest("Redirect: /nested/index")
     headers: {
         "Location": "/nested/"
     },
-    status: 302
+    status: 301
 });

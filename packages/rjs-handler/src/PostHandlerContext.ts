@@ -23,7 +23,7 @@ export class PostHandlerContext extends AHandlerContext {
         this.rpcController = rpcController;
     }
 
-    public process(): void {
+    public async process(): Promise<void> {
         let params: THandlerRequestBody;
         try {
             params = this.request.getBody().json<THandlerRequestBody>();
@@ -31,6 +31,8 @@ export class PostHandlerContext extends AHandlerContext {
             this.response.setStatus(400);
 
             this.respond();
+
+            console.error(err);
 
             return;
         }
@@ -53,16 +55,15 @@ export class PostHandlerContext extends AHandlerContext {
                 this.request.url.pathname,
                 params.name
             );
-        const responseData =
+        let responseData: TSerializable =
             requestedRpcMember instanceof Function
                 ? requestedRpcMember(...(params.args ?? []))
                 : requestedRpcMember;
+        responseData = (
+            responseData instanceof Promise ? await responseData : responseData
+        ) as TSerializable;
 
-        this.response.setBody(
-            JSON.stringify({
-                data: responseData
-            })
-        );
+        this.response.setBody(JSON.stringify(responseData));
 
         this.response.setHeader("Content-Type", "application/json");
 

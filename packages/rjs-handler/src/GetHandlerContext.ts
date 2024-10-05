@@ -41,6 +41,7 @@ export class GetHandlerContext extends AHandlerContext {
                         "i"
                     )
                 ) ?? [];
+
             const index: number = match[0]
                 ? htmlMarkup.indexOf(match[0])
                 : Infinity;
@@ -48,7 +49,7 @@ export class GetHandlerContext extends AHandlerContext {
             return index + (match[0] ?? "").length;
         };
 
-        const insertionIndex: number = Math.min(
+        const insertionIndex: number = Math.max(
             firstTagIndex("HTML"),
             firstTagIndex("HEAD")
         );
@@ -67,7 +68,7 @@ export class GetHandlerContext extends AHandlerContext {
             /(\/index)?(\.[hH][tT][mM][lL])?$/
         )[0];
         if (canonicPathnamePart.length) {
-            this.response.setStatus(302);
+            this.response.setStatus(301);
 
             this.response.setHeader(
                 "Location",
@@ -85,19 +86,40 @@ export class GetHandlerContext extends AHandlerContext {
             return;
         }
 
+        for (const header in this.customHeaders) {
+            this.response.setHeader(
+                header,
+                this.customHeaders[header] as string
+            );
+        }
+
         const pathname: string = this.request.url.pathname
             .replace(/(\/)$/, "$1index")
             .replace(/(\/[^.]+)$/, "$1.html");
+        const extname: string =
+            (pathname.match(/\.([^.]+)$/) ?? [""])[1].toLowerCase() ?? "html";
 
-        const filestamp: IFilestamp = await this.vfs.read(pathname);
+        let filestamp: IFilestamp = await this.vfs.read(pathname);
+        if (!filestamp) {
+            this.response.setStatus(404);
+
+            if (extname === "html") {
+                const pathLevels: string[] = pathname.split(/\//g).slice(0, -1);
+                while (!filestamp && pathLevels.length) {
+                    filestamp = await this.vfs.read(
+                        [...pathLevels, "404.html"].join("/")
+                    );
+                    pathLevels.pop();
+                }
+            }
+        }
 
         if (!filestamp) {
-            this.response.setStatus(404); // TODO: Error pages
-
             this.respond();
 
             return;
         }
+
         if (
             [this.request.getHeader("If-None-Match")]
                 .flat()
@@ -110,15 +132,7 @@ export class GetHandlerContext extends AHandlerContext {
             return;
         }
 
-        for (const header in this.customHeaders) {
-            this.response.setHeader(
-                header,
-                this.customHeaders[header] as string
-            );
-        }
-
         // MIME
-        const extname: string = (pathname.match(/\.([^.]+)$/) ?? [""])[1];
         const fileMime: string | undefined = ((this.config
             .read("mime")
             .object() ?? {})[extname] ?? (mime as TJSON)[extname]) as string;

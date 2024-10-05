@@ -2,7 +2,7 @@ const { readFileSync } = require("fs");
 const { FileEmitter } = require("../../build/api");
 
 const fileEmitter = new FileEmitter({
-	pluginDirPath: require("path").join(__dirname, "../../../../test-app/plugins"),
+	pluginDirPath: require("path").join(__dirname, "../../../../test-app/src"),
 	publicDirPath: require("path").join(__dirname, "./_public")
 });
 

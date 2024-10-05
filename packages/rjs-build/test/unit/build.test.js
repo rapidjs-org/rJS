@@ -1,6 +1,6 @@
 const { Build, Filemap } = require("../../build/api");
 
-const build = new Build(require("path").join(__dirname, "../../../../test-app/plugins"));
+const build = new Build(require("path").join(__dirname, "../../../../test-app/src"));
 
 new UnitTest("Basic build")
 .actual(new Promise(async resolve => {

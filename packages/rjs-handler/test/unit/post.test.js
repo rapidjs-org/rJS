@@ -14,9 +14,7 @@ new UnitTest("POST /route1")
     headers: {
         "Content-Type": "application/json"
     },
-    body: {
-        data: 3
-    }
+    body: 3
 });
 
 new UnitTest("POST /route1")
@@ -29,9 +27,7 @@ new UnitTest("POST /route1")
 }, []))
 .expect({
     status: 200,
-    body: {
-        data: "value1"
-    }
+    body: "value1"
 });
 
 new UnitTest("POST /route2")
@@ -44,9 +40,7 @@ new UnitTest("POST /route2")
 }, []))
 .expect({
     status: 200,
-    body: {
-        data: "value2"
-    }
+    body: "value2"
 });
 
 new UnitTest("POST /route2 (no body)")

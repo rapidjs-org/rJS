@@ -8,7 +8,7 @@ module.exports.BEFORE = new Promise(async (resolve) => {
         port: PORT,
         cwd: require("path").join(__dirname, "../../../../test-app"),
         apiDirPath: "./api",
-        pluginDirPath: "./plugins",
+        pluginDirPath: "./src",
         publicDirPath: "./public"
     }, {
         processes: 2,

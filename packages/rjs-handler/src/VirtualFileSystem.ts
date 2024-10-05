@@ -98,7 +98,7 @@ export class VirtualFileSystem {
                     : this.buildInterface
                       ? await this.buildInterface.retrieve(relativePath)
                       : null
-            ) as File; // TODO: Previously not found cache -> defer next retrieval?
+            ) as File; // TODO: Dev: Previously not found cache -> defer next retrieval?
 
             resolve(
                 builtFile ? this.load(relativePath, builtFile.contents) : null

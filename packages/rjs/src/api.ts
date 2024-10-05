@@ -1,2 +1,2 @@
-export { FileEmitter } from "./FileEmitter";
-export { FileServer } from "./FileServer";
+export { FileEmitter, createFileEmitter } from "./FileEmitter";
+export { FileServer, createFileServer } from "./FileServer";

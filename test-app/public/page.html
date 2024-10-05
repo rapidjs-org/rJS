@@ -3,7 +3,10 @@
     <head>
         <title>rJS Test</title>
         <script>
-            console.log("1 + 2 = " + rJS.route1.sum(1, 2));
+            rJS.route1.sum(1, 2)
+            .then(x => {
+                console.log("1 + 2 = " + x);
+            });
         </script>
     </head>
     <body>

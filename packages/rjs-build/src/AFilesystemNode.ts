@@ -1,14 +1,12 @@
-import { normalize, basename } from "path";
+import { normalize } from "path";
 
 export abstract class AFilesystemNode {
-    public readonly absolutePath: string;
     public readonly relativePath: string;
-    public readonly name: string;
-    public readonly extension: string;
+
+    // TODO: Nesting of dirs via array (simpler manipulation)
+    public name: string;
 
     constructor(relativePath: string) {
         this.relativePath = normalize(`./${relativePath}`);
-        this.name = basename(relativePath).replace(/\.[^.]+$/, "");
-        this.extension = (relativePath.match(/\.([^.]+)$/) ?? [])[1];
     }
 }

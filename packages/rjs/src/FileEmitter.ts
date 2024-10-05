@@ -86,7 +86,7 @@ export class FileEmitter {
         const publicFiles: Filemap = await this.build.retrieveAll();
 
         for (const fileNode of publicFiles.fileNodes) {
-            await this.renderFileNode(fileNode);
+            await this.renderFileNode(fileNode as Directory | File);
         }
 
         return publicFiles;

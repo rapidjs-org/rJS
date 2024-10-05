@@ -44,7 +44,7 @@ export class Logger {
             date.getSeconds().toString().padStart(2, "0")
         ].join(":");
         appendFile(
-            join(this.logsDirPath, dateKey),
+            join(this.logsDirPath, `${dateKey}.log`),
             `[${timeKey}]\t${prefix ? `(${prefix}) ` : ""}${shortMessage.toString()}${
                 verboseMessage ? `\n${verboseMessage}` : ""
             }\n`,

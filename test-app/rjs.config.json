@@ -1,7 +1,7 @@
 {
     "security": {
         "maxRequestURILength": 5,
-        "maxRequestHeadersLength": 200
+        "maxRequestHeadersLength": 500
     },
     "performance": {
         "compressionByteThreshold": 999

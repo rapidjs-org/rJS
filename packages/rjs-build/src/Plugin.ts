@@ -22,6 +22,7 @@ type TBuildInterfaceCallable = (
     api: {
         Directory: typeof Directory;
         File: typeof File;
+        Filesystem: typeof Filesystem;
     },
     filesystem: Filesystem,
     configOptions: TJSON,
@@ -29,7 +30,7 @@ type TBuildInterfaceCallable = (
         [key: string]: unknown;
     },
     dev: boolean
-) => AFilesystemNode | AFilesystemNode[];
+) => (Directory | File)[];
 
 // TODO: Access to public files (static); e.g. for sitempa plugin?
 export class Plugin<O extends { [key: string]: unknown }> {
@@ -45,7 +46,7 @@ export class Plugin<O extends { [key: string]: unknown }> {
     private readonly dev: boolean;
 
     private lastApplyTimestamp: number = -Infinity;
-    private lastApplyResult: File[];
+    private lastApplyResult: (File | Directory)[];
 
     public readonly pluginDirectoryPath: string;
 
@@ -169,28 +170,40 @@ export class Plugin<O extends { [key: string]: unknown }> {
         });
     }
 
-    private async updateApplyResults(options?: O): Promise<File[]> {
-        this.lastApplyTimestamp = Date.now();
-        this.lastApplyResult = [
-            (await this.fetchBuildInterface())(
+    private updateApplyResults(options?: O): Promise<(File | Directory)[]> {
+        return new Promise(async (resolve) => {
+            const applicationResults:
+                | (File | Directory)[]
+                | Promise<(File | Directory)[]> = (
+                await this.fetchBuildInterface()
+            )(
                 {
                     Directory,
-                    File
+                    File,
+                    Filesystem
                 },
                 new Filesystem(
                     this.pluginDirectoryPath,
                     (await this.fetchDirectory()).fileNodes
                 ),
-                (this.fetchBuildConfig().options ?? {}) as TJSON,
+                (this.fetchBuildConfig().config ?? {}) as TJSON,
                 options,
                 this.dev
-            )
-        ].flat();
+            );
 
-        return this.lastApplyResult;
+            this.lastApplyTimestamp = Date.now();
+            this.lastApplyResult = [
+                applicationResults instanceof Promise
+                    ? await applicationResults
+                    : applicationResults
+            ].flat() as (Directory | File)[];
+
+            resolve(this.lastApplyResult);
+        });
     }
 
-    public async apply(options?: O): Promise<File[]> {
+    public async apply(options?: O): Promise<(File | Directory)[]> {
+        // TODO: Intermediate /tmp files?
         if (!this.dev && !options && this.lastApplyResult)
             return this.lastApplyResult;
 

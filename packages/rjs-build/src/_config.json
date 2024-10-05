@@ -1,7 +1,7 @@
 {
     "buildConfigCommandKeyName": "cmd",
     "buildConfigCommandPublicToken": "@PUBLIC",
-    "buildConfigName": "build",
+    "buildConfigName": "plugin",
     "buildModuleReferenceKey": "package",
-    "buildModuleName": "build"
+    "buildModuleName": "plugin"
 }

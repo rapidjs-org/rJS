@@ -1,6 +1,7 @@
 import { Dirent, readdirSync } from "fs";
 import { join, normalize, resolve } from "path";
 
+import { AFilesystemNode } from "./AFilesystemNode";
 import { Directory } from "./Directory";
 import { File } from "./File";
 import { Filemap } from "./Filemap";
@@ -70,7 +71,8 @@ export class Build<O extends { [key: string]: unknown }> {
         return new Filemap(
             await Array.from(this.plugins.values()).reduce(
                 async (acc: Promise<File[]>, plugin: Plugin<O>) => {
-                    const files: File[] = await plugin.apply(options);
+                    const files: (Directory | File)[] =
+                        await plugin.apply(options);
                     files.forEach((fileNode: File) => {
                         this.outpathMap.set(
                             this.normalizeRelativePath(fileNode.relativePath),
@@ -100,7 +102,7 @@ export class Build<O extends { [key: string]: unknown }> {
         relativePath: string,
         options?: O
     ): Promise<File | null> {
-        const filterFilesystemNode = (files: File[]): File => {
+        const filterFilesystemNode = (files: AFilesystemNode[]): File => {
             return files
                 .filter((fileNode: File) => {
                     return (
@@ -108,7 +110,7 @@ export class Build<O extends { [key: string]: unknown }> {
                         this.normalizeRelativePath(relativePath)
                     );
                 })
-                .pop();
+                .pop() as File;
         };
 
         !this.outpathMap.has(this.normalizeRelativePath(relativePath)) &&

@@ -24,7 +24,7 @@ new UnitTest("Security: > Max Headers")
         method: "POST",
         url: "/",
         headers: {
-            "a": "b".repeat(200)
+            "a": "b".repeat(500)
         }
     })).status;
 })

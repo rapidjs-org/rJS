@@ -7,7 +7,7 @@ export class ModuleDependency<T> {
 
     public async import(): Promise<T>{
 		delete require.cache[this.path];
-        
+		
 		const buildInterface = (await import(this.path)) as { default: T|Promise<T>; };
 		const resolvedBuildInterface = (buildInterface ?? {}).default ?? buildInterface as unknown as T|Promise<T>;
 		return await (

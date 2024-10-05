@@ -10,7 +10,7 @@ Example: rjs serve -D --port 8000
   • Flags:
     --dev, -D       Enable development mode.
   • Options:
-    --plugins-dir   Path to plugins directory (default './plugins').
+    --plugins-dir   Path to plugins directory (default './src').
     --public-dir    Path to public files directory (default './public').
 
 → serve             Serve files from the public, and virtually built from the plugins directory.
@@ -19,7 +19,7 @@ Example: rjs serve -D --port 8000
     --dev, -D       Enable development mode.
   • Options:
     --api-dir       Path to API file directory (default './api').
-    --plugins-dir   Path to plugins directory (default './plugins').
+    --plugins-dir   Path to plugins directory (default './src').
     --public-dir    Path to public files directory (default './public').
     --port, -P      Alternative server port (default '80/443' (HTTP/HTTPS), or '7777' (development mode)).
 

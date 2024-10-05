@@ -65,7 +65,9 @@ new UnitTest("GET /page")
 .expect({
 	status: 200,
 	body: {
-        length: 229
+        length: require("fs").readFileSync(
+            require("path").join(__dirname, "../../../../test-app/public/page.html")
+        ).toString().length
         + require("fs").readFileSync(
             require("path").join(__dirname, "../../client/rjs.client.js")
         ).toString()
@@ -90,6 +92,40 @@ new UnitTest("/page + client module injection")
     );
 })
 .expect(true);
+
+new UnitTest("GET /")
+.actual(request({
+    method: "GET",
+    url: "/not-found"
+}, [ "Content-Length", "Content-Type" ]))
+.expect({
+    headers: {
+        "Content-Length": 3,
+        "Content-Type": "text/html"
+    },
+    status: 404,
+    body: "404"
+});
+
+new UnitTest("GET /nested/not-found")
+.actual(request({
+    method: "GET",
+    url: "/nested/not-found"
+}, []))
+.expect({
+    status: 404,
+    body: "404"
+});
+
+new UnitTest("GET /nested/deep-nested/not-found")
+.actual(request({
+    method: "GET",
+    url: "/nested/deep-nested/not-found"
+}, []))
+.expect({
+    status: 404,
+    body: "404 (deep nested)"
+});
 
 new UnitTest("GET /index.php")
 .actual(request({
