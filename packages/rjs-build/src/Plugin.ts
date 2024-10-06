@@ -7,7 +7,6 @@ import {
     readdirSync
 } from "fs";
 import { join, resolve as resolvePath } from "path";
-// import { tmpdir } from "os";
 
 import { TJSON } from "./.shared/global.types";
 import { ModuleDependency } from "./.shared/ModuleDependency";
@@ -83,13 +82,6 @@ export class Plugin {
         }
 
         if (!buildModulePath || /\.json$/.test(buildModulePath)) return null;
-
-        /* if(buildConfig[_config.buildConfigCommandKeyName]) {
-			const temporaryEmitDirectoryPath: string = join(tmpdir(), ".rjs");
-			const cmd: string = (buildConfig[_config.buildConfigCommandKeyName] as TSerializable).toString()
-			.replace(new RegExp(`${_config.buildConfigCommandPublicToken}`, "g"), temporaryEmitDirectoryPath);
-			// TODO: Exec and use intermediate file
-		} */
 
         return buildModulePath;
     }

@@ -37,13 +37,15 @@
         "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
         "test:cli": "npx rjs-test cli ./test/cli/",
-        "test": "npm run test:unit && npm run test:http && npm run test:cli"
+        "test": "npm run test:unit && npm run test:http && npm run test:cli",
+        "release": "npx rjs-releasing --github"
     },
     "devDependencies": {
+        "@rapidjs.org/releasing": "^0.1.0",
         "@rapidjs.org/testing": "0.x",
-        "@rapidjs.org/testing-unit": "0.x",
-        "@rapidjs.org/testing-http": "0.x",
         "@rapidjs.org/testing-cli": "0.x",
+        "@rapidjs.org/testing-http": "0.x",
+        "@rapidjs.org/testing-unit": "0.x",
         "@types/node": "^20.10.6",
         "typescript": "^5.3.3"
     },
