@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "Core HTTP-based request handler utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
+	"license": "Apache-2.0",
     "homepage": "https://rapidjs.org",
     "keywords": [
         "rJS",

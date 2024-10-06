@@ -3,6 +3,7 @@
     "version": "0.1.0",
     "description": "rJS (pron. ‘rapidJS’) is a plugin-based build interface, and a progressive web server based on virtual build capabilites.",
     "author": "Thassilo Martin Schiepanski",
+	"license": "Apache-2.0",
     "homepage": "https://rapidjs.org",
     "keywords": [
         "rJS",
