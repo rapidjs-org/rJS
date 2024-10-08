@@ -74,6 +74,7 @@ export class Server extends EventEmitter {
         const resolveTLSParameter = (
             param: (string | Buffer)[] | undefined
         ): (string | Buffer)[] => {
+            // TODO: Regularly re-read files after certificate invalidation until valid again
             return [param]
                 .flat()
                 .map((param: string | Buffer | undefined) => {
