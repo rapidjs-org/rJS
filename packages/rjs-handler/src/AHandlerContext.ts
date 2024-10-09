@@ -19,16 +19,18 @@ export abstract class AHandlerContext extends EventEmitter {
     protected readonly request: Request;
     protected readonly response: Response;
     protected readonly config: Config;
+    protected readonly dev: boolean;
 
     private hasConsumedResponse: boolean = false;
 
-    constructor(sReq: ISerialRequest, config: Config) {
+    constructor(sReq: ISerialRequest, config: Config, dev: boolean) {
         super();
 
         this.request = new Request(sReq);
         this.response = new Response();
 
         this.config = config;
+        this.dev = dev;
     }
 
     public respond() {
@@ -61,11 +63,16 @@ export abstract class AHandlerContext extends EventEmitter {
         this.response.setHeader("Content-Length", bodyLength.toString());
         this.response.setHeader("Connection", "keep-alive");
         this.response.setHeader("Keep-Alive", "timeout=5");
-        this.response.setHeader("Cache-Control", [
-            `max-age=${this.config.read("performance", "clientCacheMs").number()}`,
-            "stale-while-revalidate=300",
-            "must-revalidate"
-        ]);
+        this.response.setHeader(
+            "Cache-Control",
+            !this.dev
+                ? [
+                      `max-age=${this.config.read("performance", "clientCacheMs").number()}`,
+                      "stale-while-revalidate=300",
+                      "must-revalidate"
+                  ]
+                : "no-store"
+        );
 
         this.emit("response", sRes);
     }

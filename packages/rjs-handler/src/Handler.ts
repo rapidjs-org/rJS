@@ -161,7 +161,8 @@ export class Handler {
                         sReq,
                         this.config,
                         this.vfs,
-                        this.config.read("headers").object() as THeaders
+                        this.config.read("headers").object() as THeaders,
+                        this.options.dev
                     );
                     break;
                 case "POST":
@@ -174,7 +175,8 @@ export class Handler {
                     handler = new PostHandlerContext(
                         sReq,
                         this.config,
-                        this.rpcController
+                        this.rpcController,
+                        this.options.dev
                     );
                     break;
                 default:

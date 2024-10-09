@@ -22,9 +22,10 @@ export class PostHandlerContext extends AHandlerContext {
     constructor(
         sReq: ISerialRequest,
         config: Config,
-        rpcController: RPCController
+        rpcController: RPCController,
+        dev: boolean
     ) {
-        super(sReq, config);
+        super(sReq, config, dev);
 
         this.rpcController = rpcController;
     }

@@ -24,9 +24,10 @@ export class GetHandlerContext extends AHandlerContext {
         sReq: ISerialRequest,
         config: Config,
         vfs: VirtualFileSystem,
-        customHeaders: THeaders = {}
+        customHeaders: THeaders = {},
+        dev: boolean
     ) {
-        super(sReq, config);
+        super(sReq, config, dev);
 
         this.vfs = vfs;
         this.customHeaders = customHeaders;
