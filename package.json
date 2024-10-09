@@ -18,12 +18,11 @@
 		"lint:fix": "npm run lint -- --fix",
 		"format": "npx prettier --check './packages/*/src/**/*.ts'",
 		"format:fix": "npx prettier --write './packages/*/src/**/*.ts'",
-		"release": "npx rjs-releasing --github",
-		"release:rjs-build": "npm run release -- ./packages/rjs-build",
-		"release:rjs-handler": "npm run release -- ./packages/rjs-handler",
-		"release:server-cluster": "npm run release -- ./packages/server-cluster",
-		"release:rjs-server": "npm run release -- ./packages/rjs-server",
-		"release:rjs": "npm run release -- ./packages/rjs"
+		"release:rjs-build": "npx rjs-releasing ./packages/rjs-build",
+		"release:rjs-handler": "npx rjs-releasing ./packages/rjs-handler",
+		"release:handler-cluster": "npx rjs-releasing ./packages/handler-cluster",
+		"release:rjs-server": "npx rjs-releasing ./packages/rjs-server",
+		"release:rjs": "npx rjs-releasing ./packages/rjs --github"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.2.0",

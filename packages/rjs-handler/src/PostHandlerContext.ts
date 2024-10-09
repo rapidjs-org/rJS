@@ -60,7 +60,7 @@ export class PostHandlerContext extends AHandlerContext {
             clientIP: this.request.clientIP
         };
         const requestedRpcMember: TRpcMember =
-            this.rpcController.invokeEndpoint(
+            await this.rpcController.invokeEndpoint(
                 this.request.url.pathname,
                 params.name
             );

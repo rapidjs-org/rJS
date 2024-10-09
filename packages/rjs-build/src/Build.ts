@@ -4,7 +4,6 @@ import { join, normalize, resolve } from "path";
 import { AFilesystemNode } from "./AFilesystemNode";
 import { Directory } from "./Directory";
 import { File } from "./File";
-import { Filemap } from "./Filemap";
 import { Plugin } from "./Plugin";
 
 export enum EBuildFilter {
@@ -64,10 +63,11 @@ export class Build {
 
     public async retrieveAll(
         filter: EBuildFilter = EBuildFilter.ALL
-    ): Promise<Filemap> {
+    ): Promise<Directory> {
         this.fetchPlugins();
 
-        return new Filemap(
+        return new Directory(
+            ".",
             await Array.from(this.plugins.values()).reduce(
                 async (acc: Promise<File[]>, plugin: Plugin) => {
                     const files: (Directory | File)[] = await plugin.apply();

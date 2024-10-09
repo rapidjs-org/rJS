@@ -1,7 +1,7 @@
 [
     "@rapidjs.org/rjs-build",
     "@rapidjs.org/rjs-handler",
-    "@rapidjs.org/server-cluster",
+    "@rapidjs.org/handler-cluster",
     "@rapidjs.org/rjs-server",
     "@rapidjs.org/rjs"
 ]

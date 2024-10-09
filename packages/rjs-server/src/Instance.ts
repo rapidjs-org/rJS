@@ -3,7 +3,7 @@ import { resolve, join } from "path";
 import { IClusterSize } from "./local.interfaces";
 import { Logger } from "./Logger";
 
-import { Cluster } from "@rapidjs.org/server-cluster";
+import { Cluster } from "@rapidjs.org/handler-cluster";
 import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
 
 import _config from "./_config.json";

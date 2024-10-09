@@ -10,8 +10,6 @@ import { join, resolve as resolvePath } from "path";
 
 import { TJSON } from "./.shared/global.types";
 import { ModuleDependency } from "./.shared/ModuleDependency";
-import { AFilesystemNode } from "./AFilesystemNode";
-import { Filesystem } from "./Filesystem";
 import { Directory } from "./Directory";
 import { File } from "./File";
 
@@ -21,11 +19,11 @@ type TBuildInterfaceCallable = (
     api: {
         Directory: typeof Directory;
         File: typeof File;
-        Filesystem: typeof Filesystem;
     },
-    filesystem: Filesystem,
-    configOptions: TJSON,
-    dev: boolean
+    filesystem: Directory,
+    config: TJSON,
+    isDev: boolean,
+    $PATH: string
 ) => (Directory | File)[];
 
 // TODO: Access to public files (static); e.g. for sitemap plugin?
@@ -110,7 +108,7 @@ export class Plugin {
                         return;
                     }
 
-                    const fileNodes: AFilesystemNode[] = [];
+                    const nodes: (Directory | File)[] = [];
                     for (const dirent of dirents
                         .filter(
                             (dirent: Dirent) =>
@@ -138,7 +136,7 @@ export class Plugin {
                             relativePath,
                             dirent.name
                         );
-                        fileNodes.push(
+                        nodes.push(
                             dirent.isDirectory()
                                 ? await this.fetchDirectory(relativeChildPath)
                                 : new File(
@@ -153,7 +151,7 @@ export class Plugin {
                         );
                     }
 
-                    resolve(new Directory(relativePath, fileNodes));
+                    resolve(new Directory(relativePath, nodes));
                 }
             );
         });
@@ -168,15 +166,12 @@ export class Plugin {
             )(
                 {
                     Directory,
-                    File,
-                    Filesystem
+                    File
                 },
-                new Filesystem(
-                    this.pluginDirectoryPath,
-                    (await this.fetchDirectory()).fileNodes
-                ),
+                new Directory(".", (await this.fetchDirectory()).nodes),
                 (this.fetchBuildConfig().config ?? {}) as TJSON,
-                this.dev
+                this.dev,
+                this.pluginDirectoryPath
             );
 
             this.lastApplyTimestamp = Date.now();
@@ -191,7 +186,7 @@ export class Plugin {
     }
 
     public async apply(): Promise<(File | Directory)[]> {
-        // TODO: Intermediate /tmp files?
+        // TODO: Intermediate/tmp files?
         if (!this.dev && this.lastApplyResult) return this.lastApplyResult;
 
         for (const filepath of readdirSync(this.pluginDirectoryPath, {

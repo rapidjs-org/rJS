@@ -1,6 +1,6 @@
 {
     "name": "@rapidjs.org/rjs-server",
-    "version": "0.1.0",
+    "version": "0.0.9",
     "description": "rJS (pron. ‘rapidJS’) is a web server with virtual plugin-based build capabilities.",
     "author": "Thassilo Martin Schiepanski",
 	"license": "Apache-2.0",
@@ -43,6 +43,6 @@
     },
     "dependencies": {
         "@rapidjs.org/rjs-handler": "0.x",
-        "@rapidjs.org/server-cluster": "0.x"
+        "@rapidjs.org/handler-cluster": "0.x"
     }
 }

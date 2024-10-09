@@ -4,7 +4,7 @@ import { join, normalize } from "path";
 import { Cache } from "./Cache";
 import { Config } from "./Config";
 
-import { Build, Filemap, File } from "@rapidjs.org/rjs-build";
+import { Build, Directory, File } from "@rapidjs.org/rjs-build";
 
 export interface IFilestamp {
     data: Buffer | string;
@@ -18,7 +18,7 @@ export class VirtualFileSystem {
     private readonly buildInterface?: Build;
     private readonly preretrieval: Promise<void>;
 
-    private privateFiles?: Filemap;
+    private privateFiles?: Directory;
 
     constructor(
         config: Config,
@@ -40,7 +40,7 @@ export class VirtualFileSystem {
             ? new Promise((resolve) => {
                   this.buildInterface
                       .retrieveAll()
-                      .then((privateFiles: Filemap) => {
+                      .then((privateFiles: Directory) => {
                           this.privateFiles = privateFiles;
 
                           resolve();
@@ -94,7 +94,7 @@ export class VirtualFileSystem {
 
             const builtFile = (
                 this.privateFiles
-                    ? this.privateFiles.lookup(relativePath)
+                    ? this.privateFiles.get(relativePath)
                     : this.buildInterface
                       ? await this.buildInterface.retrieve(relativePath)
                       : null

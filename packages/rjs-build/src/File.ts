@@ -15,3 +15,7 @@ export class File extends AFilesystemNode {
         this.contents = contents;
     }
 }
+
+export function createFile(relativePath: string, contents?: Buffer | string) {
+    return new File(relativePath, contents);
+}

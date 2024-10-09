@@ -3,7 +3,7 @@ import { existsSync, mkdir, writeFile } from "fs";
 
 import { Options } from "./.shared/Options";
 
-import { Build, Filemap, Directory, File } from "@rapidjs.org/rjs-build";
+import { Build, Directory, File } from "@rapidjs.org/rjs-build";
 
 import _config from "./_config.json";
 
@@ -66,13 +66,13 @@ export class FileEmitter {
     }
 
     private async renderDirectory(directory: Directory): Promise<void> {
-        const fileNodes: (Directory | File)[] = [];
+        const nodes: (Directory | File)[] = [];
         directory.traverse((fileNode: Directory | File) => {
-            fileNodes.push(fileNode);
+            nodes.push(fileNode);
         });
 
-        for (const fileNode of fileNodes) {
-            await this.renderFileNode(fileNode);
+        for (const node of nodes) {
+            await this.renderFileNode(node);
         }
     }
 
@@ -82,10 +82,10 @@ export class FileEmitter {
             : await this.renderFile(fileNode);
     }
 
-    public async emit(): Promise<Filemap> {
-        const publicFiles: Filemap = await this.build.retrieveAll();
+    public async emit(): Promise<Directory> {
+        const publicFiles: Directory = await this.build.retrieveAll();
 
-        for (const fileNode of publicFiles.fileNodes) {
+        for (const fileNode of publicFiles.nodes) {
             await this.renderFileNode(fileNode as Directory | File);
         }
 

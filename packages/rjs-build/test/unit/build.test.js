@@ -1,4 +1,4 @@
-const { Build, Filemap } = require("../../build/api");
+const { Build, Filemap, Directory } = require("../../build/api");
 
 const build = new Build(require("path").join(__dirname, "../../../../test-app/src"));
 
@@ -15,11 +15,16 @@ new UnitTest("Basic build")
 		contents: "O\nP1\nP2"
 	});
 }))
-.expect(new Filemap([
-	{
-		relativePath: "out.txt",
-		name: "out",
-		extension: "txt",
-		contents: "O\nP1\nP2"
-	}
-]));
+.expect(
+	new Directory(
+		".",
+		[
+			{
+				relativePath: "out.txt",
+				name: "out",
+				extension: "txt",
+				contents: "O\nP1\nP2"
+			}
+		]
+	)
+);

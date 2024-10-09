@@ -1,6 +1,6 @@
 {
-    "name": "@rapidjs.org/server-cluster",
-    "version": "0.1.0",
+    "name": "@rapidjs.org/handler-cluster",
+    "version": "0.0.9",
     "description": "Web server cluster (process and thread pool) utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
 	"license": "Apache-2.0",
@@ -24,7 +24,7 @@
         "./types/"
     ],
     "scripts": {
-        "copy-shared": "node ../../scripts/copy-shared.js server-cluster",
+        "copy-shared": "node ../../scripts/copy-shared.js handler-cluster",
         "clean": "rm -rf ./build && rm -rf ./types",
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",

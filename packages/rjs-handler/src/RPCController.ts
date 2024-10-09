@@ -57,8 +57,11 @@ export class RPCController {
         return !!(this.modules.get(modulePath) ?? {})[memberName];
     }
 
-    public invokeEndpoint(modulePath: string, memberName: string): TRpcMember {
-        this.dev && this.importModule(modulePath);
+    public async invokeEndpoint(
+        modulePath: string,
+        memberName: string
+    ): Promise<TRpcMember> {
+        await (this.dev ? this.importModule(modulePath) : Promise.resolve());
 
         return this.modules.get(modulePath)[memberName];
     }
