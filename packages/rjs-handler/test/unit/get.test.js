@@ -88,7 +88,7 @@ new UnitTest("/page + client module injection")
             url: "/page"
         }))
         .body
-        .indexOf("<script>window.rJS =")
+        .indexOf("<script>\"use strict\";window.rJS =")
     );
 })
 .expect(true);

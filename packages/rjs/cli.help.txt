@@ -4,25 +4,27 @@ Usage:   rjs <command> [<sub-command>]* [--<arg:name>|-<arg:shorthand> [<option>
 Example: rjs serve -D --port 8000
 
 • Global Flags:
-  --stacktrace      Always print the full stack trace of errors.
+  --stacktrace          Always print the full stack trace of errors.
 
-→ emit              Build and emit resulting files to the public directory.
+→ emit                  Build and emit resulting files to the public directory.
   • Flags:
-    --dev, -D       Enable development mode.
+    --dev, -D           Enable development mode.
   • Options:
-    --source-dir   Path to plugins directory (default './src').
-    --public-dir    Path to public files directory (default './public').
+    --source-dir        Path to plugins directory (default './src').
+    --public-dir        Path to public files directory (default './public').
+    --working-dir, -W   Path to the project (default CWD).
 
-→ serve             Serve files from the public, and virtually built from the plugins directory.
-                    Includes file-based fullstack API functionality.
+→ serve                 Serve files from the public, and virtually built from the plugins directory.
+                        Includes file-based fullstack API functionality.
   • Flags:
-    --dev, -D       Enable development mode.
+    --dev, -D           Enable development mode.
   • Options:
-    --api-dir       Path to API file directory (default './api').
-    --source-dir   Path to plugins directory (default './src').
-    --public-dir    Path to public files directory (default './public').
-    --port, -P      Alternative server port (default '80/443' (HTTP/HTTPS), or '7777' (development mode)).
-    --tls-cert, -C  Path to (or raw) TLS cetrificate for inherent HTTPS application.
-    --tls-key, -K   Path to (or raw) TLS key for inherent HTTPS application.
+    --api-dir           Path to API file directory (default './api').
+    --source-dir        Path to plugins directory (default './src').
+    --public-dir        Path to public files directory (default './public').
+    --port, -P          Alternative server port (default '80/443' (HTTP/HTTPS), or '7777' (development mode)).
+    --tls-cert, -C      Path to (or raw) TLS cetrificate for inherent HTTPS application.
+    --tls-key, -K       Path to (or raw) TLS key for inherent HTTPS application.
+    --working-dir, -W   Path to the project (default CWD).
 
 Read more at https://rapidjs.org.

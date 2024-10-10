@@ -1,3 +1,6 @@
+"use strict";
+
+
 window.rJS = (() => {
     return new Proxy({}, {
         get(_, endpointPathname) {

@@ -8,6 +8,7 @@ import { Build, Directory, File } from "@rapidjs.org/rjs-build";
 import _config from "./_config.json";
 
 export interface IFileEmitterOptions {
+    cwd: string;
     pluginDirPath: string;
     publicDirPath: string;
 
@@ -26,6 +27,7 @@ export class FileEmitter {
 
     constructor(options: Partial<IFileEmitterOptions>) {
         const optionsWithDefaults: IFileEmitterOptions = new Options(options, {
+            cwd: process.cwd(),
             pluginDirPath: _config.pluginDirName,
             publicDirPath: _config.publicDirName
         }).object;
@@ -40,7 +42,10 @@ export class FileEmitter {
         }
 
         this.build = new Build(pluginDirPath, optionsWithDefaults.dev);
-        this.publicRootPath = resolve(optionsWithDefaults.publicDirPath);
+        this.publicRootPath = join(
+            resolve(optionsWithDefaults.cwd),
+            optionsWithDefaults.publicDirPath
+        );
     }
 
     private renderFile(file: File): Promise<void> {

@@ -20,8 +20,8 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess> {
             join(__dirname, "api.process"),
             adapterConfig,
             new Options<Partial<IClusterOptions>>(options, {
-                baseSize: Math.min(
-                    (options ?? {}).baseSize ?? Infinity,
+                limit: Math.min(
+                    (options ?? {}).limit ?? Infinity,
                     cpus().length - 1
                 )
             }).object
@@ -46,7 +46,7 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess> {
 
             this.deactivateWorkerWithError(childProcess, 500);
 
-            this.spawnWorker();
+            this.respawnWorker();
         });
 
         childProcess.send(this.adapterConfig);

@@ -10,7 +10,7 @@ module.exports.BEFORE = new Promise(async (resolve) => {
     const cluster = new Cluster({
         modulePath: require("path").join(__dirname, "_adapter")
     }, {
-        baseSize: 2
+        limit: 2
     })
     .on("stdout", message => process.stdout.write(message))
     .on("stderr", message => process.stderr.write(message))

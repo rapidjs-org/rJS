@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from "fs";
 
 import { THTTPMethod } from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
-import { IClusterSize } from "./local.interfaces";
+import { IClusterConstraints } from "./local.interfaces";
 import { Options } from "./.shared/Options";
 import { DeferredCall } from "./DeferredCall";
 import { Logger } from "./Logger";
@@ -31,7 +31,7 @@ export interface IServerOptions extends IHandlerOptions {
 
 export function createServer(
     options?: Partial<IServerOptions>,
-    clusterSize?: IClusterSize
+    clusterSize?: IClusterConstraints
 ): Promise<Server> {
     return new Promise((resolve) => {
         const server: Server = new Server(options, clusterSize).on(
@@ -46,7 +46,10 @@ export class Server extends EventEmitter {
 
     public readonly port: number;
 
-    constructor(options?: Partial<IServerOptions>, clusterSize?: IClusterSize) {
+    constructor(
+        options?: Partial<IServerOptions>,
+        clusterSize?: IClusterConstraints
+    ) {
         super();
 
         const optionsWithDefaults: IServerOptions = new Options<IServerOptions>(
@@ -90,7 +93,7 @@ export class Server extends EventEmitter {
         };
 
         (
-            (!options.dev && optionsWithDefaults.tls
+            (!options.dev && (optionsWithDefaults.tls ?? {}).cert
                 ? createHTTPSServer
                 : createHTTPServer) as typeof createHTTPSServer
         )(

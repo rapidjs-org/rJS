@@ -6,26 +6,28 @@ import { Printer } from "../Printer";
 
 // TODO: Print virtual files for overview?
 new Command("serve", () => {
-    const dev: boolean = Args.parseFlag("dev", "D");
+    const dev = Args.parseFlag("dev", "D");
+    const tls = {
+        cert: Args.parseOption("tls-cert", "C").string(),
+        key: Args.parseOption("tls-key", "K").string()
+    };
 
     createFileServer({
         dev,
+        tls,
 
-        port: Args.parseOption("port", "P").number(),
-        tls: {
-            cert: Args.parseOption("tls-cert", "C").string(),
-            key: Args.parseOption("tls-key", "K").string()
-        },
+        cwd: Args.parseOption("working-dir", "W").string() ?? process.cwd(),
         apiDirPath: Args.parseOption("api-dir").string(),
         pluginDirPath: Args.parseOption("plugins-dir").string(),
-        publicDirPath: Args.parseOption("public-dir").string()
+        publicDirPath: Args.parseOption("public-dir").string(),
+        port: Args.parseOption("port", "P").number()
     })
         .then((server: FileServer) => {
             Printer.global.stdout(
                 `${
                     dev ? DEV_MODE_PREFIX : ""
                 }Server listening on ${Printer.format(
-                    `http://localhost:${server.port}`,
+                    `http${tls.cert ? "s" : ""}://localhost:${server.port}`,
                     [Printer.escapes.TERTIARY_COLOR_FG]
                 )}.`
             );

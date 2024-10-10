@@ -1,4 +1,4 @@
-export interface IClusterSize {
+export interface IClusterConstraints {
     processes: number;
     threads: number;
 }

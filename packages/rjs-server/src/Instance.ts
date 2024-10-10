@@ -1,6 +1,6 @@
 import { resolve, join } from "path";
 
-import { IClusterSize } from "./local.interfaces";
+import { IClusterConstraints } from "./local.interfaces";
 import { Logger } from "./Logger";
 
 import { Cluster } from "@rapidjs.org/handler-cluster";
@@ -10,7 +10,7 @@ import _config from "./_config.json";
 
 export function createInstance(
     options?: Partial<IHandlerOptions>,
-    clusterSize?: IClusterSize
+    clusterSize?: IClusterConstraints
 ): Promise<Instance> {
     return new Promise((resolve) => {
         const instance: Instance = new Instance(options, clusterSize).on(
@@ -23,7 +23,7 @@ export function createInstance(
 export class Instance extends Cluster {
     constructor(
         options?: Partial<IHandlerOptions>,
-        clusterSize?: IClusterSize
+        clusterConstraints?: IClusterConstraints
     ) {
         super(
             {
@@ -31,10 +31,10 @@ export class Instance extends Cluster {
                 options
             },
             {
-                baseSize: options.dev ? 1 : (clusterSize ?? {}).processes
+                limit: options.dev ? 1 : (clusterConstraints ?? {}).processes
             },
             {
-                baseSize: options.dev ? 1 : (clusterSize ?? {}).threads
+                limit: options.dev ? 1 : (clusterConstraints ?? {}).threads
             }
         );
 

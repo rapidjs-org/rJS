@@ -9,7 +9,7 @@ new UnitTest("Process cluster setup")
         modulePath: require("path").join(__dirname, "_adapter.process"),
         options: "test:options"
     }, {
-        baseSize: WORKER_AMOUNT,
+        limit: WORKER_AMOUNT,
     })
     .once("online", async () => {
         resolve(true);

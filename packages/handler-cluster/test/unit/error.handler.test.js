@@ -3,7 +3,7 @@ const { ThreadCluster } = require("../../build/api");
 new ThreadCluster({
     modulePath: require("path").join(__dirname, "_adapter.error.handler")
 }, {
-    baseSize: 2,
+    limit: 2,
     silent: true,
     errorLimiterOptions: {
         initPeriodMs: 0

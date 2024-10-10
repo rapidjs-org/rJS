@@ -10,6 +10,7 @@ new Command("emit", () => {
     createFileEmitter({
         dev,
 
+        cwd: Args.parseOption("working-dir", "W").string() ?? process.cwd(),
         pluginDirPath: Args.parseOption("plugins-dir").string(),
         publicDirPath: Args.parseOption("public-dir").string()
     })

@@ -7,6 +7,7 @@ import { Config } from "./Config";
 import { VirtualFileSystem } from "./VirtualFileSystem";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
+import { RPCController } from "./RPCController";
 import { AHandlerContext } from "./AHandlerContext";
 import { GetHandlerContext } from "./GetHandlerContext";
 import { PostHandlerContext } from "./PostHandlerContext";
@@ -14,7 +15,6 @@ import { PostHandlerContext } from "./PostHandlerContext";
 import _config from "./_config.json";
 
 import GLOBAL_CONFIG_DEFAULTS from "./config.defaults.json";
-import { RPCController } from "./RPCController";
 
 export interface IHandlerOptions {
     apiDirPath?: string;
@@ -25,6 +25,7 @@ export interface IHandlerOptions {
 }
 
 export class Handler {
+    // TODO: Event emitter to communicate preretrieval done?
     private readonly options: IHandlerOptions;
     private readonly config: Config;
     private readonly vfs: VirtualFileSystem;

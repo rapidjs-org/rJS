@@ -9,7 +9,7 @@ new UnitTest("Cluster setup")
         modulePath: require("path").join(__dirname, "_adapter.thread"),
         options: "test:options"
     }, {
-        baseSize: WORKER_AMOUNT,
+        limit: WORKER_AMOUNT,
     })
     .once("online", async () => {
         resolve(true);

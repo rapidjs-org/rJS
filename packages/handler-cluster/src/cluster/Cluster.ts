@@ -20,7 +20,7 @@ export class Cluster {
         threadClusterOptions: Partial<IClusterOptions> = processClusterOptions
     ) {
         this.parentCluster =
-            processClusterOptions.baseSize !== 1
+            processClusterOptions.limit !== 1
                 ? new ProcessCluster(
                       {
                           modulePath: join(__dirname, "adapter"),

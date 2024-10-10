@@ -20,8 +20,8 @@ export class ThreadCluster extends AWorkerCluster<Thread> {
             join(__dirname, "api.thread"),
             adapterConfig,
             new Options<Partial<IClusterOptions>>(options, {
-                baseSize: Math.min(
-                    (options ?? {}).baseSize ?? Infinity,
+                limit: Math.min(
+                    (options ?? {}).limit ?? Infinity,
                     availableParallelism() - 1
                 )
             }).object
@@ -47,7 +47,7 @@ export class ThreadCluster extends AWorkerCluster<Thread> {
 
             this.deactivateWorkerWithError(thread, 500);
 
-            this.spawnWorker();
+            this.respawnWorker();
         });
 
         return new Promise((resolve) => {

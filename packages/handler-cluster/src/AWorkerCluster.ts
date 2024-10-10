@@ -27,14 +27,13 @@ export interface IAdapterConfiguration {
 }
 
 export interface IClusterOptions {
-    baseSize: number;
+    limit: number;
     timeout: number;
     maxPending: number;
 
     errorLimiterOptions?: Partial<IErrorLimiterOptions>;
 }
 
-// TODO: Elastic size
 export abstract class AWorkerCluster<
     Worker extends EventEmitter
 > extends EventEmitter {
@@ -47,6 +46,8 @@ export abstract class AWorkerCluster<
     protected readonly workerModulePath: string;
     protected readonly adapterConfig: IAdapterConfiguration;
 
+    private aliveWorkers: number = 0;
+
     constructor(
         workerModulePath: string,
         adapterConfig: IAdapterConfiguration,
@@ -55,7 +56,7 @@ export abstract class AWorkerCluster<
         super();
 
         this.options = new Options<IClusterOptions>(options, {
-            baseSize: Math.max((options ?? {}).baseSize ?? Infinity, 1),
+            limit: Math.max((options ?? {}).limit || Infinity, 1),
             timeout: 30000,
             maxPending: Infinity
         }).object;
@@ -71,9 +72,7 @@ export abstract class AWorkerCluster<
         this.adapterConfig = adapterConfig;
 
         setImmediate(async () => {
-            for (let i = 0; i < this.options.baseSize; i++) {
-                await this.spawnWorker();
-            }
+            await this.spawnWorker();
 
             this.emit("online", this);
         });
@@ -86,8 +85,14 @@ export abstract class AWorkerCluster<
         sReq: ISerialRequest
     ): void;
 
-    private activate() {
-        if (!this.pendingAssignments.length || !this.idleWorkers.length) return;
+    private async activate() {
+        if (!this.pendingAssignments.length) return;
+        if (!this.idleWorkers.length) {
+            this.aliveWorkers < this.options.limit &&
+                (await this.spawnWorker()); // TODO: Shut down workers if idle for a while? (elasticity)
+
+            return;
+        }
 
         const worker: Worker = this.idleWorkers.shift();
         const assignment: IPendingAssignment = this.pendingAssignments.shift();
@@ -104,16 +109,9 @@ export abstract class AWorkerCluster<
         });
     }
 
-    protected getWorkerId(worker: Worker): number {
-        const optimisticWorkerCast = worker as unknown as {
-            threadId: number;
-            pid: number;
-        };
+    private async spawnWorker(): Promise<Worker> {
+        this.aliveWorkers++;
 
-        return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
-    }
-
-    protected async spawnWorker(): Promise<Worker> {
         const worker: Worker = await this.createWorker();
 
         (worker as Worker & { stdout: EventEmitter }).stdout.on(
@@ -128,6 +126,21 @@ export abstract class AWorkerCluster<
         this.idleWorkers.push(worker);
 
         return worker;
+    }
+
+    protected getWorkerId(worker: Worker): number {
+        const optimisticWorkerCast = worker as unknown as {
+            threadId: number;
+            pid: number;
+        };
+
+        return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
+    }
+
+    protected async respawnWorker(): Promise<Worker> {
+        this.aliveWorkers--;
+
+        return this.spawnWorker();
     }
 
     protected deactivateWorker(worker: Worker, sRes?: ISerialResponse) {
