@@ -1,9 +1,14 @@
 import { resolve } from "path";
 
-import { THeaders, TSerializable, TStatus } from "./.shared/global.types";
+import {
+    TAtomicSerializable,
+    THeaders,
+    TJSON,
+    TStatus
+} from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { Options } from "./.shared/Options";
-import { Config } from "./Config";
+import { TypeResolver } from "./TypeResolver";
 import { VirtualFileSystem } from "./VirtualFileSystem";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
@@ -12,11 +17,9 @@ import { AHandlerContext } from "./AHandlerContext";
 import { GetHandlerContext } from "./GetHandlerContext";
 import { PostHandlerContext } from "./PostHandlerContext";
 
-import _config from "./_config.json";
-
 import GLOBAL_CONFIG_DEFAULTS from "./config.defaults.json";
 
-export interface IHandlerOptions {
+export interface IHandlerEnv {
     apiDirPath?: string;
     pluginDirPath?: string;
     publicDirPath?: string;
@@ -26,8 +29,8 @@ export interface IHandlerOptions {
 
 export class Handler {
     // TODO: Event emitter to communicate preretrieval done?
-    private readonly options: IHandlerOptions;
-    private readonly config: Config;
+    private readonly env: IHandlerEnv;
+    private readonly config: TypeResolver;
     private readonly vfs: VirtualFileSystem;
     private readonly rateLimiter: RateLimiter;
     private readonly responseCache: Cache<
@@ -36,41 +39,34 @@ export class Handler {
     >;
     private readonly rpcController: RPCController | null;
 
-    constructor(options: Partial<IHandlerOptions>) {
-        this.options = new Options(options, {
+    constructor(env: Partial<IHandlerEnv>, options: TJSON = {}) {
+        this.env = new Options(env ?? {}, {
             dev: false, // TODO: dev also via env var?
             cwd: process.cwd()
         }).object;
-
-        this.config = new Config(
-            this.options.cwd,
-            _config.globalConfigName,
-            options.dev,
-            GLOBAL_CONFIG_DEFAULTS
-        );
+        this.config = new TypeResolver(options ?? {}, GLOBAL_CONFIG_DEFAULTS);
         this.rateLimiter = new RateLimiter(
             this.config.read("security", "maxRequestsPerMin").number()
         );
         this.responseCache = new Cache(
-            !this.options.dev
+            !this.env.dev
                 ? this.config.read("peformance", "serverCacheMs").number()
                 : 0
         );
-
         this.vfs = new VirtualFileSystem(
             this.config,
-            this.options.dev,
-            this.options.publicDirPath
-                ? resolve(this.options.cwd, this.options.publicDirPath)
+            this.env.dev,
+            this.env.publicDirPath
+                ? resolve(this.env.cwd, this.env.publicDirPath)
                 : null,
-            this.options.pluginDirPath
-                ? resolve(this.options.cwd, this.options.pluginDirPath)
+            this.env.pluginDirPath
+                ? resolve(this.env.cwd, this.env.pluginDirPath)
                 : null
         );
-        this.rpcController = this.options.apiDirPath
+        this.rpcController = this.env.apiDirPath
             ? new RPCController(
-                  resolve(this.options.cwd, this.options.apiDirPath),
-                  this.options.dev
+                  resolve(this.env.cwd, this.env.apiDirPath),
+                  this.env.dev
               )
             : null;
     }
@@ -130,8 +126,16 @@ export class Handler {
                 }
                 if (
                     Object.entries(sReq.headers).reduce(
-                        (acc: number, cur: [string, TSerializable]) =>
-                            acc + cur[0].length + cur[1].toString().length,
+                        (
+                            acc: number,
+                            cur: [
+                                string,
+                                (
+                                    | TAtomicSerializable
+                                    | readonly TAtomicSerializable[]
+                                )
+                            ]
+                        ) => acc + cur[0].length + cur[1].toString().length,
                         0
                     ) >
                     this.config
@@ -146,7 +150,7 @@ export class Handler {
                 return false;
             };
 
-            if (!this.options.dev && enforceSecurityMeasure()) return;
+            if (!this.env.dev && enforceSecurityMeasure()) return;
 
             let handler: AHandlerContext;
             switch (sReq.method) {
@@ -163,7 +167,7 @@ export class Handler {
                         this.config,
                         this.vfs,
                         this.config.read("headers").object() as THeaders,
-                        this.options.dev
+                        this.env.dev
                     );
                     break;
                 case "POST":
@@ -177,7 +181,7 @@ export class Handler {
                         sReq,
                         this.config,
                         this.rpcController,
-                        this.options.dev
+                        this.env.dev
                     );
                     break;
                 default:

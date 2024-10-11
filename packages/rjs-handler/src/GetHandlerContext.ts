@@ -4,7 +4,7 @@ import { join } from "path";
 import { ISerialRequest } from "./.shared/global.interfaces";
 import { THeaders, TJSON } from "./.shared/global.types";
 import { AHandlerContext } from "./AHandlerContext";
-import { Config } from "./Config";
+import { TypeResolver } from "./TypeResolver";
 import { IFilestamp, VirtualFileSystem } from "./VirtualFileSystem";
 
 import mime from "./mime.json";
@@ -22,7 +22,7 @@ export class GetHandlerContext extends AHandlerContext {
 
     constructor(
         sReq: ISerialRequest,
-        config: Config,
+        config: TypeResolver,
         vfs: VirtualFileSystem,
         customHeaders: THeaders = {},
         dev: boolean

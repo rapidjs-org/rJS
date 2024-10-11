@@ -1,23 +1,20 @@
 import { EventEmitter } from "events";
 
-import { TStatus } from "./.shared/global.types";
-import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { Options } from "./.shared/Options";
 import { WORKER_ERROR_CODE } from "./local.constants";
 import { IErrorLimiterOptions, ErrorLimiter } from "./ErrorLimiter";
 
-// errors approach
-interface IWorker {
-    resolve: (sRes: ISerialResponse) => void;
-    reject: (sRes: ISerialResponse) => void;
+interface IWorker<O> {
+    resolve: (dataOut: O) => void;
+    reject: (dataOut: O | EClusterError | Error) => void;
 }
 
-interface IActiveWorker extends IWorker {
+interface IActiveWorker<O> extends IWorker<O> {
     timeout: NodeJS.Timeout;
 }
 
-interface IPendingAssignment extends IWorker {
-    sReq: ISerialRequest;
+interface IPendingAssignment<I, O> extends IWorker<O> {
+    dataIn: I;
 }
 
 export interface IAdapterConfiguration {
@@ -34,12 +31,20 @@ export interface IClusterOptions {
     errorLimiterOptions?: Partial<IErrorLimiterOptions>;
 }
 
-export abstract class AWorkerCluster<
-    Worker extends EventEmitter
+export enum EClusterError {
+    TIMEOUT,
+    MAX_PENDING,
+    WORKER_EXIT
+}
+
+export abstract class AWorkerPool<
+    Worker extends EventEmitter,
+    I,
+    O
 > extends EventEmitter {
-    private readonly activeWorkers: Map<Worker, IActiveWorker> = new Map();
+    private readonly activeWorkers: Map<Worker, IActiveWorker<O>> = new Map();
     private readonly idleWorkers: Worker[] = [];
-    private readonly pendingAssignments: IPendingAssignment[] = [];
+    private readonly pendingAssignments: IPendingAssignment<I, O>[] = [];
     private readonly options: IClusterOptions;
 
     protected readonly errorLimiter: ErrorLimiter;
@@ -79,11 +84,9 @@ export abstract class AWorkerCluster<
     }
 
     protected abstract createWorker(): Worker | Promise<Worker>;
+    protected abstract getWorkerId(worker: Worker): number;
     protected abstract destroyWorker(worker: Worker): void;
-    protected abstract activateWorker(
-        worker: Worker,
-        sReq: ISerialRequest
-    ): void;
+    protected abstract activateWorker(worker: Worker, data: I): void;
 
     private async activate() {
         if (!this.pendingAssignments.length) return;
@@ -95,18 +98,29 @@ export abstract class AWorkerCluster<
         }
 
         const worker: Worker = this.idleWorkers.shift();
-        const assignment: IPendingAssignment = this.pendingAssignments.shift();
+        const assignment: IPendingAssignment<I, O> =
+            this.pendingAssignments.shift();
 
-        this.activateWorker(worker, assignment.sReq);
+        this.activateWorker(worker, assignment.dataIn);
 
         this.activeWorkers.set(worker, {
             resolve: assignment.resolve,
             reject: assignment.reject,
 
             timeout: setTimeout(() => {
-                this.deactivateWorkerWithError(worker, 408);
+                this.deactivateWorkerWithError(worker, EClusterError.TIMEOUT);
             }, this.options.timeout)
         });
+    }
+
+    private deactivate(worker: Worker, activeWorker: IActiveWorker<O>) {
+        clearTimeout(activeWorker.timeout);
+
+        this.idleWorkers.push(worker);
+
+        this.activeWorkers.delete(worker);
+
+        this.activate();
     }
 
     private async spawnWorker(): Promise<Worker> {
@@ -128,13 +142,45 @@ export abstract class AWorkerCluster<
         return worker;
     }
 
-    protected getWorkerId(worker: Worker): number {
-        const optimisticWorkerCast = worker as unknown as {
-            threadId: number;
-            pid: number;
-        };
+    private rebufferData<T>(data: T): T {
+        if (!data || ["string", "number", "boolean"].includes(typeof data))
+            return data;
 
-        return optimisticWorkerCast.threadId ?? optimisticWorkerCast.pid;
+        const buffersData = data as { [key: string]: unknown };
+        for (const key in buffersData) {
+            if (buffersData[key] instanceof Uint8Array) {
+                buffersData[key] = (() => {
+                    const buffer: Buffer = Buffer.alloc(
+                        buffersData[key].byteLength
+                    );
+                    for (let i = 0; i < buffer.length; ++i) {
+                        buffer[i] = buffersData[key][i];
+                    }
+                    return buffer;
+                })();
+
+                continue;
+            }
+            if (Object.keys(buffersData[key]).sort().join(",") == "data,type") {
+                buffersData[key] = (() => {
+                    const buffer = Buffer.alloc(
+                        (buffersData[key] as { data: number[] }).data.length
+                    );
+                    for (let i = 0; i < buffer.length; ++i) {
+                        buffer[i] = (
+                            buffersData[key] as { data: number[] }
+                        ).data[i];
+                    }
+                    return buffer;
+                })();
+
+                continue;
+            }
+
+            buffersData[key] = this.rebufferData(buffersData[key]);
+        }
+
+        return buffersData as T;
     }
 
     protected async respawnWorker(): Promise<Worker> {
@@ -143,66 +189,27 @@ export abstract class AWorkerCluster<
         return this.spawnWorker();
     }
 
-    protected deactivateWorker(worker: Worker, sRes?: ISerialResponse) {
-        const activeWorker: IActiveWorker = this.activeWorkers.get(worker);
-
+    protected deactivateWorker(worker: Worker, dataOut?: O) {
+        const activeWorker: IActiveWorker<O> = this.activeWorkers.get(worker);
         if (!activeWorker) return;
 
-        clearTimeout(activeWorker.timeout);
+        dataOut = this.rebufferData(dataOut);
 
-        if ((sRes ?? {}).body) {
-            sRes.body =
-                sRes.body instanceof Uint8Array
-                    ? (() => {
-                          const buffer: Buffer = Buffer.alloc(
-                              sRes.body.byteLength
-                          );
-                          for (let i = 0; i < buffer.length; ++i) {
-                              buffer[i] = sRes.body[i];
-                          }
-                          return buffer;
-                      })()
-                    : Object.keys(sRes.body).sort().join(",") == "data,type"
-                      ? (() => {
-                            const buffer = Buffer.alloc(
-                                (sRes.body as unknown as { data: number[] })
-                                    .data.length
-                            );
-                            for (let i = 0; i < buffer.length; ++i) {
-                                buffer[i] = (
-                                    sRes.body as unknown as { data: number[] }
-                                ).data[i];
-                            }
-                            return buffer;
-                        })()
-                      : sRes.body;
-        }
+        activeWorker.resolve(dataOut);
 
-        activeWorker.resolve({
-            status: 200,
-            headers: {},
-
-            ...sRes
-        });
-
-        this.idleWorkers.push(worker);
-
-        this.activeWorkers.delete(worker);
-
-        this.activate();
+        this.deactivate(worker, activeWorker);
     }
 
-    protected deactivateWorkerWithError(worker: Worker, err?: TStatus) {
-        const activeWorker: IActiveWorker = this.activeWorkers.get(worker);
-
+    protected deactivateWorkerWithError(
+        worker: Worker,
+        errOut?: EClusterError | Error
+    ) {
+        const activeWorker: IActiveWorker<O> = this.activeWorkers.get(worker);
         if (!activeWorker) return;
 
-        activeWorker.resolve({
-            status: isNaN(err) ? err : 500,
-            headers: {}
-        });
+        activeWorker.reject(errOut);
 
-        this.deactivateWorker(worker);
+        this.deactivate(worker, activeWorker);
     }
 
     public destroy() {
@@ -213,20 +220,16 @@ export abstract class AWorkerCluster<
             });
     }
 
-    // TODO: IncomingMessage object overload?
-    public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
+    public assign(dataIn: I): Promise<O> {
         return new Promise((resolve, reject) => {
-            if (
-                this.pendingAssignments.length >=
-                (this.options.maxPending ?? Infinity)
-            ) {
-                reject();
+            if (this.pendingAssignments.length >= this.options.maxPending) {
+                reject(EClusterError.MAX_PENDING);
 
                 return;
             }
 
             this.pendingAssignments.push({
-                sReq,
+                dataIn,
                 resolve,
                 reject
             });

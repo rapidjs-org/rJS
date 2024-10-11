@@ -2,16 +2,20 @@ import { Worker as Thread, SHARE_ENV } from "worker_threads";
 import { join } from "path";
 import { availableParallelism } from "os";
 
-import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
 import { Options } from "../.shared/Options";
 import { WORKER_ERROR_CODE } from "../local.constants";
 import {
-    AWorkerCluster,
+    AWorkerPool,
+    EClusterError,
     IAdapterConfiguration,
     IClusterOptions
-} from "../AWorkerCluster";
+} from "../AWorkerPool";
 
-export class ThreadCluster extends AWorkerCluster<Thread> {
+export class ThreadPool<I = unknown, O = unknown> extends AWorkerPool<
+    Thread,
+    I,
+    O
+> {
     constructor(
         adapterConfig: IAdapterConfiguration,
         options?: Partial<IClusterOptions>
@@ -37,15 +41,15 @@ export class ThreadCluster extends AWorkerCluster<Thread> {
             workerData: this.adapterConfig
         });
 
-        thread.on("error", (err: string) => {
-            this.errorLimiter.feed(err);
+        thread.on("error", (errMessage: Error) => {
+            this.errorLimiter.feed(errMessage);
 
-            this.deactivateWorkerWithError(thread, 500);
+            this.deactivateWorkerWithError(thread, errMessage);
         });
         thread.on("exit", (exitCode: number) => {
             if ([0, WORKER_ERROR_CODE].includes(exitCode)) return;
 
-            this.deactivateWorkerWithError(thread, 500);
+            this.deactivateWorkerWithError(thread, EClusterError.WORKER_EXIT);
 
             this.respawnWorker();
         });
@@ -54,20 +58,22 @@ export class ThreadCluster extends AWorkerCluster<Thread> {
             thread.once("message", () => {
                 resolve(thread);
 
-                thread.on("message", (sRes: ISerialResponse) => {
-                    ~~(sRes.status / 100) !== 5
-                        ? this.deactivateWorker(thread, sRes)
-                        : this.deactivateWorkerWithError(thread, sRes.status);
+                thread.on("message", (dataOut: O) => {
+                    this.deactivateWorker(thread, dataOut);
                 });
             });
         });
+    }
+
+    protected getWorkerId(worker: Thread): number {
+        return worker.threadId;
     }
 
     protected destroyWorker(thread: Thread) {
         thread.terminate();
     }
 
-    protected activateWorker(thread: Thread, serialRequest: ISerialRequest) {
-        thread.postMessage(serialRequest);
+    protected activateWorker(thread: Thread, dataIn: I) {
+        thread.postMessage(dataIn);
     }
 }

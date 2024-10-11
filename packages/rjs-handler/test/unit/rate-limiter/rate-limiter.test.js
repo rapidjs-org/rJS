@@ -4,6 +4,10 @@ const { Handler } = require("../../../build/api");
 
 const handler = new Handler({
     cwd: __dirname
+}, {
+    "security": {
+        "maxRequestsPerMin": 1
+    }
 });
 
 

@@ -1,6 +1,6 @@
-const { ThreadCluster } = require("../../build/api");
+const { ThreadPool } = require("../../build/api");
 
-new ThreadCluster({
+new ThreadPool({
     modulePath: require("path").join(__dirname, "_adapter.error.handler")
 }, {
     limit: 2,
@@ -12,9 +12,6 @@ new ThreadCluster({
 .on("error", () => {})
 .on("online", cluster => {
     new UnitTest("Error in cluster handler")
-    .actual(cluster.handleRequest(null))
-    .expect({
-        status: 500,
-        headers: {}
-    });
+    .actual(() => cluster.assign(null))
+    .error("Test error", Error);
 });

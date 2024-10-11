@@ -11,15 +11,20 @@ const PORT = 8100;
         apiDirPath: "./api",
         pluginDirPath: "./src",
         publicDirPath: "./public"
+    }, {
+        "security": {
+            "maxRequestsPerMin": 0
+        }
     });
 
     setImmediate(async () => {
         const result = await loadtest.loadTest({
             url: `http://localhost:${PORT}/`,
-            maxRequests: 500,
+            maxRequests: 10000,
             concurrency: 100
-        });
+        })
 
+        console.log("\x1b[2K\r\x1b[1A\x1b[2K\r");
         result.show();
 
         process.exit(+!!result.totalErrors);

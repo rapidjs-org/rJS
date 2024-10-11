@@ -2,28 +2,27 @@ import { ChildProcess } from "child_process";
 import { Worker as Thread } from "worker_threads";
 import { join } from "path";
 
-import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
 import {
     IAdapterConfiguration,
     IClusterOptions,
-    AWorkerCluster
-} from "../AWorkerCluster";
-import { ProcessCluster } from "../process/ProcessCluster";
-import { ThreadCluster } from "../thread/ThreadCluster";
+    AWorkerPool
+} from "../AWorkerPool";
+import { ProcessPool } from "../process/ProcessPool";
+import { ThreadPool } from "../thread/ThreadPool";
 
-export class Cluster {
-    private readonly parentCluster: AWorkerCluster<ChildProcess | Thread>;
+export class Cluster<I = unknown, O = unknown> {
+    private readonly parentPool: AWorkerPool<ChildProcess | Thread, I, O>;
 
     constructor(
         adapterConfig: IAdapterConfiguration,
         processClusterOptions?: Partial<IClusterOptions>,
         threadClusterOptions: Partial<IClusterOptions> = processClusterOptions
     ) {
-        this.parentCluster =
+        this.parentPool =
             processClusterOptions.limit !== 1
-                ? new ProcessCluster(
+                ? new ProcessPool(
                       {
-                          modulePath: join(__dirname, "adapter"),
+                          modulePath: join(__dirname, "adapter.process"),
                           options: {
                               threadAdapterConfig: adapterConfig,
                               threadClusterOptions: threadClusterOptions
@@ -31,26 +30,26 @@ export class Cluster {
                       },
                       processClusterOptions
                   )
-                : new ThreadCluster(adapterConfig, threadClusterOptions);
+                : new ThreadPool(adapterConfig, threadClusterOptions);
     }
 
-    public handleRequest(sReq: ISerialRequest): Promise<ISerialResponse> {
-        return this.parentCluster.handleRequest(sReq);
+    public assign(data: I): Promise<O> {
+        return this.parentPool.assign(data);
     }
 
     public on(event: string, handler: (...args: unknown[]) => void): this {
-        this.parentCluster.on(event, handler);
+        this.parentPool.on(event, handler);
 
         return this;
     }
 
     public once(event: string, handler: (...args: unknown[]) => void): this {
-        this.parentCluster.once(event, handler);
+        this.parentPool.once(event, handler);
 
         return this;
     }
 
     public destroy() {
-        return this.parentCluster.destroy();
+        return this.parentPool.destroy();
     }
 }

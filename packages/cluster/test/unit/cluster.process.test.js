@@ -1,11 +1,11 @@
-const { ProcessCluster } = require("../../build/api");
+const { ProcessPool } = require("../../build/api");
 
 const WORKER_AMOUNT = 2;
 const ROUNDTRIP_AMOUNT = 4;
 
 new UnitTest("Process cluster setup")
 .actual(new Promise(resolve => {
-    const cluster = new ProcessCluster({
+    const cluster = new ProcessPool({
         modulePath: require("path").join(__dirname, "_adapter.process"),
         options: "test:options"
     }, {
@@ -18,23 +18,19 @@ new UnitTest("Process cluster setup")
         for(let i = 0; i < ROUNDTRIP_AMOUNT; i++) {
             new UnitTest(`Process roundtrip (${i})`)
             .actual(async () => {
-                const sRes = await cluster.handleRequest({
-                    sReq: `test:request:${i}`
+                const sRes = await cluster.assign({
+                    data: `test:request:${i}`
                 });
                 
-                pids[i] = pids[i] ?? sRes.body.workerId;
+                pids[i] = pids[i] ?? sRes.workerId;
                 
                 return sRes;
             })
             .expect(() => {
                 return {
-                    status: 200,    // min
-                    headers: {},    // min
-                    body: {
-                        workerId: pids[i],
-                        passedOptions: "test:options",
-                        passedRequest: `test:request:${i}`
-                    }
+                    workerId: pids[i],
+                    passedOptions: "test:options",
+                    passedData: `test:request:${i}`
                 }
             });
         }

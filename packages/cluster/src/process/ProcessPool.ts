@@ -2,16 +2,21 @@ import { ChildProcess, fork } from "child_process";
 import { join } from "path";
 import { cpus } from "os";
 
-import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
+import { TSerializable } from "../.shared/global.types";
 import { Options } from "../.shared/Options";
 import { WORKER_ERROR_CODE } from "../local.constants";
 import {
-    AWorkerCluster,
+    AWorkerPool,
+    EClusterError,
     IAdapterConfiguration,
     IClusterOptions
-} from "../AWorkerCluster";
+} from "../AWorkerPool";
 
-export class ProcessCluster extends AWorkerCluster<ChildProcess> {
+export class ProcessPool<I = unknown, O = unknown> extends AWorkerPool<
+    ChildProcess,
+    I,
+    O
+> {
     constructor(
         adapterConfig: IAdapterConfiguration,
         options?: Partial<IClusterOptions>
@@ -44,7 +49,10 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess> {
 
             if (exitCode === 0) return;
 
-            this.deactivateWorkerWithError(childProcess, 500);
+            this.deactivateWorkerWithError(
+                childProcess,
+                EClusterError.WORKER_EXIT
+            );
 
             this.respawnWorker();
         });
@@ -56,8 +64,8 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess> {
                 .once("message", () => {
                     resolve(childProcess);
 
-                    childProcess.on("message", (sRes: ISerialResponse) => {
-                        this.deactivateWorker(childProcess, sRes);
+                    childProcess.on("message", (dataOut: O) => {
+                        this.deactivateWorker(childProcess, dataOut);
                     });
                 })
                 .on("error", (err: Error) => {
@@ -68,11 +76,15 @@ export class ProcessCluster extends AWorkerCluster<ChildProcess> {
         });
     }
 
+    protected getWorkerId(worker: ChildProcess): number {
+        return worker.pid;
+    }
+
     protected destroyWorker(childProcess: ChildProcess) {
         childProcess.kill();
     }
 
-    protected activateWorker(childProcess: ChildProcess, sReq: ISerialRequest) {
-        childProcess.send(sReq);
+    protected activateWorker(childProcess: ChildProcess, dataIn: I) {
+        childProcess.send(dataIn as TSerializable);
     }
 }

@@ -1,5 +1,5 @@
 module.exports = () => {
     return () => {
-        throw new Error("Test error (handler)");
+        throw new Error("Test error");
     };
 };

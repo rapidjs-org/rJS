@@ -15,6 +15,8 @@ export class RateLimiter {
     }
 
     public grantsAccess(clientIdentifier: string): boolean {
+        if (this.limit === 0) return true;
+
         const now: number = Date.now();
         const limitData: ILimitData = this.limits.get(clientIdentifier) ?? {
             timePivot: now,

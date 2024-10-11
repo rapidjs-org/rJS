@@ -1,9 +1,10 @@
+import { TJSON } from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 
-import { IHandlerOptions, Handler } from "@rapidjs.org/rjs-handler";
+import { IHandlerEnv, Handler } from "@rapidjs.org/rjs-handler";
 
-export default function (coreOptions: IHandlerOptions) {
-    const handler: Handler = new Handler(coreOptions); // TODO: Await for preretrieval done if not dev mode
+export default function (coreOptions: { env: IHandlerEnv; options: TJSON }) {
+    const handler: Handler = new Handler(coreOptions.env, coreOptions.options); // TODO: Await for preretrieval done if not dev mode
 
     return async (sReq: ISerialRequest): Promise<ISerialResponse> => {
         return await handler.activate(sReq);

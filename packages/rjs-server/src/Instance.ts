@@ -1,45 +1,52 @@
 import { resolve, join } from "path";
 
+import { TJSON } from "./.shared/global.types";
+import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { IClusterConstraints } from "./local.interfaces";
 import { Logger } from "./Logger";
 
-import { Cluster } from "@rapidjs.org/handler-cluster";
-import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
+import { Cluster } from "@rapidjs.org/cluster";
+import { IHandlerEnv } from "@rapidjs.org/rjs-handler";
 
 import _config from "./_config.json";
 
 export function createInstance(
-    options?: Partial<IHandlerOptions>,
+    env?: Partial<IHandlerEnv>,
+    options?: TJSON,
     clusterSize?: IClusterConstraints
 ): Promise<Instance> {
     return new Promise((resolve) => {
-        const instance: Instance = new Instance(options, clusterSize).on(
+        const instance: Instance = new Instance(env, options, clusterSize).on(
             "online",
             () => resolve(instance)
         );
     });
 }
 
-export class Instance extends Cluster {
+export class Instance extends Cluster<ISerialRequest, ISerialResponse> {
     constructor(
-        options?: Partial<IHandlerOptions>,
+        env?: Partial<IHandlerEnv>,
+        options?: TJSON,
         clusterConstraints?: IClusterConstraints
     ) {
         super(
             {
                 modulePath: join(__dirname, "adapter"),
-                options
+                options: {
+                    env,
+                    options
+                }
             },
             {
-                limit: options.dev ? 1 : (clusterConstraints ?? {}).processes
+                limit: env.dev ? 1 : (clusterConstraints ?? {}).processes
             },
             {
-                limit: options.dev ? 1 : (clusterConstraints ?? {}).threads
+                limit: env.dev ? 1 : (clusterConstraints ?? {}).threads
             }
         );
 
         const logger: Logger = new Logger(
-            resolve(options.cwd ?? process.cwd(), _config.logsDirName)
+            resolve(env.cwd ?? process.cwd(), _config.logsDirName)
         );
 
         this.on("stdout", (message: string) => logger.info(message));

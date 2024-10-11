@@ -16,7 +16,7 @@ module.exports.BEFORE = new Promise(async (resolve) => {
     .on("stderr", message => process.stderr.write(message))
     .on("online", () => {
         createServer(async (req, res) => {
-            const sRes = await cluster.handleRequest(
+            const sRes = await cluster.assign(
                 {
                     url: req.url
                 }

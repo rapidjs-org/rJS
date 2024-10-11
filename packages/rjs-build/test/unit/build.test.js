@@ -1,4 +1,4 @@
-const { Build, Filemap, Directory } = require("../../build/api");
+const { Build, Directory } = require("../../build/api");
 
 const build = new Build(require("path").join(__dirname, "../../../../test-app/src"));
 

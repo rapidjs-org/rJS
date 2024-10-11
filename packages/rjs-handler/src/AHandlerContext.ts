@@ -2,7 +2,7 @@ import EventEmitter from "events";
 import zlib from "zlib";
 
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
-import { Config } from "./Config";
+import { TypeResolver } from "./TypeResolver";
 import { Request } from "./Request";
 import { Response } from "./Response";
 
@@ -18,12 +18,12 @@ const ENCODERS: { [key: string]: (data: unknown) => Buffer } = Object.freeze({
 export abstract class AHandlerContext extends EventEmitter {
     protected readonly request: Request;
     protected readonly response: Response;
-    protected readonly config: Config;
+    protected readonly config: TypeResolver;
     protected readonly dev: boolean;
 
     private hasConsumedResponse: boolean = false;
 
-    constructor(sReq: ISerialRequest, config: Config, dev: boolean) {
+    constructor(sReq: ISerialRequest, config: TypeResolver, dev: boolean) {
         super();
 
         this.request = new Request(sReq);
@@ -40,7 +40,7 @@ export abstract class AHandlerContext extends EventEmitter {
 
         if (
             this.response.hasCompressableBody &&
-            (this.response.getBody() ?? "").toString().length >
+            ((this.response.getBody() ?? "") as Buffer).toString().length >
                 this.config
                     .read("performance", "compressionByteThreshold")
                     .number()

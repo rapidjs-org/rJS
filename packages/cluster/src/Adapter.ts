@@ -1,10 +1,6 @@
-import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
+export type TAdapter<I = unknown, O = unknown> = (data: I) => O | Promise<O>;
 
-export type TAdapter = (
-    sReq: ISerialRequest
-) => ISerialResponse | Promise<ISerialResponse>;
-
-export class Adapter {
+export class Adapter<I, O> {
     private readonly adapterModulePath: string;
 
     private readonly options?: unknown;
@@ -14,13 +10,13 @@ export class Adapter {
         this.options = options;
     }
 
-    public loadHandler(): Promise<TAdapter> {
+    public loadHandler(): Promise<TAdapter<I, O>> {
         return new Promise((resolve) => {
             import(this.adapterModulePath).then(
                 async (adapterAPI: {
                     default: (
                         applicationOptions: unknown
-                    ) => TAdapter | Promise<TAdapter>;
+                    ) => TAdapter<I, O> | Promise<TAdapter<I, O>>;
                 }) => {
                     resolve(await adapterAPI.default(this.options));
                 }

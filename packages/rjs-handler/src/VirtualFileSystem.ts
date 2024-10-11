@@ -2,7 +2,7 @@ import { existsSync, readFile } from "fs";
 import { join, normalize } from "path";
 
 import { Cache } from "./Cache";
-import { Config } from "./Config";
+import { TypeResolver } from "./TypeResolver";
 
 import { Build, Directory, File } from "@rapidjs.org/rjs-build";
 
@@ -21,7 +21,7 @@ export class VirtualFileSystem {
     private privateFiles?: Directory;
 
     constructor(
-        config: Config,
+        config: TypeResolver,
         dev: boolean,
         publicRootPath?: string,
         pluginsRootPath?: string

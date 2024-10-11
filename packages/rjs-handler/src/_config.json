@@ -1,7 +1,3 @@
 {
-    "apiRequestContextArgName": "CONTEXT",
-    "configNameInfixDev": "dev",
-    "configNameInfixProd": "prod",
-    "configNamePrefix": "rjs",
-    "globalConfigName": "config"
+    "apiRequestContextArgName": "CONTEXT"
 }

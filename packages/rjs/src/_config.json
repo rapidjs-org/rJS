@@ -1,5 +1,7 @@
 {
     "apiDirName": "api",
+    "configNameInfix": "config",
+    "configNamePrefix": "rjs",
     "cliProcessTitle": "rJS",
     "pluginDirName": "src",
     "publicDirName": "public"

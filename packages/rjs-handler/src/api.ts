@@ -1,1 +1,1 @@
-export { Handler, IHandlerOptions } from "./Handler";
+export * from "./Handler";

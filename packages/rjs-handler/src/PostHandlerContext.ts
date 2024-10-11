@@ -1,7 +1,7 @@
 import { TSerializable } from "./.shared/global.types";
 import { ISerialRequest } from "./.shared/global.interfaces";
 import { AHandlerContext } from "./AHandlerContext";
-import { Config } from "./Config";
+import { TypeResolver } from "./TypeResolver";
 import { RPCController, TRpcMember } from "./RPCController";
 
 import _config from "./_config.json";
@@ -21,7 +21,7 @@ export class PostHandlerContext extends AHandlerContext {
 
     constructor(
         sReq: ISerialRequest,
-        config: Config,
+        config: TypeResolver,
         rpcController: RPCController,
         dev: boolean
     ) {

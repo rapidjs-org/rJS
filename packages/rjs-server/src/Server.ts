@@ -8,17 +8,16 @@ import { createServer as createHTTPSServer } from "https";
 import { resolve } from "path";
 import { existsSync, readFileSync } from "fs";
 
-import { THTTPMethod } from "./.shared/global.types";
+import { THTTPMethod, TJSON, TStatus } from "./.shared/global.types";
 import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
 import { IClusterConstraints } from "./local.interfaces";
-import { Options } from "./.shared/Options";
 import { DeferredCall } from "./DeferredCall";
 import { Logger } from "./Logger";
 import { Instance } from "./Instance";
 
-import { IHandlerOptions } from "@rapidjs.org/rjs-handler";
+import { IHandlerEnv } from "@rapidjs.org/rjs-handler";
 
-export interface IServerOptions extends IHandlerOptions {
+export interface IServerEnv extends IHandlerEnv {
     port: number;
 
     tls?: {
@@ -30,11 +29,12 @@ export interface IServerOptions extends IHandlerOptions {
 }
 
 export function createServer(
-    options?: Partial<IServerOptions>,
+    env: IServerEnv,
+    options?: TJSON,
     clusterSize?: IClusterConstraints
 ): Promise<Server> {
     return new Promise((resolve) => {
-        const server: Server = new Server(options, clusterSize).on(
+        const server: Server = new Server(env, options, clusterSize).on(
             "online",
             () => resolve(server)
         );
@@ -42,29 +42,27 @@ export function createServer(
 }
 
 export class Server extends EventEmitter {
+    public readonly env: IServerEnv;
     private readonly instance: Instance;
 
     public readonly port: number;
 
     constructor(
-        options?: Partial<IServerOptions>,
+        env: IServerEnv,
+        options?: TJSON,
         clusterSize?: IClusterConstraints
     ) {
         super();
 
-        const optionsWithDefaults: IServerOptions = new Options<IServerOptions>(
-            options,
-            {
-                port: !options.dev ? (!options.tls ? 80 : 443) : 7777
-            }
-        ).object;
-        this.port = optionsWithDefaults.port;
+        this.env = env;
+        this.port = this.env.port;
 
         const onlineDeferral = new DeferredCall(() => this.emit("online"), 2);
 
         this.instance = new Instance(
-            optionsWithDefaults,
-            optionsWithDefaults.dev
+            env,
+            options,
+            this.env.dev
                 ? {
                       processes: 1,
                       threads: 1
@@ -72,35 +70,17 @@ export class Server extends EventEmitter {
                 : clusterSize
         ).on("online", () => onlineDeferral.call());
 
-        const logger: Logger = new Logger(options.cwd);
-
-        const resolveTLSParameter = (
-            param: (string | Buffer)[] | undefined
-        ): (string | Buffer)[] => {
-            // TODO: Regularly re-read files after certificate invalidation until valid again
-            return [param]
-                .flat()
-                .map((param: string | Buffer | undefined) => {
-                    if (!param) return null;
-                    if (param instanceof Buffer) return param;
-
-                    const potentialPath: string = resolve(options.cwd, param);
-                    if (!existsSync(potentialPath)) return param;
-
-                    return readFileSync(potentialPath);
-                })
-                .filter((param: string | Buffer | null) => !!param);
-        };
+        const logger: Logger = new Logger(this.env.cwd);
 
         (
-            (!options.dev && (optionsWithDefaults.tls ?? {}).cert
+            (!this.env.dev && (this.env.tls ?? {}).cert
                 ? createHTTPSServer
                 : createHTTPServer) as typeof createHTTPSServer
         )(
             {
-                ...(optionsWithDefaults.tls
+                ...(this.env.tls
                     ? {
-                          ca: resolveTLSParameter(optionsWithDefaults.tls.ca)
+                          ca: this.resolveTLSParameter(this.env.tls.ca)
                       }
                     : {})
             },
@@ -126,7 +106,7 @@ export class Server extends EventEmitter {
                         };
 
                         this.instance
-                            .handleRequest(sReq)
+                            .assign(sReq)
                             .then((sRes: ISerialResponse) => {
                                 dRes.statusCode = sRes.status;
                                 for (const header in sRes.headers) {
@@ -136,6 +116,17 @@ export class Server extends EventEmitter {
                                     );
                                 }
                                 sRes.body && dRes.write(sRes.body);
+                            })
+                            .catch((err: TStatus | Error) => {
+                                if (
+                                    isNaN(err as TStatus) ||
+                                    ![2, 3, 4, 5].includes(
+                                        ~~((err as TStatus) / 100)
+                                    )
+                                )
+                                    throw err;
+
+                                dRes.statusCode = err as TStatus;
                             })
                             .finally(() => dRes.end());
 
@@ -149,5 +140,22 @@ export class Server extends EventEmitter {
                     });
             }
         ).listen(this.port, () => onlineDeferral.call());
+    }
+
+    private resolveTLSParameter(
+        param: (string | Buffer)[] | undefined
+    ): (string | Buffer)[] {
+        return [param]
+            .flat()
+            .map((param: string | Buffer | undefined) => {
+                if (!param) return null;
+                if (param instanceof Buffer) return param;
+
+                const potentialPath: string = resolve(this.env.cwd, param);
+                if (!existsSync(potentialPath)) return param;
+
+                return readFileSync(potentialPath);
+            })
+            .filter((param: string | Buffer | null) => !!param);
     }
 }

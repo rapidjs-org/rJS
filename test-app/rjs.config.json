@@ -1,6 +1,5 @@
 {
     "security": {
-        "maxRequestURILength": 5,
         "maxRequestHeadersLength": 500
     },
     "performance": {

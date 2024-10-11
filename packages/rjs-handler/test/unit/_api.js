@@ -4,7 +4,15 @@ const handler = new Handler({
     cwd: require("path").join(__dirname, "../../../../test-app"),
     apiDirPath: "./api",
     pluginDirPath: "./src",
-    publicDirPath: "./public",
+    publicDirPath: "./public"
+}, {
+    "security": {
+        "maxRequestHeadersLength": 500,
+        "maxRequestURILength": 100
+    },
+    "performance": {
+        "compressionByteThreshold": 999
+    }
 });
 
 module.exports.request = async (sReq, headerFilters = null, hideBody = false, metaBody = false) => {
