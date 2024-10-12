@@ -1,6 +1,6 @@
 {
     "name": "@rapidjs.org/rjs-build",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Core builds functionality utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
     "license": "Apache-2.0",
