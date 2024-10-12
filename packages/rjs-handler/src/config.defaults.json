@@ -7,7 +7,7 @@
     },
     "performance": {
         "clientCacheMs": 86400000,
-        "serverCacheMs": 86400000,
+        "serverCacheMs": 30000,
         "compressionByteThreshold": 1400
     },
     "headers": {
