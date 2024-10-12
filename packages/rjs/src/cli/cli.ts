@@ -8,13 +8,15 @@ import { join } from "path";
 import { Command } from "./Command";
 import { Printer } from "./Printer";
 
-process.on("uncaughtException", (err: Error) => {
+const interceptBubblingError = (err: Error) => {
     Printer.global.stderr(err, {
         replicatedMessage: true
     });
 
     process.exit(1);
-});
+};
+process.on("uncaughtException", interceptBubblingError);
+process.on("unhandledRejection", interceptBubblingError);
 
 // Dynamically load command registry definitions
 function loadCmd(relativePath: string) {

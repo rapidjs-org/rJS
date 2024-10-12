@@ -19,11 +19,8 @@
 		"format": "npx prettier --check './packages/*/src/**/*.ts'",
 		"format:fix": "npx prettier --write './packages/*/src/**/*.ts'",
 		"benchmark": "node ./scripts/benchmark.js",
-		"release:rjs-build": "npx rjs-releasing ./packages/rjs-build",
-		"release:rjs-handler": "npx rjs-releasing ./packages/rjs-handler",
-		"release:handler-cluster": "npx rjs-releasing ./packages/handler-cluster",
-		"release:rjs-server": "npx rjs-releasing ./packages/rjs-server",
-		"release:rjs": "npx rjs-releasing ./packages/rjs --github"
+		"release:cluster": "npx rjs-releasing ./packages/cluster",
+		"release:rjs": "node ./scripts/release.js"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.2.0",

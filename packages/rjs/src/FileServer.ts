@@ -21,10 +21,15 @@ export class FileServer extends Server {
     constructor(options?: Partial<IServerEnv>) {
         super(
             new Options<IServerEnv>(options, {
+                cwd: options.cwd ?? process.cwd(),
                 apiDirPath: _config.apiDirName,
                 pluginDirPath: _config.pluginDirName,
                 publicDirPath: _config.publicDirName,
-                port: !options.dev ? (!options.tls ? 80 : 443) : 7777
+                port: !options.dev
+                    ? (options.tls ?? {}).cert
+                        ? 443
+                        : 80
+                    : 7777
             }).object,
             (() => {
                 const configFilePath: string = resolve(

@@ -12,6 +12,7 @@ export class Printer {
     public static readonly global: Printer = new Printer();
     public static readonly escapes = {
         DARK_COLOR_FG: "38;2;0;0;0",
+        GRAY_COLOR_FG: "38;2;133;133;153",
         PRIMARY_COLOR_FG: "38;2;255;97;97",
         SECONDARY_COLOR_BG: "48;2;255;250;195",
         TERTIARY_COLOR_FG: "38;2;136;82;224"
@@ -38,6 +39,10 @@ export class Printer {
                 .join("");
         };
         return [encode(openCodes), message, encode(closeCodes)].join("");
+    }
+
+    public static prefixWithBrandSequence(sequence: string): string {
+        return `${Printer.brandSequence} ${sequence}`;
     }
 
     public static indentWithBrandSequence(sequence: string): string {
@@ -78,16 +83,14 @@ export class Printer {
             return;
         }
 
-        process[channel].write(
-            [
-                optionsWithDefaults.withBrandSequence
-                    ? Printer.brandSequence + " "
-                    : "",
-                optionsWithDefaults.replicatedMessage
-                    ? message.replace(/\n?$/, "\n")
-                    : `${message}\n`
-            ].join("")
-        );
+        let formattedMessage: string = optionsWithDefaults.replicatedMessage
+            ? message.replace(/\n?$/, "\n")
+            : `${message}\n`;
+        formattedMessage = optionsWithDefaults.withBrandSequence
+            ? Printer.prefixWithBrandSequence(formattedMessage)
+            : formattedMessage;
+
+        process[channel].write(formattedMessage);
 
         this.last.channel = channel;
         this.last.message = message;
