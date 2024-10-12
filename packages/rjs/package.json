@@ -20,7 +20,7 @@
     "main": "./build/api.js",
     "types": "./types/api.d.ts",
     "bin": {
-        "rjs": "./build/cli.js"
+        "rjs": "./build/cli/cli.js"
     },
     "files": [
         "./build/",
