@@ -1,0 +1,17 @@
+<html>
+    <head>
+        <title>Minimal Application Template</title>
+    </head>
+    <body>
+        <h1></h1>
+        <a href="/about.html">About</a> rJS Plugins.
+        
+        <script>
+            rJS["/hello-world"].helloWorld()
+            .then(message => {
+                document.querySelector("h1")
+                .textContent = message;
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "prepare": "npm i @rapidjs.org/rjs",
+    "start": "npx rjs serve",
+    "start:prod": "npm run start",
+    "start:dev": "npm run start -- -D"
+  }
+}

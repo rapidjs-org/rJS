@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import _config from "../_config.json";
 
 process.title = _config.cliProcessTitle;
