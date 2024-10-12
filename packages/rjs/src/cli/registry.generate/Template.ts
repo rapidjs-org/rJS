@@ -9,7 +9,7 @@ export class Template {
     constructor(templateName: string) {
         const sourcePath: string = join(
             __dirname,
-            "../../templates/",
+            "../../../templates/",
             templateName
         );
         if (!existsSync(sourcePath)) {

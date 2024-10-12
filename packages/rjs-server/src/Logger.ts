@@ -1,21 +1,48 @@
 import { join } from "path";
-import { existsSync, mkdirSync, appendFile } from "fs";
+import {
+    existsSync,
+    mkdirSync,
+    appendFile,
+    readdirSync,
+    readdir,
+    statSync,
+    rm,
+    statfsSync
+} from "fs";
 
 export class Logger {
     private readonly logsDirPath: string;
     private readonly silent: boolean;
+    private readonly maxFilesSizeKB: number;
 
-    constructor(logsDirPath: string | null = null, silent: boolean = false) {
+    private filesSizeB: number;
+
+    constructor(
+        logsDirPath: string | null = null,
+        silent: boolean = false,
+        maxFilesSizeKB = Infinity
+    ) {
         this.silent = silent;
 
         if (!logsDirPath) return;
 
         this.logsDirPath = logsDirPath;
+        this.maxFilesSizeKB = maxFilesSizeKB;
 
         !existsSync(this.logsDirPath) &&
             mkdirSync(this.logsDirPath, {
                 recursive: true
             });
+
+        this.filesSizeB = readdirSync(this.logsDirPath, {
+            recursive: true
+        })
+            .map(
+                (relativePath: string | Buffer) =>
+                    statSync(join(this.logsDirPath, relativePath.toString()))
+                        .size
+            )
+            .reduce((acc: number, fileSizeKB: number) => acc + fileSizeKB, 0);
     }
 
     private log(
@@ -32,6 +59,9 @@ export class Logger {
 
         if (!this.logsDirPath) return;
 
+        const interceptLogError = (err: Error) =>
+            err && !this.silent && console.error(err);
+
         const date: Date = new Date();
         const dateKey: string = [
             date.getFullYear().toString().slice(-2),
@@ -43,13 +73,34 @@ export class Logger {
             date.getMinutes().toString().padStart(2, "0"),
             date.getSeconds().toString().padStart(2, "0")
         ].join(":");
+        const logMessage: string = `[${timeKey}]\t${
+            prefix ? `(${prefix}) ` : ""
+        }${shortMessage.toString()}${
+            verboseMessage ? `\n${verboseMessage}` : ""
+        }\n`;
         appendFile(
             join(this.logsDirPath, `${dateKey}.log`),
-            `[${timeKey}]\t${prefix ? `(${prefix}) ` : ""}${shortMessage.toString()}${
-                verboseMessage ? `\n${verboseMessage}` : ""
-            }\n`,
-            (err) => err && !this.silent && console.error(err)
+            logMessage,
+            interceptLogError
         );
+
+        const statsFs = statfsSync(this.logsDirPath);
+        const freeSizeKB: number = statsFs.bsize * statsFs.bavail * 2 ** -10;
+        this.filesSizeB += logMessage.length;
+        if (
+            this.filesSizeB * 2 ** -10 <=
+            Math.min(this.maxFilesSizeKB, freeSizeKB)
+        )
+            return;
+
+        readdir(this.logsDirPath, (err: Error, files: string[]) => {
+            if (err) {
+                interceptLogError(err);
+
+                return;
+            }
+            rm(files.sort().shift(), interceptLogError);
+        });
     }
 
     public info(shortMessage: string, verboseMessage?: string) {

@@ -3,35 +3,16 @@ import { DEV_MODE_PREFIX } from "../util";
 import { Args } from "../Args";
 import { Command } from "../Command";
 import { Printer } from "../Printer";
-import { InputReader } from "../InputReader";
 
 // TODO: Print virtual files for overview?
+// TODO: Interactive mode?
 new Command("serve", async () => {
     const dev = Args.parseFlag("dev", "D");
     const cert = Args.parseOption("tls-cert", "C").string();
 
-    const passphrase: string = await new Promise((resolve) => {
-        if (!cert) {
-            resolve(null);
-
-            return;
-        }
-
-        const inputReader = new InputReader();
-        inputReader
-            .questionPromise("Enter key passphrase (leave blank if none)")
-            .then((passphrase: string) => {
-                resolve(passphrase.length ? passphrase : null);
-
-                inputReader.close();
-            });
-    });
-
     const tls = {
         cert: cert,
-        key: Args.parseOption("tls-key", "K").string(),
-
-        passphrase
+        key: Args.parseOption("tls-key", "K").string()
     };
 
     const server: FileServer = await createFileServer({
