@@ -23,7 +23,7 @@ export class FileServer extends Server {
             new Options<IServerEnv>(options, {
                 cwd: options.cwd ?? process.cwd(),
                 apiDirPath: _config.apiDirName,
-                pluginDirPath: _config.pluginDirName,
+                sourceDirPath: _config.pluginDirName,
                 publicDirPath: _config.publicDirName,
                 port: !options.dev
                     ? (options.tls ?? {}).cert

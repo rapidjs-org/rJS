@@ -3,7 +3,7 @@ const { Handler } = require("../../build/api");
 const handler = new Handler({
     cwd: require("path").join(__dirname, "../../../../test-app"),
     apiDirPath: "./api",
-    pluginDirPath: "./src",
+    sourceDirPath: "./src",
     publicDirPath: "./public"
 }, {
     "security": {

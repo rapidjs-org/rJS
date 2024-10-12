@@ -21,7 +21,7 @@ import GLOBAL_CONFIG_DEFAULTS from "./config.defaults.json";
 
 export interface IHandlerEnv {
     apiDirPath?: string;
-    pluginDirPath?: string;
+    sourceDirPath?: string;
     publicDirPath?: string;
     cwd?: string;
     dev?: boolean;
@@ -59,8 +59,8 @@ export class Handler {
             this.env.publicDirPath
                 ? resolve(this.env.cwd, this.env.publicDirPath)
                 : null,
-            this.env.pluginDirPath
-                ? resolve(this.env.cwd, this.env.pluginDirPath)
+            this.env.sourceDirPath
+                ? resolve(this.env.cwd, this.env.sourceDirPath)
                 : null
         );
         this.rpcController = this.env.apiDirPath

@@ -9,7 +9,7 @@ const PORT = 8100;
         port: PORT,
         cwd: require("path").join(__dirname, "../test-app"),
         apiDirPath: "./api",
-        pluginDirPath: "./src",
+        sourceDirPath: "./src",
         publicDirPath: "./public"
     }, {
         "security": {

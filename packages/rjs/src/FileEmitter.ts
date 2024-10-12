@@ -1,5 +1,5 @@
 import { resolve, join, dirname } from "path";
-import { existsSync, mkdir, writeFile } from "fs";
+import { existsSync, mkdir, rmSync, writeFile } from "fs";
 
 import { Options } from "./.shared/Options";
 
@@ -9,7 +9,7 @@ import _config from "./_config.json";
 
 export interface IFileEmitterOptions {
     cwd: string;
-    pluginDirPath: string;
+    sourceDirPath: string;
     publicDirPath: string;
 
     dev?: boolean;
@@ -28,22 +28,22 @@ export class FileEmitter {
     constructor(options: Partial<IFileEmitterOptions>) {
         const optionsWithDefaults: IFileEmitterOptions = new Options(options, {
             cwd: process.cwd(),
-            pluginDirPath: _config.pluginDirName,
+            sourceDirPath: _config.pluginDirName,
             publicDirPath: _config.publicDirName
         }).object;
 
-        const pluginDirPath: string = resolve(
-            optionsWithDefaults.pluginDirPath
+        const sourceDirPath: string = resolve(
+            optionsWithDefaults.sourceDirPath
         );
-        if (!existsSync(pluginDirPath)) {
+        if (!existsSync(sourceDirPath)) {
             throw new ReferenceError(
-                `Plugins directory not found ${pluginDirPath}`
+                `Source directory not found ${sourceDirPath}`
             );
         }
 
-        this.build = new Build(pluginDirPath, optionsWithDefaults.dev);
-        this.publicRootPath = join(
-            resolve(optionsWithDefaults.cwd),
+        this.build = new Build(sourceDirPath, optionsWithDefaults.dev);
+        this.publicRootPath = resolve(
+            optionsWithDefaults.cwd,
             optionsWithDefaults.publicDirPath
         );
     }
@@ -56,7 +56,7 @@ export class FileEmitter {
                     recursive: true
                 },
                 (err: Error & { code: string }) => {
-                    err && err.code !== "EEXIST"
+                    err
                         ? reject(err)
                         : writeFile(
                               join(this.publicRootPath, file.relativePath),
@@ -88,10 +88,15 @@ export class FileEmitter {
     }
 
     public async emit(): Promise<Directory> {
+        rmSync(this.publicRootPath, {
+            recursive: true,
+            force: true
+        });
+
         const publicFiles: Directory = await this.build.retrieveAll();
 
-        for (const fileNode of publicFiles.nodes) {
-            await this.renderFileNode(fileNode as Directory | File);
+        for (const node of publicFiles.nodes) {
+            await this.renderFileNode(node as Directory | File);
         }
 
         return publicFiles;

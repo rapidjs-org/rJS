@@ -40,7 +40,7 @@ new Command("serve", async () => {
 
         cwd: Args.parseOption("working-dir", "W").string() ?? process.cwd(),
         apiDirPath: Args.parseOption("api-dir").string(),
-        pluginDirPath: Args.parseOption("plugins-dir").string(),
+        sourceDirPath: Args.parseOption("plugins-dir").string(),
         publicDirPath: Args.parseOption("public-dir").string(),
         port: Args.parseOption("port", "P").number()
     });

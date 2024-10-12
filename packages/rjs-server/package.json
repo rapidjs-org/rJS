@@ -34,7 +34,6 @@
         "release": "npx rjs-releasing --github"
     },
     "devDependencies": {
-        "@rapidjs.org/releasing": "^0.1.0",
         "@rapidjs.org/testing": "0.x",
         "@rapidjs.org/testing-http": "0.x",
         "@rapidjs.org/testing-unit": "0.x",
@@ -42,7 +41,7 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@rapidjs.org/rjs-handler": "0.x",
-        "@rapidjs.org/handler-cluster": "0.x"
+        "@rapidjs.org/cluster": "0.x",
+        "@rapidjs.org/rjs-handler": "0.x"
     }
 }
