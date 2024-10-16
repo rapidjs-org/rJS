@@ -7,18 +7,15 @@
 
 <p align="center">
   <a href="https://github.com/rapidjs-org/rJS/actions/workflows/test.yml"><img src="https://img.shields.io/github/actions/workflow/status/rapidjs-org/rjs/test.yml?label=test&logo=github"></a>
-  &hairsp;
   <a href="https://github.com/rapidjs-org/rJS/blob/main/LICENSE"><img src="https://img.shields.io/github/license/rapidjs-org/rjs"></a>
-  &hairsp;
   <a href="https://www.npmjs.com/package/@rapidjs.org/rjs"><img src="https://img.shields.io/npm/v/@rapidjs.org/rjs?logo=npm"></a>
-  &hairsp;
   <a href="https://www.npmjs.com/package/@rapidjs.org/rjs"><img src="https://img.shields.io/bundlephobia/minzip/@rapidjs.org/rjs?label=size&logo=npm"></a>
 </p>
 
 <p align="center">
   <strong><a href="https://rapidjs.org" target="_blank">rJS</a> (pron. ‘rapidJS’)</strong> is a plugin-based build interface, and
   <br>
-  a progressive web server based on virtual build capabilites.
+  a progressive web server based on virtual build capabilities.
 </p>
 
 ## Install

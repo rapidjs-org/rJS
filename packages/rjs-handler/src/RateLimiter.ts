@@ -18,7 +18,8 @@ export class RateLimiter {
         if (this.limit === 0) return true;
 
         const now: number = Date.now();
-        const limitData: ILimitData = this.limits.get(clientIdentifier) ?? {
+        const limitData: ILimitData = this.limits.get(clientIdentifier)
+        ?? {
             timePivot: now,
             previousWindow: null,
             currentWindow: 0
@@ -27,13 +28,11 @@ export class RateLimiter {
         const windowSpan: number = this.windowSize * 2;
         const delta: number = now - limitData.timePivot;
         if (delta > this.windowSize) {
-            limitData.previousWindow = limitData.currentWindow;
+            limitData.timePivot = now;
+            limitData.previousWindow = (delta <= windowSpan)
+            ? limitData.currentWindow
+            : 0;
             limitData.currentWindow = 0;
-
-            if (delta > windowSpan) {
-                limitData.timePivot = now;
-                limitData.previousWindow = 0;
-            }
         }
         limitData.currentWindow += 1;
 
