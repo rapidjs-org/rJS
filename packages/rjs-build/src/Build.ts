@@ -38,7 +38,7 @@ export class Build {
                 const pluginDirectoryPath: string = normalize(
                     join(this.pluginDirectoryPath, dirent.name)
                 );
-                if (!Plugin.isPluginDirectory(pluginDirectoryPath)) return;
+
                 pluginDirectoryPaths.push(pluginDirectoryPath);
 
                 if (this.plugins.has(pluginDirectoryPath)) return;

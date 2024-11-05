@@ -6,7 +6,7 @@ import {
     readdir,
     readdirSync
 } from "fs";
-import { join, resolve as resolvePath } from "path";
+import { join, resolve, resolve as resolvePath } from "path";
 
 import { TJSON } from "./.shared/global.types";
 import { ModuleDependency } from "./.shared/ModuleDependency";
@@ -28,15 +28,6 @@ type TBuildInterfaceCallable = (
 
 // TODO: Access to public files (static); e.g. for sitemap plugin?
 export class Plugin {
-    public static isPluginDirectory(pluginDirectoryPath: string): boolean {
-        try {
-            require.resolve(join(pluginDirectoryPath, _config.buildModuleName));
-        } catch {
-            return false;
-        }
-        return true;
-    }
-
     private readonly dev: boolean;
 
     private lastApplyTimestamp: number = -Infinity;
@@ -49,15 +40,21 @@ export class Plugin {
         this.pluginDirectoryPath = pluginDirectoryPath;
     }
 
-    private resolveBuildConfigPath(): string {
-        return resolvePath(
-            join(this.pluginDirectoryPath, `${_config.buildConfigName}.json`)
-        );
+    private resolveBuildConfigPath(): string | null {
+        for (const buildConfigName of _config.buildConfigNames) {
+            const absolutePath: string = resolve(
+                this.pluginDirectoryPath,
+                `${buildConfigName}.json`
+            );
+            if (!existsSync(absolutePath)) continue;
+            return absolutePath;
+        }
+        return null;
     }
 
     private fetchBuildConfig(): TJSON {
         const buildConfigPath: string = this.resolveBuildConfigPath();
-        const buildConfig: TJSON = existsSync(buildConfigPath)
+        const buildConfig: TJSON = buildConfigPath
             ? (JSON.parse(readFileSync(buildConfigPath).toString()) as TJSON)
             : {};
         return buildConfig;
@@ -66,14 +63,15 @@ export class Plugin {
     private resolveBuildModulePath(): string {
         const buildConfig: TJSON = this.fetchBuildConfig();
         const buildModuleReferences: string[] = [
-            join(this.pluginDirectoryPath, _config.buildModuleName),
+            ..._config.buildModuleNames.map((buildModuleName: string) =>
+                join(this.pluginDirectoryPath, buildModuleName)
+            ),
             buildConfig[_config.buildModuleReferenceKey] as string
         ];
 
         let buildModulePath: string;
         while (!buildModulePath && buildModuleReferences.length) {
             const buildModuleReference: string = buildModuleReferences.shift();
-            if (!buildModuleReference) continue;
             try {
                 buildModulePath = require.resolve(buildModuleReference);
             } catch {}

@@ -28,7 +28,7 @@ export class FileEmitter {
     constructor(options: Partial<IFileEmitterOptions>) {
         const optionsWithDefaults: IFileEmitterOptions = new Options(options, {
             cwd: process.cwd(),
-            sourceDirPath: _config.pluginDirName,
+            sourceDirPath: _config.pluginDirName[0],
             publicDirPath: _config.publicDirName
         }).object;
 
