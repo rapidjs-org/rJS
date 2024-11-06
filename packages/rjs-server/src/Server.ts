@@ -57,7 +57,7 @@ export class Server extends EventEmitter {
                 if (!param) return null;
                 if (param instanceof Buffer) return param;
 
-                const potentialPath: string = resolve(cwd, param);
+                const potentialPath: string = resolve(param);
                 if (!existsSync(potentialPath)) return param;
 
                 return readFileSync(potentialPath);

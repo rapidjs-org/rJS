@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "fs";
 import { TJSON } from "./.shared/global.types";
 import { Options } from "./.shared/Options";
 
-import { IServerEnv, Server } from "@rapidjs.org/rjs-server";
+import { IServerEnv, Server, TLSRedirectServer } from "@rapidjs.org/rjs-server";
 
 import _config from "./_config.json";
 
@@ -20,17 +20,25 @@ export function createFileServer(
 export class FileServer extends Server {
     constructor(options?: Partial<IServerEnv>) {
         super(
-            new Options<IServerEnv>(options, {
-                cwd: options.cwd ?? process.cwd(),
-                apiDirPath: _config.apiDirName,
-                sourceDirPath: _config.pluginDirName,
-                publicDirPath: _config.publicDirName,
-                port: !options.dev
-                    ? (options.tls ?? {}).cert
-                        ? 443
-                        : 80
-                    : 7777
-            }).object,
+            (() => {
+                const isSecure: boolean = !!(options.tls ?? {}).cert;
+                const optionsWithDefaults: IServerEnv = new Options<IServerEnv>(
+                    options,
+                    {
+                        cwd: options.cwd ?? process.cwd(),
+                        apiDirPath: _config.apiDirName,
+                        sourceDirPath: _config.pluginDirName,
+                        publicDirPath: _config.publicDirName,
+                        port: !options.dev ? (isSecure ? 443 : 80) : 7777
+                    }
+                ).object;
+
+                isSecure &&
+                    optionsWithDefaults.port === 443 &&
+                    new TLSRedirectServer();
+
+                return optionsWithDefaults;
+            })(),
             (() => {
                 const configFilePath: string = resolve(
                     options.cwd ?? process.cwd(),

@@ -1,4 +1,4 @@
-const rjs = require("../../build/api");
+const rjs = require("../../../build/api");
 
 const PORT = 7203;
 

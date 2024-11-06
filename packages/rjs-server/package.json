@@ -29,7 +29,9 @@
         "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
         "debug:watch": "npm run debug -- --watch",
         "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
-        "test:http": "npx rjs-test http ./test/http/",
+        "test:http:composite": "npx rjs-test http ./test/http/composite",
+        "test:http:tls-redirect": "npx rjs-test http ./test/http/tls-redirect",
+        "test:http": "npm run test:http:composite && npm run test:http:tls-redirect",
         "test": "npm run test:http",
         "release": "npx rjs-releasing --github"
     },
