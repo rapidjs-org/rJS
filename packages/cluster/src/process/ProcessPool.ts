@@ -33,7 +33,7 @@ export class ProcessPool<I = unknown, O = unknown> extends AWorkerPool<
         );
 
         process.on("exit", () => this.destroy());
-        ["SIGINT", "SIGUSR1", "SIGUSR2", "SIGTERM"].forEach(
+        ["SIGKILL", "SIGINT", "SIGUSR1", "SIGUSR2", "SIGTERM"].forEach(
             (terminalEvent: string) => {
                 process.on(terminalEvent, () => process.exit());
             }
