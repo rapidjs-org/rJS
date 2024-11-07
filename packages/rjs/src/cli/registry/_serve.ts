@@ -1,8 +1,8 @@
+import { Printer } from "../../.shared/Printer";
+import { Args } from "../../.shared/Args";
+import { DEV_MODE_PREFIX } from "../local.constants";
 import { FileServer, createFileServer } from "../../FileServer";
-import { DEV_MODE_PREFIX } from "../util";
-import { Args } from "../Args";
 import { Command } from "../Command";
-import { Printer } from "../Printer";
 
 // TODO: Print virtual files for overview?
 // TODO: Interactive mode?

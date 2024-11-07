@@ -1,0 +1,44 @@
+{
+    "name": "@rapidjs.org/create-rjs",
+    "version": "0.0.1",
+    "description": "Create an rJS application from a template.",
+    "author": "Thassilo Martin Schiepanski",
+    "license": "Apache-2.0",
+    "homepage": "https://rapidjs.org",
+    "keywords": [
+        "create",
+        "template",
+        "rJS",
+        "rapidjs",
+        "rapidjs.org"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rapidjs-org/rjs.git"
+    },
+    "bugs": {
+        "url": "https://github.com/rapidjs-org/rjs/issues"
+    },
+    "bin": {
+        "create-rjs": "./build/cli.js"
+    },
+    "files": [
+        "./build/"
+    ],
+    "scripts": {
+        "copy-shared": "node ../../scripts/copy-shared.js create-rjs",
+        "clean": "rm -rf ./build",
+        "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
+        "debug:watch": "npm run debug -- --watch",
+        "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
+        "test:unit": "npx rjs-test unit ./test/unit/",
+        "test": "npm run test:unit",
+        "release": "npx rjs-releasing --github"
+    },
+    "devDependencies": {
+        "@rapidjs.org/testing": "0.x",
+        "@rapidjs.org/testing-unit": "0.x",
+        "@types/node": "^20.10.6",
+        "typescript": "^5.3.3"
+    }
+}

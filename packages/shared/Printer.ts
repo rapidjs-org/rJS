@@ -1,5 +1,5 @@
-import { Options } from "../.shared/Options";
 import { Args } from "./Args";
+import { Options } from "./Options";
 
 type TStdChannel = "stdout" | "stderr";
 
@@ -9,7 +9,6 @@ interface IPrinterOptions {
 }
 
 export class Printer {
-    public static readonly global: Printer = new Printer();
     public static readonly escapes = {
         DARK_COLOR_FG: "38;2;0;0;0",
         GRAY_COLOR_FG: "38;2;133;133;153",
@@ -17,7 +16,6 @@ export class Printer {
         SECONDARY_COLOR_BG: "48;2;255;250;195",
         TERTIARY_COLOR_FG: "38;2;136;82;224"
     };
-
     private static readonly brandSequence: string = Printer.format(
         ` ${Printer.format("r", [Printer.escapes.PRIMARY_COLOR_FG], 39)}${Printer.format(
             "JS",
@@ -26,7 +24,8 @@ export class Printer {
         )} `,
         [1, 3, Printer.escapes.SECONDARY_COLOR_BG]
     );
-
+    public static readonly global: Printer = new Printer();
+    
     public static format(
         message: string,
         openCodes: number | string | (number | string)[],
@@ -58,7 +57,7 @@ export class Printer {
         channel: null,
         timestamp: -Infinity
     };
-
+    
     private print(
         message: string,
         channel: TStdChannel,

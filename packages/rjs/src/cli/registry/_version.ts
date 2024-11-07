@@ -1,8 +1,8 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
+import { Printer } from "../../.shared/Printer";
 import { Command } from "../Command";
-import { Printer } from "../Printer";
 
 new Command("version", () => {
     const packageObj = JSON.parse(

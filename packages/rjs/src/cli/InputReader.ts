@@ -1,6 +1,6 @@
 import { Interface } from "readline";
 
-import { Printer } from "./Printer";
+import { Printer } from "../.shared/Printer";
 
 export class InputReader extends Interface {
     constructor() {

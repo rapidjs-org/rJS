@@ -7,8 +7,8 @@ process.title = _config.cliProcessTitle;
 import { Dirent, readdirSync } from "fs";
 import { join } from "path";
 
+import { Printer } from "../.shared/Printer";
 import { Command } from "./Command";
-import { Printer } from "./Printer";
 
 const interceptBubblingError = (err: Error) => {
     Printer.global.stderr(err, {

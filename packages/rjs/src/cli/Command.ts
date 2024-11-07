@@ -1,6 +1,6 @@
+import { Printer } from "../.shared/Printer";
 import { Options } from "../.shared/Options";
-import { Args } from "./Args";
-import { Printer } from "./Printer";
+import { Args } from "../.shared/Args";
 
 type TCommandHandler = () => void;
 

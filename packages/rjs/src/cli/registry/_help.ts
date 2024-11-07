@@ -1,10 +1,17 @@
+import { readFileSync } from "fs";
 import { join } from "path";
 
+import { Printer } from "../../.shared/Printer";
 import { Command } from "../Command";
-import { printHelp } from "../util";
 
 new Command("help", () => {
-    printHelp(join(__dirname, "../../../cli.help.txt"));
-
+    Printer.global.stdout(
+        readFileSync(join(__dirname, "../../../cli.help.txt"))
+            .toString()
+            .replace(
+                /(https?:\/\/[^\s]*[^.:;!]+)/g,
+                Printer.format("$1", [Printer.escapes.PRIMARY_COLOR_FG], 39)
+            )
+    );
     process.exit(0);
 });
