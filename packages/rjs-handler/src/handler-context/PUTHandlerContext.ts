@@ -1,244 +1,55 @@
-import { dirname, basename, join, resolve } from "path";
-import { existsSync, readdirSync, writeFileSync, cpSync, rmSync } from "fs";
-import { IncomingMessage, OutgoingHttpHeaders } from "http";
-import { request } from "https";
-import { createHmac, timingSafeEqual } from "crypto";
-
-import { THeaders, TJSON } from "../.shared/global.types";
+import { TSerializable } from "../.shared/global.types";
 import { ISerialRequest } from "../.shared/global.interfaces";
-import { Tar } from "../.shared/Tar";
 import { AHandlerContext } from "./AHandlerContext";
 import { TypeResolver } from "../TypeResolver";
-import { LocalEnv } from "../LocalEnv";
+import { RPCController, TRpcMember } from "../RPCController";
 
 import _config from "../_config.json";
 
-enum EGitPlatform {
-    GITHUB
-}
+type THandlerRequestBody = {
+    name: string;
 
-interface IGitRemote {
-    platform: EGitPlatform;
-    account: string;
-    repository: string;
-    ref: string;
-}
+    args?: TSerializable[];
+};
 
-interface IApiResponse {
-    status: number;
-    headers: THeaders;
-    body: Buffer;
+interface IRequestContext {
+    clientIP: string;
 }
 
 export class PUTHandlerContext extends AHandlerContext {
-    private static createInvalidRemoteError(): Error {
-        return new SyntaxError("Invalid git remote platform");
-    }
-
-    private readonly cwd: string;
-    private readonly localEnv: LocalEnv;
-    private readonly repo: IGitRemote | null;
+    private readonly rpcController: RPCController;
 
     constructor(
         sReq: ISerialRequest,
         config: TypeResolver,
-        cwd: string,
+        rpcController: RPCController,
         dev: boolean
     ) {
         super(sReq, config, dev);
 
-        try {
-            const remoteUrl: string = (
-                (
-                    (require(join(cwd, "package.json")) as TJSON)
-                        .repository as TJSON
-                ).url as string
-            ).toLowerCase();
-            const remoteInfo: string[] =
-                remoteUrl.match(
-                    /^(?:(github):)?([A-Za-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i
-                ) ||
-                remoteUrl.match(
-                    /^(?:git\+)?https:\/\/(?:(github)\.com)\/([A-Za-z0-9_-]+)\/([A-Za-z0-9._-]+)$/i
-                ) ||
-                [];
-
-            let platform: EGitPlatform;
-            switch (remoteInfo[1] ?? "github") {
-                case "github":
-                    platform = EGitPlatform.GITHUB;
-                    break;
-                default:
-                    throw PUTHandlerContext.createInvalidRemoteError();
-            }
-            this.repo = {
-                platform,
-
-                account: remoteInfo[2],
-                repository: remoteInfo[3].replace(/\.git$/i, ""),
-                ref: "main" // TODO: Configurable?
-            };
-        } catch {}
-
-        this.cwd = cwd;
-        this.localEnv = new LocalEnv(dev, cwd);
-    }
-
-    private requestAPI(
-        method: string,
-        url: string,
-        headers: OutgoingHttpHeaders = {}
-    ): Promise<IApiResponse> {
-        return new Promise((resolve, reject) => {
-            request(
-                url,
-                {
-                    method,
-                    headers
-                },
-                (res: IncomingMessage) => {
-                    if (
-                        !["2", "3"].includes(
-                            res.statusCode.toString().charAt(0)
-                        )
-                    ) {
-                        reject();
-
-                        return;
-                    }
-
-                    const body: Buffer[] = [];
-                    res.on("data", (chunk: Buffer) => {
-                        body.push(chunk);
-                    });
-                    res.on("end", () => {
-                        resolve({
-                            status: res.statusCode,
-                            headers: res.headers,
-                            body: Buffer.concat(body)
-                        });
-                    });
-                    res.on("error", (err: Error) => {
-                        this.response.setStatus(500);
-
-                        reject(err);
-                    });
-                }
-            )
-                .on("error", reject)
-                .end();
-        });
-    }
-
-    private hookGithub(): TJSON {
-        const signatureHeader = this.request.getHeader(
-            "X-Hub-Signature-256"
-        ) as string;
-        if (!signatureHeader) {
-            this.response.setStatus(404);
-
-            return;
-        }
-
-        const payload: TJSON = this.request.getBody().json();
-        const digest = Buffer.from(
-            `sha256=${createHmac(
-                "sha256",
-                this.localEnv.read(_config.envWebhookSecretKey) ?? ""
-            )
-                .update(JSON.stringify(payload))
-                .digest("hex")}`,
-            "utf8"
-        );
-        const signature = Buffer.from(signatureHeader, "utf8");
-        if (!timingSafeEqual(digest, signature)) {
-            this.response.setStatus(403);
-
-            return;
-        }
-
-        return payload;
-    }
-
-    private async pullGithub() {
-        const authObj: TJSON = this.localEnv.read(_config.envWebhookAuthKey)
-            ? {
-                  Authorization: `Bearer ${this.localEnv.read(_config.envWebhookAuthKey)}`
-              }
-            : {};
-
-        const locationRes: IApiResponse = await this.requestAPI(
-            "HEAD",
-            join(
-                "https://api.github.com",
-                "repos",
-                this.repo.account,
-                this.repo.repository,
-                "tarball",
-                this.repo.ref
-            ),
-            {
-                Accept: "application/vnd.github.raw+json",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "request",
-
-                ...authObj
-            }
-        );
-
-        const tarRes: IApiResponse = await this.requestAPI(
-            "GET",
-            locationRes.headers["location"] as string,
-            {
-                "X-GitHub-Api-Version": "2022-11-28",
-                "User-Agent": "request",
-
-                ...authObj
-            }
-        );
-
-        const constructHiddenPath = (baseName: string): string => {
-            let i = 0;
-            let hiddenPath: string;
-            do {
-                hiddenPath = join(this.cwd, `.${i++}.${baseName}`);
-            } while (existsSync(hiddenPath));
-            return hiddenPath;
-        };
-
-        const tarPath: string = constructHiddenPath(
-            _config.webhookTempTarBaseName
-        );
-        const dirPath: string = constructHiddenPath(
-            _config.webhookTempDirBaseName
-        );
-
-        writeFileSync(tarPath, tarRes.body);
-        new Tar(tarPath)
-            .extract(dirname(dirPath), basename(dirPath))
-            .finally(() => {
-                rmSync(tarPath, {
-                    force: true
-                });
-
-                readdirSync(dirPath).forEach((path: string) => {
-                    cpSync(join(dirPath, path), join(this.cwd, path), {
-                        force: true,
-                        recursive: true
-                    });
-                });
-
-                rmSync(dirPath, {
-                    force: true,
-                    recursive: true
-                });
-
-                resolve();
-            });
+        this.rpcController = rpcController;
     }
 
     public async process(): Promise<void> {
-        if (!this.repo || this.request.url.pathname !== "/") {
+        let params: THandlerRequestBody;
+        try {
+            params = this.request.getBody().json<THandlerRequestBody>();
+        } catch (err: unknown) {
+            this.response.setStatus(400);
+
+            this.respond();
+
+            console.error(err);
+
+            return;
+        }
+
+        if (
+            !this.rpcController.hasEndpoint(
+                this.request.url.pathname,
+                params.name
+            )
+        ) {
             this.response.setStatus(404);
 
             this.respond();
@@ -246,37 +57,52 @@ export class PUTHandlerContext extends AHandlerContext {
             return;
         }
 
-        const userAgent =
-            (this.request.getHeader("User-Agent") as string) ?? "";
-        let payload: TJSON;
-        let gitPlatform: EGitPlatform;
-        if (/github/.test(userAgent.toLowerCase())) {
-            gitPlatform = EGitPlatform.GITHUB;
-        }
+        const requestContext: IRequestContext = {
+            clientIP: this.request.clientIP
+        };
+        const requestedRpcMember: TRpcMember =
+            await this.rpcController.invokeEndpoint(
+                this.request.url.pathname,
+                params.name
+            );
+        // TODO: Member lookup cache?
+        let responseData: TSerializable =
+            requestedRpcMember instanceof Function
+                ? (() => {
+                      const args: unknown[] = params.args ?? [];
+                      const argNames = (
+                          (requestedRpcMember.toString().split(/\{|=>/) ?? [
+                              ""
+                          ])[0].match(
+                              /[\w_$][\w_$\d]*(\s*,\s*[\w_$][\w_$\d]*)*/g
+                          ) ?? [""]
+                      )
+                          .pop()
+                          .split(/\s*,\s*/g);
+                      const apiRequestContextArgIndex = argNames.indexOf(
+                          _config.apiRequestContextArgName
+                      );
+                      apiRequestContextArgIndex >= 0 &&
+                          args.splice(
+                              apiRequestContextArgIndex,
+                              0,
+                              requestContext
+                          );
+
+                      return requestedRpcMember(...args);
+                  })()
+                : requestedRpcMember;
+        responseData = (
+            responseData instanceof Promise ? await responseData : responseData
+        ) as TSerializable;
         try {
-            switch (gitPlatform) {
-                case EGitPlatform.GITHUB:
-                    payload = this.hookGithub();
-                    break;
-                default:
-                    throw PUTHandlerContext.createInvalidRemoteError();
-            }
+            responseData = JSON.stringify(responseData);
+        } catch {}
 
-            if (!payload || payload.isDryRun) return;
+        this.response.setBody(responseData);
 
-            switch (gitPlatform) {
-                case EGitPlatform.GITHUB:
-                    await this.pullGithub();
-                    break;
-                default:
-                    throw PUTHandlerContext.createInvalidRemoteError();
-            }
-        } catch (err: unknown) {
-            console.error(err);
+        this.response.setHeader("Content-Type", "application/json");
 
-            this.response.setStatus(404);
-        } finally {
-            this.respond();
-        }
+        this.respond();
     }
 }

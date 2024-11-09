@@ -173,22 +173,22 @@ export class Handler {
                         this.env.dev
                     );
                     break;
-                case "POST":
+                case "PUT":
                     if (!this.rpcController) {
                         resolveWithStatus(405);
 
                         return;
                     }
 
-                    handler = new POSTHandlerContext(
+                    handler = new PUTHandlerContext(
                         sReq,
                         this.config,
                         this.rpcController,
                         this.env.dev
                     );
                     break;
-                case "PUT":
-                    handler = new PUTHandlerContext(
+                case "POST":
+                    handler = new POSTHandlerContext(
                         sReq,
                         this.config,
                         this.env.cwd,

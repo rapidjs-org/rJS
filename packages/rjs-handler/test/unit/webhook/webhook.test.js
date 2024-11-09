@@ -11,7 +11,7 @@ const requestWithWebhookHandler = () => {
     return requestWithHandler(
         initHandler(require("path").join(__dirname, "./app")),
         {
-            method: "PUT",
+            method: "POST",
             url: "/",
             headers: {
                 "User-Agent": "GitHub-Hookshot/044aadd",
@@ -30,7 +30,7 @@ const README_FILE_PATH = require("path").join(__dirname, "./app", "README.md");
 const README_OVERRIDE_DATA = "OVERRIDE";
 require("fs").writeFileSync(README_FILE_PATH, README_OVERRIDE_DATA);
 
-new UnitTest("PUT_ GitHub:/ (dummy)")
+new UnitTest("POST_ GitHub:/ (dummy)")
 .actual(async () => {
     const res = await requestWithWebhookHandler();
 
@@ -39,20 +39,20 @@ new UnitTest("PUT_ GitHub:/ (dummy)")
         .existsSync(require("path").join(__dirname, "./app", name));
     }
 
-    new UnitTest("PUT GitHub:/ (dummy) → .env (from local)")
+    new UnitTest("POST GitHub:/ (dummy) → .env (from local)")
     .actual(fileExists(".env"))
     .expect(true);
 
-    new UnitTest("PUT GitHub:/ (dummy) → test/file.txt (from remote)")
+    new UnitTest("POST GitHub:/ (dummy) → test/file.txt (from remote)")
     .actual(fileExists("test/file.txt"))
     .expect(true);
 
-    new UnitTest("PUT GitHub:/ (dummy) ¬ non-existing.txt")
+    new UnitTest("POST GitHub:/ (dummy) ¬ non-existing.txt")
     .actual(fileExists("non-existing.txt"))
     .expect(false);
     
     setTimeout(() => {
-        new UnitTest("PUT GitHub:/ (dummy) ¬ README.md override")
+        new UnitTest("POST GitHub:/ (dummy) ¬ README.md override")
         .actual(require("fs").readFileSync(README_FILE_PATH).toString().trim() !== README_OVERRIDE_DATA)
         .expect(true);
     }, 250);
