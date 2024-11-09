@@ -46,6 +46,7 @@ export class Handler {
             cwd: process.cwd()
         }).object;
         this.config = new TypeResolver(options ?? {}, GLOBAL_CONFIG_DEFAULTS);
+
         this.rateLimiter = new RateLimiter(
             this.config.read("security", "maxRequestsPerMin").number()
         );
@@ -76,6 +77,7 @@ export class Handler {
         sReqPartial: Partial<ISerialRequest>
     ): Promise<ISerialResponse> {
         const sReq: ISerialRequest = {
+            secure: false,
             method: "GET",
             url: "/",
             headers: {},

@@ -131,6 +131,7 @@ export class Server extends EventEmitter {
             )
                 .then((body: string) => {
                     const sReq: ISerialRequest = {
+                        secure: isSecure,
                         method: dReq.method as THTTPMethod,
                         url: dReq.url,
                         headers: dReq.headers,

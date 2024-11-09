@@ -65,22 +65,32 @@ export class GETHandlerContext extends AHandlerContext {
 
     public async process() {
         // Canonic redirect(s)
+        let redirect: boolean = false;
+        const redirectUrl: URL = this.request.url;
+        const wwwSubdomainStrategy: string = this.config.read("www").string();
+        if (["always", "never"].includes(wwwSubdomainStrategy)) {
+            const previousHostname: string = redirectUrl.hostname.toString();
+            redirectUrl.hostname = redirectUrl.hostname.replace(
+                /^(www\.)?/,
+                wwwSubdomainStrategy === "always" ? "www." : ""
+            );
+
+            redirect = redirectUrl.hostname.toString() !== previousHostname;
+        }
         const canonicPathnamePart: string = this.request.url.pathname.match(
             /(\/index)?(\.[hH][tT][mM][lL])?$/
         )[0];
         if (canonicPathnamePart.length) {
+            redirectUrl.pathname = redirectUrl.pathname
+                .replace(/\.[hH][tT][mM][lL]$/, "")
+                .replace(/index$/, "");
+
+            redirect = true;
+        }
+        if (redirect) {
             this.response.setStatus(301);
 
-            this.response.setHeader(
-                "Location",
-                [
-                    this.request.url.pathname
-                        .replace(/\.[hH][tT][mM][lL]$/, "")
-                        .replace(/index$/, ""),
-                    this.request.url.search ?? "",
-                    this.request.url.hash ?? ""
-                ].join("")
-            );
+            this.response.setHeader("Location", redirectUrl.toString());
 
             this.respond();
 

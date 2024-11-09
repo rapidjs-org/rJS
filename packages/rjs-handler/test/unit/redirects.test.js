@@ -7,7 +7,7 @@ new UnitTest("Redirect: /index.html")
 }, [ "Location" ], true))
 .expect({
     headers: {
-        "Location": "/"
+        "Location": "http://localhost/"
     },
     status: 301
 });
@@ -19,7 +19,7 @@ new UnitTest("Redirect: /index")
 }, [ "Location" ], true))
 .expect({
     headers: {
-        "Location": "/"
+        "Location": "http://localhost/"
     },
     status: 301
 });
@@ -31,7 +31,7 @@ new UnitTest("Redirect: /other.html")
 }, [ "Location" ], true))
 .expect({
     headers: {
-        "Location": "/other"
+        "Location": "http://localhost/other"
     },
     status: 301
 });
@@ -43,7 +43,22 @@ new UnitTest("Redirect: /nested/index")
 }, [ "Location" ], true))
 .expect({
     headers: {
-        "Location": "/nested/"
+        "Location": "http://localhost/nested/"
+    },
+    status: 301
+});
+
+new UnitTest("Redirect: www.localhost (www 'never')")
+.actual(request({
+    method: "GET",
+    headers: {
+        "Host": "www.example.org"
+    },
+    url: "/foo"
+}, [ "Location" ], true))
+.expect({
+    headers: {
+        "Location": "http://example.org/foo"
     },
     status: 301
 });

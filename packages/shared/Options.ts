@@ -5,7 +5,7 @@ export class Options<T> {
 			&& !!Object.entries(obj ?? {}).length
 			&& !Array.isArray(obj);
 		};
-
+		
 		if(!isKeyObject(target)) return source;
 
 		const sourceObj = source as Record<string, unknown>;
@@ -21,11 +21,11 @@ export class Options<T> {
 	};
 
 	private obj: T;
-	
+
 	constructor(obj: Partial<T>, defaultsObj: T) {
 		this.obj = Options.deepMerge(defaultsObj, obj) as T;
 	}
-	
+
 	public get object(): T {
 		return this.obj;
 	}

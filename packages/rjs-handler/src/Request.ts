@@ -21,7 +21,9 @@ export class Request {
             })
         );
         this.body = sReq.body;
-        this.url = new URL(`http://localhost${sReq.url}`);
+        this.url = new URL(
+            `http${sReq.secure ? "s" : ""}://${(this.getHeader("Host") as string) || "localhost"}${sReq.url}`
+        );
         this.clientIP = sReq.clientIP;
     }
 

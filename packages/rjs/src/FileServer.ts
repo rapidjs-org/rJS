@@ -22,7 +22,7 @@ export class FileServer extends Server {
         super(
             (() => {
                 const isSecure: boolean = !!(options.tls ?? {}).cert;
-                const optionsWithDefaults: IServerEnv = new Options<IServerEnv>(
+                const envWithDefaults: IServerEnv = new Options<IServerEnv>(
                     options,
                     {
                         cwd: options.cwd ?? process.cwd(),
@@ -34,10 +34,10 @@ export class FileServer extends Server {
                 ).object;
 
                 isSecure &&
-                    optionsWithDefaults.port === 443 &&
+                    envWithDefaults.port === 443 &&
                     new TLSRedirectServer();
 
-                return optionsWithDefaults;
+                return envWithDefaults;
             })(),
             (() => {
                 const configFilePath: string = resolve(

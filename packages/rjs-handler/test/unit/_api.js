@@ -13,7 +13,8 @@ const initHandler = (appWorkingDir) => {
         },
         "performance": {
             "compressionByteThreshold": 999
-        }
+        },
+        "www": "never"
     });
 }
 
