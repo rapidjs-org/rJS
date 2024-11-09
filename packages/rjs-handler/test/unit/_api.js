@@ -1,21 +1,30 @@
 const { Handler } = require("../../build/api");
 
-const handler = new Handler({
-    cwd: require("path").join(__dirname, "../../../../test-app"),
-    apiDirPath: "./api",
-    sourceDirPath: "./src",
-    publicDirPath: "./public"
-}, {
-    "security": {
-        "maxRequestHeadersLength": 500,
-        "maxRequestURILength": 100
-    },
-    "performance": {
-        "compressionByteThreshold": 999
-    }
-});
+const initHandler = (appWorkingDir) => {
+    return new Handler({
+        cwd: appWorkingDir,
+        apiDirPath: "./api",
+        sourceDirPath: "./src",
+        publicDirPath: "./public"
+    }, {
+        "security": {
+            "maxRequestHeadersLength": 500,
+            "maxRequestURILength": 100
+        },
+        "performance": {
+            "compressionByteThreshold": 999
+        }
+    });
+}
 
-module.exports.request = async (sReq, headerFilters = null, hideBody = false, metaBody = false) => {
+const defaultHandler = initHandler(
+    require("path")
+    .join(__dirname, "../../../../test-app")
+);
+
+module.exports.initHandler = initHandler;
+
+module.exports.requestWithHandler = async (handler, sReq, headerFilters = null, hideBody = false, metaBody = false) => {
     const sRes = await handler.activate(sReq);
 
     if(Array.isArray(headerFilters)) {
@@ -23,7 +32,7 @@ module.exports.request = async (sReq, headerFilters = null, hideBody = false, me
         headerFilters.forEach(header => {
             filteredHeaders[header] = sRes.headers[header];
         });
-
+        
         if(!headerFilters.length) {
             delete sRes.headers;
         } else {
@@ -45,4 +54,7 @@ module.exports.request = async (sReq, headerFilters = null, hideBody = false, me
     }
     
     return sRes;
+};
+module.exports.request = async (sReq, headerFilters = null, hideBody = false, metaBody = false) => {
+    return module.exports.requestWithHandler(defaultHandler, sReq, headerFilters, hideBody, metaBody);
 };

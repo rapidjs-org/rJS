@@ -3,7 +3,7 @@ import { resolve as resolvePath } from "path";
 import { IncomingMessage } from "http";
 import { get } from "https";
 
-import { untar } from "./untar";
+import { Tar } from "./.shared/Tar";
 
 const _config = {
     tempTarName: "__repo.tar.gz"
@@ -47,7 +47,7 @@ export class Template {
                         res.on("data", (chunk: Buffer) => {
                             tarBody.push(chunk);
                         });
-                        res.on("end", async () => {
+                        res.on("end", () => {
                             const tar: Buffer = Buffer.concat(tarBody);
                             const tarPath: string = resolvePath(
                                 _config.tempTarName
@@ -55,13 +55,13 @@ export class Template {
 
                             writeFileSync(tarPath, tar);
 
-                            try {
-                                await untar(tarPath, process.cwd(), this.name);
-                            } finally {
-                                rmSync(tarPath);
-                            }
+                            new Tar(tarPath)
+                                .extract(process.cwd(), this.name)
+                                .finally(() => {
+                                    rmSync(tarPath);
 
-                            resolve();
+                                    resolve();
+                                });
                         });
                         res.on("error", reject);
                     });

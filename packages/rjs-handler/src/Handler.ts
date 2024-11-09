@@ -13,9 +13,10 @@ import { VirtualFileSystem } from "./VirtualFileSystem";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
 import { RPCController } from "./RPCController";
-import { AHandlerContext } from "./AHandlerContext";
-import { GetHandlerContext } from "./GetHandlerContext";
-import { PostHandlerContext } from "./PostHandlerContext";
+import { AHandlerContext } from "./handler-context/AHandlerContext";
+import { GETHandlerContext } from "./handler-context/GETHandlerContext";
+import { POSTHandlerContext } from "./handler-context/POSTHandlerContext";
+import { PUTHandlerContext } from "./handler-context/PUTHandlerContext";
 
 import GLOBAL_CONFIG_DEFAULTS from "./config.defaults.json";
 
@@ -41,7 +42,7 @@ export class Handler {
 
     constructor(env: Partial<IHandlerEnv>, options: TJSON = {}) {
         this.env = new Options(env ?? {}, {
-            dev: false, // TODO: dev also via env var?
+            dev: false,
             cwd: process.cwd()
         }).object;
         this.config = new TypeResolver(options ?? {}, GLOBAL_CONFIG_DEFAULTS);
@@ -162,7 +163,7 @@ export class Handler {
                         return;
                     }
 
-                    handler = new GetHandlerContext(
+                    handler = new GETHandlerContext(
                         sReq,
                         this.config,
                         this.vfs,
@@ -177,10 +178,18 @@ export class Handler {
                         return;
                     }
 
-                    handler = new PostHandlerContext(
+                    handler = new POSTHandlerContext(
                         sReq,
                         this.config,
                         this.rpcController,
+                        this.env.dev
+                    );
+                    break;
+                case "PUT":
+                    handler = new PUTHandlerContext(
+                        sReq,
+                        this.config,
+                        this.env.cwd,
                         this.env.dev
                     );
                     break;

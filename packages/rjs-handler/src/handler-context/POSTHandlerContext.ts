@@ -1,10 +1,10 @@
-import { TSerializable } from "./.shared/global.types";
-import { ISerialRequest } from "./.shared/global.interfaces";
+import { TSerializable } from "../.shared/global.types";
+import { ISerialRequest } from "../.shared/global.interfaces";
 import { AHandlerContext } from "./AHandlerContext";
-import { TypeResolver } from "./TypeResolver";
-import { RPCController, TRpcMember } from "./RPCController";
+import { TypeResolver } from "../TypeResolver";
+import { RPCController, TRpcMember } from "../RPCController";
 
-import _config from "./_config.json";
+import _config from "../_config.json";
 
 type THandlerRequestBody = {
     name: string;
@@ -16,7 +16,7 @@ interface IRequestContext {
     clientIP: string;
 }
 
-export class PostHandlerContext extends AHandlerContext {
+export class POSTHandlerContext extends AHandlerContext {
     private readonly rpcController: RPCController;
 
     constructor(

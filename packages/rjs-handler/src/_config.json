@@ -1,3 +1,7 @@
 {
-    "apiRequestContextArgName": "CONTEXT"
+    "apiRequestContextArgName": "CONTEXT",
+    "envWebhookSecretKey": "WEBHOOK_SECRET",
+    "envWebhookAuthKey": "WEBHOOK_AUTH",
+    "webhookTempTarBaseName": "__repo.tar.gz",
+    "webhookTempDirBaseName": "__repo"
 }

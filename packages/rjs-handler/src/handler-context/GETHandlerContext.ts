@@ -1,22 +1,22 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { ISerialRequest } from "./.shared/global.interfaces";
-import { THeaders, TJSON } from "./.shared/global.types";
+import { ISerialRequest } from "../.shared/global.interfaces";
+import { THeaders, TJSON } from "../.shared/global.types";
 import { AHandlerContext } from "./AHandlerContext";
-import { TypeResolver } from "./TypeResolver";
-import { IFilestamp, VirtualFileSystem } from "./VirtualFileSystem";
+import { TypeResolver } from "../TypeResolver";
+import { IFilestamp, VirtualFileSystem } from "../VirtualFileSystem";
 
-import mime from "./mime.json";
+import mime from "../mime.json";
 
 const CLIENT_SCRIPT: string = readFileSync(
-    join(__dirname, "../client/rjs.client.js")
+    join(__dirname, "../../client/rjs.client.js")
 )
     .toString()
     .replace(/\n/g, "")
     .replace(/\s{2,}/g, " ");
 
-export class GetHandlerContext extends AHandlerContext {
+export class GETHandlerContext extends AHandlerContext {
     private readonly vfs: VirtualFileSystem;
     private readonly customHeaders: THeaders;
 

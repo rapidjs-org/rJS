@@ -21,7 +21,7 @@ new UnitTest("Security: > Max URI")
 new UnitTest("Security: > Max Headers")
 .actual(async () => {
     return (await request({
-        method: "POST",
+        method: "PUT",
         url: "/",
         headers: {
             "a": "b".repeat(500)
@@ -33,7 +33,7 @@ new UnitTest("Security: > Max Headers")
 new UnitTest("Security: ≤ Max Payload")
 .actual(async () => {
     return (await request({
-        method: "POST",
+        method: "PUT",
         url: "/",
         body: JSON.stringify({ d: "a".repeat(999 - 7) })
     })).status;
@@ -43,7 +43,7 @@ new UnitTest("Security: ≤ Max Payload")
 new UnitTest("Security: > Max Payload")
 .actual(async () => {
     return (await request({
-        method: "POST",
+        method: "PUT",
         url: "/",
         body: JSON.stringify({ d: "a".repeat(999 - 7 + 1) })
     })).status;

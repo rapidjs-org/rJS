@@ -1,10 +1,10 @@
 import EventEmitter from "events";
 import zlib from "zlib";
 
-import { ISerialRequest, ISerialResponse } from "./.shared/global.interfaces";
-import { TypeResolver } from "./TypeResolver";
-import { Request } from "./Request";
-import { Response } from "./Response";
+import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
+import { TypeResolver } from "../TypeResolver";
+import { Request } from "../Request";
+import { Response } from "../Response";
 
 // TODO: i18n (?)
 

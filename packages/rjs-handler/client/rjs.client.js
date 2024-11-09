@@ -10,7 +10,7 @@ window.rJS = (() => {
                         /* TODO: constants/props without parens? */
                         return new Promise(async (resolve, reject) => {
                             let res = await fetch(endpointPathname, {
-                                method: "POST",
+                                method: "PUT",
                                 body: JSON.stringify({
                                     name: memberName,
                                     args: args

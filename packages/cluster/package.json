@@ -12,7 +12,8 @@
     ],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/rapidjs-org/rjs.git"
+        "url": "git+https://github.com/rapidjs-org/rjs.git",
+        "directory": "packages/cluster"
     },
     "bugs": {
         "url": "https://github.com/rapidjs-org/rjs/issues"

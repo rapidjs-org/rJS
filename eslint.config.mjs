@@ -27,6 +27,7 @@ export default tseslint.config(
             "@typescript-eslint/no-misused-promises": "off",
             "@typescript-eslint/no-floating-promises": "off",
             "@typescript-eslint/no-this-alias": "off",
+            "@typescript-eslint/no-var-requires": "off",
             "indent": [
                 "error",
                 "tab",
