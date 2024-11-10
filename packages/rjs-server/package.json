@@ -33,8 +33,7 @@
         "test:http:composite": "npx rjs-test http ./test/http/composite",
         "test:http:tls-redirect": "npx rjs-test http ./test/http/tls-redirect",
         "test:http": "npm run test:http:composite && npm run test:http:tls-redirect",
-        "test": "npm run test:http",
-        "release": "npx rjs-releasing --github"
+        "test": "npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "0.x",

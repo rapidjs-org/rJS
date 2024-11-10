@@ -32,8 +32,7 @@
         "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:unit": "npx rjs-test unit ./test/unit/",
         "test:http": "npx rjs-test http ./test/http/",
-        "test": "npm run test:unit && npm run test:http",
-        "release": "npx rjs-releasing --github"
+        "test": "npm run test:unit && npm run test:http"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "0.x",

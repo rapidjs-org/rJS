@@ -1,4 +1,4 @@
-require("../deps.json")
+require("../release.deps.build.json")
 .forEach(package => {
     try {
         require("child_process")
@@ -8,7 +8,7 @@ require("../deps.json")
         });
     } catch(err) {
         console.error(((err ?? {}).stderr ?? err).toString());
-
+        
         process.exit(1);
     }
 });

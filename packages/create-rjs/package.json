@@ -33,8 +33,7 @@
         "debug:watch": "npm run debug -- --watch",
         "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
         "test:unit": "npx rjs-test unit ./test/unit/",
-        "test": "npm run test:unit",
-        "release": "npx rjs-releasing --github"
+        "test": "npm run test:unit"
     },
     "devDependencies": {
         "@rapidjs.org/testing": "0.x",

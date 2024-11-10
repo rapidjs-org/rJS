@@ -1,0 +1,7 @@
+[
+    "./packages/cluster",
+    "./packages/rjs-build",
+    "./packages/rjs-handler",
+    "./packages/rjs-server",
+    "./packages/rjs"
+]
