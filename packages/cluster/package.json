@@ -1,6 +1,6 @@
 {
     "name": "@rapidjs.org/cluster",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Web server cluster (process and thread pool) utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
     "license": "Apache-2.0",

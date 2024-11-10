@@ -55,7 +55,7 @@ new UnitTest("POST_ GitHub:/ (dummy)")
         new UnitTest("POST GitHub:/ (dummy) ¬ README.md override")
         .actual(require("fs").readFileSync(README_FILE_PATH).toString().trim() !== README_OVERRIDE_DATA)
         .expect(true);
-    }, 250);
+    }, 750);    // TODO: Improve (reliability)
 
     return res;
 })

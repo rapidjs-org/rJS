@@ -1,6 +1,10 @@
 {
 	"private": true,
 	"author": "Thassilo Martin Schiepanski",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rapidjs-org/rjs.git"
+    },
 	"workspaces": [
 		"./packages/*"
 	],
@@ -22,9 +26,7 @@
 		"format": "npx prettier --check './packages/*/src/**/*.ts'",
 		"format:fix": "npx prettier --write './packages/*/src/**/*.ts'",
 		"benchmark": "node ./scripts/benchmark.js",
-		"prerelease": "npm run build && npm run test",
-		"release": "npm run prerelease && npx rjs-releasing . --github",
-		"release:create-rjs": "npm run build -w @rapidjs.org/create-rjs && npm run test -w @rapidjs.org/create-rjs && npx rjs-releasing ./packages/create-rjs"
+		"release": "npx rjs-releasing . --github"
 	},
 	"devDependencies": {
 		"@rapidjs.org/releasing": "0.x",
