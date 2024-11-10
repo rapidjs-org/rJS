@@ -38,7 +38,6 @@ function loadCmd(relativePath: string) {
 }
 
 loadCmd("registry");
-loadCmd("registry.generate");
 
 // Execute targeted command handler
 Command.eval(0, "State a command to execute.");
