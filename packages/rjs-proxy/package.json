@@ -1,0 +1,42 @@
+{
+    "name": "@rapidjs.org/rjs-proxy",
+    "version": "0.3.1",
+    "description": "Core (reverse) proxy functionality utility for rJS.",
+    "author": "Thassilo Martin Schiepanski",
+    "license": "Apache-2.0",
+    "homepage": "https://rapidjs.org",
+    "keywords": [
+        "rJS",
+        "rapidjs",
+        "rapidjs.org"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rapidjs-org/rjs.git",
+        "directory": "packages/rjs-build"
+    },
+    "bugs": {
+        "url": "https://github.com/rapidjs-org/rjs/issues"
+    },
+    "main": "./build/api.js",
+    "types": "./types/api.d.ts",
+    "files": [
+        "./build/",
+        "./types/"
+    ],
+    "scripts": {
+        "copy-shared": "node ../../scripts/copy-shared.js rjs-build",
+        "clean": "rm -rf ./build && rm -rf ./types",
+        "debug": "npm run copy-shared && npx tsc --project ./tsconfig.debug.json",
+        "debug:watch": "npm run debug -- --watch",
+        "build": "npm run clean && npm run copy-shared && npx tsc --project ./tsconfig.build.json",
+        "test:unit": "npx rjs-test unit ./test/unit/",
+        "test": "npm run test:unit"
+    },
+    "devDependencies": {
+        "@rapidjs.org/testing": "0.x",
+        "@rapidjs.org/testing-unit": "0.x",
+        "@types/node": "^20.10.6",
+        "typescript": "^5.3.3"
+    }
+}
