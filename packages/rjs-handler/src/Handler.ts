@@ -114,7 +114,13 @@ export class Handler {
                 });
             };
 
-            if (!this.configuredHostnames.includes(request.url.hostname)) {
+            if (
+                !this.configuredHostnames.includes(request.url.hostname) &&
+                this.config.read("www").string() &&
+                !this.configuredHostnames.includes(
+                    request.url.hostname.replace(/^www\./, "")
+                )
+            ) {
                 resolveWithStatus(403);
 
                 return;
