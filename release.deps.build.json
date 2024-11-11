@@ -3,6 +3,5 @@
     "@rapidjs.org/rjs-build",
     "@rapidjs.org/rjs-handler",
     "@rapidjs.org/rjs-server",
-    "@rapidjs.org/rjs",
-    "@rapidjs.org/create-rjs"
+    "@rapidjs.org/rjs"
 ]
