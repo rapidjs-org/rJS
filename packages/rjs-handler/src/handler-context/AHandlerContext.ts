@@ -1,7 +1,7 @@
 import EventEmitter from "events";
 import zlib from "zlib";
 
-import { ISerialRequest, ISerialResponse } from "../.shared/global.interfaces";
+import { ISerialResponse } from "../.shared/global.interfaces";
 import { TypeResolver } from "../TypeResolver";
 import { Request } from "../Request";
 import { Response } from "../Response";
@@ -23,10 +23,10 @@ export abstract class AHandlerContext extends EventEmitter {
 
     private hasConsumedResponse: boolean = false;
 
-    constructor(sReq: ISerialRequest, config: TypeResolver, dev: boolean) {
+    constructor(request: Request, config: TypeResolver, dev: boolean) {
         super();
 
-        this.request = new Request(sReq);
+        this.request = request;
         this.response = new Response();
 
         this.config = config;

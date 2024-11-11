@@ -14,7 +14,8 @@ const initHandler = (appWorkingDir) => {
         "performance": {
             "compressionByteThreshold": 999
         },
-        "www": "never"
+        "www": "never",
+        "hostnames": [ "example.org", "www.example.org", "other.example.org" ]
     });
 }
 

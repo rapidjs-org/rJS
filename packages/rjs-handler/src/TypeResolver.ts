@@ -21,6 +21,9 @@ export class TypeResolver {
             object(): TJSON {
                 return isSet ? obj : null;
             },
+            array<T>(): T[] {
+                return isSet && Array.isArray(obj) ? obj : [];
+            },
             string(): string {
                 return isSet ? (obj as unknown as string).toString() : null;
             },

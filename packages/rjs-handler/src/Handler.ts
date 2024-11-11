@@ -12,6 +12,7 @@ import { TypeResolver } from "./TypeResolver";
 import { VirtualFileSystem } from "./VirtualFileSystem";
 import { RateLimiter } from "./RateLimiter";
 import { Cache } from "./Cache";
+import { Request } from "./Request";
 import { RPCController } from "./RPCController";
 import { AHandlerContext } from "./handler-context/AHandlerContext";
 import { GETHandlerContext } from "./handler-context/GETHandlerContext";
@@ -39,6 +40,7 @@ export class Handler {
         ISerialResponse
     >;
     private readonly rpcController: RPCController | null;
+    private readonly configuredHostnames: string[];
 
     constructor(env: Partial<IHandlerEnv>, options: TJSON = {}) {
         this.env = new Options(env ?? {}, {
@@ -46,6 +48,24 @@ export class Handler {
             cwd: process.cwd()
         }).object;
         this.config = new TypeResolver(options ?? {}, GLOBAL_CONFIG_DEFAULTS);
+
+        this.configuredHostnames = [
+            "localhost",
+            "127.0.0.1",
+            ...this.config
+                .read("hostnames")
+                .array<string>()
+                .filter((hostname: string) => {
+                    return (
+                        /^(([\w\d]|[\w\d][\w\d-]*[\w\d])\.)*([\w\d]|[\w\d][\w\d-]*[\w\d])$/.test(
+                            hostname.toString()
+                        ) ||
+                        /^((\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.){3}(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])$/.test(
+                            hostname.toString()
+                        )
+                    );
+                })
+        ];
 
         this.rateLimiter = new RateLimiter(
             this.config.read("security", "maxRequestsPerMin").number()
@@ -84,28 +104,25 @@ export class Handler {
 
             ...sReqPartial
         };
+        const request: Request = new Request(sReq);
 
         return new Promise((resolve) => {
-            const cacheKey: Partial<ISerialRequest> = {
-                method: sReq.method,
-                url: sReq.url // TODO: Consider query part? No-cache signal? ...
-            };
-
             const resolveWithStatus = (status: TStatus) => {
                 resolve({
                     status,
                     headers: {}
                 });
             };
+
+            if (!this.configuredHostnames.includes(request.url.hostname)) {
+                resolveWithStatus(403);
+
+                return;
+            }
+
             const enforceSecurityMeasure = (): boolean => {
                 if (!this.rateLimiter.grantsAccess(sReq.clientIP)) {
                     resolveWithStatus(429);
-
-                    return true;
-                }
-
-                if (this.responseCache.has(cacheKey)) {
-                    resolve(this.responseCache.get(cacheKey));
 
                     return true;
                 }
@@ -152,8 +169,17 @@ export class Handler {
 
                 return false;
             };
-
             if (!this.env.dev && enforceSecurityMeasure()) return;
+
+            const cacheKey: Partial<ISerialRequest> = {
+                method: sReq.method,
+                url: sReq.url // TODO: Consider query part? No-cache signal? ...
+            };
+            if (this.responseCache.has(cacheKey)) {
+                resolve(this.responseCache.get(cacheKey));
+
+                return;
+            }
 
             let handler: AHandlerContext;
             switch (sReq.method) {
@@ -166,7 +192,7 @@ export class Handler {
                     }
 
                     handler = new GETHandlerContext(
-                        sReq,
+                        request,
                         this.config,
                         this.vfs,
                         this.config.read("headers").object() as THeaders,
@@ -181,7 +207,7 @@ export class Handler {
                     }
 
                     handler = new PUTHandlerContext(
-                        sReq,
+                        request,
                         this.config,
                         this.rpcController,
                         this.env.dev
@@ -189,7 +215,7 @@ export class Handler {
                     break;
                 case "POST":
                     handler = new POSTHandlerContext(
-                        sReq,
+                        request,
                         this.config,
                         this.env.cwd,
                         this.env.dev

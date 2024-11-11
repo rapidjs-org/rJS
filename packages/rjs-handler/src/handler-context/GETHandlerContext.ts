@@ -1,11 +1,11 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { ISerialRequest } from "../.shared/global.interfaces";
 import { THeaders, TJSON } from "../.shared/global.types";
 import { AHandlerContext } from "./AHandlerContext";
 import { TypeResolver } from "../TypeResolver";
 import { IFilestamp, VirtualFileSystem } from "../VirtualFileSystem";
+import { Request } from "../Request";
 
 import mime from "../mime.json";
 
@@ -21,13 +21,13 @@ export class GETHandlerContext extends AHandlerContext {
     private readonly customHeaders: THeaders;
 
     constructor(
-        sReq: ISerialRequest,
+        request: Request,
         config: TypeResolver,
         vfs: VirtualFileSystem,
         customHeaders: THeaders = {},
         dev: boolean
     ) {
-        super(sReq, config, dev);
+        super(request, config, dev);
 
         this.vfs = vfs;
         this.customHeaders = customHeaders;

@@ -5,11 +5,11 @@ import { request } from "https";
 import { createHmac, timingSafeEqual } from "crypto";
 
 import { THeaders, TJSON } from "../.shared/global.types";
-import { ISerialRequest } from "../.shared/global.interfaces";
 import { Tar } from "../.shared/Tar";
 import { AHandlerContext } from "./AHandlerContext";
 import { TypeResolver } from "../TypeResolver";
 import { LocalEnv } from "../LocalEnv";
+import { Request } from "../Request";
 
 import _config from "../_config.json";
 
@@ -40,12 +40,12 @@ export class POSTHandlerContext extends AHandlerContext {
     private readonly repo: IGitRemote | null;
 
     constructor(
-        sReq: ISerialRequest,
+        request: Request,
         config: TypeResolver,
         cwd: string,
         dev: boolean
     ) {
-        super(sReq, config, dev);
+        super(request, config, dev);
 
         try {
             const remoteUrl: string = (

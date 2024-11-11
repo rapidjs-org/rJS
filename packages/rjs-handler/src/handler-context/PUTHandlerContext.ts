@@ -1,8 +1,8 @@
 import { TSerializable } from "../.shared/global.types";
-import { ISerialRequest } from "../.shared/global.interfaces";
 import { AHandlerContext } from "./AHandlerContext";
 import { TypeResolver } from "../TypeResolver";
 import { RPCController, TRpcMember } from "../RPCController";
+import { Request } from "../Request";
 
 import _config from "../_config.json";
 
@@ -20,12 +20,12 @@ export class PUTHandlerContext extends AHandlerContext {
     private readonly rpcController: RPCController;
 
     constructor(
-        sReq: ISerialRequest,
+        request: Request,
         config: TypeResolver,
         rpcController: RPCController,
         dev: boolean
     ) {
-        super(sReq, config, dev);
+        super(request, config, dev);
 
         this.rpcController = rpcController;
     }
