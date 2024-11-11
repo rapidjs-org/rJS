@@ -26,6 +26,7 @@
 		"format": "npx prettier --check './packages/*/src/**/*.ts'",
 		"format:fix": "npx prettier --write './packages/*/src/**/*.ts'",
 		"benchmark": "node ./scripts/benchmark.js",
+		"preversion": "npm run build && npm run test",
 		"release": "npx rjs-releasing . --github"
 	},
 	"devDependencies": {
