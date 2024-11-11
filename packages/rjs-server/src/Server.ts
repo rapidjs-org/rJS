@@ -118,7 +118,7 @@ export class Server extends EventEmitter {
                 ? createHTTPSServer
                 : createHTTPServer) as typeof createHTTPSServer
         )((dReq: IncomingMessage, dRes: ServerResponse) => {
-            (["POST"].includes(dReq.method)
+            (["POST", "PUT"].includes(dReq.method)
                 ? new Promise((resolve, reject) => {
                       const body: string[] = [];
                       dReq.on("readable", () => {

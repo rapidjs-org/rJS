@@ -16,6 +16,7 @@ export class Logger {
     private readonly maxFilesSizeKB: number;
 
     private filesSizeB: number;
+    private lastMessage: string;
 
     constructor(
         logsDirPath: string | null = null,
@@ -59,15 +60,26 @@ export class Logger {
 
         if (!this.logsDirPath) return;
 
-        const interceptLogError = (err: Error) =>
-            err && !this.silent && console.error(err);
-
         const date: Date = new Date();
         const dateKey: string = [
             date.getFullYear().toString().slice(-2),
             (date.getMonth() + 1).toString().padStart(2, "0"),
             date.getDate().toString().padStart(2, "0")
         ].join("-");
+        const logFilePath: string = join(this.logsDirPath, `${dateKey}.log`);
+
+        const interceptLogError = (err: Error) =>
+            err && !this.silent && console.error(err);
+
+        const serialMessage: string =
+            shortMessage.toString() + (verboseMessage ?? "");
+        if (existsSync(logFilePath) && this.lastMessage === serialMessage) {
+            appendFile(logFilePath, "+1", interceptLogError);
+
+            return;
+        }
+        this.lastMessage = serialMessage;
+
         const timeKey: string = [
             date.getHours().toString().padStart(2, "0"),
             date.getMinutes().toString().padStart(2, "0"),
@@ -78,11 +90,7 @@ export class Logger {
         }${shortMessage.toString()}${
             verboseMessage ? `\n${verboseMessage}` : ""
         }\n`;
-        appendFile(
-            join(this.logsDirPath, `${dateKey}.log`),
-            logMessage,
-            interceptLogError
-        );
+        appendFile(logFilePath, logMessage, interceptLogError);
 
         const statsFs = statfsSync(this.logsDirPath);
         const freeSizeKB: number = statsFs.bsize * statsFs.bavail * 2 ** -10;
