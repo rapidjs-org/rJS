@@ -47,7 +47,8 @@ export class ThreadPool<I = unknown, O = unknown> extends AWorkerPool<
             this.deactivateWorkerWithError(thread, errMessage);
         });
         thread.on("exit", (exitCode: number) => {
-            if ([0, WORKER_ERROR_CODE].includes(exitCode)) return;
+            if (this.destroyed || [0, WORKER_ERROR_CODE].includes(exitCode))
+                return;
 
             this.deactivateWorkerWithError(thread, EClusterError.WORKER_EXIT);
 

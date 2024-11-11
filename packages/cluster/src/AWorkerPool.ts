@@ -53,6 +53,8 @@ export abstract class AWorkerPool<
 
     private aliveWorkers: number = 0;
 
+    protected destroyed: boolean = false;
+
     constructor(
         workerModulePath: string,
         adapterConfig: IAdapterConfiguration,
@@ -213,6 +215,8 @@ export abstract class AWorkerPool<
     }
 
     public destroy() {
+        this.destroyed = true;
+
         Array.from(this.activeWorkers.keys())
             .concat(this.idleWorkers)
             .forEach((worker: Worker) => {

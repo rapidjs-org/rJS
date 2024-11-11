@@ -22,7 +22,11 @@ export class TypeResolver {
                 return isSet ? obj : null;
             },
             array<T>(): T[] {
-                return isSet && Array.isArray(obj) ? obj : [];
+                return isSet
+                    ? Array.isArray(obj)
+                        ? ([obj].flat() as T[])
+                        : []
+                    : [];
             },
             string(): string {
                 return isSet ? (obj as unknown as string).toString() : null;
