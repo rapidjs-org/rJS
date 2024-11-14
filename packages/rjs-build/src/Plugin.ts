@@ -62,18 +62,26 @@ export class Plugin {
 
     private resolveBuildModulePath(): string {
         const buildConfig: TJSON = this.fetchBuildConfig();
-        const buildModuleReferences: string[] = [
-            ..._config.buildModuleNames.map((buildModuleName: string) =>
+        const buildModuleReferences: string[] = _config.buildModuleNames.map(
+            (buildModuleName: string) =>
                 join(this.pluginDirectoryPath, buildModuleName)
-            ),
-            buildConfig[_config.buildModuleReferenceKey] as string
-        ];
+        );
+        buildConfig[_config.buildModuleReferenceKey] &&
+            buildModuleReferences.push(
+                resolve(
+                    this.pluginDirectoryPath,
+                    buildConfig[_config.buildModuleReferenceKey] as string
+                )
+            );
 
         let buildModulePath: string;
         while (!buildModulePath && buildModuleReferences.length) {
             const buildModuleReference: string = buildModuleReferences.shift();
             try {
                 buildModulePath = require.resolve(buildModuleReference);
+                buildModulePath = !/\.json$/.test(buildModulePath)
+                    ? buildModulePath
+                    : null;
             } catch {}
         }
 
@@ -200,6 +208,6 @@ export class Plugin {
             return await this.applyResults();
         }
 
-        return this.lastApplyResult ?? [];
+        return Promise.resolve(this.lastApplyResult ?? []);
     }
 }

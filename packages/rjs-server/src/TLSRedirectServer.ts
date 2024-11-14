@@ -16,6 +16,7 @@ export function createTLSRedirectServer(
     });
 }
 
+// TODO: Proxy?
 export class TLSRedirectServer extends EventEmitter {
     constructor(sourcePort: number = 80, targetPort: number = 443) {
         super();

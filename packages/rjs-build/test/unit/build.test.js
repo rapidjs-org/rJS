@@ -24,6 +24,12 @@ new UnitTest("Basic build")
 				name: "out",
 				extension: "txt",
 				contents: "O\nP1\nP2"
+			},
+			{
+				relativePath: "generated/out.txt",
+				name: "out",
+				extension: "txt",
+				contents: "[generated]"
 			}
 		]
 	)

@@ -1,9 +1,15 @@
+const { join } = require("path");
 const { readFileSync } = require("fs");
+
 const { FileEmitter } = require("../../build/api");
 
+
+const PUBLIC_DIR_PATH = join(__dirname, "../_public");
+
+
 const fileEmitter = new FileEmitter({
-	sourceDirPath: require("path").join(__dirname, "../../../../test-app/src"),
-	publicDirPath: require("path").join(__dirname, "./_public")
+	sourceDirPath: join(__dirname, "../../../../test-app/src"),
+	publicDirPath: PUBLIC_DIR_PATH
 });
 
 new UnitTest("File emission")
@@ -11,7 +17,7 @@ new UnitTest("File emission")
 	await fileEmitter.emit();
 	
 	return readFileSync(
-		require("path").join(__dirname, "./_public/out.txt")
+		join(PUBLIC_DIR_PATH, "./out.txt")
 	).toString();
 })
 .expect("O\nP1\nP2");
