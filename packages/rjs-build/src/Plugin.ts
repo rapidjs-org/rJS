@@ -15,7 +15,7 @@ import { File } from "./File";
 
 import _config from "./_config.json";
 
-type TBuildInterfaceCallable = (
+type TPluginInterfaceCallable = (
     api: {
         Directory: typeof Directory;
         File: typeof File;
@@ -24,7 +24,7 @@ type TBuildInterfaceCallable = (
     config: TJSON,
     isDev: boolean,
     $PATH: string
-) => (Directory | File)[];
+) => (Directory | File) | (Directory | File)[];
 
 // TODO: Access to public files (static); e.g. for sitemap plugin?
 export class Plugin {
@@ -90,11 +90,11 @@ export class Plugin {
         return buildModulePath;
     }
 
-    private async fetchBuildInterface(): Promise<TBuildInterfaceCallable> {
+    private async fetchBuildInterface(): Promise<TPluginInterfaceCallable> {
         const buildModulePath: string = this.resolveBuildModulePath();
 
         return buildModulePath
-            ? await new ModuleDependency<TBuildInterfaceCallable>(
+            ? await new ModuleDependency<TPluginInterfaceCallable>(
                   buildModulePath
               ).import()
             : () => [];
@@ -166,8 +166,9 @@ export class Plugin {
     private applyResults(): Promise<(File | Directory)[]> {
         return new Promise(async (resolve) => {
             const applicationResults:
+                | (File | Directory)
                 | (File | Directory)[]
-                | Promise<(File | Directory)[]> = (
+                | Promise<(File | Directory) | (File | Directory)[]> = (
                 await this.fetchBuildInterface()
             )(
                 {

@@ -27,6 +27,7 @@ export class Directory extends AFilesystemNode {
 
     public get(relativePath: string): AFilesystemNode {
         const normalizedPath: string = this.normalizePath(relativePath);
+        if (normalizedPath === this.normalizePath(".")) return this;
         if (normalizedPath) return this.pathMap.get(normalizedPath);
     }
 
