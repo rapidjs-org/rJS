@@ -36,13 +36,16 @@ export interface IServerEnv extends IHandlerEnv {
 export function createServer(
     env: IServerEnv,
     options?: TJSON,
+    deployPaths?: string[],
     clusterSize?: IClusterConstraints
 ): Promise<Server> {
     return new Promise((resolve) => {
-        const server: Server = new Server(env, options, clusterSize).on(
-            "online",
-            () => resolve(server)
-        );
+        const server: Server = new Server(
+            env,
+            options,
+            deployPaths,
+            clusterSize
+        ).on("online", () => resolve(server));
     });
 }
 
@@ -57,7 +60,7 @@ export class Server extends EventEmitter {
                 if (!param) return null;
                 if (param instanceof Buffer) return param;
 
-                const potentialPath: string = resolve(param);
+                const potentialPath: string = resolve(cwd, param);
                 if (!existsSync(potentialPath)) return param;
 
                 return readFileSync(potentialPath);
@@ -90,6 +93,7 @@ export class Server extends EventEmitter {
     constructor(
         env: IServerEnv,
         options?: TJSON,
+        deployPaths?: string[],
         clusterSize?: IClusterConstraints
     ) {
         super();
@@ -102,6 +106,7 @@ export class Server extends EventEmitter {
         this.instance = new Instance(
             env,
             options,
+            deployPaths,
             this.env.dev
                 ? {
                       processes: 1,

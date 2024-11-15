@@ -62,32 +62,27 @@ export class Plugin {
 
     private resolveBuildModulePath(): string {
         const buildConfig: TJSON = this.fetchBuildConfig();
-        const buildModuleReferences: string[] = _config.buildModuleNames.map(
-            (buildModuleName: string) =>
-                join(this.pluginDirectoryPath, buildModuleName)
-        );
-        buildConfig[_config.buildModuleReferenceKey] &&
-            buildModuleReferences.push(
-                resolve(
-                    this.pluginDirectoryPath,
-                    buildConfig[_config.buildModuleReferenceKey] as string
-                )
-            );
+        const buildModuleReferences: string[] = [
+            ..._config.buildModuleNames.map((reference: string) =>
+                join(this.pluginDirectoryPath, reference)
+            ),
+            buildConfig[_config.buildModuleReferenceKey] as string
+        ].filter((reference: string | undefined) => !!reference);
 
         let buildModulePath: string;
         while (!buildModulePath && buildModuleReferences.length) {
             const buildModuleReference: string = buildModuleReferences.shift();
             try {
-                buildModulePath = require.resolve(buildModuleReference);
+                buildModulePath = require.resolve(buildModuleReference, {
+                    paths: [this.pluginDirectoryPath]
+                });
                 buildModulePath = !/\.json$/.test(buildModulePath)
                     ? buildModulePath
                     : null;
             } catch {}
         }
 
-        if (!buildModulePath || /\.json$/.test(buildModulePath)) return null;
-
-        return buildModulePath;
+        return buildModulePath ?? null;
     }
 
     private async fetchBuildInterface(): Promise<TPluginInterfaceCallable> {

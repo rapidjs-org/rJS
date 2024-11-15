@@ -1,4 +1,4 @@
-import { resolve } from "path";
+import { normalize, resolve } from "path";
 
 import {
     TAtomicSerializable,
@@ -41,13 +41,19 @@ export class Handler {
     >;
     private readonly rpcController: RPCController | null;
     private readonly configuredHostnames: string[];
+    private readonly deployPaths: string[];
 
-    constructor(env: Partial<IHandlerEnv>, options: TJSON = {}) {
+    constructor(
+        env: Partial<IHandlerEnv>,
+        options: TJSON = {},
+        deployPaths: string[] = []
+    ) {
         this.env = new Options(env ?? {}, {
             dev: false,
             cwd: process.cwd()
         }).object;
         this.config = new TypeResolver(options ?? {}, GLOBAL_CONFIG_DEFAULTS);
+        this.deployPaths = deployPaths.map((path: string) => normalize(path));
 
         this.configuredHostnames = [
             "localhost",
@@ -223,6 +229,7 @@ export class Handler {
                     handler = new POSTHandlerContext(
                         request,
                         this.config,
+                        this.deployPaths,
                         this.env.cwd,
                         this.env.dev
                     );

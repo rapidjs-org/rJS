@@ -13,13 +13,16 @@ import _config from "./_config.json";
 export function createInstance(
     env?: Partial<IHandlerEnv>,
     options?: TJSON,
+    deployPaths?: string[],
     clusterSize?: IClusterConstraints
 ): Promise<Instance> {
     return new Promise((resolve) => {
-        const instance: Instance = new Instance(env, options, clusterSize).on(
-            "online",
-            () => resolve(instance)
-        );
+        const instance: Instance = new Instance(
+            env,
+            options,
+            deployPaths,
+            clusterSize
+        ).on("online", () => resolve(instance));
     });
 }
 
@@ -27,6 +30,7 @@ export class Instance extends Cluster<ISerialRequest, ISerialResponse> {
     constructor(
         env?: Partial<IHandlerEnv>,
         options?: TJSON,
+        deployPaths?: string[],
         clusterConstraints?: IClusterConstraints
     ) {
         super(
@@ -34,7 +38,8 @@ export class Instance extends Cluster<ISerialRequest, ISerialResponse> {
                 modulePath: join(__dirname, "adapter"),
                 options: {
                     env,
-                    options
+                    options,
+                    deployPaths
                 }
             },
             {

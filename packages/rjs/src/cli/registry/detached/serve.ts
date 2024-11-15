@@ -1,6 +1,6 @@
 import { FileServer, createFileServer } from "../../../FileServer";
 
-export interface IServeData {
+export interface IServeEnv {
     dev: boolean;
     tls: {
         cert: string | Buffer;
@@ -13,12 +13,12 @@ export interface IServeData {
     port: number;
 }
 
-export async function serve(data: IServeData): Promise<number> {
-    const server: FileServer = await createFileServer(data);
+export async function serve(env: IServeEnv): Promise<number> {
+    const server: FileServer = await createFileServer(env);
 
     return server.port;
 }
 
-process.on("message", async (data: IServeData) => {
-    process.send(await serve(data));
+process.on("message", async (env: IServeEnv) => {
+    process.send(await serve(env));
 });

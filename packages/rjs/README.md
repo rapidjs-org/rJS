@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://rapidjs.org" target="_blank">
-    <img src="https://rapidjs.org/assets/img/repo-preview.jpg" alt="https://rapidjs.org" width="830">
+    <img src="https://rapidjs.org/assets/img/repo-preview.png" alt="https://rapidjs.org" width="830">
   </a>
   <h1 align="center">rJS</h1>
 </p>

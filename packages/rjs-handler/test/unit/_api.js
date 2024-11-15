@@ -16,7 +16,10 @@ const initHandler = (appWorkingDir) => {
         },
         "www": "never",
         "hostnames": [ "example.org", "other.example.org" ]
-    });
+    }, [
+        "README.md",
+        "test/file.txt"
+    ]);
 }
 
 const defaultHandler = initHandler(

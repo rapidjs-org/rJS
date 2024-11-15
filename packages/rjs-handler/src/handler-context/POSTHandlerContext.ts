@@ -1,5 +1,13 @@
-import { dirname, basename, join, resolve } from "path";
-import { existsSync, readdirSync, writeFileSync, cpSync, rmSync } from "fs";
+import { dirname, basename, join, resolve, normalize } from "path";
+import {
+    existsSync,
+    readdirSync,
+    writeFileSync,
+    cpSync,
+    rmSync,
+    statSync,
+    mkdirSync
+} from "fs";
 import { IncomingMessage, OutgoingHttpHeaders } from "http";
 import { request } from "https";
 import { createHmac, timingSafeEqual } from "crypto";
@@ -37,11 +45,13 @@ export class POSTHandlerContext extends AHandlerContext {
 
     private readonly cwd: string;
     private readonly localEnv: LocalEnv;
+    private readonly deployPaths: string[];
     private readonly repo: IGitRemote | null;
 
     constructor(
         request: Request,
         config: TypeResolver,
+        deployPaths: string[],
         cwd: string,
         dev: boolean
     ) {
@@ -82,6 +92,7 @@ export class POSTHandlerContext extends AHandlerContext {
 
         this.cwd = cwd;
         this.localEnv = new LocalEnv(dev, cwd);
+        this.deployPaths = deployPaths ?? [];
     }
 
     private requestAPI(
@@ -221,11 +232,49 @@ export class POSTHandlerContext extends AHandlerContext {
                     force: true
                 });
 
-                readdirSync(dirPath).forEach((path: string) => {
-                    cpSync(join(dirPath, path), join(this.cwd, path), {
-                        force: true,
-                        recursive: true
-                    });
+                readdirSync(dirPath, {
+                    recursive: true
+                }).forEach((rawPath: string | Buffer) => {
+                    const path = rawPath.toString();
+
+                    if (this.deployPaths.length) {
+                        const maxDirectoryDepth = 50;
+
+                        let isWhitelisted = false;
+                        let i = 0;
+                        let traversalPath: string = normalize(path);
+                        do {
+                            if (
+                                this.deployPaths.includes(
+                                    normalize(traversalPath)
+                                )
+                            ) {
+                                isWhitelisted = true;
+
+                                break;
+                            }
+
+                            traversalPath = normalize(
+                                join(traversalPath, "..")
+                            );
+                        } while (
+                            traversalPath !== "." &&
+                            ++i < maxDirectoryDepth
+                        );
+
+                        if (!isWhitelisted) return;
+                    }
+
+                    const sourcePath: string = join(dirPath, path);
+                    const targetPath: string = join(this.cwd, path);
+                    statSync(sourcePath).isDirectory()
+                        ? mkdirSync(targetPath, {
+                              recursive: true
+                          })
+                        : cpSync(sourcePath, targetPath, {
+                              force: true,
+                              recursive: true
+                          });
                 });
 
                 rmSync(dirPath, {

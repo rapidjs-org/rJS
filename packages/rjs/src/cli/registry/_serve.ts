@@ -5,12 +5,12 @@ import { Args } from "../../.shared/Args";
 import { DEV_MODE_PREFIX } from "../local.constants";
 import { Command } from "../Command";
 import { join } from "path";
-import { IServeData } from "./detached/serve";
+import { IServeEnv } from "./detached/serve";
 
 // TODO: Print virtual files for overview?
 // TODO: Interactive mode?
 new Command("serve", async () => {
-    const serveData: IServeData = {
+    const serveEnv: IServeEnv = {
         dev: Args.parseFlag("dev", "D"),
         tls: {
             cert: Args.parseOption("tls-cert", "C").string(),
@@ -47,17 +47,17 @@ new Command("serve", async () => {
                   );
               });
 
-              detachProcess.send(serveData);
+              detachProcess.send(serveEnv);
           })
         : await (
               (await import(detachedModulePath)) as {
-                  serve: (data: IServeData) => Promise<number>;
+                  serve: (env: IServeEnv) => Promise<number>;
               }
-          ).serve(serveData);
+          ).serve(serveEnv);
 
     Printer.global.stdout(
-        `${serveData.dev ? DEV_MODE_PREFIX : ""}Server listening on ${Printer.format(
-            `http${serveData.tls.cert ? "s" : ""}://localhost:${port}`,
+        `${serveEnv.dev ? DEV_MODE_PREFIX : ""}Server listening on ${Printer.format(
+            `http${serveEnv.tls.cert ? "s" : ""}://localhost:${port}`,
             [Printer.escapes.TERTIARY_COLOR_FG]
         )}.`
     );
