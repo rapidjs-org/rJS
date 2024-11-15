@@ -1,6 +1,6 @@
 {
     "name": "@rapidjs.org/rjs-handler",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "description": "Core HTTP-based request handler utility for rJS.",
     "author": "Thassilo Martin Schiepanski",
     "license": "Apache-2.0",
