@@ -83,7 +83,7 @@ export class Server extends EventEmitter {
             passphrase
         };
     }
-
+    
     public readonly env: IServerEnv;
     private readonly instance: Instance;
     private readonly server: HTTPSServer;
@@ -117,13 +117,16 @@ export class Server extends EventEmitter {
 
         const logger: Logger = new Logger(this.env.cwd);
         const isSecure: boolean = !!(this.env.tls ?? {}).cert;
-
+        
         this.server = (
             (!this.env.dev && isSecure
                 ? createHTTPSServer
                 : createHTTPServer) as typeof createHTTPSServer
         )((dReq: IncomingMessage, dRes: ServerResponse) => {
-            (["POST", "PUT"].includes(dReq.method)
+            ([
+                /* "POST", */
+                "PUT"
+            ].includes(dReq.method)
                 ? new Promise((resolve, reject) => {
                       const body: string[] = [];
                       dReq.on("readable", () => {
@@ -190,7 +193,7 @@ export class Server extends EventEmitter {
             this.env.tls.ca,
             this.env.tls.passphrase
         );
-
+        
         try {
             this.server.setSecureContext(context);
         } catch (err: unknown) {
@@ -207,7 +210,6 @@ export class Server extends EventEmitter {
             {
                 host: "localhost",
                 port: this.port
-                /* servername: 'medium.com' */
             },
             () => {
                 const peerCertificate = socket.getPeerCertificate();
