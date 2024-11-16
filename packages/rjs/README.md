@@ -21,7 +21,7 @@
 ## Install
 
 ``` console
-npm i -g rapidjs.org/rjs
+npm i -g @rapidjs.org/rjs
 ```
 
 ## Use

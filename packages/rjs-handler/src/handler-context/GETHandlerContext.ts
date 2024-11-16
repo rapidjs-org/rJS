@@ -74,7 +74,7 @@ export class GETHandlerContext extends AHandlerContext {
                 /^(www\.)?/,
                 wwwSubdomainStrategy === "always" ? "www." : ""
             );
-
+            
             redirect = redirectUrl.hostname.toString() !== previousHostname;
         }
         const canonicPathnamePart: string = this.request.url.pathname.match(
