@@ -121,13 +121,13 @@ export class Handler {
             };
 
             if (
-                !this.configuredHostnames.includes(request.url.hostname)
-                && this.config.read("www").string()
-                && !this.configuredHostnames.includes(
+                !this.configuredHostnames.includes(request.url.hostname) &&
+                this.config.read("www").string() &&
+                !this.configuredHostnames.includes(
                     request.url.hostname.replace(/^www\./, "")
                 )
             ) {
-                resolveWithStatus(403);
+                resolveWithStatus(404);
 
                 return;
             }
@@ -143,7 +143,7 @@ export class Handler {
                     this.config.read("security", "maxRequestURILength").number()
                 ) {
                     resolveWithStatus(414);
-                    
+
                     return true;
                 }
                 if (
@@ -199,7 +199,7 @@ export class Handler {
                 case "HEAD":
                     if (sReq.body) {
                         resolveWithStatus(400);
-                        
+
                         return;
                     }
 

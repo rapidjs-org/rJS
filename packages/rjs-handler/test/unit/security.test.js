@@ -46,7 +46,7 @@ new UnitTest("Invalid explicit hostname")
         }
     })).status;
 })
-.expect(403);
+.expect(404);
 
 new UnitTest("Security: ≤ Max URI")
 .actual(async () => {
