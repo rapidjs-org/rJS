@@ -1,4 +1,8 @@
-const { initHandler, requestWithHandler } = require("../_api");
+import { createHmac } from "crypto";
+import { join } from "path";
+import { readFileSync, writeFileSync, existsSync, rmSync } from "fs";
+
+import { initHandler, requestWithHandler } from "../_api.mjs";
 
 
 const SECRET = "secret";
@@ -9,14 +13,13 @@ const PAYLOAD = JSON.stringify({
 
 const requestWithWebhookHandler = () => {
     return requestWithHandler(
-        initHandler(require("path").join(__dirname, "./app")),
+    initHandler(join(import.meta.dirname, "./app")),
         {
             method: "POST",
             url: "/",
             headers: {
                 "User-Agent": "GitHub-Hookshot/044aadd",
                 "X-Hub-Signature-256": `sha256=${
-                    require("crypto").
                     createHmac("sha256", SECRET)
                     .update(PAYLOAD)
                     .digest("hex")
@@ -25,21 +28,21 @@ const requestWithWebhookHandler = () => {
             body: PAYLOAD
         }, [], true
     );
-};
+}
 
 
 const getFilePath = name => {
-    return require("path").join(__dirname, "./app", name);
+    return join(import.meta.dirname, "./app", name);
 }
 const fileExists = name => {
-    return require("fs").existsSync(getFilePath(name));
+    return existsSync(getFilePath(name));
 }
 
 const README_OVERRIDE_DATA = "OVERRIDE";
 
-require("fs").writeFileSync(getFilePath("README.md"), README_OVERRIDE_DATA);
-require("fs").rmSync(getFilePath("EMPTY.md"), { force: true });
-require("fs").rmSync(getFilePath("test/file-2.txt"), { force: true });
+writeFileSync(getFilePath("README.md"), README_OVERRIDE_DATA);
+rmSync(getFilePath("EMPTY.md"), { force: true });
+rmSync(getFilePath("test/file-2.txt"), { force: true });
 
 
 new UnitTest("POST_ GitHub:/ (dummy)")
@@ -65,8 +68,7 @@ new UnitTest("POST_ GitHub:/ (dummy)")
         
         new UnitTest("POST GitHub:/ (dummy) ¬ README.md override")
         .actual(
-            require("fs")
-            .readFileSync(getFilePath("README.md"))
+            readFileSync(getFilePath("README.md"))
             .toString()
             .trim()
             !== README_OVERRIDE_DATA

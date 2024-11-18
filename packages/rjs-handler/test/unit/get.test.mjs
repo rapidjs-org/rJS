@@ -1,6 +1,10 @@
 // TODO: Check all headers (Cache-Control, ...)
 
-const { request } = require("./_api");
+import { join } from "path";
+import { readFileSync } from "fs";
+
+import { request } from "./_api.mjs";
+
 
 new UnitTest("GET /")
 .actual(request({
@@ -65,11 +69,11 @@ new UnitTest("GET /page")
 .expect({
 	status: 200,
 	body: {
-        length: require("fs").readFileSync(
-            require("path").join(__dirname, "../../../../test-app/public/page.html")
+        length: readFileSync(
+            join(import.meta.dirname, "../../../../test-app/public/page.html")
         ).toString().length
-        + require("fs").readFileSync(
-            require("path").join(__dirname, "../../client/rjs.client.js")
+        + readFileSync(
+            join(import.meta.dirname, "../../client/rjs.client.js")
         ).toString()
         .replace(/\n/g, "")
         .replace(/\s{2,}/g, " ")

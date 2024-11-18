@@ -1,1 +1,1 @@
-module.exports.CONSTANT = "value1.1";
+export const CONSTANT = "value1.1";

@@ -1,4 +1,5 @@
-const { request } = require("./_api");
+import { request } from "./_api.mjs";
+
 
 new UnitTest("PUT /route1 (fn declaration)")
 .actual(request({

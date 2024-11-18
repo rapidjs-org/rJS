@@ -1,7 +1,8 @@
 
-const { createHmac } = require("crypto");
+import { createHmac } from "crypto";
 
-const { request } = require("./_api");
+import { request } from "./_api.mjs";
+
 
 new UnitTest("POST GitHub:/other")
 .actual(request({

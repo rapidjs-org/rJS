@@ -1,3 +1,3 @@
-module.exports.CONSTANT = "value2";
+export const CONSTANT = "value2";
 
 // Exec in client scope?

@@ -1,9 +1,9 @@
-module.exports.CONSTANT = "value1";
+export const CONSTANT = "value1";
 
-module.exports.sum__declaration = function(a, b) { return a + b; };
+export function sum__declaration(a, b) { return a + b; };
 
-module.exports.sum__expression = (a, b) => a + b;
+export const sum__expression = (a, b) => a + b;
 
-module.exports.sumWithContext = (a, CONTEXT, b) => {
+export function sumWithContext(a, CONTEXT, b) {
     return `${CONTEXT.clientIP} | ${a + b}`;
-};
+}

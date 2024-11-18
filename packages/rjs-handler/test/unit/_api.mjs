@@ -1,6 +1,12 @@
-const { Handler } = require("../../build/api");
+import { join } from "path";
 
-const initHandler = (appWorkingDir) => {
+import { Handler } from "../../build/api.js";
+
+
+const defaultHandler = initHandler(join(import.meta.dirname, "../../../../test-app"));
+
+
+export function initHandler(appWorkingDir) {
     return new Handler({
         cwd: appWorkingDir,
         apiDirPath: "./api",
@@ -22,14 +28,8 @@ const initHandler = (appWorkingDir) => {
     ]);
 }
 
-const defaultHandler = initHandler(
-    require("path")
-    .join(__dirname, "../../../../test-app")
-);
 
-module.exports.initHandler = initHandler;
-
-module.exports.requestWithHandler = async (handler, sReq, headerFilters = null, hideBody = false, metaBody = false) => {
+export async function requestWithHandler(handler, sReq, headerFilters = null, hideBody = false, metaBody = false) {
     const sRes = await handler.activate(sReq);
 
     if(Array.isArray(headerFilters)) {
@@ -57,9 +57,11 @@ module.exports.requestWithHandler = async (handler, sReq, headerFilters = null, 
             sRes.body = JSON.parse(sRes.body);
         } catch {}
     }
-    
+
     return sRes;
 };
-module.exports.request = async (sReq, headerFilters = null, hideBody = false, metaBody = false) => {
-    return module.exports.requestWithHandler(defaultHandler, sReq, headerFilters, hideBody, metaBody);
-};
+
+
+export async function request(sReq, headerFilters = null, hideBody = false, metaBody = false) {
+    return requestWithHandler(defaultHandler, sReq, headerFilters, hideBody, metaBody);
+}
