@@ -1,6 +1,8 @@
+// deno-lint-ignore-file
+
 import { RuntimeAdapter } from "../RuntimeAdapter";
 
-interface IDirEntry {
+export interface IDirEntry {
   name: string;
   absolutePath: string;
   isDirectory: boolean;
@@ -9,11 +11,17 @@ interface IDirEntry {
 export const readdir = new RuntimeAdapter<
   (relativePath: string, recursive?: boolean) => Promise<IDirEntry[]>
 >()
+  .withNode(async (relativePath: string, recursive = true) => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
 
+    return new Promise((resolve, reject) => {
+    });
+  })
   .withDeno(async (relativePath: string, recursive = true) => {
     // @ts-ignore
     const path = await import("jsr:@std/path");
-    
+
     // @ts-ignore
     const absolutePath: string = path.join(Deno.cwd(), relativePath);
     const entries: IDirEntry[] = [];
@@ -22,20 +30,10 @@ export const readdir = new RuntimeAdapter<
       entries.push({
         name: entry.name,
         absolutePath: absolutePath,
-        isDirectory: entry.isDirectory
+        isDirectory: entry.isDirectory,
       });
     }
 
     return entries;
   })
-
-  .withNode(async (relativePath: string, recursive = true) => {
-    const fs = await import("node:fs");
-    const path = await import("node:path");
-
-    return new Promise((resolve, reject) => {
-      
-    });
-  })
-  
   .compile();

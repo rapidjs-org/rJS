@@ -1,5 +1,5 @@
 {
-  "name": "@rapidjs.org/adapters",
+  "name": "@rapidjs.org/rjs",
   "version": "0.1.0",
   "author": "Thassilo Martin Schiepanski",
   "type": "commonjs",
@@ -12,15 +12,14 @@
   "scripts": {
     "clean": "rm -rf ./build && rm -rf ./types",
     "build": "npm run clean && npx tsc",
-    "test:node": "npx rjs-test unit ./test/node",
-    "test:deno": "deno test --allow-read ./test/deno",
-    "test": "npm run test:node && npm run test:deno",
-    "lint": "# deno lint",
+    "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
+    "run:node": "node ./build/mod.js",
+    "run:deno": "deno ./build/mod.js",
+    "test": "deno test --allow-read ./test",
+    "lint": "deno lint",
     "format": "deno fmt"
   },
   "devDependencies": {
-    "@rapidjs.org/testing": "0.x",
-    "@rapidjs.org/testing-unit": "0.x",
     "@types/node": "^20.10.6",
     "typescript": "^5.3.3"
   }

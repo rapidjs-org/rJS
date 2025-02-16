@@ -1,0 +1,6 @@
+{
+    "./packages/*/src/**/*.ts": [
+        "deno lint",
+        "deno lint fmt"
+    ]
+}

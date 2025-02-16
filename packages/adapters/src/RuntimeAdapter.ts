@@ -12,10 +12,10 @@ export class RuntimeAdapter<Cb extends CallableFunction> {
 
     return this;
   }
-  
+
   public withDeno(interfaceCb: Cb): this {
     if (!IS_DENO) return this;
-    
+
     this.interfaceCb = interfaceCb;
 
     return this;
@@ -23,7 +23,7 @@ export class RuntimeAdapter<Cb extends CallableFunction> {
 
   public compile(): Cb {
     if (!this.interfaceCb) throw new ReferenceError("Adapter not implemented");
-    
+
     return this.interfaceCb;
   }
 }

@@ -1,26 +1,12 @@
+// deno-lint-ignore-file
+
 import type { Buffer } from "node:buffer";
 
 import { RuntimeAdapter } from "../RuntimeAdapter";
 
-
 export const readfile = new RuntimeAdapter<
   (relativePath: string) => Promise<string | null>
 >()
-
-  .withDeno(async (relativePath: string) => {
-    // @ts-ignore
-    const path = await import("jsr:@std/path");
-
-    try {
-      // @ts-ignore
-      return await Deno.readTextFile(path.join(Deno.cwd(), relativePath));
-    } catch (err) {
-      // @ts-ignore
-      if (err instanceof Deno.errors.NotFound) return null;
-      throw err;
-    }
-  })
-
   .withNode(async (relativePath: string) => {
     const fs = await import("node:fs");
     const path = await import("node:path");
@@ -36,5 +22,17 @@ export const readfile = new RuntimeAdapter<
       );
     });
   })
-  
+  .withDeno(async (relativePath: string) => {
+    // @ts-ignore
+    const path = await import("jsr:@std/path");
+
+    try {
+      // @ts-ignore
+      return await Deno.readTextFile(path.join(Deno.cwd(), relativePath));
+    } catch (err) {
+      // @ts-ignore
+      if (err instanceof Deno.errors.NotFound) return null;
+      throw err;
+    }
+  })
   .compile();

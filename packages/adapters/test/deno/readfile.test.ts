@@ -1,6 +1,6 @@
 import { assertEquals } from "jsr:@std/assert";
 
-import { readfile } from "../../src/adapters/readfile.ts";
+import { readfile } from "../../build/adapters/readfile";
 
 Deno.test(async function testReadfile() {
   assertEquals(

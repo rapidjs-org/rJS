@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "incremental": false,
+        "sourceMap": false,
+        "declaration": true,
+        "removeComments": true,
+        "noEmitOnError": true
+    }
+}

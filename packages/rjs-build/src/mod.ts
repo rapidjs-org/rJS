@@ -1,2 +1,4 @@
 export function emit() {
 }
+
+emit();

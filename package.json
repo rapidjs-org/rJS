@@ -4,17 +4,15 @@
   "workspaces": [ "./packages/*" ],
   "scripts": {
     "prepare": "npx husky",
-	"clean:buildinfo": "find ./packages -name 'tsconfig.debug.tsbuildinfo' -delete",
-	"clean:builds": "find ./packages -type d -name 'build' -exec rm -rf {} \\;",
-	"clean:logs": "rm -rf ./test-app/.logs",
-	"clean": "npm run clean:buildinfo && npm run clean:builds && npm run clean:logs",
-	"debug": "node ./scripts/exec-deps.js debug",
-	"build": "node ./scripts/exec-deps.js build",
-	"lint": "npm -ws --if-present lint",
-	"format": "npm -ws --if-present format",
-	"test": "npm -ws --if-present test",
-	"prerelease": "npm run test && npm run build",
-	"release": "npx rjs-releasing . --github"
+    "clean:buildinfo": "find ./packages -name 'tsconfig.debug.tsbuildinfo' -delete",
+    "clean:logs": "rm -rf ./test-app/.logs",
+    "clean": "npm run clean:buildinfo && npm run clean:logs",
+    "build": "node ./scripts/exec-deps.js build",
+    "test": "node ./scripts/exec-deps.js test",
+    "lint": "npm run -ws --if-present lint",
+    "format": "npm run -ws --if-present format",
+    "prerelease": "npm run clean && npm run build && npm test",
+    "release": "npx rjs-releasing . --github"
   },
   "devDependencies": {
     "@rapidjs.org/releasing": "0.x",

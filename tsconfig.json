@@ -6,9 +6,6 @@
         "esModuleInterop": true,
         "noImplicitAny": true,
         "resolveJsonModule": true,
-        "noEmitOnError": true,
-        "allowJs": true,
-        "declaration": true,
-        "removeComments": true
+        "allowJs": true
     }
 }
