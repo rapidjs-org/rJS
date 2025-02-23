@@ -2,5 +2,8 @@
   "extends": [
     "../../tsconfig.build.json",
     "./tsconfig.json"
-  ]
+  ],
+  "compilerOptions": {
+    "declarationDir": "./types/"
+  }
 }

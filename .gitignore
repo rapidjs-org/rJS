@@ -2,8 +2,6 @@
 
 .vscode/
 .logs/
-.config/
-.shared/
 
 *.tsbuildinfo
 

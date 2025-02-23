@@ -1,0 +1,6 @@
+{
+  "extends": [
+    "../../tsconfig.watch.json",
+    "./tsconfig.json"
+  ]
+}

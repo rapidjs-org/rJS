@@ -2,7 +2,7 @@
   "name": "@rapidjs.org/adapters",
   "version": "0.1.0",
   "author": "Thassilo Martin Schiepanski",
-  "type": "commonjs",
+  "type": "module",
   "main": "./build/mod.js",
   "types": "./types/mod.d.ts",
   "files": [
@@ -11,9 +11,10 @@
   ],
   "scripts": {
     "clean": "rm -rf ./build && rm -rf ./types",
-    "build": "npm run clean && npx tsc",
+    "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
+    "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
     "test:node": "npx rjs-test unit ./test/node",
-    "test:deno": "deno test --allow-read ./test/deno",
+    "test:deno": "deno test --allow-read --allow-write ./test/deno",
     "test": "npm run test:node && npm run test:deno",
     "lint": "# deno lint",
     "format": "deno fmt"

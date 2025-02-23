@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "clean": "rm -rf ./build && rm -rf ./types",
-    "build": "npm run clean && npx tsc",
+    "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
     "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
     "run:node": "node ./build/mod.js",
     "run:deno": "deno ./build/mod.js",

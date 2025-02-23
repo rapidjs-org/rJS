@@ -3,7 +3,7 @@
     "compilerOptions": {
         "incremental": true,
         "sourceMap": true,
-        "declaration": false,
+        "declaration": true,
         "removeComments": false,
         "noEmitOnError": false
     }

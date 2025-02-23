@@ -1,6 +1,6 @@
 {
   "extends": [
-    "../../tsconfig.build.watch.json",
+    "../../tsconfig.build.json",
     "./tsconfig.json"
   ],
   "compilerOptions": {

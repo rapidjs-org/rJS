@@ -1,9 +1,0 @@
-{
-  "extends": [
-    "../../tsconfig.build.watch.json",
-    "./tsconfig.json"
-  ],
-  "compilerOptions": {
-    "declarationDir": "./types/"
-  }
-}

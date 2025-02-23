@@ -1,4 +1,4 @@
-import { IS_DENO, IS_NODE } from "./constants";
+import { IS_DENO, IS_NODE } from "./constants.js";
 
 export class RuntimeAdapter<Cb extends CallableFunction> {
   private interfaceCb?: Cb;

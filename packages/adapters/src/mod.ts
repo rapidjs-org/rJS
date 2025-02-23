@@ -1,2 +1,2 @@
-export * from "./adapters/readfile";
-export * from "./adapters/readdir";
+export * as fs from "./adapters/fs/fs.mod.js";
+export * as path from "./adapters/path/path.mod.js";
