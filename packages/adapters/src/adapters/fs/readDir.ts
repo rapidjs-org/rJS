@@ -5,14 +5,14 @@ import type { Dirent } from "node:fs";
 
 import { RuntimeAdapter } from "../../RuntimeAdapter.js";
 
-export interface IDirent {
+export type TDirent = {
   isDirectory: boolean;
   isFile: boolean;
   name: string;
-}
+};
 
 export const readDir = new RuntimeAdapter<
-  (path: string) => Promise<IDirent[]>
+  (path: string) => Promise<TDirent[]>
 >()
   .withNode(async (path: string) => {
     const { readdir } = (await import("node:fs")).promises;

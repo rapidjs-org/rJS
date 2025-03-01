@@ -3,24 +3,20 @@
 
 import { RuntimeAdapter } from "../../RuntimeAdapter.js";
 
-export const rm = new RuntimeAdapter<
+export const mkdir = new RuntimeAdapter<
   (path: string, options?: {
-    recursive: boolean;
-  }) => Promise<string | null>
+    recursive?: boolean;
+  }) => Promise<void>
 >()
   .withNode(async (path: string, options = {}) => {
-    const { rm } = (await import("node:fs")).promises;
+    const { mkdir } = (await import("node:fs")).promises;
     const { resolve } = await import("node:path");
     
-    return rm(resolve(process.cwd(), path), {
-      ...options,
-      
-      force: true
-    });
+    return mkdir(resolve(path), options);
   })
   .withDeno(async (path: string, options = {}) => {
     const { resolve } = await import("jsr:@std/path");
     
-    return Deno.remove(resolve(Deno.cwd(), path), options);
+    return Deno.mkdir(resolve(path), options);
   })
   .compile();

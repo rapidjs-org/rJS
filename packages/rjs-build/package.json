@@ -2,7 +2,7 @@
   "name": "@rapidjs.org/rjs-build",
   "version": "0.1.0",
   "author": "Thassilo Martin Schiepanski",
-  "type": "commonjs",
+  "type": "module",
   "main": "./build/mod.js",
   "types": "./types/mod.d.ts",
   "files": [
@@ -13,9 +13,10 @@
     "clean": "rm -rf ./build && rm -rf ./types",
     "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
     "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
-    "run:node": "node ./build/mod.js",
-    "run:deno": "deno ./build/mod.js",
-    "test": "deno test --allow-read ./test",
+    "test": "deno test ./test/unit",
+    "test:integration:node": "node ./test/integration/integration.js",
+    "test:integration:deno": "deno --allow-read --allow-write ./test/integration/integration.js",
+    "test:integration": "npm run test:integration:node",
     "lint": "deno lint",
     "format": "deno fmt"
   },

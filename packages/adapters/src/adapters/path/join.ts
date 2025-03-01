@@ -4,7 +4,7 @@
 import { RuntimeAdapter } from "../../RuntimeAdapter.js";
 
 export const join = new RuntimeAdapter<
-  (...paths: string[]) => string
+  (...paths: string[]) => Promise<string>
 >()
   .withNode(async (...paths: string[]) => {
     const { join } = await import("node:path");

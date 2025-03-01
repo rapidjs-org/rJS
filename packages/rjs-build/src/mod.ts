@@ -1,5 +1,1 @@
-export function emit() {
-
-}
-
-emit();
+export { emit } from "./build.js";

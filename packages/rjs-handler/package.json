@@ -2,7 +2,7 @@
   "name": "@rapidjs.org/rjs-handler",
   "version": "0.1.0",
   "author": "Thassilo Martin Schiepanski",
-  "type": "commonjs",
+  "type": "module",
   "main": "./build/mod.js",
   "types": "./types/mod.d.ts",
   "files": [

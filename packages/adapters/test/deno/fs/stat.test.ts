@@ -1,5 +1,5 @@
 import { resolve } from "jsr:@std/path";
-import { assertLess } from "jsr:@std/assert";
+import { assertLess, assertEquals } from "jsr:@std/assert";
 
 import { fs } from "../../../build/mod.js";
 
@@ -12,9 +12,13 @@ Deno.test("fs.stat adapter (foo.txt)", async () => {
   await Deno.rename(testpath1, testpath2);
   await Deno.rename(testpath2, testpath1);
 
-  const modTime = (await fs.stat(testpath1)).modTime;
+  const stats = await fs.stat(testpath1);
   assertLess(
-    Math.abs(timestamp - modTime),
+    Math.abs(timestamp - stats.modTime),
     epsilon,
+  );
+  assertEquals(
+    stats.isFile,
+    true
   );
 });

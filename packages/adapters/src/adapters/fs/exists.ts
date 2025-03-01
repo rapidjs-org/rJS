@@ -1,8 +1,6 @@
 // deno-lint-ignore-file
 // @ts-nocheck
 
-import type { Stats } from "node:fs";
-
 import { RuntimeAdapter } from "../../RuntimeAdapter.js";
 
 export const exists = new RuntimeAdapter<
