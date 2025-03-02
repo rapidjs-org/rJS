@@ -1,4 +1,4 @@
-import { writeFileSync, existsSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
 import { fs } from "../../../build/mod.js";
@@ -10,7 +10,7 @@ new UnitTest("fs.rm adapter (rm.txt)")
     writeFileSync(testpath, "");
 
     await fs.rm(testpath);
-    
+
     return existsSync(testpath);
   })
   .expect(false);

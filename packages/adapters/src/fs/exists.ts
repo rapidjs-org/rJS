@@ -1,7 +1,7 @@
 // deno-lint-ignore-file
 // @ts-nocheck
 
-import { RuntimeAdapter } from "../../RuntimeAdapter.js";
+import { RuntimeAdapter } from "../RuntimeAdapter.js";
 
 export const exists = new RuntimeAdapter<
   (path: string) => Promise<boolean>
@@ -9,11 +9,11 @@ export const exists = new RuntimeAdapter<
   .withNode(async (path: string) => {
     const { stat } = (await import("node:fs")).promises;
     const { resolve } = await import("node:path");
-    
+
     try {
       await stat(resolve(process.cwd(), path));
-    } catch(err) {
-      if((err ?? {}).code === "ENOENT") return false;
+    } catch (err) {
+      if ((err ?? {}).code === "ENOENT") return false;
 
       throw err;
     }
@@ -24,9 +24,9 @@ export const exists = new RuntimeAdapter<
 
     try {
       await Deno.stat(resolve(Deno.cwd(), path));
-    } catch(err) {
-      if(err instanceof Deno.errors.NotFound) return false;
-      
+    } catch (err) {
+      if (err instanceof Deno.errors.NotFound) return false;
+
       throw err;
     }
     return true;

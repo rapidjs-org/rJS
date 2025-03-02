@@ -13,10 +13,7 @@
     "clean": "rm -rf ./build && rm -rf ./types",
     "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
     "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
-    "test": "deno test ./test/unit",
-    "test:integration:node": "node ./test/integration/integration.js",
-    "test:integration:deno": "deno --allow-read --allow-write ./test/integration/integration.js",
-    "test:integration": "npm run test:integration:node",
+    "test": "deno test --allow-read --allow-write ./test",
     "lint": "deno lint",
     "format": "deno fmt"
   },

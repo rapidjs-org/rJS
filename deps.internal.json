@@ -1,7 +1,8 @@
 [
+    "@rapidjs.org/adapters",
     "@rapidjs.org/rjs-build",
     "@rapidjs.org/rjs-handler",
-    "@rapidjs.org/rjs-process",
     "@rapidjs.org/rjs-server",
+    "@rapidjs.org/rjs-proxy",
     "@rapidjs.org/rjs"
 ]

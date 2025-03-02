@@ -9,3 +9,5 @@ node_modules/
 
 packages/*/build/
 packages/*/types/
+
+integration/public/

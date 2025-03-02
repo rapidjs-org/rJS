@@ -1,0 +1,4 @@
+{
+  "name": "@rapidjs.org/rjs-proxy",
+  "exports": "./build/mod.js"
+}

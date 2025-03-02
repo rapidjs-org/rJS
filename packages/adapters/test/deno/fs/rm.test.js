@@ -10,9 +10,9 @@ Deno.test("fs.rm adapter (rm.txt)", async () => {
   await Deno.writeFile(testpath, new TextEncoder().encode(""));
 
   await fs.rm(testpath);
-  
+
   assertEquals(
     await exists(testpath),
-    false
+    false,
   );
 });

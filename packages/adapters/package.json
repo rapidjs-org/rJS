@@ -14,7 +14,7 @@
     "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
     "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
     "test:node": "npx rjs-test unit ./test/node",
-    "test:deno": "deno test --allow-read --allow-write ./test/deno",
+    "test:deno": "deno test --allow-read --allow-write --allow-net ./test/deno",
     "test": "npm run test:node && npm run test:deno",
     "lint": "# deno lint",
     "format": "deno fmt"

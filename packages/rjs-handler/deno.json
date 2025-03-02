@@ -1,0 +1,4 @@
+{
+  "name": "@rapidjs.org/rjs-handler",
+  "exports": "./build/mod.js"
+}

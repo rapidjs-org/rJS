@@ -70,9 +70,11 @@
           ]
         }
       },
-      "packages/rjs-process": {
+      "packages/rjs-proxy": {
         "packageJson": {
           "dependencies": [
+            "npm:@rapidjs.org/testing-http@0",
+            "npm:@rapidjs.org/testing@0",
             "npm:@types/node@^20.10.6",
             "npm:typescript@^5.3.3"
           ]
@@ -81,8 +83,6 @@
       "packages/rjs-server": {
         "packageJson": {
           "dependencies": [
-            "npm:@rapidjs.org/testing-http@0",
-            "npm:@rapidjs.org/testing@0",
             "npm:@types/node@^20.10.6",
             "npm:typescript@^5.3.3"
           ]

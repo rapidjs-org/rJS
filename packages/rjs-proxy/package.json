@@ -1,5 +1,5 @@
 {
-  "name": "@rapidjs.org/rjs-process",
+  "name": "@rapidjs.org/rjs-proxy",
   "version": "0.1.0",
   "author": "Thassilo Martin Schiepanski",
   "type": "module",
@@ -14,12 +14,15 @@
     "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
     "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
     "run:node": "node ./build/mod.js",
-    "run:deno": "deno --allow-read ./build/mod.js",
-    "test": "deno test --allow-read ./test",
+    "run:deno": "deno ./build/mod.js",
+    "test:http": "npx rjs-test unit ./test",
+    "test": "npm run test:http",
     "lint": "deno lint",
     "format": "deno fmt"
   },
   "devDependencies": {
+    "@rapidjs.org/testing": "0.x",
+    "@rapidjs.org/testing-http": "0.x",
     "@types/node": "^20.10.6",
     "typescript": "^5.3.3"
   }

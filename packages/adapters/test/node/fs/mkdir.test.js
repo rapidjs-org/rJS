@@ -1,4 +1,4 @@
-import { rmdirSync, existsSync } from "fs";
+import { existsSync, rmdirSync } from "fs";
 import { resolve } from "path";
 
 import { fs } from "../../../build/mod.js";
@@ -8,11 +8,11 @@ new UnitTest("fs.mkdir adapter (/mkdir-parent/mkdir-child)")
     const testpath = resolve("./test/static/mkdir-parent/mkdir-child");
 
     rmdirSync(testpath, {
-      force: true
+      force: true,
     });
 
     await fs.mkdir(testpath, {
-      recursive: true
+      recursive: true,
     });
 
     return existsSync(testpath);

@@ -9,13 +9,13 @@ Deno.test("fs.readDir adapter (/readDir-parent)", async () => {
       {
         isDirectory: true,
         isFile: false,
-        name: "readDir-child"
+        name: "readDir-child",
       },
       {
         isDirectory: false,
         isFile: true,
-        name: "readDir-parent.txt"
-      }
-    ]
+        name: "readDir-parent.txt",
+      },
+    ],
   );
 });

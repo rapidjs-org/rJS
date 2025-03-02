@@ -8,7 +8,7 @@ new UnitTest("fs.writeFile adapter (writeFile.txt)")
 
     rmSync(testpath);
     await fs.writeFile(testpath, "foo");
-    
+
     return await fs.readFile(testpath);
   })
   .expect("foo");

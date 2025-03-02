@@ -10,7 +10,7 @@ renameSync(testpath1, testpath2);
 renameSync(testpath2, testpath1);
 
 fs.stat(testpath1)
-  .then(stats => {
+  .then((stats) => {
     const epsilon = 1e1;
     const timestamp = Date.now();
 
@@ -19,9 +19,8 @@ fs.stat(testpath1)
         return Math.abs(timestamp - stats.modTime) < epsilon;
       })
       .expect(true);
-    
+
     new UnitTest("fs.stat adapter (2) (foo.txt)")
       .actual(async () => stats.isFile)
       .expect(true);
-    
   });

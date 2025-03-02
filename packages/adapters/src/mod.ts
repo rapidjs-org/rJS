@@ -1,2 +1,3 @@
-export * as fs from "./adapters/fs/fs.mod.js";
-export * as path from "./adapters/path/path.mod.js";
+export * as fs from "./fs/fs.mod.js";
+export * as http from "./http/http.mod.js";
+export * as path from "./path/path.mod.js";

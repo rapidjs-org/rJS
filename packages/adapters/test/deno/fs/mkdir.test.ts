@@ -5,15 +5,17 @@ import { fs } from "../../../build/mod.js";
 
 Deno.test("fs.mkdir adapter (/mkdir-parent/mkdir-child)", async () => {
   const testpath = resolve("./test/static/mkdir-parent/mkdir-child");
-  
-  await Deno.remove(testpath);
+
+  try {
+    await Deno.remove(testpath);
+  } catch {}
 
   await fs.mkdir(testpath, {
-    recursive: true
+    recursive: true,
   });
 
   assertEquals(
-    !!(await Deno.lstat(testpath)),
-    true
+    !!(await Deno.stat(testpath)),
+    true,
   );
 });

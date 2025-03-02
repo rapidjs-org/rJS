@@ -1,6 +1,6 @@
 {
-    "defaultSourcePath": "./src",
-    "defaultPublicPath": "./public",
-    "sourceContextConfigName": "_rjs.json",
-    "sourceContextPluginDirName": "_rjs"
+  "defaultSourcePath": "./src",
+  "defaultPublicPath": "./public",
+  "sourceContextConfigName": "_rjs.json",
+  "sourceContextPluginDirName": "_rjs"
 }
