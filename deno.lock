@@ -43,6 +43,16 @@
           ]
         }
       },
+      "packages/pool": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@rapidjs.org/testing-unit@0",
+            "npm:@rapidjs.org/testing@0",
+            "npm:@types/node@^20.10.6",
+            "npm:typescript@^5.3.3"
+          ]
+        }
+      },
       "packages/rjs": {
         "packageJson": {
           "dependencies": [
@@ -65,6 +75,7 @@
       "packages/rjs-handler": {
         "packageJson": {
           "dependencies": [
+            "npm:@rapidjs.org/adapters@0",
             "npm:@types/node@^20.10.6",
             "npm:typescript@^5.3.3"
           ]
@@ -73,6 +84,7 @@
       "packages/rjs-proxy": {
         "packageJson": {
           "dependencies": [
+            "npm:@rapidjs.org/adapters@0",
             "npm:@rapidjs.org/testing-http@0",
             "npm:@rapidjs.org/testing@0",
             "npm:@types/node@^20.10.6",
@@ -83,6 +95,8 @@
       "packages/rjs-server": {
         "packageJson": {
           "dependencies": [
+            "npm:@rapidjs.org/adapters@0",
+            "npm:@rapidjs.org/handler@0",
             "npm:@types/node@^20.10.6",
             "npm:typescript@^5.3.3"
           ]

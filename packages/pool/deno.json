@@ -1,0 +1,4 @@
+{
+  "name": "@rapidjs.org/pool",
+  "exports": "./build/mod.js"
+}

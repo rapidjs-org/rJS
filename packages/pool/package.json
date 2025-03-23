@@ -1,0 +1,28 @@
+{
+  "name": "@rapidjs.org/pool",
+  "version": "0.1.0",
+  "author": "Thassilo Martin Schiepanski",
+  "type": "module",
+  "main": "./build/mod.js",
+  "types": "./types/mod.d.ts",
+  "files": [
+    "./build",
+    "./types"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./build && rm -rf ./types",
+    "build": "npm run clean && npx tsc --project ./tsconfig.build.json",
+    "build:watch": "npx tsc --watch --project ./tsconfig.watch.json",
+    "test:node": "npx rjs-test unit ./test/node",
+    "test:deno": "deno test --allow-run ./test/deno",
+    "test": "npm run test:node && npm run test:deno",
+    "lint": "# deno lint",
+    "format": "deno fmt"
+  },
+  "devDependencies": {
+    "@rapidjs.org/testing": "0.x",
+    "@rapidjs.org/testing-unit": "0.x",
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,84 +1,100 @@
 import { fs, path } from "@rapidjs.org/adapters";
 
-import _config from "./config.json" with { type: "json" };
+import { type TReadNodes, ENodeType, DirectoryNode, FileNode, TNode } from "./Node.js";
 
-type TContextConfig = {
-  plugins?: string | string[];
-};
+import _config from "./_config.json" with { type: "json" };
 
-// TODO: Always try re-emit in dev, only try re-emit on hook event in prod
-// TODO: Plugin read modes: independent public files,
-// or interdependent public files (default),
-// or build optimistic file mention dependency tree?
+export type TPathMap = Map<string, TNode>;
+export type TBuild = Build;
 
-export async function emit(
-  sourcePath: string = _config.defaultSourcePath,
-  publicPath: string = _config.defaultPublicPath,
-) {
-  const stats: fs.TStats = await fs.stat(sourcePath);
+class Build {
+  private rootNode?: DirectoryNode;
+  private pubDirPath?: string;
 
-  if (!stats.isDirectory) {
-    throw new TypeError("Source is not a directory");
+  private getAbsolutePath(relativePath: string): Promise<string> {
+    return path.join(this.pubDirPath, relativePath);
   }
 
-  // TODO: Delete old files, no dangling files?
-  (await fs.exists(publicPath)) &&
-    await fs.rm(publicPath, {
-      recursive: true,
+  private async handleContextLevel(contextDirNode: DirectoryNode, emitFiles: boolean) {
+    // TODO: Return TPathMap
+    await contextDirNode
+      .traverse((readNodes: TReadNodes) => {
+        [ ...readNodes.changed, ...readNodes.unchanged ]
+          .forEach(async (existingNode: TNode) => {
+            if(await existingNode.getType() === ENodeType.PRIVATE) return;
+
+            if(!emitFiles) return;
+
+            const absolutePath: string = await this.getAbsolutePath(await existingNode.getPath());
+            (existingNode instanceof FileNode)
+              ? await fs.writeFile(absolutePath, await existingNode.read())
+              : await fs.mkdir(absolutePath, {
+                recursive: true
+              });
+          });
+
+        if(!emitFiles) return;
+
+        readNodes.deleted
+          .forEach(async (deletedNode: TNode) => {
+            if(await deletedNode.getType() === ENodeType.PRIVATE) return;
+
+            await fs.rm(await this.getAbsolutePath(await deletedNode.getPath()), {
+              recursive: true
+            });
+          });
+      });
+  }
+
+  public async build(emitFiles: boolean = false): Promise<TPathMap> {
+    const pathMap: TPathMap = new Map();
+
+    await this.rootNode
+      .traverse((readNodes: TReadNodes) => {
+        [ ...readNodes.changed, ...readNodes.unchanged ]
+          .filter((existingNode: TNode) => existingNode instanceof DirectoryNode)
+          .forEach((contextDirNode: DirectoryNode) => this.handleContextLevel(contextDirNode, emitFiles));
+
+        if(!emitFiles) return;
+
+        readNodes.deleted
+          .filter((deletedNode: TNode) => deletedNode instanceof DirectoryNode)
+          .forEach((deletedNode: DirectoryNode) => {
+            deletedNode.cachedPaths
+            .forEach(async (cachedPath: string) => {
+                await fs.rm(cachedPath, {
+                  recursive: true
+                })
+              })
+          });
+    }, true);
+
+    return pathMap;
+  }
+
+  public async create(srcDirPath?: string, pubDirPath?: string): Promise<this> {
+    srcDirPath = await path.resolve(srcDirPath ?? _config.defaultSourcePath);
+    pubDirPath = await path.resolve(pubDirPath ?? _config.defaultPublicPath);
+
+    this.rootNode = new DirectoryNode(srcDirPath,  ".");
+    this.pubDirPath = pubDirPath;
+
+    return this;
+  }
+
+  public async initEmit(): Promise<void> {
+    (await fs.exists(this.pubDirPath) && !(await fs.stat(this.pubDirPath)).isDirectory)
+      && await fs.rm(this.pubDirPath, {
+      recursive: true
     });
-  await fs.mkdir(publicPath, {
-    recursive: true,
-  });
 
-  // Source dir
-  (await fs.readDir(sourcePath))
-    .forEach(async (dirent: fs.TDirent) => {
-      if (!dirent.isDirectory) return; // TODO: Lint warning?
-
-      // Source context dir
-      const contextPath: string = await path.join(sourcePath, dirent.name);
-      const contextConfigPath: string = await path.join(
-        contextPath,
-        _config.sourceContextConfigName,
-      ); // TODO: Support more than JSON
-      const contextConfig: TContextConfig = await fs.exists(contextConfigPath)
-        ? await import(contextConfigPath)
-        : {};
-
-      const pluginReferences: string[] = [contextConfig.plugins ?? []].flat();
-
-      // If no plugin to apply is configured, emit file identity
-      if (!contextConfig.plugins) {
-        emitIdentity(contextPath, publicPath);
-
-        return;
-      }
-
-      pluginReferences
-        .forEach((pluginReference: string) => {
-          console.warn("...");
-        });
+    await fs.mkdir(this.pubDirPath, {
+      recursive: true
     });
-} // TODO: Return build info (file count, hashes, etc.)?
+  }
+}
 
-// TODO: Private files?
-// __plugin/ for in-place plugins?
-async function emitIdentity(sourcePath: string, publicPath: string) {
-  (await fs.readDir(sourcePath))
-    .forEach(async (dirent: fs.TDirent) => {
-      const direntSourcePath: string = await path.join(sourcePath, dirent.name);
-      const direntPublicPath: string = await path.join(publicPath, dirent.name);
-
-      dirent.isDirectory
-        ? emitIdentity(direntSourcePath, direntPublicPath)
-        : fs.copyFile(direntSourcePath, direntPublicPath);
-    });
-} // or use default plugin that produces identity
-
-function emitWithPlugin(
-  pluginReference: string,
-  sourcePath: string,
-  publicPath: string,
-) {
-  
+export function createBuild(srcDirPath?: string, pubDirPath?: string): Promise<Build> {
+  return (new Build())
+    .create(srcDirPath, pubDirPath);
 }

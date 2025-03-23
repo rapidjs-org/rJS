@@ -20,6 +20,9 @@
     "lint": "deno lint",
     "format": "deno fmt"
   },
+  "dependencies": {
+    "@rapidjs.org/adapters": "0.x"
+  },
   "devDependencies": {
     "@rapidjs.org/testing": "0.x",
     "@rapidjs.org/testing-http": "0.x",

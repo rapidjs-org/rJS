@@ -3,17 +3,17 @@
 
 import { RuntimeAdapter } from "../RuntimeAdapter.js";
 
-export const join = new RuntimeAdapter<
-  (...paths: string[]) => Promise<string>
+export const basename = new RuntimeAdapter<
+  (path: string) => Promise<string>
 >()
   .withNode(async (...paths: string[]) => {
-    const { join } = await import("node:path");
+    const { basename } = await import("node:path");
 
-    return join(...paths);
+    return basename(...paths);
   })
   .withDeno(async (...paths: string[]) => {
-    const { join } = await import("jsr:@std/path");
+    const { basename } = await import("jsr:@std/path");
 
-    return join(...paths);
+    return basename(...paths);
   })
   .compile();

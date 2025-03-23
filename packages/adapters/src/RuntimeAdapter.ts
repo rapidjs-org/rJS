@@ -2,9 +2,7 @@ import { IS_DENO, IS_NODE } from "./constants.js";
 
 export class RuntimeAdapter<Cb extends CallableFunction> {
   private interfaceCb?: Cb;
-
-  constructor() {}
-
+  
   public withNode(interfaceCb: Cb): this {
     if (!IS_NODE) return this;
 

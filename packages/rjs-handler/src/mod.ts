@@ -1,3 +1,6 @@
-export function add(a: number, b: number): number {
-  return a + b;
+import { http } from "@rapidjs.org/adapters";
+
+export function handle(): http.TRequest {
+  // TODO: Build on init, and on webhook event
+  return null;
 }

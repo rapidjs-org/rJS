@@ -19,6 +19,9 @@
     "lint": "deno lint",
     "format": "deno fmt"
   },
+  "dependencies": {
+    "@rapidjs.org/adapters": "0.x"
+  },
   "devDependencies": {
     "@types/node": "^20.10.6",
     "typescript": "^5.3.3"
